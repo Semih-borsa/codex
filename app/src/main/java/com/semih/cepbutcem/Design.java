@@ -37,6 +37,177 @@ public final class Design {
     return animation;
   }
 
+  /** A decorative card surface; arcs are branding, not a financial chart. */
+  public static final class BalanceSurface extends android.graphics.drawable.Drawable {
+    private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private static final int[] START = {0xFF143C35, 0xFF4A351B, 0xFF4D2432, 0xFF293256};
+    private static final int[] END = {0xFF087866, 0xFF986620, 0xFFA13B53, 0xFF465F9D};
+    private final RectF area = new RectF();
+    private final Path clip = new Path();
+    private LinearGradient gradient;
+    private int alpha = 255;
+    private final int band;
+    private final float radius;
+
+    public BalanceSurface(int band, float radius) {
+      this.band = band;
+      this.radius = radius;
+    }
+
+    @Override
+    protected void onBoundsChange(Rect bounds) {
+      area.set(bounds);
+      clip.reset();
+      clip.addRoundRect(area, radius, radius, Path.Direction.CW);
+      int index = band < 0 || band > 2 ? 3 : band;
+      gradient =
+          new LinearGradient(
+              bounds.left,
+              bounds.top,
+              bounds.right,
+              bounds.bottom,
+              START[index],
+              END[index],
+              Shader.TileMode.CLAMP);
+    }
+
+    @Override
+    public void draw(Canvas canvas) {
+      Rect bounds = getBounds();
+      paint.setStyle(Paint.Style.FILL);
+      paint.setColor(Color.WHITE);
+      paint.setAlpha(alpha);
+      paint.setShader(gradient);
+      canvas.drawRoundRect(area, radius, radius, paint);
+      paint.setShader(null);
+      canvas.save();
+      canvas.clipPath(clip);
+      float size = bounds.width();
+      paint.setStyle(Paint.Style.STROKE);
+      paint.setStrokeWidth(1.5f);
+      paint.setColor(Color.WHITE);
+      paint.setAlpha(alpha * 32 / 255);
+      for (int i = 0; i < 4; i++)
+        canvas.drawCircle(
+            bounds.right + size * .12f,
+            bounds.top + bounds.height() * .2f,
+            size * (.28f + i * .13f),
+            paint);
+      canvas.restore();
+    }
+
+    @Override
+    public void setAlpha(int alpha) {
+      this.alpha = alpha;
+      invalidateSelf();
+    }
+
+    @Override
+    public void setColorFilter(ColorFilter filter) {
+      paint.setColorFilter(filter);
+      invalidateSelf();
+    }
+
+    @Override
+    public int getOpacity() {
+      return PixelFormat.TRANSLUCENT;
+    }
+  }
+
+  /** Compact dashboard meter shares the existing reduced-motion-aware animation engine. */
+  public static final class SpendingMeter extends View {
+    private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final double ratio;
+    private final boolean light;
+    private double displayed;
+    private android.animation.ValueAnimator animator;
+
+    public SpendingMeter(Context context) {
+      this(context, Double.NaN, false);
+    }
+
+    public SpendingMeter(Context context, double ratio, boolean light) {
+      super(context);
+      this.ratio = ratio;
+      this.light = light;
+      displayed = Double.isNaN(ratio) ? Double.NaN : 0;
+      setContentDescription(
+          Double.isNaN(ratio)
+              ? "Harcama oranı için gelir kaydı gerekli"
+              : "Gelirin harcanan kısmı yüzde " + String.format(Finance.TR, "%.1f", ratio));
+    }
+
+    private float dp(float value) {
+      return value * getResources().getDisplayMetrics().density;
+    }
+
+    private float sp(float value) {
+      return value * getResources().getDisplayMetrics().scaledDensity;
+    }
+
+    @Override
+    protected void onMeasure(int width, int height) {
+      setMeasuredDimension(MeasureSpec.getSize(width), (int) (sp(42) + dp(40)));
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+      super.onAttachedToWindow();
+      animator =
+          ratioAnimator(
+              ratio,
+              android.animation.ValueAnimator.areAnimatorsEnabled(),
+              value -> {
+                displayed = value;
+                invalidate();
+              });
+      if (animator != null) animator.start();
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+      if (animator != null) {
+        animator.cancel();
+        animator = null;
+      }
+      super.onDetachedFromWindow();
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+      super.onDraw(canvas);
+      int accent = spendingColor(ratio, light);
+      paint.setColor(accent);
+      paint.setStyle(Paint.Style.FILL);
+      paint.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
+      paint.setTextSize(sp(30));
+      String number =
+          Double.isNaN(displayed) ? "—" : String.format(Finance.TR, "%%%.1f", displayed);
+      float numberWidth = paint.measureText(number);
+      if (numberWidth > getWidth()) paint.setTextSize(sp(30) * getWidth() / numberWidth);
+      canvas.drawText(number, 0, sp(36), paint);
+      float textWidth = paint.measureText(number);
+      paint.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
+      paint.setTextSize(sp(11));
+      paint.setColor(light ? 0xFF657286 : 0xFF9AA8BA);
+      if (textWidth + dp(12) + paint.measureText("gelirin harcanan kısmı") < getWidth())
+        canvas.drawText("gelirin harcanan kısmı", textWidth + dp(12), sp(35), paint);
+      paint.setColor(light ? 0xFFE5E9EE : 0xFF2B3745);
+      canvas.drawRoundRect(0, sp(42) + dp(15), getWidth(), sp(42) + dp(22), dp(4), dp(4), paint);
+      if (!Double.isNaN(displayed) && displayed > 0) {
+        paint.setColor(accent);
+        canvas.drawRoundRect(
+            0,
+            sp(42) + dp(15),
+            (float) (getWidth() * Math.min(1, displayed / 100)),
+            sp(42) + dp(22),
+            dp(4),
+            dp(4),
+            paint);
+      }
+    }
+  }
+
   public static final class Icon extends View {
     private static final float[] POINTS_0 =
         new float[] {12, 2, 15, 9, 22, 12, 15, 15, 12, 22, 9, 15, 2, 12, 9, 9};

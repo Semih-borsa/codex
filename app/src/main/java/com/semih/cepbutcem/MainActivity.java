@@ -288,12 +288,12 @@ public class MainActivity extends Activity {
   private LinearLayout card(LinearLayout parent) {
     LinearLayout c = column();
     c.setPadding(dp(18), dp(18), dp(18), dp(18));
-    GradientDrawable background = shape(CARD, 22);
+    GradientDrawable background = shape(CARD, 20);
     background.setStroke(dp(1), LINE);
     c.setBackground(background);
     c.setElevation(dp(plan.light ? 1 : 0));
     LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
-    lp.bottomMargin = dp(14);
+    lp.bottomMargin = dp(12);
     parent.addView(c, lp);
     return c;
   }
@@ -302,12 +302,13 @@ public class MainActivity extends Activity {
     Button b = new Button(this);
     b.setText(label);
     b.setTextSize(13);
+    b.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
     b.setAllCaps(false);
     b.setMinHeight(dp(48));
     b.setMinimumHeight(dp(48));
     b.setTextColor(primary ? BG : WHITE);
     b.setBackgroundTintList(null);
-    GradientDrawable surface = shape(primary ? GREEN : (plan.light ? 0xFFF0F3F9 : 0xFF202C43), 14);
+    GradientDrawable surface = shape(primary ? GREEN : (plan.light ? 0xFFF1F3F7 : 0xFF202A3A), 14);
     b.setBackground(
         new RippleDrawable(
             ColorStateList.valueOf(plan.light ? 0x22000000 : 0x33FFFFFF), surface, null));
@@ -316,6 +317,35 @@ public class MainActivity extends Activity {
     b.setPadding(dp(14), dp(10), dp(14), dp(10));
     b.setOnClickListener(v -> action.run());
     return b;
+  }
+
+  private Button periodArrow(String label, Runnable action) {
+    Button b = button(label, false, action);
+    b.setTextSize(22);
+    b.setBackground(
+        new RippleDrawable(ColorStateList.valueOf(tint(GREEN, 22)), shape(CARD, 12), null));
+    b.setPadding(0, 0, 0, 0);
+    b.setMinHeight(dp(48));
+    b.setMinimumHeight(dp(48));
+    return b;
+  }
+
+  private View quickAction(String label, String symbol, int color, Runnable action) {
+    LinearLayout tile = column();
+    tile.setGravity(Gravity.CENTER);
+    tile.setPadding(dp(4), dp(10), dp(4), dp(10));
+    GradientDrawable surface = shape(CARD, 16);
+    surface.setStroke(dp(1), LINE);
+    tile.setBackground(new RippleDrawable(ColorStateList.valueOf(tint(color, 25)), surface, null));
+    tile.addView(icon(symbol, color, 22), new LinearLayout.LayoutParams(dp(22), dp(22)));
+    space(tile, 7);
+    TextView title = text(label, 11, WHITE, true);
+    title.setGravity(Gravity.CENTER);
+    add(tile, title);
+    tile.setMinimumHeight(dp(64));
+    tile.setContentDescription(label);
+    tile.setOnClickListener(v -> action.run());
+    return tile;
   }
 
   private void section(String label, String sub) {
@@ -363,9 +393,9 @@ public class MainActivity extends Activity {
     setContentView(root);
     root.requestApplyInsets();
     LinearLayout header = row();
-    header.setPadding(dp(20), dp(14), dp(20), dp(12));
+    header.setPadding(dp(20), dp(10), dp(20), dp(10));
     LinearLayout branding = column();
-    add(branding, text("CEP BÜTÇEM  /  KİŞİSEL FİNANS", 10, MUTED, true));
+    add(branding, text("CEP BÜTÇEM", 10, MUTED, true));
     space(branding, 5);
     String[] names = {
       "Genel bakış",
@@ -378,7 +408,7 @@ public class MainActivity extends Activity {
       "Kredilerim",
       "Maaş hesaplayıcı"
     };
-    add(branding, text(names[page], 23, WHITE, true));
+    add(branding, text(names[page], 22, WHITE, true));
     weighted(header, branding);
     View avatar = icon(page >= 5 ? "back" : "settings", page >= 5 ? WHITE : GREEN, 22);
     LinearLayout avatarHolder = row();
@@ -395,9 +425,9 @@ public class MainActivity extends Activity {
     add(root, header);
     if (page != 4 && page != 5 && page != 8) {
       LinearLayout period = row();
-      period.setPadding(dp(18), dp(4), dp(18), dp(6));
-      period.setBackground(shape(CARD, 16));
-      Button prev = button("‹", false, () -> changeMonth(-1));
+      period.setPadding(dp(4), 0, dp(4), 0);
+      period.setBackground(shape(CARD, 14));
+      Button prev = periodArrow("‹", () -> changeMonth(-1));
       prev.setContentDescription("Önceki maaş dönemi");
       period.addView(prev, new LinearLayout.LayoutParams(dp(48), dp(48)));
       TextView label =
@@ -412,7 +442,7 @@ public class MainActivity extends Activity {
       weighted(period, label);
       label.setOnClickListener(v -> pickMonth());
       label.setContentDescription("Maaş dönemi seç: " + month.format(MONTH));
-      Button next = button("›", false, () -> changeMonth(1));
+      Button next = periodArrow("›", () -> changeMonth(1));
       next.setContentDescription("Sonraki maaş dönemi");
       period.addView(next, new LinearLayout.LayoutParams(dp(48), dp(48)));
       LinearLayout.LayoutParams periodParams = new LinearLayout.LayoutParams(-1, -2);
@@ -458,8 +488,12 @@ public class MainActivity extends Activity {
         break;
     }
     navigation = row();
-    navigation.setPadding(dp(6), dp(6), dp(6), dp(8));
-    navigation.setBackgroundColor(CARD);
+    navigation.setPadding(dp(5), dp(5), dp(5), dp(5));
+    GradientDrawable navSurface = shape(CARD, 24);
+    navSurface.setStroke(dp(1), LINE);
+    navigation.setBackground(navSurface);
+    navigation.setElevation(dp(6));
+    int selectedTab = page < 5 ? page : page == 6 ? 2 : page == 5 ? 0 : 4;
     String[] icons = {"home", "list", "chart", "target", "settings"},
         labels = {"Özet", "İşlemler", "Analiz", "Bütçe", "Ayarlar"};
     for (int i = 0; i < 5; i++) {
@@ -467,23 +501,25 @@ public class MainActivity extends Activity {
       LinearLayout item = column();
       item.setGravity(Gravity.CENTER);
       item.setPadding(0, dp(5), 0, dp(5));
-      View tabIcon = icon(icons[i], i == page ? GREEN : MUTED, 22);
+      View tabIcon = icon(icons[i], i == selectedTab ? GREEN : MUTED, 22);
       item.addView(tabIcon, new LinearLayout.LayoutParams(dp(22), dp(22)));
       space(item, 4);
-      TextView label = text(labels[i], 10, i == page ? GREEN : MUTED, i == page);
+      TextView label = text(labels[i], 10, i == selectedTab ? GREEN : MUTED, i == selectedTab);
       label.setGravity(Gravity.CENTER);
       add(item, label);
-      if (i == page) item.setBackground(shape(plan.light ? 0xFFE2F3EE : 0xFF183B35, 16));
-      item.setSelected(i == page);
+      if (i == selectedTab) item.setBackground(shape(plan.light ? 0xFFE2F3EE : 0xFF183B35, 16));
+      item.setSelected(i == selectedTab);
       item.setContentDescription(labels[i]);
       item.setOnClickListener(
           v -> {
             page = tab;
             refresh();
           });
-      navigation.addView(item, new LinearLayout.LayoutParams(0, dp(58), 1));
+      navigation.addView(item, new LinearLayout.LayoutParams(0, dp(54), 1));
     }
-    add(root, navigation);
+    LinearLayout.LayoutParams navParams = new LinearLayout.LayoutParams(-1, -2);
+    navParams.setMargins(dp(14), dp(4), dp(14), dp(10));
+    root.addView(navigation, navParams);
   }
 
   private void changeMonth(int delta) {
@@ -552,9 +588,9 @@ public class MainActivity extends Activity {
     double rate = Finance.spendingRate(income, expense);
     int accent = Design.spendingColor(rate, plan.light);
     LinearLayout hero = card(body);
-    hero.setBackground(spendingGradient(rate));
+    hero.setBackground(new Design.BalanceSurface(Finance.spendingBand(rate), dp(24)));
     LinearLayout top = row();
-    weighted(top, text("NET VARLIK", 11, 0xFFDDE0FF, true));
+    weighted(top, text("TOPLAM NET VARLIK", 10, 0xFFDCF4EF, true));
     top.addView(chip(spendingStatus(rate), 0xFFFFFFFF, 0x33FFFFFF));
     add(hero, top);
     space(hero, 10);
@@ -562,9 +598,10 @@ public class MainActivity extends Activity {
     amount.setMaxLines(1);
     amount.setAutoSizeTextTypeUniformWithConfiguration(
         18, 34, 1, android.util.TypedValue.COMPLEX_UNIT_SP);
+    amount.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
     add(hero, amount);
-    space(hero, 8);
-    add(hero, text("Kayıtlı hesaplar · bugünün net bakiyesi", 12, 0xFFFAF3FF, false));
+    space(hero, 6);
+    add(hero, text("Tüm hesapların · bugün", 11, 0xFFFAF3FF, false));
     int days = Finance.cycleDays(month, plan.payday, LocalDate.now());
     LocalDate oldStart = periodStart(month.minusMonths(1)),
         oldEnd = oldStart.plusDays(Math.max(0, days - 1));
@@ -582,51 +619,41 @@ public class MainActivity extends Activity {
     add(body, metrics);
     space(body, 12);
     LinearLayout actions = row();
-    weighted(actions, button("− Gider ekle", true, () -> entryDialog(null, "E")));
-    gap(actions, 10);
-    weighted(actions, button("+ Gelir ekle", false, () -> entryDialog(null, "I")));
+    weighted(actions, quickAction("− Gider ekle", "down", RED, () -> entryDialog(null, "E")));
+    gap(actions, 8);
+    weighted(actions, quickAction("+ Gelir ekle", "up", GREEN, () -> entryDialog(null, "I")));
+    gap(actions, 8);
+    weighted(actions, quickAction("Transfer", "repeat", BLUE, () -> entryDialog(null, "T")));
     add(body, actions);
-    space(body, 16);
+    space(body, 14);
     LinearLayout health = card(body);
-    GradientDrawable healthSurface = gradient(riskSurface(rate), CARD, 22);
-    healthSurface.setStroke(dp(1), tint(accent, plan.light ? 64 : 90));
+    GradientDrawable healthSurface = gradient(riskSurface(rate), CARD, 20);
+    healthSurface.setStroke(dp(1), tint(accent, plan.light ? 45 : 65));
     health.setBackground(healthSurface);
-    cardTitle(health, "target", "Dönem bütçen", accent);
-    add(health, new Design.Gauge(this, rate, plan.light));
-    LinearLayout rateRow = row();
-    weighted(
-        rateRow,
-        text(
-            income == 0
-                ? "Gelir kaydı bekleniyor"
-                : expense > income ? "Harcaman gelirini aştı" : "Gelirinden kalan",
-            12,
-            MUTED,
-            false));
-    rateRow.addView(
-        text(income == 0 ? "—" : pct(Finance.savingRate(income, expense)), 15, accent, true));
-    add(health, rateRow);
-    divider(health);
-    keyValue(
-        health,
-        "Maaş dönemi dengesi",
-        Finance.money(income - expense),
-        income >= expense ? GREEN : RED);
-    keyValue(health, "Tasarruf hedefi", "%" + plan.target, WHITE);
-    long target = Math.round(income * (plan.target / 100d));
-    progress(health, target > 0 ? Math.max(0, (income - expense) / (double) target) : 0, accent);
-    hint(
-        health,
-        "Renkler seçili maaş dönemine göre: %50 altı yeşil · %50–80 sarı · %80 ve üzeri kırmızı.");
+    LinearLayout healthTitle = row();
+    weighted(healthTitle, text("Dönem bütçen", 15, WHITE, true));
+    healthTitle.addView(chip(spendingStatus(rate), accent, tint(accent, plan.light ? 18 : 26)));
+    add(health, healthTitle);
+    add(health, new Design.SpendingMeter(this, rate, plan.light));
+    LinearLayout budgetFacts = row();
+    LinearLayout remaining = column(), targetFact = column();
+    add(remaining, text("Dönem dengesi", 10, MUTED, false));
+    space(remaining, 5);
+    add(
+        remaining,
+        text(Finance.money(income - expense), 17, income >= expense ? GREEN : RED, true));
+    add(targetFact, text("Tasarruf hedefi", 10, MUTED, false));
+    space(targetFact, 5);
+    add(targetFact, text("%" + plan.target, 17, WHITE, true));
+    weighted(budgetFacts, remaining);
+    weighted(budgetFacts, targetFact);
+    add(health, budgetFacts);
+    space(health, 10);
     hint(
         health,
         income == 0
-            ? "Maaşını kaydet; gelirine göre harcama oranını ve hedefini izle."
-            : "Hedef için "
-                + Finance.money(target)
-                + " · Kalan tutar "
-                + Finance.money(income - expense)
-                + ". Bu tutar banka bakiyesi değildir.");
+            ? "İlk gelirini ekle, dönem bütçen oluşsun."
+            : "Dönem dengesi, kayıtlı gelirin ile giderin arasındaki farktır.");
     quickRepeat(recent);
     creditCardOverview();
     section("Nakit ve banka hesapların", "Bugünün bakiyeleri · detay için dokun");
@@ -790,19 +817,6 @@ public class MainActivity extends Activity {
     }
   }
 
-  private GradientDrawable spendingGradient(double rate) {
-    switch (Finance.spendingBand(rate)) {
-      case 0:
-        return gradient(0xFF006D57, 0xFF078B86, 26);
-      case 1:
-        return gradient(0xFF94510A, 0xFFB87812, 26);
-      case 2:
-        return gradient(0xFF962640, 0xFFCB465D, 26);
-      default:
-        return gradient(0xFF4D50D3, 0xFF275B8B, 26);
-    }
-  }
-
   private int riskSurface(double rate) {
     switch (Finance.spendingBand(rate)) {
       case 0:
@@ -819,7 +833,7 @@ public class MainActivity extends Activity {
   private TextView chip(String label, int color, int background) {
     TextView t = text(label, 10, color, true);
     t.setPadding(dp(9), dp(5), dp(9), dp(5));
-    t.setBackground(shape(background, 8));
+    t.setBackground(shape(background, 50));
     return t;
   }
 
@@ -834,7 +848,7 @@ public class MainActivity extends Activity {
 
   private LinearLayout metric(String label, long amount, String name, int color, double delta) {
     LinearLayout c = column();
-    c.setPadding(dp(12), dp(12), dp(12), dp(12));
+    c.setPadding(dp(14), dp(12), dp(14), dp(12));
     GradientDrawable b = shape(CARD, 18);
     b.setStroke(dp(1), LINE);
     c.setBackground(b);
@@ -853,7 +867,7 @@ public class MainActivity extends Activity {
     add(
         c,
         text(
-            Double.isNaN(delta) ? "Geçmiş veri yok" : signedPct(delta) + " · önceki dönem",
+            Double.isNaN(delta) ? "İlk dönem" : signedPct(delta) + " · önceki dönem",
             10,
             MUTED,
             false));
@@ -949,7 +963,7 @@ public class MainActivity extends Activity {
       LinearLayout date = column();
       date.setGravity(Gravity.CENTER);
       date.setPadding(dp(9), dp(8), dp(9), dp(8));
-      date.setBackground(shape(plan.light ? 0xFFF0F3F9 : 0xFF202C43, 12));
+      date.setBackground(shape(plan.light ? 0xFFF1F3F7 : 0xFF202A3A, 12));
       add(date, text(Integer.toString(b.due.getDayOfMonth()), 18, WHITE, true));
       add(
           date,
@@ -1344,7 +1358,8 @@ public class MainActivity extends Activity {
             true);
     amount.setGravity(Gravity.END);
     r.addView(amount);
-    r.setPadding(0, dp(4), 0, dp(4));
+    r.setPadding(0, dp(8), 0, dp(8));
+    r.setMinimumHeight(dp(64));
     r.setOnClickListener(v -> entryDialog(e, e.kind));
     r.setOnLongClickListener(
         v -> {
@@ -1619,14 +1634,25 @@ public class MainActivity extends Activity {
         pct(Finance.savingRate(income, expense)),
         income >= expense ? GREEN : RED);
     divider(c);
-    keyValue(c, "Gelir değişimi", signedPct(Finance.change(income, oldIncome)), WHITE);
+    double incomeChange = Finance.change(income, oldIncome);
+    double expenseChange = Finance.change(expense, oldExpense);
+    keyValue(
+        c, "Gelir değişimi", signedPct(incomeChange), Double.isNaN(incomeChange) ? MUTED : WHITE);
     keyValue(
         c,
         "Gider değişimi",
-        signedPct(Finance.change(expense, oldExpense)),
-        expense <= oldExpense ? GREEN : RED);
-    hint(
+        signedPct(expenseChange),
+        Double.isNaN(expenseChange) ? MUTED : expense <= oldExpense ? GREEN : RED);
+    keyValue(
         c,
+        "Gelirin harcanan kısmı",
+        pct(Finance.spendingRate(income, expense)),
+        expense > income ? RED : WHITE);
+    hint(c, "Gerçekleşen işlemler · transferler hariç");
+    LinearLayout calculationDetails = column();
+    calculationDetails.setVisibility(View.GONE);
+    hint(
+        calculationDetails,
         days == 0
             ? "Karşılaştırma için gerçekleşmiş kayıt gerekli."
             : "Karşılaştırma: "
@@ -1635,16 +1661,17 @@ public class MainActivity extends Activity {
                 + prevEnd.format(DATE)
                 + ". Seçili maaş döneminde önceki dönemin aynı gün aralığı; diğer aralıklarda"
                 + " önceki eşit uzunluktaki dönem.");
-    space(c, 7);
-    hint(
-        c,
-        "Transferler gelir, gider ve tasarruf hesaplarına dahil edilmez. İleri tarihli kayıtlar"
-            + " gerçekleşene kadar analiz dışında kalır.");
-    keyValue(
-        c,
-        "Gelirin harcanan kısmı",
-        pct(Finance.spendingRate(income, expense)),
-        expense > income ? RED : WHITE);
+    hint(calculationDetails, "İleri tarihli kayıtlar gerçekleşene kadar analiz dışında kalır.");
+    Button calculationToggle = button("Hesaplama bilgisi ▾", false, () -> {});
+    calculationToggle.setOnClickListener(
+        v -> {
+          boolean opening = calculationDetails.getVisibility() != View.VISIBLE;
+          calculationDetails.setVisibility(opening ? View.VISIBLE : View.GONE);
+          calculationToggle.setText(
+              opening ? "Hesaplama bilgisini gizle ▴" : "Hesaplama bilgisi ▾");
+        });
+    add(c, calculationToggle);
+    add(c, calculationDetails);
     if (advisorExpanded) advice(list, from, to, analysisMode == 0);
     add(
         body,
@@ -2804,14 +2831,14 @@ public class MainActivity extends Activity {
   }
 
   private void applyPalette() {
-    BG = plan.light ? 0xFFF4F6FB : 0xFF0B1020;
-    CARD = plan.light ? 0xFFFFFFFF : 0xFF121A2E;
-    LINE = plan.light ? 0xFFE6E9F1 : 0xFF26334D;
-    WHITE = plan.light ? 0xFF151A2D : 0xFFF8FAFC;
-    MUTED = plan.light ? 0xFF68728A : 0xFF9EACC1;
+    BG = plan.light ? 0xFFF4F5F8 : 0xFF0C111B;
+    CARD = plan.light ? 0xFFFFFFFF : 0xFF171E2B;
+    LINE = plan.light ? 0xFFE6E8EE : 0xFF293243;
+    WHITE = plan.light ? 0xFF172233 : 0xFFF3F6FA;
+    MUTED = plan.light ? 0xFF657286 : 0xFF9AA8BA;
     GREEN = plan.light ? 0xFF00795D : 0xFF35D6AE;
     RED = plan.light ? 0xFFBF2448 : 0xFFFF7B8B;
-    BLUE = plan.light ? 0xFF5356D9 : 0xFF9A9CFF;
+    BLUE = plan.light ? 0xFF5261C9 : 0xFF99ABFF;
     getWindow().setStatusBarColor(BG);
     getWindow().setNavigationBarColor(BG);
     int flags = plan.light ? View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR : 0;
@@ -3496,7 +3523,7 @@ public class MainActivity extends Activity {
     e.setHint(placeholder);
     e.setText(value);
     e.setPadding(dp(12), dp(12), dp(12), dp(12));
-    GradientDrawable inputBackground = shape(plan.light ? 0xFFF0F3F9 : 0xFF202C43, 12);
+    GradientDrawable inputBackground = shape(plan.light ? 0xFFF1F3F7 : 0xFF202A3A, 12);
     inputBackground.setStroke(dp(1), LINE);
     e.setBackground(inputBackground);
     e.setBackgroundTintList(null);

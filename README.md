@@ -2,6 +2,12 @@
 
 Türkçe, çevrimdışı kişisel gelir-gider takibi ve ayrıntılı finans analizi için yerel Android uygulaması. Android Studio'da açılır ve telefona kurulabilen APK üretir. Java 17, Android'in yerel arayüz bileşenleri ve SQLite kullanır; hesap açma, internet bağlantısı veya ücretli bir servis gerekmez.
 
+## v1.5 · Modern arayüz
+
+Ana ekran; dekoratif yaylarla işlenen net varlık kartı, gelir/gider karşılaştırması, simgeli gider/gelir/transfer kısayolları ve kompakt dönem bütçesiyle yenilendi. Kartlar, yazı hiyerarşisi, form alanları ve alt gezinme tüm ekranlarda aynı tasarım dilini kullanır. Açık ve koyu tema ayrı paletlerle düzenlendi; bütçe oranının renk eşikleri ve sıfırdan başlayan animasyonu korunur.
+
+[Ekran görüntüleri ve tasarım ayrıntıları](docs/DESIGN.md). Kredi, kart, maaş dönemi, App.jsx maaş hesaplayıcı ve bildirim özellikleri bu görünümle birlikte kullanılabilir.
+
 ## Hazır dosyaları GitHub’dan indirme
 
 - [APK ve Android Studio projesi — tam paket](https://github.com/Semih-borsa/codex/blob/main/downloads/CepButcem-Tam-Paket.zip)
@@ -119,7 +125,7 @@ Dönem sonu senaryosu `(gerçekleşmiş gider − ödenmiş takipli faturalar) /
 
 Asistan çevrimdışı hesaplama ve açıklanabilir kurallar kullanır; bir dil modeli veya banka bağlantısı içermez. Yorumlar kayıtlara dayanır; eksik kayıtlar sonuçları değiştirir. v1.1’de takvim uygulama içindeydi; v1.4’te isteğe bağlı yerel ödeme bildirimleri de vardır.
 
-v1.1 güncellemesi SQLite v1 kayıtlarını silmeden v2'ye geçirdi; güncel v1.4, v1/v2'yi v3'e yükseltir. Hazır APK önceki yayımlanan APK ile aynı debug anahtarıyla imzalanır. Kurmadan önce **JSON yedeğini kaydet** ile yedek al; APK'yı güncelleme olarak kur, uygulamayı kaldırma. Android Studio'da farklı imzayla derlenen bir sürümün üzerine kurmak imza uyuşmazlığı oluşturabilir.
+v1.1 güncellemesi SQLite v1 kayıtlarını silmeden v2'ye geçirdi; güncel v1.5, v1/v2'yi v3'e yükseltir. Hazır APK önceki yayımlanan APK ile aynı debug anahtarıyla imzalanır. Kurmadan önce **JSON yedeğini kaydet** ile yedek al; APK'yı güncelleme olarak kur, uygulamayı kaldırma. Android Studio'da farklı imzayla derlenen bir sürümün üzerine kurmak imza uyuşmazlığı oluşturabilir.
 
 ## İlk kullanım
 

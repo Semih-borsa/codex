@@ -1,4 +1,4 @@
-# Cep Bütçem v1.4 — indirme, kurulum ve ilk ayarlar
+# Cep Bütçem v1.5 — indirme, kurulum ve ilk ayarlar
 
 ## Bilgisayara indirmenin kolay yolu
 
@@ -27,7 +27,7 @@ Tam paketi indirdiysen ayıklandığında kökte **CepButcem.apk**, yanında **C
 5. Android izin isterse dosyayı açan uygulama için **Bu kaynaktan yüklemeye izin ver** seçeneğini aç, geri dön ve **Yükle / Güncelle** seç.
 6. **Aç** düğmesine bas. Android 8.0 veya üzeri gerekir. Bilgisayarda APK dosyasını açman gerekmez; Android telefon kurar.
 
-v1.4 hazır APK, önceki yayımlanan v1.0/v1.1/v1.2/v1.3 APK ile aynı imzayı kullanır. Güncelleme kurulumu mevcut gelir, gider, hesap ve bütçeleri korur; veritabanı silinmeden yükseltilir. **Uygulamayı kaldırmadan güncelle**. Farklı bilgisayarda farklı imzayla oluşturulmuş bir APK üzerine kurulumda imza uyuşmazlığı olabilir; kayıtlarını önce JSON olarak yedekle.
+v1.5 hazır APK, önceki yayımlanan v1.0/v1.1/v1.2/v1.3/v1.4 APK ile aynı imzayı kullanır. Güncelleme kurulumu mevcut gelir, gider, hesap ve bütçeleri korur; veritabanı silinmeden yükseltilir. **Uygulamayı kaldırmadan güncelle**. Farklı bilgisayarda farklı imzayla oluşturulmuş bir APK üzerine kurulumda imza uyuşmazlığı olabilir; kayıtlarını önce JSON olarak yedekle.
 
 ## Android Studio'da aç ve kendi APK'nı üret
 

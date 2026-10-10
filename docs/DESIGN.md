@@ -1,3 +1,36 @@
+# v1.5 · Modern mobil tasarım
+
+Özet ekranında önce bugünkü net varlık, sonra seçili maaş döneminin gelir/gideri ve harcama oranı görünür. Net varlığın altındaki yaylar dekoratif marka öğesidir; finansal grafik olarak sunulmaz. Kaydırılan içerikten ayrı, sabit bir alt gezinme çubuğu ana bölümleri erişilebilir tutar. Finans araçlarında ilgili üst bölüm de seçili görünür.
+
+| Tasarım değeri | Açık tema | Koyu tema |
+|---|---|---|
+| Sayfa | `#F4F5F8` | `#0C111B` |
+| Kart | `#FFFFFF` | `#171E2B` |
+| Ana metin | `#172233` | `#F3F6FA` |
+| İkincil metin | `#657286` | `#9AA8BA` |
+| Kenarlık | `#E6E8EE` | `#293243` |
+| Olumlu/gelir | `#00795D` | `#35D6AE` |
+| Gider | `#BF2448` | `#FF7B8B` |
+| Transfer | `#5261C9` | `#99ABFF` |
+
+Kartlar 20 dp köşe, ana kart 24 dp köşe, tutarlı 12 dp aralık kullanır. Başlıklar 22 sp, ana bakiye 34 sp ve alan uygunsa otomatik küçültme, hızlı işlem etiketleri 11 sp'dir. Dönem okları en az 48 dp, hızlı işlem alanları en az 64 dp, alt sekmeler 54 dp dokunma alanı taşır. Formlar ve işlem satırları ortak yüzey ve yazı stilini kullanır.
+
+Dönem bütçesi gösterge çubuğu ve net varlık kartı aynı risk eşiklerine bağlanır: %50 altı yeşil, %50–80 sarı, %80 ve üstü kırmızı. Metinsel durum etiketi renk bilgisini tamamlar. Gelir yoksa oran hesaplanmaz. Sayı gerçek yüzdeyi gösterir; ilerleme çubuğu %100'de dolar. Yeni kompakt gösterge Android yazı ölçeğini takip eder, genişliğe sığmayan oranı küçültür ve animasyonlar kapalıysa son değeri doğrudan gösterir. Açılış animasyonu bir saniyedir; ekran ayrılırken durdurulur.
+
+Arka plan çiziminin gradyanı ve Path geometrisi ölçü değiştiğinde hazırlanır; çizim sırasında yeniden dizi/Path oluşturulmaz. Analizde uzun hesap açıklamaları aynı kartın içinde açılıp kapanır. Karşılaştırma verisi yoksa nötr metin kullanılır. Finans sorguları, sayfalama ve veri modeli aynı kalır.
+
+## Emülatörden gerçek ekranlar
+
+![Koyu tema ana ekran](screenshots/dashboard-dark-v15.png)
+
+![Açık tema ana ekran](screenshots/dashboard-light-v15.png)
+
+![İşlem listesi](screenshots/transactions-v15.png)
+
+![Analiz ekranı](screenshots/analysis-v15.png)
+
+## Önceki sürümlerin tasarım kararları
+
 # v1.2 tasarım uyarlaması
 
 Kullanıcının paylaştığı `App.jsx`, React/Recharts ile hazırlanmış bir finans arayüzü. Yapısı, özet/işlemler/ödemeler/analiz bölümleri, yarım daire harcama göstergesi, tema değişkenleri, hızlı giriş, taksit/kredi ve maaş ekranları incelendi. Android uygulamasına seçilmiş tasarım fikirleri ve kullanım kolaylıkları yerel Java/Canvas bileşenleriyle uyarlandı. Dosyanın kendisi projeye eklenmedi; React, Recharts, web fontu, localStorage veya Capacitor gereksinimi oluşmadı.

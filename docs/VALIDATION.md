@@ -1,3 +1,18 @@
+# Doğrulama · v1.5.0 · 10 Ekim 2026
+
+versionCode6/versionName1.5.0; JDK17, SDK35, Gradle8.9. Bu sürüm arayüz yenilemesidir; finans motoru ve SQLite/JSON şeması değişmedi.
+
+- `testDebugUnitTest`, `lintDebug`, `assembleDebug`: başarılı. 29 JVM testi, 0 başarısız/hatalı/atlanan; Lint 0 hata/uyarı.
+- Android11/API30 emülatörde v1.4 üzerine güncelleme: net varlık2.780,00 TL, gelir3.000,00 TL, gider220,00 TL korundu.
+- Ana ekranda gider, gelir ve transfer kısayolları işlem formunu açtı; kayıt yapmadan iptal edildi. İşlem ve analiz sekmeleri, açık/koyu tema geçişi kontrol edildi.
+- Bütçe göstergesi animasyonlar kapalıyken %7,3 son değerini çizdi. Yeni gösterge, daha önce Android üzerinde test edilmiş `Design.ratioAnimator` motorunu kullanır.
+- Son APK iki temada yeniden açıldı; analizde Hesaplama bilgisi panelinin aynı kartta açılıp kapanması kontrol edildi. Gerçek ekran görüntüleri [tasarım dokümanında](DESIGN.md).
+- APK imzası doğrulandı; SHA-256 sertifikası `a3c71704fc4e5a498772ad1825325fc493203b962d3b7c3f9f9db5c0dbf273c8`, v1.4 ile aynı. Paket bütünlüğü ve kaynak dosyalarının ZIP ile eşleşmesi ayrıca kontrol edildi.
+
+v1.4'teki 35 Android/SQLite testi ve 100.000 kayıt ölçümü bu görsel değişiklik için tekrar koşturulmadı. Aşağıdaki rapor önceki sürümün sonuçlarını ve kapsamını korur; yeni sürümde yeniden ölçülmüş performans sonucu olarak sunulmaz.
+
+---
+
 # Doğrulama · v1.4.0 · 10 Ekim 2026
 
 JDK17, SDK35/Build-Tools34.0.0, Gradle8.9; Android11/API30 yazılımsal emülatör. versionCode5/versionName1.4.0, minSDK26, targetSDK35.
