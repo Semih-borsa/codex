@@ -1,0 +1,132 @@
+# Cep Bütçem
+
+Türkçe, çevrimdışı kişisel gelir-gider takibi ve ayrıntılı finans analizi için yerel Android uygulaması. Android Studio'da açılır ve telefona kurulabilen APK üretir. Java 17, Android'in yerel arayüz bileşenleri ve SQLite kullanır; hesap açma, internet bağlantısı veya ücretli bir servis gerekmez.
+
+## Hazır dosyaları GitHub’dan indirme
+
+- [APK ve Android Studio projesi — tam paket](https://github.com/Semih-borsa/codex/blob/main/downloads/CepButcem-Tam-Paket.zip)
+- [Yalnızca APK](https://github.com/Semih-borsa/codex/blob/main/downloads/CepButcem.apk)
+
+Dosya sayfasında **Download raw file** simgesine (aşağı ok) basın. ZIP dosyası için "View raw" bağlantısı da kullanılabilir. Depo özel ise GitHub hesabınızla giriş yapmanız gerekir.
+
+Bilgisayarda `CepButcem-Tam-Paket.zip` dosyasını **Tümünü ayıkla / Extract All** ile açın. İçindeki `CepButcem.apk` telefona kurulacak dosyadır. **CepButcem** klasörü Android Studio’da açılacak projedir; içinde `settings.gradle`, `gradlew` ve `app` bulunur.
+
+GitHub’ın **Code → Download ZIP** seçeneği de tüm depoyu indirir; o pakette hazır APK ve tam paket `downloads` klasöründedir. Dosyaları ZIP içinden doğrudan açmayın; önce klasöre ayıklayın.
+
+## Android Studio ile çalıştırma
+
+1. Bu projenin **kök klasörünü** Android Studio'da açın (yalnızca `app` klasörünü değil).
+2. Gradle JDK olarak **17** veya Android Studio'nun uyumlu tam JDK kurulumunu seçin. İlk senkronizasyon internet gerektirir.
+3. SDK Manager'dan **Android SDK Platform 35** ve **Build-Tools 34.0.0** kurun. Android Studio gerektiğinde bunları da indirmeyi önerir.
+4. Gradle senkronizasyonunu tamamlayın. Android **8.0 / API 26 veya üzeri** bir cihaz ya da emülatör seçip **Run** düğmesine basın.
+
+Paket adı: `com.semih.cepbutcem`. Minimum Android: 8.0. Hedef/derleme SDK: 35. Gradle: 8.9. Android Gradle Plugin: 8.7.3. Para birimi: Türk lirası.
+
+## APK oluşturup telefona kurma
+
+Android Studio'da **Build → Build Bundle(s) / APK(s) → Build APK(s)** seçin (yeni sürümlerde **Generate App Bundles or APKs → Generate APKs** olarak görünebilir).
+
+APK dosyası:
+
+```
+app/build/outputs/apk/debug/app-debug.apk
+```
+
+Dosyayı telefona gönderip açın; Android, dosyayı açan uygulamaya APK yükleme izni vermenizi isteyebilir. USB hata ayıklaması açık bir telefon bağlıysa `adb install -r app/build/outputs/apk/debug/app-debug.apk` komutunu da kullanabilirsiniz.
+
+Debug APK kişisel deneme için imzalı ve kurulabilirdir. Kalıcı sürüm için **Build → Generate Signed Bundle / APK → APK** ile kendi imzanızı oluşturun. Sonraki güncellemelerde aynı imza anahtarını kullanın. İmza değişirse uygulamayı kaldırmak gerekebilir; kaldırmadan önce JSON yedeği alın. Keystore dosyası ve şifreleri Git'e eklenmemelidir.
+
+## Özellikler
+
+- Gelir, gider ve hesaplar arası transfer; kayıt düzenleme ve silme.
+- Birden çok hesap ve pozitif/negatif açılış bakiyesi.
+- Özelleştirilebilir gelir-gider kategorileri; notlar ve tarih seçimi.
+- Aylık işlem listesi; not/kategori/hesap araması ve tür, kategori, hesap filtreleri.
+- İleri tarihli kayıtların planlanan olarak işaretlenmesi.
+- Her ay tekrarlanan kategori bütçeleri; kullanım oranı, aşım, kalan tutar ve günlük kullanılabilir limit.
+- Aylık düzenli gelir-giderler; kısa aylarda ay sonuna uyarlama ve aynı vadenin iki kez oluşturulmasının engellenmesi.
+- JSON ile tam yedekleme/geri yükleme; Excel için Türkçe, UTF-8 BOM içeren CSV dışa aktarımı.
+- Koyu renkli yerel Android arayüzü ve gelir/gider grafikleri.
+
+## Ayrıntılı analizler
+
+**Analiz** ekranında seçili ay, son üç ay, seçili yıl veya özel tarih aralığı seçilebilir:
+
+- Gelir, gider, net nakit akışı ve tasarruf oranı.
+- Önceki dönem ile gelir/gider değişimi; kategori bazında değişim.
+- Gelir kaynakları ve gider kategorilerinin tutarı ve yüzde payı.
+- Altı aylık gelir/gider grafiği ve aylık tutar tablosu.
+- Günlük ortalama, işlem başına ortalama, harcama yapılan gün sayısı ve en büyük gider.
+- En çok harcanan kategori ve bu kategoride %10 azaltmanın parasal karşılığı.
+- Haftanın günlerine göre, harcamasız günleri de içeren günlük ortalama gider.
+- Hesap bazında gelir/gider ile transfer giriş/çıkışları.
+- İçinde bulunulan ay için günlük harcama hızına dayalı ay sonu gider tahmini.
+
+Grafiklerdeki tutarlar metin listelerinde de bulunur. Tahminler istatistiksel yön göstergesidir; gelecekteki faturaları, fiyat değişimlerini veya gelirleri modellemez.
+
+## İlk kullanım
+
+**Ayarlar** bölümünde Nakit ve Banka hesaplarının açılış bakiyesini düzenleyin veya yeni hesap ekleyin. Ardından **Özet** ekranından gelir ve giderlerinizi girin. **Bütçe** bölümünde kategori limitlerini belirleyin. Başlangıçta örnek finansal veri eklenmez; tüm göstergeler sizin kayıtlarınızdan oluşur.
+
+Tutarları `1250,50` veya `1.250,50` biçiminde yazabilirsiniz. En fazla iki ondalık basamak kullanılır. Açılış bakiyeleri negatif olabilir; işlem tutarları pozitif olmalıdır. İşlem başına üst sınır 1 milyar TL'dir. Tarihler 2000–2100 aralığında seçilir.
+
+Düzenli işlemler **Ayarlar → Aylık düzenli işlem** ile tanımlanır. Uygulama açıldığında geçmişten bugüne vadesi gelen kayıtlar eklenir. İlk tarihi geçmişte seçmek, o tarihten itibaren aylık kayıtlar oluşturur. Düzenli kuralı durdurmak geçmiş kayıtları silmez; tek bir geçmiş kaydı silmek aynı vadenin yeniden oluşturulmasına yol açmaz.
+
+## Hesaplama kuralları ve veriler
+
+- Tutarlar kayan nokta yerine **tam sayı kuruş** olarak saklanır.
+- Hesap bakiyesi = açılış + gelir − gider + transfer giriş − transfer çıkış.
+- Açılış bakiyesi gelir değildir. Transferler gelir, gider, kategori dağılımı ve tasarruf oranına dahil edilmez.
+- Özet'teki **Toplam varlık** her zaman bugünün bakiyesidir. Aylık göstergeler seçili aya aittir.
+- İleri tarihli kayıtlar işlem listesinde görünür; bakiyeye ve gerçekleşmiş analizlere henüz katılmaz.
+- Tasarruf oranı = `(gelir − gider) / gelir × 100`. Gelir yoksa oran hesaplanmaz.
+- Ay karşılaştırması, önceki ayın aynı gün aralığına yapılır; kısa ayın son günü sınırdır. Diğer aralıklar önceki eşit uzunluktaki gerçekleşmiş dönem ile karşılaştırılır.
+- Günlük ortalama, aralıktaki **tüm takvim günlerine** bölünür. Ay sonu tahmini = gerçekleşmiş gider / geçen gün × ayın gün sayısı.
+- Bütçeler kategori bazında her ay aynı limiti uygular. Bütçesi olmayan kategoriler bütçe toplamlarına katılmaz.
+
+Uygulama internet izni istemez, banka bağlantısı veya reklam içermez. SQLite dosyası Android'in uygulamaya özel alanındadır. Otomatik Android bulut yedeklemesi kapalıdır. Uygulamayı kaldırmak yerel verileri siler.
+
+JSON yedeği hesapları, kategorileri, işlemleri, düzenli kuralları ve bütçeleri içerir. Geri yükleme mevcut verileri tamamen değiştirir; dosya önce doğrulanır, veritabanı işlemi başarısızsa eski veriler geri alınır. En fazla 16 MB JSON dosyası kabul edilir. Yedek ve CSV dosyaları **şifrelenmez**; bunları güvenli bir yerde saklayın. CSV geri yükleme desteklenmez; geri yüklemek için JSON kullanın.
+
+## Komut satırı ve testler
+
+Tam JDK 17 ve Android SDK kuruluyken, `local.properties` içinde yerel SDK yolunu tanımlayın; bu dosya Git'e eklenmez. Örnek: `sdk.dir=/Users/you/Library/Android/sdk`.
+
+macOS / Linux:
+
+```sh
+./gradlew testDebugUnitTest lintDebug assembleDebug
+```
+
+Windows:
+
+```bat
+gradlew.bat testDebugUnitTest lintDebug assembleDebug
+```
+
+Para hesaplama testleri JUnit ile JVM üzerinde çalışır. Gerçek Android SQLite davranışı için cihaz/emülatör bağlıyken:
+
+```sh
+./gradlew connectedDebugAndroidTest
+```
+
+Android testleri ayrı `ledger-validation.db` veritabanında çalışır; kişisel kayıt veritabanını kullanmaz. Kapsam: varsayılanlar, kayıt düzenleme/silme, hesaplar, transferler, kategori uyumu, bütçeler, düzenli işlem idempotansı/ay sonu, yedek dönüşümü, bozuk yedek/işlem geri alma ve CSV güvenliği.
+
+## Proje düzeni
+
+- `Finance.java`: Android bağımsız para ve analiz hesapları.
+- `Ledger.java`: SQLite, düzenli kayıt üretimi, CSV ve JSON.
+- `MainActivity.java`: beş ana ekran, formlar ve sistem dosya seçicisi.
+- `Charts.java`: yerel Canvas grafikleri.
+- `app/src/test`: para hesaplama testleri.
+- `app/src/androidTest`: gerçek Android veritabanı testleri.
+
+APK imzalama, telefon bağlantısı ve emülatör Android Studio tarafından yönetilir. Bu sürüm TL kullanır; döviz dönüşümü, banka senkronizasyonu, arka plan bildirimleri ve uygulama içi PIN/kilit içermez.
+
+## Ekran görüntüleri ve doğrulama
+
+Aşağıdaki tutarlar emülatörde girilen test kayıtlarıdır; uygulama boş verilerle başlar.
+
+<img src="docs/screenshots/overview.png" width="240" alt="Genel bakış" /> <img src="docs/screenshots/analysis.png" width="240" alt="Analizler" /> <img src="docs/screenshots/budgets.png" width="240" alt="Bütçeler" />
+
+Derleme, 24 test ve UI kontrolü sonuçları: [Doğrulama kaydı](docs/VALIDATION.md).

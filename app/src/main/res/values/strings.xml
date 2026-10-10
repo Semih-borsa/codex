@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <plurals name="transaction_summary">
+        <item quantity="one">%1$d işlem · Gelir %2$s · Gider %3$s</item>
+        <item quantity="other">%1$d işlem · Gelir %2$s · Gider %3$s</item>
+    </plurals>
+</resources>
