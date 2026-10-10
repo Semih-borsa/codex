@@ -207,6 +207,27 @@ public final class Finance {
     return result;
   }
 
+  public static Entry repeat(Entry source, LocalDate date) {
+    return new Entry(
+        0,
+        source.kind,
+        source.amount,
+        date,
+        source.accountId,
+        source.targetId,
+        source.categoryId,
+        source.note);
+  }
+
+  public static Map<LocalDate, Long> dailyExpenses(
+      List<Entry> entries, LocalDate from, LocalDate to) {
+    Map<LocalDate, Long> result = new TreeMap<>();
+    for (Entry e : entries)
+      if (EXPENSE.equals(e.kind) && within(e, from, to))
+        result.merge(e.date, e.amount, Math::addExact);
+    return result;
+  }
+
   public static double savingRate(long income, long expense) {
     return income > 0 ? 100d * (income - expense) / income : Double.NaN;
   }

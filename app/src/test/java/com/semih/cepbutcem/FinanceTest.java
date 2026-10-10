@@ -177,4 +177,40 @@ public class FinanceTest {
     assertThrows(
         IllegalArgumentException.class, () -> Finance.obligationForecast(500, 501, 0, m, 1, today));
   }
+
+  @Test
+  public void repeatCreatesUnpersistedDraftAndPreservesSource() {
+    Finance.Entry source = entry("T", 12345, "2026-10-01", 1, 2, 0);
+    source.id = 55;
+    source.note = "Kart ödemesi";
+    Finance.Entry copy = Finance.repeat(source, LocalDate.of(2026, 10, 10));
+    assertEquals(0, copy.id);
+    assertEquals(12345, copy.amount);
+    assertEquals(2, copy.targetId);
+    assertEquals("T", copy.kind);
+    assertEquals("Kart ödemesi", copy.note);
+    copy.amount = 999;
+    assertEquals(12345, source.amount);
+    assertEquals(55, source.id);
+    assertEquals(LocalDate.of(2026, 10, 1), source.date);
+  }
+
+  @Test
+  public void heatmapIncludesOnlyActualExpensesInInclusiveRange() {
+    List<Finance.Entry> entries =
+        Arrays.asList(
+            entry("E", 200, "2026-10-10", 1, 0, 1),
+            entry("E", 300, "2026-10-10", 1, 0, 1),
+            entry("I", 1000, "2026-10-10", 1, 0, 2),
+            entry("T", 700, "2026-10-10", 1, 2, 0),
+            entry("E", 999, "2026-10-11", 1, 0, 1),
+            entry("E", 888, "2026-09-30", 1, 0, 1));
+    Map<LocalDate, Long> totals =
+        Finance.dailyExpenses(entries, LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 10));
+    assertEquals(1, totals.size());
+    assertEquals(Long.valueOf(500), totals.get(LocalDate.of(2026, 10, 10)));
+    assertTrue(
+        Finance.dailyExpenses(entries, LocalDate.of(2026, 11, 1), LocalDate.of(2026, 10, 10))
+            .isEmpty());
+  }
 }

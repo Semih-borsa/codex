@@ -66,13 +66,23 @@ Debug APK kişisel deneme için imzalı ve kurulabilirdir. Kalıcı sürüm içi
 
 Grafiklerdeki tutarlar metin listelerinde de bulunur. Tahminler istatistiksel yön göstergesidir; kaydedilmemiş faturaları, fiyat değişimlerini veya gelecekteki gelirleri tahmin etmez. Asistanın ayrı senaryosu kayıtlı bekleyen faturaları dikkate alır.
 
+## v1.2: modern Android arayüzü
+
+Paylaşılan App.jsx tasarımından ilham alan gradyan bakiye kartı, kompakt gelir/gider kartları, yarım daire harcama göstergesi, yatay hesap kartları, çizgi ikonları ve düzenli açık/koyu temalar eklendi. Ana ekranda kısa asistan özeti bulunur; **Asistan yorumlarını incele** ayrıntıları açar. Analizde yorumlar açılıp daraltılır.
+
+**Ödeme takvimini aç** düğmesi ana ekranda ve Ayarlar'da bulunur; kart tarihleri, faturalar ve ödeme/geri alma işlemleri bu ekrandadır. **Analiz → Harcama haritası** bölümünde bir güne dokunarak kayıtlarını gör; **Günlük harcamalar** aynı veriyi liste olarak sunar.
+
+**Hızlı tekrar** önceki giderlerinden oluşturulur. İşlem satırına basılı tutarak da yeni bir işlem formu açabilirsin. Kaydet'e basılmadan yeni kayıt oluşmaz; önceki işlem değişmez. Faturaya bağlı ödemeleri ödeme takviminden yönet.
+
+Uyarlanan fikirler ve korunan muhasebe kuralları: [Tasarım notları](docs/DESIGN.md). v1.2, v1.1 kayıtlarını ve JSON v2 yedeklerini korur; minimum Android 8.0 devam eder.
+
 ## v1.1: maaş dönemim, ödeme takvimi ve bütçe asistanı
 
 **Ayarlar → Maaş günü ve hedefi değiştir** ile maaş gününü (1–31) ve tasarruf hedefini (%0–100) seç. Örneğin 15 seçildiğinde dönem 15 Ekim–14 Kasım olur. Ay seçici, dönemin başladığı ayı seçer. 31 seçilirse kısa ayın son günü kullanılır; sonraki dönem tekrar 31'de başlar. Varsayılan gün 1 eski takvim ayı davranışını korur. Özel tarih analizi seçilen tarihleri kullanır.
 
 **Ayarlar → Açık temaya geç / Koyu temaya geç** ile görünümü değiştir; tercih kapanış ve yeniden açılışta korunur.
 
-**Kredi kartı:** önce kart için ayrı bir hesap aç; mevcut borcu negatif açılış bakiyesi yap. **Kredi kartı tanımla** ile hesap kesim ve son ödeme günlerini seç. Alışverişleri kart hesabına gider, borç ödemesini **Kart borcu öde · transfer** ile banka/nakit hesabından karta transfer kaydet. Bu ödeme gideri ikinci kez artırmaz. Takvim, son kesim/son ödeme/sonraki kesimi gösterir. Önceki kesimdeki borçtan kesim sonrası transferler düşülerek kalan ekstre borcu tahmini çıkarılır; bankanın gerçek ekstresi, iade/faiz ve tatil değişiklikleri esas alınmalıdır. Kart numarası veya banka şifresi istenmez.
+**Kredi kartı:** önce kart için ayrı bir hesap aç; mevcut borcu negatif açılış bakiyesi yap. **Ödeme takvimi → Kredi kartı tanımla** ile hesap kesim ve son ödeme günlerini seç. Alışverişleri kart hesabına gider, borç ödemesini **Kart borcu öde · transfer** ile banka/nakit hesabından karta transfer kaydet. Bu ödeme gideri ikinci kez artırmaz. Takvim, son kesim/son ödeme/sonraki kesimi gösterir. Önceki kesimdeki borçtan kesim sonrası transferler düşülerek kalan ekstre borcu tahmini çıkarılır; bankanın gerçek ekstresi, iade/faiz ve tatil değişiklikleri esas alınmalıdır. Kart numarası veya banka şifresi istenmez.
 
 **Fatura:** ad, tutar, hesap, kategori ve son ödeme tarihi ekle. Bekleyen, bugün ödenecek, gecikmiş ve ödenmiş durumları görünür. **Ödemeyi kaydet** tek bir gider oluşturur; aynı fatura tekrar ödenemez. Aylık tekrar seçilmişse ödeme sonrası sonraki aya aynı tahmini tutarlı fatura açılır; gerçek tutarı geldiğinde düzenle. 31'inci gün şubatta kısalırken martta tekrar 31'e döner. Faturaya bağlı giderin düzenlenmesi için önce **Ödemeyi geri al** kullan. Geri alma sonraki faturayı korur; eski faturanın otomatik tekrarını kapatır. Aynı ödemeyi ayrıca düzenli gider olarak tanımlama.
 
@@ -97,7 +107,7 @@ Düzenli işlemler **Ayarlar → Aylık düzenli işlem** ile tanımlanır. Uygu
 - Tutarlar kayan nokta yerine **tam sayı kuruş** olarak saklanır.
 - Hesap bakiyesi = açılış + gelir − gider + transfer giriş − transfer çıkış.
 - Açılış bakiyesi gelir değildir. Transferler gelir, gider, kategori dağılımı ve tasarruf oranına dahil edilmez.
-- Özet'teki **Toplam varlık** her zaman bugünün bakiyesidir. Dönem göstergeleri seçili maaş dönemine aittir.
+- Özet'teki **Net varlık** her zaman bugünün bakiyesidir. Dönem göstergeleri seçili maaş dönemine aittir.
 - İleri tarihli kayıtlar işlem listesinde görünür; bakiyeye ve gerçekleşmiş analizlere henüz katılmaz.
 - Tasarruf oranı = `(gelir − gider) / gelir × 100`. Gelir yoksa oran hesaplanmaz.
 - Maaş dönemi karşılaştırması, önceki dönemin aynı geçen gün sayısına yapılır; önceki dönem sonu sınırdır. Diğer aralıklar önceki eşit uzunluktaki gerçekleşmiş dönem ile karşılaştırılır.
@@ -137,7 +147,8 @@ Android testleri ayrı `ledger-validation.db` veritabanında çalışır; kişis
 - `Finance.java`: Android bağımsız para ve analiz hesapları.
 - `Planning.java`: kart/fatura ve kalıcı ayarlar; yedek doğrulaması.
 - `Ledger.java`: SQLite, düzenli kayıt üretimi, CSV ve JSON.
-- `MainActivity.java`: beş ana ekran, formlar ve sistem dosya seçicisi.
+- `MainActivity.java`: beş ana bölüm, ödeme/asistan ekranları, formlar ve sistem dosya seçicisi.
+- `Design.java`: yerel ikonlar, harcama göstergesi ve günlük harita.
 - `Charts.java`: yerel Canvas grafikleri.
 - `app/src/test`: para hesaplama testleri.
 - `app/src/androidTest`: gerçek Android veritabanı testleri.
@@ -148,8 +159,8 @@ APK imzalama, telefon bağlantısı ve emülatör Android Studio tarafından yö
 
 Aşağıdaki tutarlar emülatörde girilen test kayıtlarıdır; uygulama boş verilerle başlar.
 
-<img src="docs/screenshots/overview.png" width="240" alt="Genel bakış" /> <img src="docs/screenshots/analysis.png" width="240" alt="Analizler" /> <img src="docs/screenshots/budgets.png" width="240" alt="Bütçeler" />
+<img src="docs/screenshots/overview.png" width="240" alt="Modern koyu tema" /> <img src="docs/screenshots/overview-light.png" width="240" alt="Modern açık tema" /> <img src="docs/screenshots/payments.png" width="240" alt="Ödeme merkezi" />
 
-<img src="docs/screenshots/settings-light.png" width="240" alt="Maaş günü ve açık tema" /> <img src="docs/screenshots/advisor-light.png" width="240" alt="Bütçe asistanı" />
+<img src="docs/screenshots/period-budget.png" width="240" alt="Harcama ve tasarruf göstergesi" /> <img src="docs/screenshots/heatmap.png" width="240" alt="Maaş dönemi harcama haritası" /> <img src="docs/screenshots/assistant.png" width="240" alt="Bütçe asistanı" />
 
-Derleme, 35 test ve UI kontrolü sonuçları: [Doğrulama kaydı](docs/VALIDATION.md).
+Derleme, 37 test ve UI kontrolü sonuçları: [Doğrulama kaydı](docs/VALIDATION.md).

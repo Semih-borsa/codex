@@ -5,6 +5,7 @@ import android.content.*;
 import android.content.res.ColorStateList;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.RippleDrawable;
 import android.os.Bundle;
 import android.text.*;
 import android.view.*;
@@ -44,6 +45,7 @@ public class MainActivity extends Activity {
   private long filterAccount = 0, filterCategory = 0;
   private String search = "";
   private boolean categoryIncome = false;
+  private boolean advisorExpanded = false;
   private LocalDate customFrom = LocalDate.now().withDayOfMonth(1), customTo = LocalDate.now();
   private final ExecutorService io = Executors.newSingleThreadExecutor();
   private static volatile boolean busy = false;
@@ -88,10 +90,27 @@ public class MainActivity extends Activity {
       filterAccount = state.getLong("filterAccount");
       filterCategory = state.getLong("filterCategory");
       categoryIncome = state.getBoolean("categoryIncome");
+      advisorExpanded = state.getBoolean("advisorExpanded");
       customFrom = LocalDate.parse(state.getString("customFrom", customFrom.toString()));
       customTo = LocalDate.parse(state.getString("customTo", customTo.toString()));
     }
+    if (android.os.Build.VERSION.SDK_INT >= 33)
+      getOnBackInvokedDispatcher()
+          .registerOnBackInvokedCallback(
+              android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT, this::navigateBack);
     refresh();
+  }
+
+  private void navigateBack() {
+    if (page >= 5) {
+      page = 0;
+      render();
+    } else finish();
+  }
+
+  @Override
+  public void onBackPressed() {
+    navigateBack();
   }
 
   @Override
@@ -112,6 +131,7 @@ public class MainActivity extends Activity {
     state.putLong("filterAccount", filterAccount);
     state.putLong("filterCategory", filterCategory);
     state.putBoolean("categoryIncome", categoryIncome);
+    state.putBoolean("advisorExpanded", advisorExpanded);
     state.putString("customFrom", customFrom.toString());
     state.putString("customTo", customTo.toString());
   }
@@ -186,7 +206,10 @@ public class MainActivity extends Activity {
   private LinearLayout card(LinearLayout parent) {
     LinearLayout c = column();
     c.setPadding(dp(18), dp(18), dp(18), dp(18));
-    c.setBackground(shape(CARD, 20));
+    GradientDrawable background = shape(CARD, 22);
+    background.setStroke(dp(1), LINE);
+    c.setBackground(background);
+    c.setElevation(dp(plan.light ? 1 : 0));
     LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
     lp.bottomMargin = dp(14);
     parent.addView(c, lp);
@@ -196,12 +219,19 @@ public class MainActivity extends Activity {
   private Button button(String label, boolean primary, Runnable action) {
     Button b = new Button(this);
     b.setText(label);
-    b.setTextSize(14);
+    b.setTextSize(13);
     b.setAllCaps(false);
     b.setMinHeight(dp(48));
     b.setMinimumHeight(dp(48));
     b.setTextColor(primary ? BG : WHITE);
-    b.setBackgroundTintList(ColorStateList.valueOf(primary ? GREEN : LINE));
+    b.setBackgroundTintList(null);
+    GradientDrawable surface = shape(primary ? GREEN : (plan.light ? 0xFFF0F3F9 : 0xFF202C43), 14);
+    b.setBackground(
+        new RippleDrawable(
+            ColorStateList.valueOf(plan.light ? 0x22000000 : 0x33FFFFFF), surface, null));
+    b.setElevation(0);
+    b.setStateListAnimator(null);
+    b.setPadding(dp(14), dp(10), dp(14), dp(10));
     b.setOnClickListener(v -> action.run());
     return b;
   }
@@ -249,25 +279,36 @@ public class MainActivity extends Activity {
     LinearLayout header = row();
     header.setPadding(dp(20), dp(14), dp(20), dp(12));
     LinearLayout branding = column();
-    add(branding, text("CEP BÜTÇEM", 11, GREEN, true));
+    add(branding, text("CEP BÜTÇEM  /  KİŞİSEL FİNANS", 10, MUTED, true));
     space(branding, 5);
-    String[] names = {"Genel bakış", "İşlemler", "Analizler", "Bütçeler", "Hesap & ayarlar"};
-    add(branding, text(names[page], 24, WHITE, true));
+    String[] names = {
+      "Genel bakış",
+      "İşlemler",
+      "Analizler",
+      "Bütçeler",
+      "Hesap & ayarlar",
+      "Ödeme takvimi",
+      "Bütçe asistanı"
+    };
+    add(branding, text(names[page], 23, WHITE, true));
     weighted(header, branding);
-    TextView avatar = text("CB", 14, GREEN, true);
-    avatar.setGravity(Gravity.CENTER);
-    avatar.setBackground(shape(LINE, 16));
-    header.addView(avatar, new LinearLayout.LayoutParams(dp(44), dp(44)));
-    avatar.setContentDescription("Cep Bütçem; ayarları aç");
-    avatar.setOnClickListener(
+    View avatar = icon(page >= 5 ? "back" : "settings", page >= 5 ? WHITE : GREEN, 22);
+    LinearLayout avatarHolder = row();
+    avatarHolder.setGravity(Gravity.CENTER);
+    avatarHolder.setBackground(shape(CARD, 16));
+    avatarHolder.addView(avatar, new LinearLayout.LayoutParams(dp(22), dp(22)));
+    header.addView(avatarHolder, new LinearLayout.LayoutParams(dp(44), dp(44)));
+    avatarHolder.setContentDescription(page >= 5 ? "Genel bakışa dön" : "Cep Bütçem; ayarları aç");
+    avatarHolder.setOnClickListener(
         v -> {
-          page = 4;
+          page = page >= 5 ? 0 : 4;
           render();
         });
     add(root, header);
-    if (page != 4) {
+    if (page != 4 && page != 5) {
       LinearLayout period = row();
-      period.setPadding(dp(14), 0, dp(14), dp(4));
+      period.setPadding(dp(18), dp(4), dp(18), dp(6));
+      period.setBackground(shape(CARD, 16));
       Button prev = button("‹", false, () -> changeMonth(-1));
       prev.setContentDescription("Önceki maaş dönemi");
       period.addView(prev, new LinearLayout.LayoutParams(dp(48), dp(48)));
@@ -286,10 +327,13 @@ public class MainActivity extends Activity {
       Button next = button("›", false, () -> changeMonth(1));
       next.setContentDescription("Sonraki maaş dönemi");
       period.addView(next, new LinearLayout.LayoutParams(dp(48), dp(48)));
-      add(root, period);
+      LinearLayout.LayoutParams periodParams = new LinearLayout.LayoutParams(-1, -2);
+      periodParams.setMargins(dp(20), 0, dp(20), dp(6));
+      root.addView(period, periodParams);
     }
     ScrollView scroll = new ScrollView(this);
     scroll.setFillViewport(true);
+    scroll.setVerticalScrollBarEnabled(false);
     scroll.setClipToPadding(false);
     body = column();
     body.setPadding(dp(20), dp(12), dp(20), dp(24));
@@ -311,25 +355,31 @@ public class MainActivity extends Activity {
       case 4:
         settings();
         break;
+      case 5:
+        paymentPage();
+        break;
+      case 6:
+        advice(current(), periodStart(month), effectiveEnd(periodEnd(month)), true);
+        break;
     }
     navigation = row();
     navigation.setPadding(dp(6), dp(6), dp(6), dp(8));
     navigation.setBackgroundColor(CARD);
-    String[] icons = {"◈", "⇄", "▥", "◎", "⚙"},
+    String[] icons = {"home", "list", "chart", "target", "settings"},
         labels = {"Özet", "İşlemler", "Analiz", "Bütçe", "Ayarlar"};
     for (int i = 0; i < 5; i++) {
       final int tab = i;
       LinearLayout item = column();
       item.setGravity(Gravity.CENTER);
       item.setPadding(0, dp(5), 0, dp(5));
-      TextView icon = text(icons[i], 22, i == page ? GREEN : MUTED, true);
-      icon.setGravity(Gravity.CENTER);
-      add(item, icon);
+      View tabIcon = icon(icons[i], i == page ? GREEN : MUTED, 22);
+      item.addView(tabIcon, new LinearLayout.LayoutParams(dp(22), dp(22)));
       space(item, 4);
       TextView label = text(labels[i], 10, i == page ? GREEN : MUTED, i == page);
       label.setGravity(Gravity.CENTER);
       add(item, label);
-      if (i == page) item.setBackground(shape(0xFF223A3A, 12));
+      if (i == page) item.setBackground(shape(plan.light ? 0xFFE2F3EE : 0xFF183B35, 16));
+      item.setSelected(i == page);
       item.setContentDescription(labels[i]);
       item.setOnClickListener(
           v -> {
@@ -408,84 +458,176 @@ public class MainActivity extends Activity {
     for (Finance.Account a : accounts)
       balance = Math.addExact(balance, Finance.balance(a, entries, LocalDate.now()));
     LinearLayout hero = card(body);
-    hero.setBackground(shape(plan.light ? 0xFFE2F2EC : 0xFF203D3A, 22));
-    add(hero, text("TOPLAM VARLIK · BUGÜN", 11, MUTED, true));
-    space(hero, 12);
-    add(hero, text(Finance.money(balance), 32, WHITE, true));
-    space(hero, 9);
-    hint(hero, "Tüm hesapların açılış bakiyesi ve bugüne kadarki işlemleri");
-    divider(hero);
+    hero.setBackground(gradient(0xFF4D50D3, 0xFF275B8B, 26));
+    LinearLayout top = row();
+    weighted(top, text("NET VARLIK", 11, 0xFFDDE0FF, true));
+    top.addView(chip("BUGÜN", 0xFFFFFFFF, 0x33575AFF));
+    add(hero, top);
+    space(hero, 10);
+    TextView amount = text(Finance.money(balance), 34, 0xFFFFFFFF, true);
+    amount.setMaxLines(1);
+    amount.setAutoSizeTextTypeUniformWithConfiguration(
+        18, 34, 1, android.util.TypedValue.COMPLEX_UNIT_SP);
+    add(hero, amount);
+    space(hero, 8);
+    add(hero, text("Tüm hesaplar · kart borçları dahil", 12, 0xFFDDE0FF, false));
+    space(hero, 18);
+    LinearLayout heroFooter = row();
+    heroFooter.addView(
+        icon("wallet", 0xFFDDE0FF, 18), new LinearLayout.LayoutParams(dp(18), dp(18)));
+    gap(heroFooter, 8);
+    weighted(
+        heroFooter, text(accounts.size() + " hesap  /  Bugünkü toplam", 11, 0xFFDDE0FF, false));
+    add(hero, heroFooter);
+    int days = Finance.cycleDays(month, plan.payday, LocalDate.now());
+    LocalDate oldStart = periodStart(month.minusMonths(1)),
+        oldEnd = oldStart.plusDays(Math.max(0, days - 1));
+    if (oldEnd.isAfter(periodEnd(month.minusMonths(1)))) oldEnd = periodEnd(month.minusMonths(1));
+    List<Finance.Entry> old =
+        days == 0 ? Collections.emptyList() : Finance.period(entries, oldStart, oldEnd);
     LinearLayout metrics = row();
-    LinearLayout in = column(), out = column();
-    add(in, text("↗  Dönemin geliri", 12, MUTED, false));
-    space(in, 6);
-    add(in, text(Finance.money(income), 18, GREEN, true));
-    add(out, text("↘  Dönemin gideri", 12, MUTED, false));
-    space(out, 6);
-    add(out, text(Finance.money(expense), 18, RED, true));
-    weighted(metrics, in);
-    weighted(metrics, out);
-    add(hero, metrics);
+    weighted(
+        metrics,
+        metric("Gelir", income, "up", GREEN, Finance.change(income, Finance.total(old, "I"))));
+    gap(metrics, 10);
+    weighted(
+        metrics,
+        metric("Gider", expense, "down", RED, Finance.change(expense, Finance.total(old, "E"))));
+    add(body, metrics);
+    space(body, 12);
     LinearLayout actions = row();
     weighted(actions, button("− Gider ekle", true, () -> entryDialog(null, "E")));
-    gap(actions, 8);
+    gap(actions, 10);
     weighted(actions, button("+ Gelir ekle", false, () -> entryDialog(null, "I")));
     add(body, actions);
     space(body, 16);
     LinearLayout health = card(body);
-    LinearLayout heading = row();
-    weighted(heading, text("Maaş dönemi dengesi", 16, WHITE, true));
-    heading.addView(
-        text(pct(Finance.savingRate(income, expense)), 16, income >= expense ? GREEN : RED, true));
-    add(health, heading);
-    space(health, 8);
-    add(health, text(Finance.money(income - expense), 26, income >= expense ? GREEN : RED, true));
-    space(health, 8);
-    hint(
-        health,
-        income == 0
-            ? "Tasarruf oranı için gelir kaydı gerekli."
-            : "Gelirin "
-                + pct(Finance.savingRate(income, expense))
-                + " kadarı kaldı. Oran = (gelir − gider) / gelir.");
-    keyValue(
-        health,
-        "Gelirin harcanan kısmı",
-        pct(Finance.spendingRate(income, expense)),
-        expense > income ? RED : WHITE);
-    int days = Finance.cycleDays(month, plan.payday, LocalDate.now());
+    cardTitle(health, "target", "Dönem bütçen", GREEN);
+    add(health, new Design.Gauge(this, Finance.spendingRate(income, expense), plan.light));
+    LinearLayout rateRow = row();
+    weighted(
+        rateRow,
+        text(
+            income == 0
+                ? "Gelir kaydı bekleniyor"
+                : expense > income ? "Harcaman gelirini aştı" : "Gelirinden kalan",
+            12,
+            MUTED,
+            false));
+    rateRow.addView(
+        text(
+            income == 0 ? "—" : pct(Finance.savingRate(income, expense)),
+            15,
+            expense > income ? RED : GREEN,
+            true));
+    add(health, rateRow);
     divider(health);
     keyValue(
         health,
-        "Günlük ortalama gider",
-        Finance.money(days > 0 ? Math.round(expense / (double) days) : 0),
-        WHITE);
-    keyValue(
-        health,
-        "Dönem sonu gider tahmini",
-        days == 0
-            ? "Henüz hesaplanamaz"
-            : Finance.money(Finance.cycleForecast(expense, month, plan.payday, LocalDate.now())),
-        WHITE);
-    space(health, 8);
+        "Maaş dönemi dengesi",
+        Finance.money(income - expense),
+        income >= expense ? GREEN : RED);
+    keyValue(health, "Tasarruf hedefi", "%" + plan.target, WHITE);
+    long target = Math.round(income * (plan.target / 100d));
+    progress(health, target > 0 ? Math.max(0, (income - expense) / (double) target) : 0, GREEN);
     hint(
         health,
-        "Tahmin, gerçekleşmiş günlük ortalamayı maaş döneminin tamamına yayar; kesin sonuç"
-            + " değildir.");
-    Map<Long, Long> used = Finance.byCategory(list, "E"), limits = ledger.budgets();
-    for (Map.Entry<Long, Long> b : limits.entrySet())
+        income == 0
+            ? "Maaşını kaydet; gelirine göre harcama oranını ve hedefini izle."
+            : "Hedef için "
+                + Finance.money(target)
+                + " · Kalan tutar "
+                + Finance.money(income - expense)
+                + ". Bu tutar banka bakiyesi değildir.");
+    quickRepeat(list);
+    section("Hesapların", "Bugünün bakiyeleri · detay için dokun");
+    HorizontalScrollView wallets = new HorizontalScrollView(this);
+    wallets.setHorizontalScrollBarEnabled(false);
+    LinearLayout walletRow = row();
+    for (Finance.Account a : accounts) {
+      long value = Finance.balance(a, entries, LocalDate.now());
+      boolean cardAccount = plan.cards.stream().anyMatch(c -> c.account == a.id);
+      LinearLayout wallet = column();
+      wallet.setPadding(dp(16), dp(16), dp(16), dp(16));
+      wallet.setBackground(shape(CARD, 18));
+      LinearLayout walletTop = row();
+      walletTop.addView(
+          icon(cardAccount ? "card" : "wallet", cardAccount ? BLUE : GREEN, 20),
+          new LinearLayout.LayoutParams(dp(20), dp(20)));
+      gap(walletTop, 8);
+      weighted(walletTop, text(a.name, 13, WHITE, true));
+      add(wallet, walletTop);
+      space(wallet, 18);
+      TextView valueText = text(Finance.money(value), 20, value < 0 ? RED : WHITE, true);
+      valueText.setMaxLines(1);
+      valueText.setAutoSizeTextTypeUniformWithConfiguration(
+          12, 20, 1, android.util.TypedValue.COMPLEX_UNIT_SP);
+      add(wallet, valueText);
+      space(wallet, 6);
+      add(wallet, text(cardAccount ? "Kredi kartı hesabı" : "Hesap bakiyesi", 10, MUTED, false));
+      LinearLayout.LayoutParams wp = new LinearLayout.LayoutParams(dp(206), -2);
+      wp.rightMargin = dp(10);
+      walletRow.addView(wallet, wp);
+      wallet.setContentDescription(a.name + " · " + Finance.money(value) + " · hesap detayı");
+      wallet.setOnClickListener(v -> accountDetail(a));
+    }
+    wallets.addView(walletRow);
+    add(body, wallets);
+    space(body, 16);
+    upcomingPreview();
+    LinearLayout assistant = card(body);
+    assistant.setBackground(
+        gradient(plan.light ? 0xFFF1EFFF : 0xFF232442, plan.light ? 0xFFEAF6F4 : 0xFF152D35, 22));
+    cardTitle(assistant, "spark", "Bütçe asistanı", BLUE);
+    long pending = 0, paid = 0;
+    Set<Long> ids = new HashSet<>();
+    for (Finance.Entry e : list) ids.add(e.id);
+    for (Planning.Bill b : plan.bills) {
+      if (b.paid == 0 && !b.due.isAfter(periodEnd(month))) pending += b.amount;
+      if (b.paid != 0 && ids.contains(b.paid)) paid += b.amount;
+    }
+    long forecast =
+        Finance.obligationForecast(expense, paid, pending, month, plan.payday, LocalDate.now());
+    if (days == 0)
+      hint(assistant, "Bu maaş dönemi henüz başlamadı. Gerçekleşmiş kayıtlarla yorumlar oluşacak.");
+    else if (income == 0)
+      hint(
+          assistant,
+          "Gelir kaydı eklediğinde harcama oranını, hedefini ve dönem sonu dengesini birlikte"
+              + " değerlendirebilirim.");
+    else {
+      keyValue(assistant, "Dönem sonu gider senaryosu", Finance.money(forecast), WHITE);
+      hint(
+          assistant,
+          forecast > income
+              ? "Bu hız sürerse kaydettiğin gelire göre "
+                  + Finance.money(forecast - income)
+                  + " açık oluşabilir."
+              : "Bu senaryoda kaydettiğin gelirden "
+                  + Finance.money(income - forecast)
+                  + " kalabilir.");
+    }
+    space(assistant, 10);
+    add(
+        assistant,
+        button(
+            "Asistan yorumlarını incele",
+            false,
+            () -> {
+              page = 6;
+              render();
+            }));
+    Map<Long, Long> used = Finance.byCategory(list, "E");
+    for (Map.Entry<Long, Long> b : ledger.budgets().entrySet())
       if (used.getOrDefault(b.getKey(), 0L) >= b.getValue() * .8) {
         LinearLayout warning = card(body);
-        add(
+        cardTitle(
             warning,
-            text(
-                used.getOrDefault(b.getKey(), 0L) > b.getValue()
-                    ? "Bütçe sınırı aşıldı"
-                    : "Bütçe sınırına yaklaşıyorsun",
-                15,
-                RED,
-                true));
-        space(warning, 6);
+            "target",
+            used.getOrDefault(b.getKey(), 0L) > b.getValue()
+                ? "Bütçe sınırı aşıldı"
+                : "Bütçe sınırına yaklaşıyorsun",
+            RED);
         hint(
             warning,
             category(b.getKey())
@@ -500,14 +642,12 @@ public class MainActivity extends Activity {
             });
         break;
       }
-    advice(current(), periodStart(month), effectiveEnd(periodEnd(month)), true);
-    obligations(body, false);
-    section("Son işlemler", "Seçili maaş dönemi · detay ve düzenleme için kayda dokun");
+    section("Son işlemler", "Düzenlemek için dokun · tekrar eklemek için basılı tut");
     List<Finance.Entry> monthAll = Finance.period(entries, periodStart(month), periodEnd(month));
     if (monthAll.isEmpty())
       empty(
-          "Yeni bir başlangıç",
-          "İlk kaydını ekle; gelir, gider ve analizlerin burada oluşacak.",
+          "İlk kaydınla başlayalım",
+          "Maaşını veya günlük harcamanı ekle; görünüm kayıtlarınla dolacak.",
           "İlk gideri ekle",
           () -> entryDialog(null, "E"));
     else {
@@ -526,6 +666,261 @@ public class MainActivity extends Activity {
                 render();
               }));
     }
+  }
+
+  private View icon(String name, int color, int size) {
+    return new Design.Icon(this, name, color);
+  }
+
+  private int tint(int color, int alpha) {
+    return (color & 0x00FFFFFF) | (alpha << 24);
+  }
+
+  private GradientDrawable gradient(int from, int to, int radius) {
+    GradientDrawable d =
+        new GradientDrawable(GradientDrawable.Orientation.TL_BR, new int[] {from, to});
+    d.setCornerRadius(dp(radius));
+    return d;
+  }
+
+  private TextView chip(String label, int color, int background) {
+    TextView t = text(label, 10, color, true);
+    t.setPadding(dp(9), dp(5), dp(9), dp(5));
+    t.setBackground(shape(background, 8));
+    return t;
+  }
+
+  private void cardTitle(LinearLayout c, String icon, String title, int color) {
+    LinearLayout r = row();
+    r.addView(icon(icon, color, 20), new LinearLayout.LayoutParams(dp(20), dp(20)));
+    gap(r, 9);
+    weighted(r, text(title, 16, WHITE, true));
+    add(c, r);
+    space(c, 12);
+  }
+
+  private LinearLayout metric(String label, long amount, String name, int color, double delta) {
+    LinearLayout c = column();
+    c.setPadding(dp(15), dp(15), dp(15), dp(15));
+    GradientDrawable b = shape(CARD, 18);
+    b.setStroke(dp(1), LINE);
+    c.setBackground(b);
+    LinearLayout r = row();
+    r.addView(icon(name, color, 17), new LinearLayout.LayoutParams(dp(17), dp(17)));
+    gap(r, 6);
+    weighted(r, text(label, 12, MUTED, false));
+    add(c, r);
+    space(c, 10);
+    TextView value = text(Finance.money(amount), 19, WHITE, true);
+    value.setMaxLines(1);
+    value.setAutoSizeTextTypeUniformWithConfiguration(
+        12, 19, 1, android.util.TypedValue.COMPLEX_UNIT_SP);
+    add(c, value);
+    space(c, 8);
+    add(
+        c,
+        text(
+            Double.isNaN(delta) ? "Geçmiş veri yok" : signedPct(delta) + " · önceki dönem",
+            10,
+            MUTED,
+            false));
+    return c;
+  }
+
+  private boolean isBillEntry(long id) {
+    for (Planning.Bill b : plan.bills) if (b.paid == id && id != 0) return true;
+    return false;
+  }
+
+  private void repeatEntry(Finance.Entry e) {
+    if (isBillEntry(e.id)) {
+      toast("Fatura ödemelerini Ödeme takviminden yönetebilirsin");
+      return;
+    }
+    entryDialog(Finance.repeat(e, newEntryDate()), e.kind);
+  }
+
+  private void quickRepeat(List<Finance.Entry> period) {
+    List<Finance.Entry> recent = new ArrayList<>();
+    Set<String> seen = new HashSet<>();
+    for (Finance.Entry e : period)
+      if (e.kind.equals("E")
+          && !e.date.isAfter(LocalDate.now())
+          && !isBillEntry(e.id)
+          && seen.add(e.categoryId + ":" + e.accountId + ":" + e.amount)) {
+        recent.add(e);
+        if (recent.size() == 3) break;
+      }
+    if (recent.isEmpty()) return;
+    section("Hızlı tekrar", "Önceki giderini yeni tarih ve tutarla gözden geçirerek ekle");
+    for (Finance.Entry e : recent) {
+      Button b =
+          button(
+              category(e.categoryId) + " · " + Finance.money(e.amount),
+              false,
+              () -> repeatEntry(e));
+      add(body, b);
+      space(body, 6);
+    }
+  }
+
+  private void accountDetail(Finance.Account a) {
+    LinearLayout f = column();
+    cardTitle(f, "wallet", a.name, GREEN);
+    keyValue(
+        f, "Bugünkü bakiye", Finance.money(Finance.balance(a, entries, LocalDate.now())), WHITE);
+    keyValue(f, "Açılış", Finance.money(a.opening), MUTED);
+    List<Finance.Entry> list = current();
+    long in = 0, out = 0;
+    for (Finance.Entry e : list) {
+      if (e.accountId == a.id && e.kind.equals("I")) in += e.amount;
+      if (e.accountId == a.id && e.kind.equals("E")) out += e.amount;
+    }
+    keyValue(f, "Dönemin geliri", Finance.money(in), GREEN);
+    keyValue(f, "Dönemin gideri", Finance.money(out), RED);
+    hint(f, "Transferler dönem gelir/giderine dahil değildir. Bakiye bugüne göre hesaplanır.");
+    add(f, button("Hesabı düzenle", false, () -> accountDialog(a)));
+    AlertDialog d = dialog("Hesap detayı", f, "Kapat");
+    d.setOnShowListener(v -> d.getButton(-1).setOnClickListener(w -> d.dismiss()));
+    d.show();
+  }
+
+  private void upcomingPreview() {
+    LinearLayout c = card(body);
+    LinearLayout h = row();
+    weighted(h, text("Yaklaşan ödemeler", 16, WHITE, true));
+    h.addView(chip("TAKVİM", BLUE, tint(BLUE, 24)));
+    add(c, h);
+    space(c, 14);
+    List<Planning.Bill> pending = new ArrayList<>();
+    for (Planning.Bill b : plan.bills) if (b.paid == 0) pending.add(b);
+    pending.sort(Comparator.comparing(b -> b.due));
+    if (pending.isEmpty())
+      hint(
+          c,
+          plan.cards.isEmpty()
+              ? "Henüz bir ödeme planlamadın. Fatura veya kart tarihlerini ekle."
+              : plan.cards.size()
+                  + " kredi kartının hesap kesim ve ödeme tarihlerini takvimden izle.");
+    for (int i = 0; i < Math.min(3, pending.size()); i++) {
+      Planning.Bill b = pending.get(i);
+      LinearLayout r = row();
+      LinearLayout date = column();
+      date.setGravity(Gravity.CENTER);
+      date.setPadding(dp(9), dp(8), dp(9), dp(8));
+      date.setBackground(shape(plan.light ? 0xFFF0F3F9 : 0xFF202C43, 12));
+      add(date, text(Integer.toString(b.due.getDayOfMonth()), 18, WHITE, true));
+      add(
+          date,
+          text(b.due.format(DateTimeFormatter.ofPattern("MMM", Finance.TR)), 10, MUTED, false));
+      r.addView(date, new LinearLayout.LayoutParams(dp(48), dp(52)));
+      gap(r, 10);
+      LinearLayout desc = column();
+      add(desc, text(b.name, 13, WHITE, true));
+      space(desc, 4);
+      add(
+          desc,
+          text(
+              b.due.isBefore(LocalDate.now())
+                  ? "Gecikmiş"
+                  : b.due.equals(LocalDate.now()) ? "Bugün ödenecek" : b.due.format(DATE),
+              11,
+              b.due.isAfter(LocalDate.now()) ? MUTED : RED,
+              false));
+      weighted(r, desc);
+      r.addView(text(Finance.money(b.amount), 13, WHITE, true));
+      add(c, r);
+      if (i < Math.min(3, pending.size()) - 1) divider(c);
+    }
+    space(c, 12);
+    add(
+        c,
+        button(
+            "Ödeme takvimini aç",
+            false,
+            () -> {
+              page = 5;
+              render();
+            }));
+  }
+
+  private void paymentPage() {
+    long total = 0;
+    int overdue = 0, paid = 0;
+    for (Planning.Bill b : plan.bills) {
+      if (b.paid != 0) {
+        paid++;
+        continue;
+      }
+      total += b.amount;
+      if (b.due.isBefore(LocalDate.now())) overdue++;
+    }
+    LinearLayout c = card(body);
+    cardTitle(c, "calendar", "Ödeme merkezim", BLUE);
+    keyValue(c, "Bekleyen faturalar", Finance.money(total), WHITE);
+    keyValue(c, "Gecikmiş / ödenmiş", overdue + " / " + paid, overdue > 0 ? RED : GREEN);
+    hint(
+        c,
+        "Kart borçları bu fatura toplamına dahil değildir. Kart ödemeleri ayrı hesap transferleri"
+            + " olarak izlenir.");
+    obligations(body, true);
+  }
+
+  private void spendingMap() {
+    section("Harcama haritası", "Maaş dönemin · koyu/yoğun renk daha yüksek gider demek");
+    LinearLayout c = card(body);
+    LocalDate start = periodStart(month), end = periodEnd(month);
+    Map<LocalDate, Long> amounts = Finance.dailyExpenses(entries, start, effectiveEnd(end));
+    add(
+        c,
+        new Design.Heatmap(
+            this, start, end, LocalDate.now(), amounts, plan.light, this::dayDetail));
+    hint(
+        c,
+        "Bir güne dokunarak işlemlerini aç. Gelecek günler soluk gösterilir; transferler harcama"
+            + " değildir.");
+    add(
+        c,
+        button(
+            "Günlük harcamalar",
+            false,
+            () -> {
+              LinearLayout f = column();
+              for (LocalDate d = start; !d.isAfter(end); d = d.plusDays(1)) {
+                LocalDate date = d;
+                add(
+                    f,
+                    button(
+                        date.format(DATE)
+                            + " · "
+                            + (date.isAfter(LocalDate.now())
+                                ? "Henüz gerçekleşmedi"
+                                : Finance.money(amounts.getOrDefault(date, 0L))),
+                        false,
+                        () -> dayDetail(date)));
+              }
+              AlertDialog dialog = dialog("Günlük harcamalar", f, "Kapat");
+              dialog.setOnShowListener(
+                  v -> dialog.getButton(-1).setOnClickListener(w -> dialog.dismiss()));
+              dialog.show();
+            }));
+  }
+
+  private void dayDetail(LocalDate date) {
+    LinearLayout f = column();
+    List<Finance.Entry> day = Finance.period(entries, date, date);
+    keyValue(f, "Toplam gelir", Finance.money(Finance.total(day, "I")), GREEN);
+    keyValue(f, "Toplam gider", Finance.money(Finance.total(day, "E")), RED);
+    if (day.isEmpty()) hint(f, "Bu gün için işlem kaydı yok.");
+    for (Finance.Entry e : day) {
+      divider(f);
+      entryRow(f, e);
+    }
+    if (date.isAfter(LocalDate.now()))
+      hint(f, "Bu gün gelecekte; kayıtlar henüz bakiyeye dahil değil.");
+    AlertDialog d = dialog(date.format(DATE), f, "Kapat");
+    d.setOnShowListener(v -> d.getButton(-1).setOnClickListener(w -> d.dismiss()));
+    d.show();
   }
 
   private void keyValue(LinearLayout c, String label, String value, int color) {
@@ -554,11 +949,13 @@ public class MainActivity extends Activity {
     LinearLayout r = row();
     String title = e.kind.equals("T") ? "Hesaplar arası transfer" : category(e.categoryId);
     int color = e.kind.equals("I") ? GREEN : e.kind.equals("E") ? RED : BLUE;
-    TextView icon =
-        text(e.kind.equals("I") ? "↗" : e.kind.equals("E") ? "↘" : "⇄", 20, color, true);
-    icon.setGravity(Gravity.CENTER);
-    icon.setBackground(shape(LINE, 12));
-    r.addView(icon, new LinearLayout.LayoutParams(dp(42), dp(42)));
+    LinearLayout iconBox = row();
+    iconBox.setGravity(Gravity.CENTER);
+    iconBox.setBackground(shape(tint(color, plan.light ? 24 : 32), 14));
+    iconBox.addView(
+        icon(e.kind.equals("I") ? "up" : e.kind.equals("E") ? "down" : "repeat", color, 21),
+        new LinearLayout.LayoutParams(dp(21), dp(21)));
+    r.addView(iconBox, new LinearLayout.LayoutParams(dp(42), dp(42)));
     gap(r, 12);
     LinearLayout description = column();
     add(description, text(title, 14, WHITE, true));
@@ -596,6 +993,11 @@ public class MainActivity extends Activity {
     r.addView(amount);
     r.setPadding(0, dp(4), 0, dp(4));
     r.setOnClickListener(v -> entryDialog(e, e.kind));
+    r.setOnLongClickListener(
+        v -> {
+          repeatEntry(e);
+          return true;
+        });
     add(parent, r);
   }
 
@@ -865,7 +1267,17 @@ public class MainActivity extends Activity {
         "Gelirin harcanan kısmı",
         pct(Finance.spendingRate(income, expense)),
         expense > income ? RED : WHITE);
-    advice(list, from, to, analysisMode == 0);
+    if (advisorExpanded) advice(list, from, to, analysisMode == 0);
+    add(
+        body,
+        button(
+            advisorExpanded ? "Asistan yorumlarını daralt" : "Asistan yorumlarını aç",
+            false,
+            () -> {
+              advisorExpanded = !advisorExpanded;
+              render();
+            }));
+    if (analysisMode == 0) spendingMap();
     section("Harcama içgörüleri", "Kayıtlarından hesaplanan göstergeler");
     c = card(body);
     Map<Long, Long> spending = Finance.byCategory(list, "E");
@@ -1131,7 +1543,23 @@ public class MainActivity extends Activity {
 
   private void settings() {
     preferences();
-    obligations(body, true);
+    LinearLayout payments = card(body);
+    cardTitle(payments, "calendar", "Ödemelerin", BLUE);
+    hint(
+        payments,
+        plan.cards.size()
+            + " kredi kartı · "
+            + plan.bills.stream().filter(b -> b.paid == 0).count()
+            + " bekleyen fatura");
+    add(
+        payments,
+        button(
+            "Ödeme takvimini aç",
+            false,
+            () -> {
+              page = 5;
+              render();
+            }));
     LinearLayout privacy = card(body);
     add(privacy, text("Senin verin, senin telefonun", 17, GREEN, true));
     space(privacy, 9);
@@ -1239,7 +1667,7 @@ public class MainActivity extends Activity {
             + "• Tahminler geçmiş kayıt ortalamalarına dayanır; yatırım tavsiyesi değildir.\n"
             + "• Yedek geri yükleme sonrası vadesi gelen düzenli kayıtlar işlenir.");
     space(c, 12);
-    add(c, text("Cep Bütçem · v1.1.0", 12, GREEN, true));
+    add(c, text("Cep Bütçem · v1.2.0", 12, GREEN, true));
   }
 
   public boolean isLightTheme() {
@@ -1255,14 +1683,14 @@ public class MainActivity extends Activity {
   }
 
   private void applyPalette() {
-    BG = plan.light ? 0xFFF2F5F9 : 0xFF101820;
-    CARD = plan.light ? 0xFFFFFFFF : 0xFF192530;
-    LINE = plan.light ? 0xFFD7E0E8 : 0xFF2B3A47;
-    WHITE = plan.light ? 0xFF17283A : 0xFFF0F5F7;
-    MUTED = plan.light ? 0xFF536477 : 0xFF96A6B4;
+    BG = plan.light ? 0xFFF4F6FB : 0xFF0B1020;
+    CARD = plan.light ? 0xFFFFFFFF : 0xFF121A2E;
+    LINE = plan.light ? 0xFFE6E9F1 : 0xFF26334D;
+    WHITE = plan.light ? 0xFF151A2D : 0xFFF8FAFC;
+    MUTED = plan.light ? 0xFF68728A : 0xFF9EACC1;
     GREEN = plan.light ? 0xFF00795D : 0xFF35D6AE;
     RED = plan.light ? 0xFFBF2448 : 0xFFFF7B8B;
-    BLUE = plan.light ? 0xFF315FD0 : 0xFF739FFF;
+    BLUE = plan.light ? 0xFF5356D9 : 0xFF9A9CFF;
     getWindow().setStatusBarColor(BG);
     getWindow().setNavigationBarColor(BG);
     int flags = plan.light ? View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR : 0;
@@ -1878,7 +2306,11 @@ public class MainActivity extends Activity {
     e.setHint(placeholder);
     e.setText(value);
     e.setPadding(dp(12), dp(12), dp(12), dp(12));
-    e.setBackgroundTintList(ColorStateList.valueOf(LINE));
+    GradientDrawable inputBackground = shape(plan.light ? 0xFFF0F3F9 : 0xFF202C43, 12);
+    inputBackground.setStroke(dp(1), LINE);
+    e.setBackground(inputBackground);
+    e.setBackgroundTintList(null);
+    e.setMinHeight(dp(48));
     if (numeric) {
       e.setInputType(
           android.text.InputType.TYPE_CLASS_NUMBER
@@ -1967,10 +2399,10 @@ public class MainActivity extends Activity {
   }
 
   private void entryDialog(Finance.Entry existing, String initialKind) {
-    if (existing != null)
+    if (existing != null && existing.id != 0)
       for (Planning.Bill b : plan.bills)
         if (b.paid == existing.id) {
-          toast("Fatura kaydı: değişiklik için Ayarlar bölümünde ödemeyi geri al");
+          toast("Fatura kaydı: değişiklik için Ödeme takviminde ödemeyi geri al");
           return;
         }
     LinearLayout form = column();
@@ -2038,8 +2470,10 @@ public class MainActivity extends Activity {
     TextView validation = text("", 12, RED, false);
     space(form, 10);
     add(form, validation);
-    AlertDialog d = dialog(existing == null ? "Yeni işlem" : "İşlemi düzenle", form, "Kaydet");
-    if (existing != null)
+    AlertDialog d =
+        dialog(
+            existing == null || existing.id == 0 ? "Yeni işlem" : "İşlemi düzenle", form, "Kaydet");
+    if (existing != null && existing.id != 0)
       d.setButton(
           AlertDialog.BUTTON_NEUTRAL,
           "Sil",

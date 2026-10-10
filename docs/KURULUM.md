@@ -1,4 +1,4 @@
-# Cep Bütçem v1.1 — indirme, kurulum ve ilk ayarlar
+# Cep Bütçem v1.2 — indirme, kurulum ve ilk ayarlar
 
 ## Bilgisayara indirmenin kolay yolu
 
@@ -27,7 +27,7 @@ Tam paketi indirdiysen ayıklandığında kökte **CepButcem.apk**, yanında **C
 5. Android izin isterse dosyayı açan uygulama için **Bu kaynaktan yüklemeye izin ver** seçeneğini aç, geri dön ve **Yükle / Güncelle** seç.
 6. **Aç** düğmesine bas. Android 8.0 veya üzeri gerekir. Bilgisayarda APK dosyasını açman gerekmez; Android telefon kurar.
 
-v1.1 hazır APK, önceki yayımlanan v1.0 APK ile aynı imzayı kullanır. Güncelleme kurulumu mevcut gelir, gider, hesap ve bütçeleri korur; veritabanı silinmeden yükseltilir. **Uygulamayı kaldırmadan güncelle**. Farklı bilgisayarda farklı imzayla oluşturulmuş bir APK üzerine kurulumda imza uyuşmazlığı olabilir; kayıtlarını önce JSON olarak yedekle.
+v1.2 hazır APK, önceki yayımlanan v1.0/v1.1 APK ile aynı imzayı kullanır. Güncelleme kurulumu mevcut gelir, gider, hesap ve bütçeleri korur; veritabanı silinmeden yükseltilir. **Uygulamayı kaldırmadan güncelle**. Farklı bilgisayarda farklı imzayla oluşturulmuş bir APK üzerine kurulumda imza uyuşmazlığı olabilir; kayıtlarını önce JSON olarak yedekle.
 
 ## Android Studio'da aç ve kendi APK'nı üret
 
@@ -51,10 +51,20 @@ Kendi derlemelerini güncellerken aynı imza anahtarını koru. Keystore dosyas�
 
 ## Kredi kartı ve fatura takibi
 
-**Kart:** Ayarlar → Hesap ekle ile kart için ayrı hesap oluştur. Mevcut borcun 4.000 TL ise açılış bakiyesine `-4000` yaz. Kredi kartı tanımla bölümünde bu hesabı, kesim ve son ödeme günlerini seç. Alışverişi kart hesabına **gider** kaydet. Bankadan kart borcunu ödediğinde **Kart borcu öde · transfer** kullan; ödeme gideri ikinci kez artırmaz. Gösterilen ekstre borcu tahminini bankanın gerçek ekstresiyle karşılaştır. Faiz, iade, bankanın kesim saati ve tatil değişiklikleri otomatik alınmaz.
+**Kart:** Ayarlar → Hesap ekle ile kart için ayrı hesap oluştur. Mevcut borcun 4.000 TL ise açılış bakiyesine `-4000` yaz. Ödeme takvimi → Kredi kartı tanımla bölümünde bu hesabı, kesim ve son ödeme günlerini seç. Alışverişi kart hesabına **gider** kaydet. Bankadan kart borcunu ödediğinde **Kart borcu öde · transfer** kullan; ödeme gideri ikinci kez artırmaz. Gösterilen ekstre borcu tahminini bankanın gerçek ekstresiyle karşılaştır. Faiz, iade, bankanın kesim saati ve tatil değişiklikleri otomatik alınmaz.
 
-**Fatura:** Ayarlar → Fatura ekle ile ad, tutar, ödeme hesabı, kategori ve son ödeme tarihini gir. Vadesi gelen/geciken faturalar görünür. **Ödemeyi kaydet** gider oluşturur. Aylık tekrar seçilirse sonraki fatura aynı tahmini tutarla açılır; yeni tutarı geldiğinde düzenle. Aynı ödeme için ayrıca düzenli gider tanımlama. Hatalı ödemeyi **Ödemeyi geri al** ile düzelt. Ödeme takvimi uygulama içinde gösterilir; arka plan bildirimi gönderilmez.
+**Fatura:** Ödeme takvimi → Fatura ekle ile ad, tutar, ödeme hesabı, kategori ve son ödeme tarihini gir. Vadesi gelen/geciken faturalar görünür. **Ödemeyi kaydet** gider oluşturur. Aylık tekrar seçilirse sonraki fatura aynı tahmini tutarla açılır; yeni tutarı geldiğinde düzenle. Aynı ödeme için ayrıca düzenli gider tanımlama. Hatalı ödemeyi **Ödemeyi geri al** ile düzelt. Ödeme takvimi uygulama içinde gösterilir; arka plan bildirimi gönderilmez.
 
 ## Asistan yorumlarını kullan
 
-Özet ve Analiz ekranında gelirinin harcanan yüzdesini, önceki döneme göre değişimleri, artışa en çok katkı yapan kategoriyi, tasarruf hedefini ve dönem sonu senaryosunu oku. Sonuçlar kayıtlarından çevrimdışı hesaplanır. Gelir veya önceki dönem verisi eksikse bunun belirtilmesi normaldir; veri olmadan yüzde/değişim sonucu üretilmez. Bekleyen faturalar senaryoya katılır; gelecekteki maaş varsayılmaz. Günlük hedef payı, banka hesabındaki kullanılabilir bakiye değildir.
+Özet → Asistan yorumlarını incele ve Analiz → Asistan yorumlarını aç bölümünde gelirinin harcanan yüzdesini, önceki döneme göre değişimleri, artışa en çok katkı yapan kategoriyi, tasarruf hedefini ve dönem sonu senaryosunu oku. Sonuçlar kayıtlarından çevrimdışı hesaplanır. Gelir veya önceki dönem verisi eksikse bunun belirtilmesi normaldir; veri olmadan yüzde/değişim sonucu üretilmez. Bekleyen faturalar senaryoya katılır; gelecekteki maaş varsayılmaz. Günlük hedef payı, banka hesabındaki kullanılabilir bakiye değildir.
+
+## Yeni görünümde kısa yollar
+
+**Özet:** bakiye, gelir/gider, harcama göstergesi, hesap kartları, yaklaşan ödemeler ve hızlı tekrar. Hesap kartına dokununca ayrıntısı açılır.
+
+**Ödeme takvimi:** Özet veya Ayarlar → Ödeme takvimini aç. Kartları ve faturaları burada yönet.
+
+**İşlem tekrarı:** İşlemler ekranında bir kayıt satırına basılı tut. Yeni tarih ve tutarı gözden geçirip Kaydet seç; Vazgeç mevcut kaydı korur.
+
+**Harcama haritası:** Analiz → Harcama haritası. Bir güne dokunarak detayına gir; Günlük harcamalar düğmesi tarih/tutar listesini açar.
