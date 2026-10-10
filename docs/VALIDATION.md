@@ -1,33 +1,41 @@
-# Doğrulama · v1.2.0 · 10 Ekim 2026
+# Doğrulama · v1.3.0 · 10 Ekim 2026
 
-Kaynaklar tam JDK 17, Android SDK 35, Build-Tools 34.0.0 ve Gradle 8.9 ile derlendi. Debug APK Android 11 (API 30) emülatöründe çalıştırıldı.
+JDK 17, Android SDK35, Build-Tools34.0.0 ve Gradle8.9; Android11/API30 emülatörü. Hazır APK versionCode4, versionName1.3.0, minSDK26/Android8, targetSDK35.
 
-## Otomatik kontroller
+## Android otomatik kontroller
 
-- `testDebugUnitTest`: **18 test geçti**, 0 başarısız, 0 hatalı, 0 atlanan.
-- `connectedDebugAndroidTest`: **19 test geçti**, 0 başarısız, 0 hatalı, 0 atlanan. Gerçek Android SQLite ve ayrı `ledger-validation.db` kullanıldı.
-- `lintDebug`: **0 hata, 0 uyarı**.
-- `assembleDebug` / `assembleDebugAndroidTest`: başarılı.
-- `apksigner verify`: imza geçerli. v1.0, v1.1 ve v1.2 APK sertifikalarının SHA-256 özeti aynı; güncelleme imzası korunuyor.
+- `testDebugUnitTest`: **19 test geçti**, 0 başarısız/hatalı/atlanan. Para, dönem, tahmin, harcama haritası, bağımsız tekrar taslağı ve ortak renk eşiklerinin sınırları.
+- `connectedDebugAndroidTest`: **26 test geçti**, 0 başarısız/atlanan. Gerçek SQLite, ayrı `ledger-validation.db`; kişisel kayıt veritabanı kullanılmadı.
+- `lintDebug`: **0 hata, 0 uyarı**. APK ve test APK derlemeleri başarılı.
+- Yeni veritabanı kapsamı: kart hesabı/metadata atomic oluşturma, geçersiz tarihte/banka tutarında orphan hesap bırakmayan rollback, üç tutar/güncelleme tarihi yedek dönüşümü, v2 banka özeti olmayan kart uyumu, bozuk banka özeti restore'da mevcut verilerin korunması, kart takibini kaldırırken işlemlerin korunması, hesap silmede iki yönlü transfer/fatura/düzenli kural referanslarının temizlenmesi ve son hesabın silinmesinin engellenmesi.
+- Android UI thread animasyon motoru: 0→ara değerler→tam40 geçişi; animasyon kapalıyken150 oranının animator oluşturmadan uygulanması geçti. Etkinlik testi emülatörde animator ölçeği1 ile yapıldı; sonradan0 tercihine geri döndürüldü.
+- JSON v3 yazılır; v1/v2 okunur. SQLite şeması v2 devam eder. Önceki kart transferi/fatura ödeme/maaş dönemi testleri tekrar geçti.
+- `apksigner verify`: geçerli; önceki yayımlanmış APK'larla aynı sertifika SHA-256 `a3c71704fc4e5a498772ad1825325fc493203b962d3b7c3f9f9db5c0dbf273c8`.
 
-Hesaplama ve SQLite kapsamı: maaş döneminin yıl/ay sınırları, kısa ayda 31'inci gün, dönem uzunluğu ve tahmini, harcama yüzdesinde %100 aşımı/gelir yokluğu, kesimden sonraki kart ödeme günü, bilinen faturaları günlük ortalamada tekrar büyütmeyen tahmin, SQLite v1→v2 veri koruma, v1 yedeği desteği, yeni ayarların yedek dönüşümü, fatura ödeme/geri alma, aylık faturada 31→29→31, tekrar ödeme engeli ve kart ödemesinin gideri ikinci kez artırmaması test edildi.
+## APK güncelleme ve gerçek ekran akışı
 
-Yeni v1.2 testleri: işlem tekrarının bağımsız, kaydedilmemiş taslak oluşturması ve günlük harcama toplamlarının gelir/transferleri dışarıda bırakarak tarih sınırlarına göre hesaplanması.
+Yayımlanmış v1.2 APK'da 1.000 TL gelir ve 500 TL gider oluşturuldu. Yeni APK güncelleme olarak kuruldu; **500 TL bakiye** ve iki işlem korundu; %50 için **DİKKAT/sarı** durum gösterildi.
 
-## Ekran ve APK güncelleme kontrolü
+- Özet'ten yeni Bonus kartı eklenerek ayrı hesap oluşturuldu. Ekstre1.200 TL, dönem içi350 TL, provizyon75 TL kaydedildi. Kartın üç kutusu, **1.625 TL** toplamı ve güncelleme tarihi doğrulandı.
+- Kart yönetiminden provizyon90 TL yapıldı; toplam **1.640 TL** oldu. Banka özeti gider/gelir yaratmadı; kayıtlı net bakiye değişmedi.
+- Kart takibi silme önce iptal edildi ve kart korundu; sonra onaylandı. SQLite kontrolünde kart metadata'sı kaldırılırken **Bonus finansal hesabı korundu**.
+- Deneme hesabı eklendi; silme onayında 0 işlem gösterildi. İptal sonrası hesap vardı; onay sonrası kaldırıldı. Sonrasında ana ekran 500 TL ve sarı durum gösterdi.
+- Son paket APK yeniden kuruldu ve açıldı; **1.200 TL** kayıtlı bakiye, dört işlem ve **%40** yeşil gösterge korundu.
+- 300 TL ek gider sonrası gider800/gelir1000 = **%80, kırmızı**. 1.000 TL ek gelir sonrası gider800/gelir2000 = **%40, yeşil**. Genel kart ve dönem kartı renkleri görsel kontrol edildi.
+- Tüm ekran otomasyonu bir betikte tamamlanmış gibi gösterilmedi: kart takibi kaldırıldıktan sonraki kontrolde yatay hesap listesinde ekran dışında kalan Bonus araması başarısız oldu. Hesabın korunduğu gerçek SQLite'dan doğrulandı; kalan hesap/renk kontrolleri ayrı devam betiğinde geçti. Bu, uygulama hatası veya yeniden çalıştırılmamış adımların geçmiş sayılması değildir.
 
-Önce yayımlanmış v1.1 APK kuruldu; 1.250,50 TL gider, 5.000,00 TL gelir ve bekleyen 250 TL Elektrik faturası girildi. v1.2 APK üzerine güncelleme olarak kuruldu. **3.749,50 TL bakiye, iki işlem ve fatura korundu**; yeni net varlık kartı gösterildi.
+## Web referansı / mimari doğrulaması
 
-- İşlem satırına basılı tutularak tekrar formu açıldı. Vazgeç sonrası işlem sayısı iki kaldı. Kaydet sonrası üç oldu; eski kayıt değişmedi ve bakiye **2.499,00 TL** oldu. Bekleyen fatura varken yeni tekrar kaydı da doğru oluşturuldu.
-- Koyu ve açık tema ekran görüntüleri alındı; açık tema kontrolünde **2.499,00 TL** korundu.
-- Yeni ödeme merkezi Elektrik faturasını gösterdi. Ödemeyi kaydet işlemi faturayı Ödendi durumuna geçirdi; bakiye **2.249,00 TL** oldu.
-- Harcama haritasından açılan günlük listede **10.10.2026 · 2.751,00 TL** seçildi; gün detayında toplam gider **2.751,00 TL** doğrulandı. Gelir ve transferler bu gider toplamına katılmadı.
+Node24; React19, Tailwind4, Vite7.3.7; `npm ci`, **6 hesaplama testi**, `npm run build` başarılı. `npm audit` anlık kontrolünde 0 bildirilen açık. Eski Vite geliştirme aracı uyarısı düzeltilerek güncel7.3.7 sürümü ve lockfile sabitlendi.
 
-- Canvas haritada 10 Ekim hücresine doğrudan dokunuldu; doğru gün ve **2.751,00 TL** gider toplamı açıldı. Harcama göstergesinde **%55,0**, gelirden kalanda **%45,0** ve hedef ilerlemesi gözle kontrol edildi.
-- Özet kısa yolundan ayrı bütçe asistanı açıldı; yorumlar ve çevrimdışı hesaplama açıklaması gösterildi. Android geri tuşu genel bakışa döndürdü.
+Chromium'da 390×844 mobil ve1280×900 masaüstü: form açma, gelir/gider ekleme, %80 durum, geçersiz ondalık tutar uyarısı, Escape ile dialog kapama, tema değiştirme, yatay taşma olmaması ve JS runtime hatası olmaması geçti. Ayrı tarayıcı kontrolünde yüzde0, ara değerler ve nihai80 doğrulandı; azaltılmış hareket tercihindeki akış da kullanıldı. Bunlar bir backend entegrasyonu değil yerel UI referans testidir.
 
-Önceki v1.1 ekran doğrulamaları: maaş günü 15 ve yeniden açılış, kalıcı tema, fatura ödeme/geri alma, kart ödeme transferinde toplam bakiyenin korunması, gelir harcama oranı, kategori bütçesi aşımı ve bekleyen faturaları dikkate alan asistan senaryosu. Yeni sürümde bu hesaplar değişmedi; ilgili otomatik testler tekrar geçti.
+PostgreSQL SQL şeması/raporları PGlite PostgreSQL motorunda yürütüldü: tablo kurulumu, para birimi FK, kullanıcılar arası hesap/kategori/kart snapshot FK reddi, yinelenen istek anahtarı, pozitif işlem/bütçe tutarı, gelir/gider toplamı ve kategori bütçe aşımı kontrol edildi. `controllers.mjs` Node syntax check geçti. Gerçek uzak PostgreSQL, JWT/refresh/e-posta uçtan uca akışı, TLS ve production dağıtım bu teslimde çalıştırılmadı. Bu noktalar mimari rehberin sprint/çıkış koşullarındadır.
 
-Ekran görüntülerindeki tutarlar emülatör test verisidir; APK bu verileri içermez. Kontrol sonrası yalnızca test emülatörünün uygulama verileri temizlendi. Fiziksel telefon üzerinde ayrıca doğrulama yapılmadı. Android 8.0 minimum sürümü statik kontrolle, çalıştırma davranışı Android 11'de doğrulandı. APK kişisel kullanım için debug imzalıdır.
+## Teslim sınırları ve yeniden kullanım
 
-Bulut `install_script` ve `start_skill` taslağı önceki kurulumda kaydedildi. Taslak kaydı ortam sürümünü yayımlamaz; yeni görevde snapshot geri yüklemesi ayrıca denenmedi. Bu sürüm yeni araç veya çalışma zamanı bağımlılığı eklemez.
+Son APK temiz kurulumda **GELİR BEKLENİYOR / 0,00 TL** gösterdi. Test sonrası yalnızca kendi emülatörümüzün uygulama verileri temizlendi ve emülatör durduruldu.
+
+Ekran görüntüleri yalnızca emülatör/tarayıcı test verileridir; APK boş kişisel verilerle başlar. Fiziksel telefon doğrulaması yapılmadı; minimumAndroid8 statik, çalışma Android11'de doğrulandı. APK kişisel kullanım için debug imzalıdır; production release keystore ayrı yönetilir.
+
+Bulut kurulum taslağında mevcut Android yönergeleri korunup `install_script` ve `start_skill` alanlarına isteğe bağlı web referansı kurulum/test/build ve server başlatma/durdurma adımları eklendi. Taslak kaydı ortam snapshot'ını yayımlamaz; yeni göreve restore ayrıca denenmedi. Yeni çalışma zamanı sırrı veya banka bağlantısı eklenmedi.

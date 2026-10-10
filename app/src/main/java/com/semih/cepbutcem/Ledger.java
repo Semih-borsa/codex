@@ -287,14 +287,62 @@ public final class Ledger extends SQLiteOpenHelper {
     getWritableDatabase().delete("entries", "id=?", new String[] {Long.toString(id)});
   }
 
-  public void saveAccount(long id, String name, long opening) {
+  public long saveAccount(long id, String name, long opening) {
     if (name.trim().isEmpty() || name.trim().length() > 60)
       throw new IllegalArgumentException("Hesap adı 1–60 karakter olmalı.");
     ContentValues v = new ContentValues();
     v.put("name", name.trim());
     v.put("opening", opening);
-    if (id == 0) getWritableDatabase().insertOrThrow("accounts", null, v);
-    else getWritableDatabase().update("accounts", v, "id=?", new String[] {Long.toString(id)});
+    if (id == 0) return getWritableDatabase().insertOrThrow("accounts", null, v);
+    if (getWritableDatabase().update("accounts", v, "id=?", new String[] {Long.toString(id)}) != 1)
+      throw new IllegalArgumentException("Hesap bulunamadı.");
+    return id;
+  }
+
+  /** Create the card's account and metadata together, or update the existing definition. */
+  public void saveCard(Planning.Card card, String newName, long opening) throws JSONException {
+    SQLiteDatabase db = getWritableDatabase();
+    db.beginTransaction();
+    try {
+      Planning p = planning();
+      if (card.account == 0) card.account = saveAccount(0, newName, opening);
+      p.cards.removeIf(c -> c.account == card.account);
+      p.cards.add(card);
+      savePlanning(p);
+      db.setTransactionSuccessful();
+    } finally {
+      db.endTransaction();
+    }
+  }
+
+  public void removeCard(long account) throws JSONException {
+    Planning p = planning();
+    p.cards.removeIf(c -> c.account == account);
+    savePlanning(p);
+  }
+
+  /** Explicit UI confirmation covers all related records. Foreign keys remain enabled. */
+  public void deleteAccount(long id) throws JSONException {
+    SQLiteDatabase db = getWritableDatabase();
+    db.beginTransaction();
+    try {
+      List<Finance.Account> list = accounts();
+      if (list.stream().noneMatch(a -> a.id == id))
+        throw new IllegalArgumentException("Hesap bulunamadı.");
+      if (list.size() <= 1)
+        throw new IllegalArgumentException("En az bir hesap kalmalı. Önce yeni bir hesap ekle.");
+      Planning p = planning();
+      p.cards.removeIf(c -> c.account == id);
+      p.bills.removeIf(b -> b.account == id);
+      String value = Long.toString(id);
+      db.delete("entries", "account_id=? OR target_id=?", new String[] {value, value});
+      db.delete("recurring", "account_id=?", new String[] {value});
+      db.delete("accounts", "id=?", new String[] {value});
+      savePlanning(p);
+      db.setTransactionSuccessful();
+    } finally {
+      db.endTransaction();
+    }
   }
 
   public void saveCategory(long id, String name, String kind) {
@@ -423,7 +471,7 @@ public final class Ledger extends SQLiteOpenHelper {
     try {
       JSONObject result = new JSONObject();
       result.put("format", "cepbutcem");
-      result.put("version", 2);
+      result.put("version", 3);
       result.put("planning", planning().json());
       result.put("created", LocalDateTime.now().toString());
       for (String name : Arrays.asList("accounts", "categories", "recurring", "entries", "budgets"))
@@ -475,7 +523,7 @@ public final class Ledger extends SQLiteOpenHelper {
   public void restore(String input) throws JSONException {
     JSONObject root = new JSONObject(input);
     if (!"cepbutcem".equals(root.getString("format"))
-        || (integer(root, "version") != 1 && integer(root, "version") != 2))
+        || (integer(root, "version") < 1 || integer(root, "version") > 3))
       throw new JSONException("Uyumlu Cep Bütçem yedeği değil.");
     Map<String, JSONArray> tables = new LinkedHashMap<>();
     for (String name : Arrays.asList("accounts", "categories", "recurring", "entries", "budgets")) {
@@ -544,7 +592,7 @@ public final class Ledger extends SQLiteOpenHelper {
       amount(row, "amount", true);
     }
     Planning restoredPlan = new Planning();
-    if (integer(root, "version") == 2) {
+    if (integer(root, "version") >= 2) {
       Map<Long, Finance.Entry> records = new HashMap<>();
       for (int i = 0; i < tables.get("entries").length(); i++) {
         JSONObject r = tables.get("entries").getJSONObject(i);

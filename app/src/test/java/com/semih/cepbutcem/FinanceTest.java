@@ -213,4 +213,15 @@ public class FinanceTest {
         Finance.dailyExpenses(entries, LocalDate.of(2026, 11, 1), LocalDate.of(2026, 10, 10))
             .isEmpty());
   }
+
+  @Test
+  public void spendingColorsShareExactThresholdsAndNoIncomeState() {
+    assertEquals(-1, Finance.spendingBand(Finance.spendingRate(0, 100)));
+    assertEquals(0, Finance.spendingBand(0));
+    assertEquals(0, Finance.spendingBand(49.99));
+    assertEquals(1, Finance.spendingBand(50));
+    assertEquals(1, Finance.spendingBand(79.99));
+    assertEquals(2, Finance.spendingBand(80));
+    assertEquals(2, Finance.spendingBand(150));
+  }
 }

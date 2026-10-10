@@ -66,6 +66,18 @@ Debug APK kişisel deneme için imzalı ve kurulabilirdir. Kalıcı sürüm içi
 
 Grafiklerdeki tutarlar metin listelerinde de bulunur. Tahminler istatistiksel yön göstergesidir; kaydedilmemiş faturaları, fiyat değişimlerini veya gelecekteki gelirleri tahmin etmez. Asistanın ayrı senaryosu kayıtlı bekleyen faturaları dikkate alır.
 
+## v1.3: dinamik renkler, banka özeti ve hesap yönetimi
+
+Net varlık kartı, dönem bütçesi ve gösterge aynı maaş dönemi harcama oranını kullanır: **%50 altı yeşil, %50–80 sarı, %80+ kırmızı**. Gelir yoksa nötrdür. Yüzde açılışta 0'dan gerçek değere bir saniyede ilerler; Android animasyonları kapalıysa doğrudan son değeri gösterir.
+
+**Özet → Kredi kartlarım → Kredi kartı ekle** ile ayrı hesap otomatik oluştur veya mevcut hesabı seç. **Tutarları güncelle** ekranında bankadaki **kalan ekstre**, **dönem içi borç**, **provizyon** tutarlarını elle gir. Her kart üç ayrı kutu, toplam ve son güncelleme tarihiyle görünür. Bu banka özeti gelir/gider ve net varlık kayıtlarını değiştirmez; ödeme transferi sonrası tutarları bankadan yeniden güncelle. Üç alan birbirini içermeyen tutarlardır.
+
+**Kartı yönet → Kart takibini sil**, yalnızca özet kartı/banka bilgilerini kaldırır; finansal hesap ve kayıtlar korunur. **Hesabı sil** veya **Kart hesabını ve kayıtlarını sil**, bağlı işlemleri (iki yönlü transferler dahil), düzenli kuralları, faturaları ve kart takibini kalıcı kaldırır. Onay ekranı kapsamı gösterir. En az bir hesap kalır; bu işlem diğer hesap bakiyelerini ve geçmiş raporları etkileyebilir. Silmeden önce JSON yedeği al.
+
+**[Altı bölümlük mobil/web mimari ve kod rehberi](docs/ARCHITECTURE.md)**: UI/UX, PostgreSQL şeması, REST/JWT controller örnekleri, React/Tailwind bileşenleri, MVP+ fikirleri ve dört haftalık plan. **[Çalışan web referansı](web-reference/README.md)** mobil ve masaüstü form/özet ekranını içerir; oturumluk demo verisi kullanır, Android veritabanına veya bir backend'e bağlı değildir.
+
+JSON yedek sürümü **3**: kartın üç tutarı ve güncelleme tarihi de korunur. v1/v2 yedekleri desteklenir; tutarsız banka özeti dosyası eski veriler silinmeden reddedilir. SQLite şeması v2 kalır; v1.2 APK üzerine güncelleme kayıtları korur.
+
 ## v1.2: modern Android arayüzü
 
 Paylaşılan App.jsx tasarımından ilham alan gradyan bakiye kartı, kompakt gelir/gider kartları, yarım daire harcama göstergesi, yatay hesap kartları, çizgi ikonları ve düzenli açık/koyu temalar eklendi. Ana ekranda kısa asistan özeti bulunur; **Asistan yorumlarını incele** ayrıntıları açar. Analizde yorumlar açılıp daraltılır.
@@ -82,7 +94,7 @@ Uyarlanan fikirler ve korunan muhasebe kuralları: [Tasarım notları](docs/DESI
 
 **Ayarlar → Açık temaya geç / Koyu temaya geç** ile görünümü değiştir; tercih kapanış ve yeniden açılışta korunur.
 
-**Kredi kartı:** önce kart için ayrı bir hesap aç; mevcut borcu negatif açılış bakiyesi yap. **Ödeme takvimi → Kredi kartı tanımla** ile hesap kesim ve son ödeme günlerini seç. Alışverişleri kart hesabına gider, borç ödemesini **Kart borcu öde · transfer** ile banka/nakit hesabından karta transfer kaydet. Bu ödeme gideri ikinci kez artırmaz. Takvim, son kesim/son ödeme/sonraki kesimi gösterir. Önceki kesimdeki borçtan kesim sonrası transferler düşülerek kalan ekstre borcu tahmini çıkarılır; bankanın gerçek ekstresi, iade/faiz ve tatil değişiklikleri esas alınmalıdır. Kart numarası veya banka şifresi istenmez.
+**Kredi kartı:** önce kart için ayrı bir hesap aç; mevcut borcu negatif açılış bakiyesi yap. **Özet → Kredi kartı ekle** ile hesap kesim ve son ödeme günlerini seç. Alışverişleri kart hesabına gider, borç ödemesini **Kart borcu öde · transfer** ile banka/nakit hesabından karta transfer kaydet. Bu ödeme gideri ikinci kez artırmaz. Takvim, son kesim/son ödeme/sonraki kesimi gösterir. Önceki kesimdeki borçtan kesim sonrası transferler düşülerek kalan ekstre borcu tahmini çıkarılır; bankanın gerçek ekstresi, iade/faiz ve tatil değişiklikleri esas alınmalıdır. Kart numarası veya banka şifresi istenmez.
 
 **Fatura:** ad, tutar, hesap, kategori ve son ödeme tarihi ekle. Bekleyen, bugün ödenecek, gecikmiş ve ödenmiş durumları görünür. **Ödemeyi kaydet** tek bir gider oluşturur; aynı fatura tekrar ödenemez. Aylık tekrar seçilmişse ödeme sonrası sonraki aya aynı tahmini tutarlı fatura açılır; gerçek tutarı geldiğinde düzenle. 31'inci gün şubatta kısalırken martta tekrar 31'e döner. Faturaya bağlı giderin düzenlenmesi için önce **Ödemeyi geri al** kullan. Geri alma sonraki faturayı korur; eski faturanın otomatik tekrarını kapatır. Aynı ödemeyi ayrıca düzenli gider olarak tanımlama.
 
@@ -116,7 +128,7 @@ Düzenli işlemler **Ayarlar → Aylık düzenli işlem** ile tanımlanır. Uygu
 
 Uygulama internet izni istemez, banka bağlantısı veya reklam içermez. SQLite dosyası Android'in uygulamaya özel alanındadır. Otomatik Android bulut yedeklemesi kapalıdır. Uygulamayı kaldırmak yerel verileri siler.
 
-JSON v2 yedeği hesapları, kategorileri, işlemleri, düzenli kuralları, bütçeleri, kart tarihlerini, faturaları, maaş günü, tema ve hedef ayarlarını içerir. Eski v1 yedekleri desteklenir; yeni ayarlar varsayılanlara döner. Geri yükleme mevcut verileri tamamen değiştirir; dosya önce doğrulanır, veritabanı işlemi başarısızsa eski veriler geri alınır. En fazla 16 MB JSON dosyası kabul edilir. Yedek ve CSV dosyaları **şifrelenmez**; bunları güvenli bir yerde saklayın. CSV geri yükleme desteklenmez; geri yüklemek için JSON kullanın.
+JSON v3 yedeği hesapları, kategorileri, işlemleri, düzenli kuralları, bütçeleri, kart tarihlerini, faturaları, maaş günü, tema ve hedef ayarlarını içerir. Eski v1/v2 yedekleri desteklenir; v1 yeni ayarlar için varsayılanları kullanır; banka özeti olmayan v2 kartlarında alanlar henüz girilmemiş gösterilir. Geri yükleme mevcut verileri tamamen değiştirir; dosya önce doğrulanır, veritabanı işlemi başarısızsa eski veriler geri alınır. En fazla 16 MB JSON dosyası kabul edilir. Yedek ve CSV dosyaları **şifrelenmez**; bunları güvenli bir yerde saklayın. CSV geri yükleme desteklenmez; geri yüklemek için JSON kullanın.
 
 ## Komut satırı ve testler
 
@@ -140,6 +152,8 @@ Para hesaplama testleri JUnit ile JVM üzerinde çalışır. Gerçek Android SQL
 ./gradlew connectedDebugAndroidTest
 ```
 
+Animasyon testleri için test emülatöründe Android animator ölçeği 1 olmalı; test öncesi mevcut değeri kaydet, test sonrası geri yükle. Animasyonlar kapalıyken beklenen davranış ayrı test edilir. Fiziksel telefonun tercihlerini otomatik değiştirme.
+
 Android testleri ayrı `ledger-validation.db` veritabanında çalışır; kişisel kayıt veritabanını kullanmaz. Kapsam: varsayılanlar, kayıt düzenleme/silme, hesaplar, transferler, kategori uyumu, bütçeler, düzenli işlem idempotansı/ay sonu, yedek dönüşümü, bozuk yedek/işlem geri alma ve CSV güvenliği.
 
 ## Proje düzeni
@@ -159,8 +173,10 @@ APK imzalama, telefon bağlantısı ve emülatör Android Studio tarafından yö
 
 Aşağıdaki tutarlar emülatörde girilen test kayıtlarıdır; uygulama boş verilerle başlar.
 
-<img src="docs/screenshots/overview.png" width="240" alt="Modern koyu tema" /> <img src="docs/screenshots/overview-light.png" width="240" alt="Modern açık tema" /> <img src="docs/screenshots/payments.png" width="240" alt="Ödeme merkezi" />
+<img src="docs/screenshots/overview.png" width="240" alt="Sarı harcama durumu" /> <img src="docs/screenshots/overview-red.png" width="240" alt="Yüksek harcama durumu" /> <img src="docs/screenshots/overview-green.png" width="240" alt="Dengede harcama durumu" />
 
-<img src="docs/screenshots/period-budget.png" width="240" alt="Harcama ve tasarruf göstergesi" /> <img src="docs/screenshots/heatmap.png" width="240" alt="Maaş dönemi harcama haritası" /> <img src="docs/screenshots/assistant.png" width="240" alt="Bütçe asistanı" />
+<img src="docs/screenshots/credit-card.png" width="240" alt="Manuel ekstre dönem içi provizyon" /> <img src="docs/screenshots/heatmap.png" width="240" alt="Maaş dönemi harcama haritası" />
 
-Derleme, 37 test ve UI kontrolü sonuçları: [Doğrulama kaydı](docs/VALIDATION.md).
+Web referansı: [mobil](docs/screenshots/web-mobile.png) · [masaüstü](docs/screenshots/web-desktop.png).
+
+Derleme, 45 Android testi ve 6 web hesaplama testi ve UI kontrolü sonuçları: [Doğrulama kaydı](docs/VALIDATION.md).

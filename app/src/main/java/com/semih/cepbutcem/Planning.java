@@ -14,6 +14,12 @@ public final class Planning {
   public static final class Card {
     public long account;
     public int closing, due;
+    public long statement, current, pending;
+    public LocalDate updated;
+
+    public long bankTotal() {
+      return Math.addExact(Math.addExact(statement, current), pending);
+    }
 
     public Card(long account, int closing, int due) {
       this.account = account;
@@ -42,9 +48,16 @@ public final class Planning {
     o.put("target", target);
     o.put("light", light);
     JSONArray cs = new JSONArray(), bs = new JSONArray();
-    for (Card c : cards)
-      cs.put(
-          new JSONObject().put("account", c.account).put("closing", c.closing).put("due", c.due));
+    for (Card c : cards) {
+      JSONObject card =
+          new JSONObject().put("account", c.account).put("closing", c.closing).put("due", c.due);
+      if (c.updated != null)
+        card.put("statement", c.statement)
+            .put("current", c.current)
+            .put("pending", c.pending)
+            .put("updated", c.updated.toString());
+      cs.put(card);
+    }
     for (Bill b : bills)
       bs.put(
           new JSONObject()
@@ -90,8 +103,21 @@ public final class Planning {
       long account = number(c, "account", 1, Long.MAX_VALUE);
       if (!accounts.contains(account) || !seen.add(account))
         throw new JSONException("Geçersiz kart hesabı.");
-      p.cards.add(
-          new Card(account, (int) number(c, "closing", 1, 31), (int) number(c, "due", 1, 31)));
+      Card card =
+          new Card(account, (int) number(c, "closing", 1, 31), (int) number(c, "due", 1, 31));
+      if (c.has("updated") || c.has("statement") || c.has("current") || c.has("pending")) {
+        card.statement = number(c, "statement", 0, 100_000_000_000L);
+        card.current = number(c, "current", 0, 100_000_000_000L);
+        card.pending = number(c, "pending", 0, 100_000_000_000L);
+        Object date = c.get("updated");
+        if (!(date instanceof String)) throw new JSONException("Geçersiz kart güncelleme tarihi.");
+        card.updated = LocalDate.parse((String) date);
+        if (card.updated.getYear() < 2000
+            || card.updated.getYear() > 2100
+            || !card.updated.toString().equals(date))
+          throw new JSONException("Geçersiz kart güncelleme tarihi.");
+      }
+      p.cards.add(card);
     }
     seen.clear();
     for (int i = 0; i < bs.length(); i++) {

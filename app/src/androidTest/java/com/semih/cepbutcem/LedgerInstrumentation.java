@@ -314,6 +314,152 @@ public class LedgerInstrumentation extends Instrumentation {
           equal(0, Finance.total(db.entries(), "I"));
           equal(0, Finance.balance(db.accounts().get(1), db.entries(), LocalDate.of(2026, 10, 2)));
         });
+    tests.put(
+        "bankCardSnapshotRoundTripAndV2Compatibility",
+        () -> {
+          Planning.Card c = new Planning.Card(0, 10, 20);
+          c.statement = 10000;
+          c.current = 2500;
+          c.pending = 999;
+          c.updated = LocalDate.of(2026, 10, 10);
+          db.saveCard(c, "Bonus", -12500);
+          equal(3, db.accounts().size());
+          equal(1, db.planning().cards.size());
+          equal(13499, db.planning().cards.get(0).bankTotal());
+          equal(0, db.entries().size());
+          String backup = db.backup();
+          equal(3, new JSONObject(backup).getLong("version"));
+          db.restore(backup);
+          equal(999, db.planning().cards.get(0).pending);
+          truth(db.planning().cards.get(0).updated.equals(LocalDate.of(2026, 10, 10)));
+          JSONObject old = new JSONObject(backup);
+          old.put("version", 2);
+          JSONObject card = old.getJSONObject("planning").getJSONArray("cards").getJSONObject(0);
+          for (String key : Arrays.asList("statement", "current", "pending", "updated"))
+            card.remove(key);
+          db.restore(old.toString());
+          truth(db.planning().cards.get(0).updated == null);
+          equal(3, db.accounts().size());
+        });
+    tests.put(
+        "invalidCardCreationRollsBackAccount",
+        () -> {
+          rejects(() -> db.saveCard(new Planning.Card(0, 32, 20), "Yanlış kart", 0));
+          equal(2, db.accounts().size());
+          equal(0, db.planning().cards.size());
+          Planning.Card c = new Planning.Card(0, 10, 20);
+          c.updated = LocalDate.now();
+          c.pending = -1;
+          rejects(() -> db.saveCard(c, "Yanlış borç", 0));
+          equal(2, db.accounts().size());
+        });
+    tests.put(
+        "malformedBankSnapshotRestorePreservesData",
+        () -> {
+          Planning.Card c = new Planning.Card(0, 10, 20);
+          c.updated = LocalDate.now();
+          c.statement = 100;
+          db.saveCard(c, "Kart", 0);
+          db.saveEntry(expense(321, "2026-10-01"));
+          JSONObject root = new JSONObject(db.backup());
+          root.getJSONObject("planning").getJSONArray("cards").getJSONObject(0).put("pending", -1);
+          rejects(() -> db.restore(root.toString()));
+          equal(321, db.entries().get(0).amount);
+          equal(100, db.planning().cards.get(0).statement);
+        });
+    tests.put(
+        "removeCardKeepsFinancialAccountAndTransactions",
+        () -> {
+          long id = db.accounts().get(1).id;
+          db.saveCard(new Planning.Card(id, 10, 20), null, 0);
+          Finance.Entry e = expense(789, "2026-10-01");
+          e.accountId = id;
+          db.saveEntry(e);
+          db.removeCard(id);
+          equal(0, db.planning().cards.size());
+          equal(2, db.accounts().size());
+          equal(789, db.entries().get(0).amount);
+        });
+    tests.put(
+        "deleteAccountRemovesAllDependenciesWithoutDanglingReferences",
+        () -> {
+          long id = db.accounts().get(0).id, other = db.accounts().get(1).id;
+          Finance.Entry e = expense(100, "2026-10-01");
+          db.saveEntry(e);
+          db.saveEntry(
+              new Finance.Entry(0, "T", 200, LocalDate.of(2026, 10, 2), other, id, 0, "Transfer"));
+          Finance.Entry kept = expense(300, "2026-10-01");
+          kept.accountId = other;
+          db.saveEntry(kept);
+          e.date = LocalDate.of(2026, 11, 1);
+          db.addRecurring(e);
+          Planning p = db.planning();
+          p.cards.add(new Planning.Card(id, 10, 20));
+          Planning.Bill b = new Planning.Bill();
+          b.id = 1;
+          b.name = "Fatura";
+          b.amount = 100;
+          b.account = id;
+          b.category = e.categoryId;
+          b.due = e.date;
+          b.day = 1;
+          b.paid = e.id;
+          p.bills.add(b);
+          db.savePlanning(p);
+          db.deleteAccount(id);
+          equal(1, db.accounts().size());
+          equal(1, db.entries().size());
+          equal(300, db.entries().get(0).amount);
+          equal(0, db.recurring().length());
+          equal(0, db.planning().cards.size());
+          equal(0, db.planning().bills.size());
+          db.restore(db.backup());
+          equal(300, db.entries().get(0).amount);
+          rejects(() -> db.deleteAccount(other));
+          equal(1, db.accounts().size());
+          rejects(() -> db.deleteAccount(999));
+          equal(300, db.entries().get(0).amount);
+        });
+    tests.put(
+        "riskAnimationMovesThroughIntermediateValuesToExactTarget",
+        () -> {
+          java.util.concurrent.CountDownLatch done = new java.util.concurrent.CountDownLatch(1);
+          java.util.concurrent.atomic.AtomicBoolean zero =
+              new java.util.concurrent.atomic.AtomicBoolean();
+          java.util.concurrent.atomic.AtomicBoolean middle =
+              new java.util.concurrent.atomic.AtomicBoolean();
+          java.util.concurrent.atomic.AtomicBoolean enabled =
+              new java.util.concurrent.atomic.AtomicBoolean();
+          runOnMainSync(
+              () -> {
+                enabled.set(android.animation.ValueAnimator.areAnimatorsEnabled());
+                if (!enabled.get()) return;
+                android.animation.ValueAnimator animation =
+                    Design.ratioAnimator(
+                        40,
+                        true,
+                        value -> {
+                          if (value == 0) zero.set(true);
+                          if (value > 0 && value < 40) middle.set(true);
+                          if (value == 40) done.countDown();
+                        });
+                animation.start();
+              });
+          truth(enabled.get());
+          truth(done.await(15, java.util.concurrent.TimeUnit.SECONDS));
+          truth(zero.get());
+          truth(middle.get());
+        });
+    tests.put(
+        "riskAnimationDisabledUsesFinalValueWithoutAnimator",
+        () -> {
+          java.util.concurrent.atomic.AtomicReference<android.animation.ValueAnimator> animation =
+              new java.util.concurrent.atomic.AtomicReference<>();
+          double[] value = {-1};
+          runOnMainSync(() -> animation.set(Design.ratioAnimator(150, false, x -> value[0] = x)));
+          truth(animation.get() == null);
+          truth(value[0] == 150);
+        });
     int current = 0;
     StringBuilder summary = new StringBuilder();
     for (Map.Entry<String, Check> test : tests.entrySet()) {

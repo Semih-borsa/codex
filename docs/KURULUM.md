@@ -1,4 +1,4 @@
-# Cep Bütçem v1.2 — indirme, kurulum ve ilk ayarlar
+# Cep Bütçem v1.3 — indirme, kurulum ve ilk ayarlar
 
 ## Bilgisayara indirmenin kolay yolu
 
@@ -27,7 +27,7 @@ Tam paketi indirdiysen ayıklandığında kökte **CepButcem.apk**, yanında **C
 5. Android izin isterse dosyayı açan uygulama için **Bu kaynaktan yüklemeye izin ver** seçeneğini aç, geri dön ve **Yükle / Güncelle** seç.
 6. **Aç** düğmesine bas. Android 8.0 veya üzeri gerekir. Bilgisayarda APK dosyasını açman gerekmez; Android telefon kurar.
 
-v1.2 hazır APK, önceki yayımlanan v1.0/v1.1 APK ile aynı imzayı kullanır. Güncelleme kurulumu mevcut gelir, gider, hesap ve bütçeleri korur; veritabanı silinmeden yükseltilir. **Uygulamayı kaldırmadan güncelle**. Farklı bilgisayarda farklı imzayla oluşturulmuş bir APK üzerine kurulumda imza uyuşmazlığı olabilir; kayıtlarını önce JSON olarak yedekle.
+v1.3 hazır APK, önceki yayımlanan v1.0/v1.1/v1.2 APK ile aynı imzayı kullanır. Güncelleme kurulumu mevcut gelir, gider, hesap ve bütçeleri korur; veritabanı silinmeden yükseltilir. **Uygulamayı kaldırmadan güncelle**. Farklı bilgisayarda farklı imzayla oluşturulmuş bir APK üzerine kurulumda imza uyuşmazlığı olabilir; kayıtlarını önce JSON olarak yedekle.
 
 ## Android Studio'da aç ve kendi APK'nı üret
 
@@ -51,8 +51,11 @@ Kendi derlemelerini güncellerken aynı imza anahtarını koru. Keystore dosyas�
 
 ## Kredi kartı ve fatura takibi
 
-**Kart:** Ayarlar → Hesap ekle ile kart için ayrı hesap oluştur. Mevcut borcun 4.000 TL ise açılış bakiyesine `-4000` yaz. Ödeme takvimi → Kredi kartı tanımla bölümünde bu hesabı, kesim ve son ödeme günlerini seç. Alışverişi kart hesabına **gider** kaydet. Bankadan kart borcunu ödediğinde **Kart borcu öde · transfer** kullan; ödeme gideri ikinci kez artırmaz. Gösterilen ekstre borcu tahminini bankanın gerçek ekstresiyle karşılaştır. Faiz, iade, bankanın kesim saati ve tatil değişiklikleri otomatik alınmaz.
+**Kart:** Özet → Kredi kartlarım → Kredi kartı ekle. Yeni kart adı, kesinleşmiş başlangıç borcu (pozitif), kesim ve son ödeme gününü gir. Uygulama ayrı kart hesabını oluşturur; istersen mevcut bir hesabı seçebilirsin. Ardından bankadaki kalan ekstre, dönem içi ve provizyon tutarlarını ayrı gir. **Tutarları güncelle** ile güncel tutarları yenile. Bunlar sadece banka özetidir; gider veya net varlık kaydı oluşturmaz. Alışverişlerini ayrıca kart hesabına gider kaydet; ödemeni **Kartı yönet → Kart borcu öde · transfer** ile işle. Ödeme sonrasında banka özetini yeniden güncelle.
 
+**Kart silme:** Kartı yönet → Kart takibini sil yalnızca kart görünümünü ve banka özetini kaldırır; hesabı/işlemlerini korur. Kart hesabını tamamen silmek için Kart hesabını ve kayıtlarını sil kullan.
+
+**Hesap silme:** Ayarlar → ilgili hesap → Hesabı sil; veya Özet'teki hesap kartına dokun → Hesabı sil. Bağlı kayıt sayıları ve transfer etkisini onay ekranından oku. Silme, işlemler/faturalar/düzenli kuralları da kaldırır; önce JSON yedek al. Son kalan hesap silinemez.
 **Fatura:** Ödeme takvimi → Fatura ekle ile ad, tutar, ödeme hesabı, kategori ve son ödeme tarihini gir. Vadesi gelen/geciken faturalar görünür. **Ödemeyi kaydet** gider oluşturur. Aylık tekrar seçilirse sonraki fatura aynı tahmini tutarla açılır; yeni tutarı geldiğinde düzenle. Aynı ödeme için ayrıca düzenli gider tanımlama. Hatalı ödemeyi **Ödemeyi geri al** ile düzelt. Ödeme takvimi uygulama içinde gösterilir; arka plan bildirimi gönderilmez.
 
 ## Asistan yorumlarını kullan
@@ -68,3 +71,7 @@ Kendi derlemelerini güncellerken aynı imza anahtarını koru. Keystore dosyas�
 **İşlem tekrarı:** İşlemler ekranında bir kayıt satırına basılı tut. Yeni tarih ve tutarı gözden geçirip Kaydet seç; Vazgeç mevcut kaydı korur.
 
 **Harcama haritası:** Analiz → Harcama haritası. Bir güne dokunarak detayına gir; Günlük harcamalar düğmesi tarih/tutar listesini açar.
+
+## Web referansı ve mimari rehber
+
+Tam paketteki CepButcem/web-reference veya depodaki web-reference klasöründe Node 22.12+/24 ile npm ci, npm test, npm run build çalıştır. npm run dev geliştirme sunucusunu açar. Kayıtlar demo oturumundadır ve sayfa yenilenince temizlenir. Android kayıtlarına bağlantı yoktur. Sunucu mimarisi, SQL, JWT ve dört haftalık plan: docs/ARCHITECTURE.md.

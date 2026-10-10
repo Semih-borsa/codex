@@ -189,6 +189,11 @@ public final class Finance {
     return income > 0 ? 100d * expense / income : Double.NaN;
   }
 
+  /** Same thresholds for the balance card, period card and gauge. -1 means no income. */
+  public static int spendingBand(double ratio) {
+    return !Double.isFinite(ratio) ? -1 : ratio < 50 ? 0 : ratio < 80 ? 1 : 2;
+  }
+
   /** Due date is strictly after closing, including equal preferred days. */
   public static LocalDate cardDue(LocalDate closing, int dueDay) {
     if (dueDay < 1 || dueDay > 31) throw new IllegalArgumentException("Ödeme günü 1–31 olmalı.");

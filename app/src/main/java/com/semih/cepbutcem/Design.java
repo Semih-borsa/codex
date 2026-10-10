@@ -10,6 +10,33 @@ import java.util.*;
 public final class Design {
   private Design() {}
 
+  public static int spendingColor(double ratio, boolean light) {
+    switch (Finance.spendingBand(ratio)) {
+      case 0:
+        return light ? 0xFF007F65 : 0xFF35D6AE;
+      case 1:
+        return light ? 0xFF9D5700 : 0xFFF6BD60;
+      case 2:
+        return light ? 0xFFB42343 : 0xFFFF8096;
+      default:
+        return light ? 0xFF5552DF : 0xFFA5AEFF;
+    }
+  }
+
+  /** Runs on the UI thread. Shared by the gauge and real Android animation tests. */
+  public static android.animation.ValueAnimator ratioAnimator(
+      double target, boolean enabled, java.util.function.DoubleConsumer update) {
+    if (!enabled || Double.isNaN(target)) {
+      update.accept(target);
+      return null;
+    }
+    android.animation.ValueAnimator animation = android.animation.ValueAnimator.ofFloat(0, 1);
+    animation.setDuration(1000);
+    animation.setInterpolator(new android.view.animation.DecelerateInterpolator());
+    animation.addUpdateListener(a -> update.accept(target * (Float) a.getAnimatedValue()));
+    return animation;
+  }
+
   public static final class Icon extends View {
     private static final float[] POINTS_0 =
         new float[] {12, 2, 15, 9, 22, 12, 15, 15, 12, 22, 9, 15, 2, 12, 9, 9};
@@ -158,17 +185,44 @@ public final class Design {
     }
 
     private final double ratio;
+    private double displayedRatio;
+    private android.animation.ValueAnimator animator;
     private final boolean light;
     private final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     public Gauge(Context c, double ratio, boolean light) {
       super(c);
       this.ratio = ratio;
+      this.displayedRatio = Double.isNaN(ratio) ? Double.NaN : 0;
       this.light = light;
       setContentDescription(
           Double.isNaN(ratio)
               ? "Harcama oranı için gelir kaydı gerekli"
               : "Gelirin harcanan kısmı yüzde " + String.format(Finance.TR, "%.1f", ratio));
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+      super.onAttachedToWindow();
+      if (Double.isNaN(ratio)) return;
+      animator =
+          ratioAnimator(
+              ratio,
+              android.animation.ValueAnimator.areAnimatorsEnabled(),
+              value -> {
+                displayedRatio = value;
+                invalidate();
+              });
+      if (animator != null) animator.start();
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+      if (animator != null) {
+        animator.cancel();
+        animator = null;
+      }
+      super.onDetachedFromWindow();
     }
 
     private float dp(float x) {
@@ -193,26 +247,21 @@ public final class Design {
       p.setStrokeWidth(dp(13));
       p.setColor(light ? 0xFFE5EBF3 : 0xFF26334D);
       c.drawArc(r, 180, 180, false, p);
-      int color =
-          Double.isNaN(ratio)
-              ? (light ? 0xFF67758A : 0xFF9EACC1)
-              : ratio >= 100
-                  ? 0xFFE65F76
-                  : ratio >= 80 ? 0xFFD99325 : (light ? 0xFF00876C : 0xFF35D6AE);
-      if (!Double.isNaN(ratio) && ratio > 0) {
+      int color = spendingColor(ratio, light);
+      if (!Double.isNaN(displayedRatio) && displayedRatio > 0) {
         p.setColor(color);
-        c.drawArc(r, 180, (float) Math.min(100, ratio) * 1.8f, false, p);
+        c.drawArc(r, 180, (float) Math.min(100, displayedRatio) * 1.8f, false, p);
       }
       p.setStyle(Paint.Style.FILL);
       p.setTextAlign(Paint.Align.CENTER);
       p.setColor(light ? 0xFF151A2D : 0xFFF8FAFC);
       p.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
       p.setTextSize(dp(34));
-      c.drawText(
-          Double.isNaN(ratio) ? "—" : String.format(Finance.TR, "%%%.1f", ratio),
-          cx,
-          cy - dp(23),
-          p);
+      String value =
+          Double.isNaN(displayedRatio) ? "—" : String.format(Finance.TR, "%%%.1f", displayedRatio);
+      float length = p.measureText(value);
+      if (length > width * .8f) p.setTextSize(dp(34) * width * .8f / length);
+      c.drawText(value, cx, cy - dp(23), p);
       p.setTypeface(Typeface.DEFAULT);
       p.setTextSize(dp(11));
       p.setColor(light ? 0xFF68728A : 0xFF9EACC1);
