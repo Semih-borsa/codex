@@ -116,4 +116,65 @@ public class FinanceTest {
   public void csvEscapesQuotesAndMultilineNotes() {
     assertEquals("\"Bir \"\"not\"\"\nson\"", Finance.csvCell("Bir \"not\"\nson"));
   }
+
+  @Test
+  public void paydayCyclesCrossMonthAndYearBoundaries() {
+    YearMonth m = YearMonth.of(2026, 12);
+    assertEquals(LocalDate.of(2026, 12, 15), Finance.cycleStart(m, 15));
+    assertEquals(LocalDate.of(2027, 1, 14), Finance.cycleEnd(m, 15));
+    assertEquals(YearMonth.of(2026, 9), Finance.cycleMonth(LocalDate.of(2026, 10, 14), 15));
+    assertEquals(YearMonth.of(2026, 10), Finance.cycleMonth(LocalDate.of(2026, 10, 15), 15));
+    assertEquals(LocalDate.of(2024, 2, 29), Finance.cycleStart(YearMonth.of(2024, 2), 31));
+    assertEquals(LocalDate.of(2024, 3, 30), Finance.cycleEnd(YearMonth.of(2024, 2), 31));
+    assertThrows(IllegalArgumentException.class, () -> Finance.cycleStart(m, 0));
+  }
+
+  @Test
+  public void paydayForecastUsesCycleLengthAndElapsedDays() {
+    YearMonth m = YearMonth.of(2026, 10);
+    assertEquals(0, Finance.cycleDays(m, 15, LocalDate.of(2026, 10, 14)));
+    assertEquals(10, Finance.cycleDays(m, 15, LocalDate.of(2026, 10, 24)));
+    assertEquals(3100, Finance.cycleForecast(1000, m, 15, LocalDate.of(2026, 10, 24)));
+    assertEquals(1000, Finance.cycleForecast(1000, m, 15, LocalDate.of(2026, 12, 1)));
+  }
+
+  @Test
+  public void salaryCycleIncludesFollowingMonthAndExcludesNextPayday() {
+    List<Finance.Entry> list =
+        Arrays.asList(
+            entry("E", 100, "2026-10-14", 1, 0, 1),
+            entry("E", 200, "2026-10-15", 1, 0, 1),
+            entry("E", 300, "2026-11-14", 1, 0, 1),
+            entry("E", 400, "2026-11-15", 1, 0, 1));
+    assertEquals(
+        Arrays.asList(100L, 500L), Finance.cycles(list, YearMonth.of(2026, 10), 2, "E", 15));
+  }
+
+  @Test
+  public void spendingPercentageAllowsOverspendAndNoIncomeHasNoRatio() {
+    assertEquals(125, Finance.spendingRate(1000, 1250), 0.001);
+    assertTrue(Double.isNaN(Finance.spendingRate(0, 100)));
+    assertEquals(0, Finance.spendingRate(1000, 0), 0.001);
+  }
+
+  @Test
+  public void cardDueIsAfterClosingEvenWhenShortMonthClampsBothDays() {
+    assertEquals(LocalDate.of(2026, 10, 20), Finance.cardDue(LocalDate.of(2026, 10, 10), 20));
+    assertEquals(LocalDate.of(2027, 1, 5), Finance.cardDue(LocalDate.of(2026, 12, 25), 5));
+    assertEquals(LocalDate.of(2026, 3, 31), Finance.cardDue(LocalDate.of(2026, 2, 28), 31));
+    assertEquals(LocalDate.of(2026, 11, 10), Finance.cardDue(LocalDate.of(2026, 10, 10), 10));
+  }
+
+  @Test
+  public void knownBillsAreNotExtrapolatedAndPendingBillsAreCountedOnce() {
+    YearMonth m = YearMonth.of(2026, 10);
+    LocalDate today = LocalDate.of(2026, 10, 10);
+    // 1000 variable over 10 days + 500 already paid + 700 scheduled.
+    assertEquals(4300, Finance.obligationForecast(1500, 500, 700, m, 1, today));
+    assertEquals(
+        2200, Finance.obligationForecast(1500, 500, 700, m, 1, LocalDate.of(2026, 10, 31)));
+    assertEquals(1200, Finance.obligationForecast(500, 500, 700, m, 1, today));
+    assertThrows(
+        IllegalArgumentException.class, () -> Finance.obligationForecast(500, 501, 0, m, 1, today));
+  }
 }

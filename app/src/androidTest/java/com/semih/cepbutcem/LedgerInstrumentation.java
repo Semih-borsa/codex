@@ -215,6 +215,105 @@ public class LedgerInstrumentation extends Instrumentation {
           equal(0, db.processRecurring(LocalDate.of(2026, 10, 31)));
           equal(1, db.processRecurring(LocalDate.of(2026, 11, 1)));
         });
+    tests.put(
+        "legacySchemaUpgradePreservesEntries",
+        () -> {
+          Finance.Entry e = expense(12345, "2026-10-01");
+          db.saveEntry(e);
+          db.budget(e.categoryId, 50000);
+          android.database.sqlite.SQLiteDatabase raw = db.getWritableDatabase();
+          raw.execSQL("DROP TABLE planning");
+          raw.setVersion(1);
+          db.close();
+          db = new Ledger(context, DATABASE);
+          equal(2, db.getWritableDatabase().getVersion());
+          equal(12345, db.entries().get(0).amount);
+          equal(50000, db.budgets().get(e.categoryId));
+          equal(1, db.planning().payday);
+        });
+    tests.put(
+        "planningRoundTripAndLegacyBackup",
+        () -> {
+          Planning p = db.planning();
+          p.payday = 15;
+          p.target = 30;
+          p.light = true;
+          p.cards.add(new Planning.Card(db.accounts().get(1).id, 25, 5));
+          db.savePlanning(p);
+          String backup = db.backup();
+          db.restore(backup);
+          equal(15, db.planning().payday);
+          truth(db.planning().light);
+          equal(1, db.planning().cards.size());
+          JSONObject old = new JSONObject(backup);
+          old.put("version", 1);
+          old.remove("planning");
+          db.restore(old.toString());
+          equal(1, db.planning().payday);
+          equal(0, db.planning().cards.size());
+        });
+    tests.put(
+        "billPaymentAtomicIdempotentAndUndo",
+        () -> {
+          Planning p = db.planning();
+          Planning.Bill b = new Planning.Bill();
+          b.id = 1;
+          b.name = "Elektrik";
+          b.amount = 50000;
+          b.account = db.accounts().get(0).id;
+          b.category = db.categories("E").get(0).id;
+          b.due = LocalDate.of(2024, 1, 31);
+          b.day = 31;
+          b.monthly = true;
+          p.bills.add(b);
+          db.savePlanning(p);
+          equal(0, db.entries().size());
+          db.payBill(1, LocalDate.of(2024, 1, 31));
+          equal(1, db.entries().size());
+          equal(2, db.planning().bills.size());
+          truth(db.planning().bills.get(1).due.equals(LocalDate.of(2024, 2, 29)));
+          rejects(() -> db.payBill(1, LocalDate.of(2024, 1, 31)));
+          equal(1, db.entries().size());
+          long paid = db.planning().bills.get(0).paid;
+          rejects(() -> db.deleteEntry(paid));
+          db.restore(db.backup());
+          equal(paid, db.planning().bills.get(0).paid);
+          db.undoBill(1);
+          equal(0, db.entries().size());
+          equal(0, db.planning().bills.get(0).paid);
+          equal(2, db.planning().bills.size());
+          db.payBill(1, LocalDate.of(2024, 2, 1));
+          equal(2, db.planning().bills.size());
+          db.payBill(2, LocalDate.of(2024, 2, 29));
+          truth(db.planning().bills.get(2).due.equals(LocalDate.of(2024, 3, 31)));
+        });
+    tests.put(
+        "invalidPlanningRestoreCannotEraseData",
+        () -> {
+          db.saveEntry(expense(321, "2026-10-01"));
+          JSONObject root = new JSONObject(db.backup());
+          root.getJSONObject("planning").put("payday", 32);
+          rejects(() -> db.restore(root.toString()));
+          equal(321, db.entries().get(0).amount);
+          Planning p = db.planning();
+          p.cards.add(new Planning.Card(999, 10, 20));
+          rejects(() -> db.savePlanning(p));
+          equal(0, db.planning().cards.size());
+        });
+    tests.put(
+        "cardPaymentDoesNotDoubleCountExpense",
+        () -> {
+          long bank = db.accounts().get(0).id, card = db.accounts().get(1).id;
+          Finance.Entry shopping = expense(10000, "2026-10-01");
+          shopping.accountId = card;
+          db.saveEntry(shopping);
+          db.saveEntry(
+              new Finance.Entry(
+                  0, "T", 10000, LocalDate.of(2026, 10, 2), bank, card, 0, "Kart ödemesi"));
+          equal(10000, Finance.total(db.entries(), "E"));
+          equal(0, Finance.total(db.entries(), "I"));
+          equal(0, Finance.balance(db.accounts().get(1), db.entries(), LocalDate.of(2026, 10, 2)));
+        });
     int current = 0;
     StringBuilder summary = new StringBuilder();
     for (Map.Entry<String, Check> test : tests.entrySet()) {

@@ -16,7 +16,7 @@ public final class Ledger extends SQLiteOpenHelper {
   }
 
   Ledger(Context context, String name) {
-    super(context, name, null, 1);
+    super(context, name, null, 2);
   }
 
   @Override
@@ -50,6 +50,7 @@ public final class Ledger extends SQLiteOpenHelper {
     db.execSQL(
         "CREATE TABLE budgets (category_id INTEGER PRIMARY KEY REFERENCES categories(id), amount"
             + " INTEGER NOT NULL CHECK(amount>0))");
+    createPlanning(db);
     db.execSQL("INSERT INTO accounts(name,opening) VALUES ('Nakit',0),('Banka',0)");
     for (String name :
         Arrays.asList(
@@ -76,7 +77,121 @@ public final class Ledger extends SQLiteOpenHelper {
 
   @Override
   public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-    throw new IllegalStateException("Desteklenmeyen veritabanı sürümü.");
+    if (oldVersion == 1 && newVersion == 2) createPlanning(db);
+    else throw new IllegalStateException("Desteklenmeyen veritabanı sürümü.");
+  }
+
+  private void createPlanning(SQLiteDatabase db) {
+    db.execSQL("CREATE TABLE planning (id INTEGER PRIMARY KEY CHECK(id=1), data TEXT NOT NULL)");
+  }
+
+  public Planning planning() throws JSONException {
+    try (Cursor c = getReadableDatabase().rawQuery("SELECT data FROM planning WHERE id=1", null)) {
+      return c.moveToFirst()
+          ? validatePlanning(
+              new JSONObject(c.getString(0)), accounts(), categories(null), entries())
+          : new Planning();
+    }
+  }
+
+  private Planning validatePlanning(
+      JSONObject o,
+      List<Finance.Account> accounts,
+      List<Finance.Category> categories,
+      List<Finance.Entry> entries)
+      throws JSONException {
+    Set<Long> ids = new HashSet<>();
+    Map<Long, String> kinds = new HashMap<>();
+    Map<Long, Finance.Entry> records = new HashMap<>();
+    for (Finance.Account a : accounts) ids.add(a.id);
+    for (Finance.Category c : categories) kinds.put(c.id, c.kind);
+    for (Finance.Entry e : entries) records.put(e.id, e);
+    return Planning.parse(o, ids, kinds, records);
+  }
+
+  public void savePlanning(Planning p) throws JSONException {
+    JSONObject o = p.json();
+    validatePlanning(o, accounts(), categories(null), entries());
+    ContentValues v = new ContentValues();
+    v.put("id", 1);
+    v.put("data", o.toString());
+    getWritableDatabase()
+        .insertWithOnConflict("planning", null, v, SQLiteDatabase.CONFLICT_REPLACE);
+  }
+
+  /** The expense and its paid marker commit together; repeat clicks cannot double charge. */
+  public void payBill(long id, LocalDate date) throws JSONException {
+    validDate(date.toString());
+    if (date.isAfter(LocalDate.now()))
+      throw new IllegalArgumentException("Ödeme tarihi gelecekte olamaz.");
+    SQLiteDatabase db = getWritableDatabase();
+    db.beginTransaction();
+    try {
+      Planning p = planning();
+      Planning.Bill found = null;
+      for (Planning.Bill b : p.bills) if (b.id == id) found = b;
+      if (found == null || found.paid != 0)
+        throw new IllegalArgumentException("Fatura zaten ödenmiş veya bulunamadı.");
+      Finance.Entry e =
+          new Finance.Entry(
+              0,
+              "E",
+              found.amount,
+              date,
+              found.account,
+              0,
+              found.category,
+              "Fatura: " + found.name);
+      saveEntry(e);
+      found.paid = e.id;
+      if (found.monthly) {
+        Planning.Bill next = new Planning.Bill();
+        next.id = p.nextBillId();
+        next.name = found.name;
+        next.amount = found.amount;
+        next.account = found.account;
+        next.category = found.category;
+        next.monthly = true;
+        next.day = found.day;
+        next.due = Finance.nextMonthly(found.due, found.day);
+        p.bills.add(next);
+      }
+      savePlanning(p);
+      db.setTransactionSuccessful();
+    } finally {
+      db.endTransaction();
+    }
+  }
+
+  public void undoBill(long id) throws JSONException {
+    SQLiteDatabase db = getWritableDatabase();
+    db.beginTransaction();
+    try {
+      Planning p = planning();
+      for (Planning.Bill b : p.bills)
+        if (b.id == id && b.paid != 0) {
+          db.delete("entries", "id=?", new String[] {Long.toString(b.paid)});
+          b.paid = 0;
+          // A generated next bill is retained, preventing loss of later edits/payments.
+          b.monthly = false;
+        }
+      savePlanning(p);
+      db.setTransactionSuccessful();
+    } finally {
+      db.endTransaction();
+    }
+  }
+
+  private void protectBillEntry(long id) {
+    try {
+      for (Planning.Bill b : planning().bills)
+        if (b.paid == id && id != 0)
+          throw new IllegalArgumentException(
+              "Bu kayıt ödenen bir faturaya bağlı. Fatura ekranında ödemeyi geri alarak"
+                  + " düzenleyin.");
+    } catch (JSONException e) {
+      throw new IllegalStateException(e);
+    }
   }
 
   public List<Finance.Account> accounts() {
@@ -159,6 +274,7 @@ public final class Ledger extends SQLiteOpenHelper {
   }
 
   public void saveEntry(Finance.Entry e) {
+    if (e.id != 0) protectBillEntry(e.id);
     validateReferences(e);
     if (e.id == 0) e.id = getWritableDatabase().insertOrThrow("entries", null, entryValues(e));
     else
@@ -167,6 +283,7 @@ public final class Ledger extends SQLiteOpenHelper {
   }
 
   public void deleteEntry(long id) {
+    protectBillEntry(id);
     getWritableDatabase().delete("entries", "id=?", new String[] {Long.toString(id)});
   }
 
@@ -306,7 +423,8 @@ public final class Ledger extends SQLiteOpenHelper {
     try {
       JSONObject result = new JSONObject();
       result.put("format", "cepbutcem");
-      result.put("version", 1);
+      result.put("version", 2);
+      result.put("planning", planning().json());
       result.put("created", LocalDateTime.now().toString());
       for (String name : Arrays.asList("accounts", "categories", "recurring", "entries", "budgets"))
         result.put(name, table(name));
@@ -356,7 +474,8 @@ public final class Ledger extends SQLiteOpenHelper {
   /** Validate all rows before any deletion. Failed restores roll back the original data. */
   public void restore(String input) throws JSONException {
     JSONObject root = new JSONObject(input);
-    if (!"cepbutcem".equals(root.getString("format")) || integer(root, "version") != 1)
+    if (!"cepbutcem".equals(root.getString("format"))
+        || (integer(root, "version") != 1 && integer(root, "version") != 2))
       throw new JSONException("Uyumlu Cep Bütçem yedeği değil.");
     Map<String, JSONArray> tables = new LinkedHashMap<>();
     for (String name : Arrays.asList("accounts", "categories", "recurring", "entries", "budgets")) {
@@ -424,6 +543,26 @@ public final class Ledger extends SQLiteOpenHelper {
         throw new JSONException("Geçersiz bütçe.");
       amount(row, "amount", true);
     }
+    Planning restoredPlan = new Planning();
+    if (integer(root, "version") == 2) {
+      Map<Long, Finance.Entry> records = new HashMap<>();
+      for (int i = 0; i < tables.get("entries").length(); i++) {
+        JSONObject r = tables.get("entries").getJSONObject(i);
+        long id = r.getLong("id");
+        records.put(
+            id,
+            new Finance.Entry(
+                id,
+                r.getString("kind"),
+                r.getLong("amount"),
+                LocalDate.parse(r.getString("date")),
+                r.getLong("account_id"),
+                r.optLong("target_id"),
+                r.optLong("category_id"),
+                r.getString("note")));
+      }
+      restoredPlan = Planning.parse(root.getJSONObject("planning"), accounts, kinds, records);
+    }
     Map<String, String[]> columns = new LinkedHashMap<>();
     columns.put("accounts", new String[] {"id", "name", "opening"});
     columns.put("categories", new String[] {"id", "name", "kind"});
@@ -450,6 +589,7 @@ public final class Ledger extends SQLiteOpenHelper {
     SQLiteDatabase db = getWritableDatabase();
     db.beginTransaction();
     try {
+      db.delete("planning", null, null);
       for (String name : Arrays.asList("entries", "budgets", "recurring", "categories", "accounts"))
         db.delete(name, null, null);
       for (String name : tables.keySet())
@@ -463,6 +603,7 @@ public final class Ledger extends SQLiteOpenHelper {
           }
           db.insertOrThrow(name, null, values);
         }
+      savePlanning(restoredPlan);
       db.setTransactionSuccessful();
     } finally {
       db.endTransaction();

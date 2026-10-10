@@ -13,6 +13,8 @@ Bilgisayarda `CepButcem-Tam-Paket.zip` dosyasını **Tümünü ayıkla / Extract
 
 GitHub’ın **Code → Download ZIP** seçeneği de tüm depoyu indirir; o pakette hazır APK ve tam paket `downloads` klasöründedir. Dosyaları ZIP içinden doğrudan açmayın; önce klasöre ayıklayın.
 
+Ayrıntılı Windows indirme, telefona kurulum ve ilk ayarlar: [Adım adım kurulum](docs/KURULUM.md).
+
 ## Android Studio ile çalıştırma
 
 1. Bu projenin **kök klasörünü** Android Studio'da açın (yalnızca `app` klasörünü değil).
@@ -41,28 +43,46 @@ Debug APK kişisel deneme için imzalı ve kurulabilirdir. Kalıcı sürüm içi
 - Gelir, gider ve hesaplar arası transfer; kayıt düzenleme ve silme.
 - Birden çok hesap ve pozitif/negatif açılış bakiyesi.
 - Özelleştirilebilir gelir-gider kategorileri; notlar ve tarih seçimi.
-- Aylık işlem listesi; not/kategori/hesap araması ve tür, kategori, hesap filtreleri.
+- Maaş dönemine göre işlem listesi; not/kategori/hesap araması ve tür, kategori, hesap filtreleri.
 - İleri tarihli kayıtların planlanan olarak işaretlenmesi.
-- Her ay tekrarlanan kategori bütçeleri; kullanım oranı, aşım, kalan tutar ve günlük kullanılabilir limit.
+- Her maaş döneminde tekrarlanan kategori bütçeleri; kullanım oranı, aşım, kalan tutar ve günlük kullanılabilir limit.
 - Aylık düzenli gelir-giderler; kısa aylarda ay sonuna uyarlama ve aynı vadenin iki kez oluşturulmasının engellenmesi.
 - JSON ile tam yedekleme/geri yükleme; Excel için Türkçe, UTF-8 BOM içeren CSV dışa aktarımı.
-- Koyu renkli yerel Android arayüzü ve gelir/gider grafikleri.
+- Kalıcı açık/koyu tema seçimi ve gelir/gider grafikleri.
 
 ## Ayrıntılı analizler
 
-**Analiz** ekranında seçili ay, son üç ay, seçili yıl veya özel tarih aralığı seçilebilir:
+**Analiz** ekranında seçili maaş dönemi, son üç maaş dönemi, seçili yılın 12 maaş dönemi veya özel tarih aralığı seçilebilir:
 
 - Gelir, gider, net nakit akışı ve tasarruf oranı.
 - Önceki dönem ile gelir/gider değişimi; kategori bazında değişim.
 - Gelir kaynakları ve gider kategorilerinin tutarı ve yüzde payı.
-- Altı aylık gelir/gider grafiği ve aylık tutar tablosu.
+- Altı maaş dönemi gelir/gider grafiği ve dönem tutar tablosu.
 - Günlük ortalama, işlem başına ortalama, harcama yapılan gün sayısı ve en büyük gider.
 - En çok harcanan kategori ve bu kategoride %10 azaltmanın parasal karşılığı.
 - Haftanın günlerine göre, harcamasız günleri de içeren günlük ortalama gider.
 - Hesap bazında gelir/gider ile transfer giriş/çıkışları.
-- İçinde bulunulan ay için günlük harcama hızına dayalı ay sonu gider tahmini.
+- İçinde bulunulan maaş dönemi için günlük harcama hızına dayalı dönem sonu gider tahmini.
 
-Grafiklerdeki tutarlar metin listelerinde de bulunur. Tahminler istatistiksel yön göstergesidir; gelecekteki faturaları, fiyat değişimlerini veya gelirleri modellemez.
+Grafiklerdeki tutarlar metin listelerinde de bulunur. Tahminler istatistiksel yön göstergesidir; kaydedilmemiş faturaları, fiyat değişimlerini veya gelecekteki gelirleri tahmin etmez. Asistanın ayrı senaryosu kayıtlı bekleyen faturaları dikkate alır.
+
+## v1.1: maaş dönemim, ödeme takvimi ve bütçe asistanı
+
+**Ayarlar → Maaş günü ve hedefi değiştir** ile maaş gününü (1–31) ve tasarruf hedefini (%0–100) seç. Örneğin 15 seçildiğinde dönem 15 Ekim–14 Kasım olur. Ay seçici, dönemin başladığı ayı seçer. 31 seçilirse kısa ayın son günü kullanılır; sonraki dönem tekrar 31'de başlar. Varsayılan gün 1 eski takvim ayı davranışını korur. Özel tarih analizi seçilen tarihleri kullanır.
+
+**Ayarlar → Açık temaya geç / Koyu temaya geç** ile görünümü değiştir; tercih kapanış ve yeniden açılışta korunur.
+
+**Kredi kartı:** önce kart için ayrı bir hesap aç; mevcut borcu negatif açılış bakiyesi yap. **Kredi kartı tanımla** ile hesap kesim ve son ödeme günlerini seç. Alışverişleri kart hesabına gider, borç ödemesini **Kart borcu öde · transfer** ile banka/nakit hesabından karta transfer kaydet. Bu ödeme gideri ikinci kez artırmaz. Takvim, son kesim/son ödeme/sonraki kesimi gösterir. Önceki kesimdeki borçtan kesim sonrası transferler düşülerek kalan ekstre borcu tahmini çıkarılır; bankanın gerçek ekstresi, iade/faiz ve tatil değişiklikleri esas alınmalıdır. Kart numarası veya banka şifresi istenmez.
+
+**Fatura:** ad, tutar, hesap, kategori ve son ödeme tarihi ekle. Bekleyen, bugün ödenecek, gecikmiş ve ödenmiş durumları görünür. **Ödemeyi kaydet** tek bir gider oluşturur; aynı fatura tekrar ödenemez. Aylık tekrar seçilmişse ödeme sonrası sonraki aya aynı tahmini tutarlı fatura açılır; gerçek tutarı geldiğinde düzenle. 31'inci gün şubatta kısalırken martta tekrar 31'e döner. Faturaya bağlı giderin düzenlenmesi için önce **Ödemeyi geri al** kullan. Geri alma sonraki faturayı korur; eski faturanın otomatik tekrarını kapatır. Aynı ödemeyi ayrıca düzenli gider olarak tanımlama.
+
+**Bütçe asistanı:** gelirin harcanan yüzdesi (`gider / gelir × 100`, %100 aşılabilir), tasarruf hedefi, önceki dönemin aynı günlerine göre gelir/gider değişimi, artışa en fazla katkı yapan kategori ve en büyük kategoride %10 azaltma senaryosu verir. Gelir yoksa oran hesaplanmaz; önceki kayıt yoksa artış/azalış sonucuna varılmaz. Maaşın yatış zamanının karşılaştırmayı etkileyebileceği belirtilir.
+
+Dönem sonu senaryosu `(gerçekleşmiş gider − ödenmiş takipli faturalar) / geçen gün × dönem gün sayısı + ödenmiş takipli faturalar + dönem sonuna kadar bekleyen/gecikmiş faturalar` kullanır. Bilinen fatura ödemeleri günlük ortalamadan çıkarılır; bir kez eklenir ve dönem sonuna doğru tekrar büyütülmez. Diğer giderler günlük hızla tahmin edilir. Gelecek gelir varsayılmaz. Kalan günlük hedef payı, kayıtlı gelirden giderleri, bekleyen faturaları ve tasarruf hedefini çıkarıp yarından dönem sonuna kalan günlere böler; bu tutar bankadaki kullanılabilir bakiye değildir. Kredi kartı ödeme transferleri harcama senaryosuna eklenmez; ayrıca ödeme takviminden takip edilir. İlk 7 günde tahminin oynaklığı açıklanır.
+
+Asistan çevrimdışı hesaplama ve açıklanabilir kurallar kullanır; bir dil modeli veya banka bağlantısı içermez. Yorumlar kayıtlara dayanır; eksik kayıtlar sonuçları değiştirir. Arka planda ödeme bildirimi gönderilmez; takvim uygulama içinde gösterilir.
+
+Güncelleme SQLite v1 kayıtlarını silmeden v2'ye geçirir. Hazır APK önceki yayımlanan APK ile aynı debug anahtarıyla imzalanır. Kurmadan önce **JSON yedeğini kaydet** ile yedek al; APK'yı güncelleme olarak kur, uygulamayı kaldırma. Android Studio'da farklı imzayla derlenen bir sürümün üzerine kurmak imza uyuşmazlığı oluşturabilir.
 
 ## İlk kullanım
 
@@ -77,16 +97,16 @@ Düzenli işlemler **Ayarlar → Aylık düzenli işlem** ile tanımlanır. Uygu
 - Tutarlar kayan nokta yerine **tam sayı kuruş** olarak saklanır.
 - Hesap bakiyesi = açılış + gelir − gider + transfer giriş − transfer çıkış.
 - Açılış bakiyesi gelir değildir. Transferler gelir, gider, kategori dağılımı ve tasarruf oranına dahil edilmez.
-- Özet'teki **Toplam varlık** her zaman bugünün bakiyesidir. Aylık göstergeler seçili aya aittir.
+- Özet'teki **Toplam varlık** her zaman bugünün bakiyesidir. Dönem göstergeleri seçili maaş dönemine aittir.
 - İleri tarihli kayıtlar işlem listesinde görünür; bakiyeye ve gerçekleşmiş analizlere henüz katılmaz.
 - Tasarruf oranı = `(gelir − gider) / gelir × 100`. Gelir yoksa oran hesaplanmaz.
-- Ay karşılaştırması, önceki ayın aynı gün aralığına yapılır; kısa ayın son günü sınırdır. Diğer aralıklar önceki eşit uzunluktaki gerçekleşmiş dönem ile karşılaştırılır.
-- Günlük ortalama, aralıktaki **tüm takvim günlerine** bölünür. Ay sonu tahmini = gerçekleşmiş gider / geçen gün × ayın gün sayısı.
-- Bütçeler kategori bazında her ay aynı limiti uygular. Bütçesi olmayan kategoriler bütçe toplamlarına katılmaz.
+- Maaş dönemi karşılaştırması, önceki dönemin aynı geçen gün sayısına yapılır; önceki dönem sonu sınırdır. Diğer aralıklar önceki eşit uzunluktaki gerçekleşmiş dönem ile karşılaştırılır.
+- Günlük ortalama, aralıktaki **tüm takvim günlerine** bölünür. Dönem sonu tahmini = gerçekleşmiş gider / geçen gün × maaş döneminin gün sayısı.
+- Bütçeler kategori bazında her maaş döneminde aynı limiti uygular. Bütçesi olmayan kategoriler bütçe toplamlarına katılmaz.
 
 Uygulama internet izni istemez, banka bağlantısı veya reklam içermez. SQLite dosyası Android'in uygulamaya özel alanındadır. Otomatik Android bulut yedeklemesi kapalıdır. Uygulamayı kaldırmak yerel verileri siler.
 
-JSON yedeği hesapları, kategorileri, işlemleri, düzenli kuralları ve bütçeleri içerir. Geri yükleme mevcut verileri tamamen değiştirir; dosya önce doğrulanır, veritabanı işlemi başarısızsa eski veriler geri alınır. En fazla 16 MB JSON dosyası kabul edilir. Yedek ve CSV dosyaları **şifrelenmez**; bunları güvenli bir yerde saklayın. CSV geri yükleme desteklenmez; geri yüklemek için JSON kullanın.
+JSON v2 yedeği hesapları, kategorileri, işlemleri, düzenli kuralları, bütçeleri, kart tarihlerini, faturaları, maaş günü, tema ve hedef ayarlarını içerir. Eski v1 yedekleri desteklenir; yeni ayarlar varsayılanlara döner. Geri yükleme mevcut verileri tamamen değiştirir; dosya önce doğrulanır, veritabanı işlemi başarısızsa eski veriler geri alınır. En fazla 16 MB JSON dosyası kabul edilir. Yedek ve CSV dosyaları **şifrelenmez**; bunları güvenli bir yerde saklayın. CSV geri yükleme desteklenmez; geri yüklemek için JSON kullanın.
 
 ## Komut satırı ve testler
 
@@ -115,6 +135,7 @@ Android testleri ayrı `ledger-validation.db` veritabanında çalışır; kişis
 ## Proje düzeni
 
 - `Finance.java`: Android bağımsız para ve analiz hesapları.
+- `Planning.java`: kart/fatura ve kalıcı ayarlar; yedek doğrulaması.
 - `Ledger.java`: SQLite, düzenli kayıt üretimi, CSV ve JSON.
 - `MainActivity.java`: beş ana ekran, formlar ve sistem dosya seçicisi.
 - `Charts.java`: yerel Canvas grafikleri.
@@ -129,4 +150,6 @@ Aşağıdaki tutarlar emülatörde girilen test kayıtlarıdır; uygulama boş v
 
 <img src="docs/screenshots/overview.png" width="240" alt="Genel bakış" /> <img src="docs/screenshots/analysis.png" width="240" alt="Analizler" /> <img src="docs/screenshots/budgets.png" width="240" alt="Bütçeler" />
 
-Derleme, 24 test ve UI kontrolü sonuçları: [Doğrulama kaydı](docs/VALIDATION.md).
+<img src="docs/screenshots/settings-light.png" width="240" alt="Maaş günü ve açık tema" /> <img src="docs/screenshots/advisor-light.png" width="240" alt="Bütçe asistanı" />
+
+Derleme, 35 test ve UI kontrolü sonuçları: [Doğrulama kaydı](docs/VALIDATION.md).

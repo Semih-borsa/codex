@@ -14,6 +14,7 @@ public final class Charts extends View {
   private final List<Long> a, b;
   private final List<String> labels;
   private final boolean ring;
+  private boolean light;
 
   public Charts(Context context) {
     this(context, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), false);
@@ -25,6 +26,7 @@ public final class Charts extends View {
     this.b = b;
     this.labels = labels;
     this.ring = ring;
+    light = context instanceof MainActivity && ((MainActivity) context).isLightTheme();
     setMinimumHeight(dp(ring ? 200 : 210));
     setContentDescription(
         ring
@@ -66,11 +68,11 @@ public final class Charts extends View {
       start += sweep;
     }
     paint.setStyle(Paint.Style.FILL);
-    paint.setColor(0xFF96A6B4);
+    paint.setColor(light ? 0xFF536477 : 0xFF96A6B4);
     paint.setTextSize(dp(12));
     paint.setTextAlign(Paint.Align.CENTER);
     c.drawText("TOPLAM GİDER", x, y - dp(8), paint);
-    paint.setColor(0xFFF0F5F7);
+    paint.setColor(light ? 0xFF17283A : 0xFFF0F5F7);
     paint.setTextSize(dp(18));
     paint.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
     c.drawText(compact(sum), x, y + dp(17), paint);
@@ -94,9 +96,9 @@ public final class Charts extends View {
     paint.setTextSize(dp(10));
     for (int i = 0; i <= 3; i++) {
       float y = bottom - (bottom - top) * i / 3;
-      paint.setColor(0xFF2B3A47);
+      paint.setColor(light ? 0xFFD7E0E8 : 0xFF2B3A47);
       c.drawLine(left, y, right, y, paint);
-      paint.setColor(0xFF96A6B4);
+      paint.setColor(light ? 0xFF536477 : 0xFF96A6B4);
       paint.setTextAlign(Paint.Align.RIGHT);
       c.drawText(compact(max * i / 3).replace(" ₺", ""), left - dp(6), y + dp(3), paint);
     }
@@ -121,7 +123,7 @@ public final class Charts extends View {
           dp(3),
           dp(3),
           paint);
-      paint.setColor(0xFF96A6B4);
+      paint.setColor(light ? 0xFF536477 : 0xFF96A6B4);
       paint.setTextAlign(Paint.Align.CENTER);
       c.drawText(labels.get(i), x, bottom + dp(20), paint);
     }

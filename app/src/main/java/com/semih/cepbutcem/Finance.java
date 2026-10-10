@@ -137,6 +137,76 @@ public final class Finance {
     return result;
   }
 
+  /** A cycle is named by the month in which its payday occurs. */
+  public static LocalDate cycleStart(YearMonth month, int payday) {
+    if (payday < 1 || payday > 31) throw new IllegalArgumentException("Maaş günü 1–31 olmalı.");
+    return month.atDay(Math.min(payday, month.lengthOfMonth()));
+  }
+
+  public static LocalDate cycleEnd(YearMonth month, int payday) {
+    return cycleStart(month.plusMonths(1), payday).minusDays(1);
+  }
+
+  public static YearMonth cycleMonth(LocalDate today, int payday) {
+    YearMonth m = YearMonth.from(today);
+    return today.isBefore(cycleStart(m, payday)) ? m.minusMonths(1) : m;
+  }
+
+  public static int cycleDays(YearMonth month, int payday, LocalDate today) {
+    LocalDate start = cycleStart(month, payday), end = cycleEnd(month, payday);
+    if (today.isBefore(start)) return 0;
+    return (int)
+            java.time.temporal.ChronoUnit.DAYS.between(start, today.isBefore(end) ? today : end)
+        + 1;
+  }
+
+  public static long cycleForecast(long expense, YearMonth month, int payday, LocalDate today) {
+    int elapsed = cycleDays(month, payday, today);
+    int length =
+        (int)
+                java.time.temporal.ChronoUnit.DAYS.between(
+                    cycleStart(month, payday), cycleEnd(month, payday))
+            + 1;
+    return elapsed == 0 ? 0 : Math.round(expense * (double) length / elapsed);
+  }
+
+  /** Forecast observed variable spending; known bill payments remain fixed. */
+  public static long obligationForecast(
+      long expense,
+      long paidBills,
+      long pendingBills,
+      YearMonth month,
+      int payday,
+      LocalDate today) {
+    if (paidBills < 0 || paidBills > expense || pendingBills < 0)
+      throw new IllegalArgumentException("Fatura toplamı giderle uyumlu olmalı.");
+    return Math.addExact(
+        cycleForecast(expense - paidBills, month, payday, today),
+        Math.addExact(paidBills, pendingBills));
+  }
+
+  public static double spendingRate(long income, long expense) {
+    return income > 0 ? 100d * expense / income : Double.NaN;
+  }
+
+  /** Due date is strictly after closing, including equal preferred days. */
+  public static LocalDate cardDue(LocalDate closing, int dueDay) {
+    if (dueDay < 1 || dueDay > 31) throw new IllegalArgumentException("Ödeme günü 1–31 olmalı.");
+    YearMonth m = YearMonth.from(closing);
+    LocalDate due = cycleStart(m, dueDay);
+    return due.isAfter(closing) ? due : cycleStart(m.plusMonths(1), dueDay);
+  }
+
+  public static List<Long> cycles(
+      List<Entry> entries, YearMonth end, int count, String kind, int payday) {
+    List<Long> result = new ArrayList<>();
+    for (int i = count - 1; i >= 0; i--) {
+      YearMonth m = end.minusMonths(i);
+      result.add(total(period(entries, cycleStart(m, payday), cycleEnd(m, payday)), kind));
+    }
+    return result;
+  }
+
   public static double savingRate(long income, long expense) {
     return income > 0 ? 100d * (income - expense) / income : Double.NaN;
   }
