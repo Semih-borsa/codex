@@ -223,10 +223,14 @@ public class LedgerInstrumentation extends Instrumentation {
           db.budget(e.categoryId, 50000);
           android.database.sqlite.SQLiteDatabase raw = db.getWritableDatabase();
           raw.execSQL("DROP TABLE planning");
+          raw.execSQL("DROP TRIGGER entries_daily_insert");
+          raw.execSQL("DROP TRIGGER entries_daily_update");
+          raw.execSQL("DROP TRIGGER entries_daily_delete");
+          raw.execSQL("DROP TABLE account_daily");
           raw.setVersion(1);
           db.close();
           db = new Ledger(context, DATABASE);
-          equal(2, db.getWritableDatabase().getVersion());
+          equal(3, db.getWritableDatabase().getVersion());
           equal(12345, db.entries().get(0).amount);
           equal(50000, db.budgets().get(e.categoryId));
           equal(1, db.planning().payday);
@@ -328,7 +332,7 @@ public class LedgerInstrumentation extends Instrumentation {
           equal(13499, db.planning().cards.get(0).bankTotal());
           equal(0, db.entries().size());
           String backup = db.backup();
-          equal(3, new JSONObject(backup).getLong("version"));
+          equal(4, new JSONObject(backup).getLong("version"));
           db.restore(backup);
           equal(999, db.planning().cards.get(0).pending);
           truth(db.planning().cards.get(0).updated.equals(LocalDate.of(2026, 10, 10)));
@@ -460,7 +464,320 @@ public class LedgerInstrumentation extends Instrumentation {
           truth(animation.get() == null);
           truth(value[0] == 150);
         });
+    tests.put(
+        "indexedPagesReportsAndLifetimeBalances",
+        () -> {
+          long source = db.accounts().get(0).id, target = db.accounts().get(1).id;
+          Finance.Entry e = expense(100, "2026-10-10");
+          db.saveEntry(e);
+          Finance.Entry e2 = expense(250, "2026-10-10");
+          e2.note = "İŞ ÖĞLE";
+          db.saveEntry(e2);
+          db.saveEntry(
+              new Finance.Entry(
+                  0,
+                  "I",
+                  1000,
+                  LocalDate.of(2020, 1, 1),
+                  source,
+                  0,
+                  db.categories("I").get(0).id,
+                  ""));
+          db.saveEntry(
+              new Finance.Entry(0, "T", 200, LocalDate.of(2026, 10, 10), source, target, 0, ""));
+          db.saveEntry(
+              new Finance.Entry(
+                  0,
+                  "I",
+                  9999,
+                  LocalDate.of(2099, 1, 1),
+                  source,
+                  0,
+                  db.categories("I").get(0).id,
+                  ""));
+          List<Finance.Entry> report =
+              db.reportEntries(LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 31));
+          equal(350, Finance.total(report, "E"));
+          equal(2, report.stream().filter(x -> x.kind.equals("E")).findFirst().get().recordCount);
+          equal(
+              250, report.stream().filter(x -> x.kind.equals("E")).findFirst().get().largestAmount);
+          equal(450, db.balances(LocalDate.of(2026, 10, 10)).get(source));
+          equal(200, db.balances(LocalDate.of(2026, 10, 10)).get(target));
+          Ledger.EntryPage page =
+              db.entryPage(
+                  LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 31), "", 0, 0, "", 1, 0);
+          equal(3, page.count);
+          equal(1, page.rows.size());
+          equal(350, page.expense);
+          Ledger.EntryPage second =
+              db.entryPage(
+                  LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 31), "", 0, 0, "", 1, 1);
+          truth(page.rows.get(0).id != second.rows.get(0).id);
+          equal(
+              1,
+              db.entryPage(
+                      LocalDate.of(2026, 10, 1),
+                      LocalDate.of(2026, 10, 31),
+                      "E",
+                      0,
+                      0,
+                      "iş öğle",
+                      50,
+                      0)
+                  .count);
+          equal(1, db.dayEntries(LocalDate.of(2026, 10, 10), 1, 0).size());
+          equal(5, db.accountEntryCount(source));
+          try (android.database.Cursor c =
+              db.getReadableDatabase()
+                  .rawQuery(
+                      "EXPLAIN QUERY PLAN SELECT * FROM entries WHERE date>=? AND date<=? ORDER BY"
+                          + " date DESC,id DESC LIMIT 50",
+                      new String[] {"2026-10-01", "2026-10-31"})) {
+            String plan = "";
+            while (c.moveToNext()) plan += c.getString(3);
+            truth(plan.contains("INDEX"));
+          }
+        });
+    tests.put(
+        "hundredThousandRowsRemainBounded",
+        () -> {
+          android.database.sqlite.SQLiteDatabase sql = db.getWritableDatabase();
+          long account = db.accounts().get(0).id, cat = db.categories("E").get(0).id;
+          long started = android.os.SystemClock.elapsedRealtime();
+          sql.beginTransaction();
+          try {
+            sql.execSQL(
+                "WITH RECURSIVE seq(x) AS (VALUES(0) UNION ALL SELECT x+1 FROM seq WHERE x<99999)"
+                    + " INSERT INTO entries(kind,amount,date,account_id,category_id,note) SELECT"
+                    + " 'E',100,date('2026-01-01','+'||(x%100)||' days'),?,?,'load fixture' FROM"
+                    + " seq",
+                new Object[] {account, cat});
+            sql.setTransactionSuccessful();
+          } finally {
+            sql.endTransaction();
+          }
+          long queryStart = android.os.SystemClock.elapsedRealtime();
+          List<Finance.Entry> report =
+              db.reportEntries(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 4, 30));
+          equal(100, report.size());
+          equal(10000000, Finance.total(report, "E"));
+          equal(1000, report.get(0).recordCount);
+          Ledger.EntryPage page =
+              db.entryPage(
+                  LocalDate.of(2026, 1, 1), LocalDate.of(2026, 4, 30), "E", 0, 0, "", 50, 0);
+          equal(50, page.rows.size());
+          equal(100000, page.count);
+          equal(-10000000, db.balances(LocalDate.of(2026, 5, 1)).get(account));
+          android.util.Log.i(
+              "CepBudgetValidation",
+              "100000 fixture insertMs="
+                  + (queryStart - started)
+                  + ", queriesMs="
+                  + (android.os.SystemClock.elapsedRealtime() - queryStart)
+                  + ", reportRows="
+                  + report.size()
+                  + ", pageRows="
+                  + page.rows.size());
+        });
+    tests.put(
+        "loanSchedulesPreserveMonthEndAndBackup",
+        () -> {
+          Planning.Loan loan = new Planning.Loan();
+          loan.name = "İhtiyaç";
+          loan.principal = 30000;
+          loan.installment = 12000;
+          loan.count = 3;
+          loan.first = LocalDate.of(2024, 1, 31);
+          loan.account = db.accounts().get(0).id;
+          loan.category = db.categories("E").get(0).id;
+          db.addLoan(loan);
+          Planning p = db.planning();
+          equal(1, p.loans.size());
+          equal(3, p.bills.size());
+          truth(p.bills.get(1).due.equals(LocalDate.of(2024, 2, 29)));
+          truth(p.bills.get(2).due.equals(LocalDate.of(2024, 3, 31)));
+          db.payLoan(p.bills.get(0).id, LocalDate.of(2024, 1, 31), false);
+          truth(db.planning().bills.get(0).isPaid());
+          equal(0, db.entries().size());
+          equal(0, db.balances(LocalDate.now()).get(loan.account));
+          rejects(() -> db.payLoan(p.bills.get(0).id, LocalDate.of(2024, 1, 31), true));
+          String backup = db.backup();
+          db.restore(backup);
+          truth(db.planning().bills.get(0).trackedPaid != null);
+          equal(0, db.entries().size());
+          db.undoBill(p.bills.get(0).id);
+          truth(!db.planning().bills.get(0).isPaid());
+          db.payLoan(p.bills.get(0).id, LocalDate.of(2024, 1, 31), true);
+          equal(1, db.entries().size());
+          equal(-12000, db.balances(LocalDate.now()).get(loan.account));
+          backup = db.backup();
+          db.restore(backup);
+          equal(1, db.entries().size());
+          db.undoBill(p.bills.get(0).id);
+          equal(0, db.entries().size());
+          db.payLoan(p.bills.get(1).id, LocalDate.of(2024, 2, 29), true);
+          db.removeLoan(loan.id);
+          equal(0, db.planning().loans.size());
+          equal(0, db.planning().bills.size());
+          equal(1, db.entries().size());
+        });
+    tests.put(
+        "malformedLoanRestoreRollsBackAndLegacyV3StillWorks",
+        () -> {
+          Finance.Entry e = expense(321, "2026-10-01");
+          db.saveEntry(e);
+          JSONObject old = new JSONObject(db.backup());
+          old.put("version", 3);
+          old.getJSONObject("planning").remove("loans");
+          db.restore(old.toString());
+          equal(321, db.entries().get(0).amount);
+          JSONObject broken = new JSONObject(db.backup());
+          broken
+              .getJSONObject("planning")
+              .put(
+                  "loans",
+                  new JSONArray()
+                      .put(
+                          new JSONObject()
+                              .put("id", 1)
+                              .put("name", "Broken")
+                              .put("principal", 100)
+                              .put("installment", 100)
+                              .put("count", 1)
+                              .put("first", "2026-10-10")
+                              .put("account", db.accounts().get(0).id)
+                              .put("category", db.categories("E").get(0).id)));
+          rejects(() -> db.restore(broken.toString()));
+          equal(321, db.entries().get(0).amount);
+        });
+    tests.put(
+        "v2MigrationPreservesEntriesAndAddsIndexes",
+        () -> {
+          db.saveEntry(expense(123, "2026-10-10"));
+          db.getWritableDatabase().execSQL("DROP INDEX entries_date_id");
+          db.getWritableDatabase().execSQL("DROP TRIGGER entries_daily_insert");
+          db.getWritableDatabase().execSQL("DROP TRIGGER entries_daily_update");
+          db.getWritableDatabase().execSQL("DROP TRIGGER entries_daily_delete");
+          db.getWritableDatabase().execSQL("DROP TABLE account_daily");
+          db.getWritableDatabase().setVersion(2);
+          db.close();
+          db = new Ledger(context, DATABASE);
+          equal(123, db.entries().get(0).amount);
+          equal(3, db.getReadableDatabase().getVersion());
+          try (android.database.Cursor c =
+              db.getReadableDatabase()
+                  .rawQuery(
+                      "SELECT name FROM sqlite_master WHERE type='index' AND"
+                          + " name='entries_date_id'",
+                      null)) {
+            truth(c.moveToFirst());
+          }
+        });
+    tests.put(
+        "remindersExcludePaidAndUseSnapshotCycle",
+        () -> {
+          Planning p = new Planning();
+          Planning.Bill pending = new Planning.Bill();
+          pending.id = 1;
+          pending.name = "Fatura";
+          pending.amount = 100;
+          pending.due = LocalDate.of(2026, 10, 11);
+          p.bills.add(pending);
+          Planning.Bill paid = new Planning.Bill();
+          paid.name = "Ödendi";
+          paid.amount = 200;
+          paid.due = LocalDate.of(2026, 10, 1);
+          paid.trackedPaid = LocalDate.of(2026, 10, 1);
+          p.bills.add(paid);
+          Planning.Card card = new Planning.Card(1, 5, 15);
+          card.statement = 500;
+          card.updated = LocalDate.of(2026, 9, 10);
+          p.cards.add(card);
+          List<Reminders.Due> due =
+              Reminders.upcoming(p, db.accounts(), LocalDate.of(2026, 10, 10), 1);
+          equal(2, due.size());
+          truth(due.get(0).date.equals(LocalDate.of(2026, 9, 15)));
+          equal(1, Reminders.upcoming(p, db.accounts(), LocalDate.of(2026, 10, 10), 0).size());
+          java.time.ZonedDateTime now =
+              java.time.ZonedDateTime.of(
+                  2026, 10, 10, 9, 0, 0, 0, java.time.ZoneId.of("Europe/Istanbul"));
+          truth(Reminders.nextCheck(now, 9).toLocalDate().equals(LocalDate.of(2026, 10, 11)));
+        });
+
+    tests.put(
+        "dailyBalanceCacheFollowsEditsTransfersDatesAndRestore",
+        () -> {
+          Finance.Entry e = expense(100, "2026-10-01");
+          db.saveEntry(e);
+          e.amount = 200;
+          e.date = LocalDate.of(2026, 10, 2);
+          db.saveEntry(e);
+          long a = db.accounts().get(0).id, b = db.accounts().get(1).id;
+          Finance.Entry transfer =
+              new Finance.Entry(0, "T", 300, LocalDate.of(2026, 10, 3), a, b, 0, "");
+          db.saveEntry(transfer);
+          db.saveEntry(
+              new Finance.Entry(
+                  0, "I", 500, LocalDate.of(2099, 1, 1), a, 0, db.categories("I").get(0).id, ""));
+          equal(-200, db.balances(LocalDate.of(2026, 10, 2)).get(a));
+          equal(-500, db.balances(LocalDate.of(2026, 10, 3)).get(a));
+          equal(300, db.balances(LocalDate.of(2026, 10, 3)).get(b));
+          transfer.accountId = b;
+          transfer.targetId = a;
+          db.saveEntry(transfer);
+          equal(100, db.balances(LocalDate.of(2026, 10, 3)).get(a));
+          equal(-300, db.balances(LocalDate.of(2026, 10, 3)).get(b));
+          String backup = db.backup();
+          db.restore(backup);
+          for (Finance.Account account : db.accounts())
+            equal(
+                Finance.balance(account, db.entries(), LocalDate.now()),
+                db.balances(LocalDate.now()).get(account.id));
+          db.deleteEntry(transfer.id);
+          equal(-200, db.balances(LocalDate.now()).get(a));
+          equal(0, db.balances(LocalDate.now()).get(b));
+          db.deleteEntry(e.id);
+          equal(0, db.balances(LocalDate.now()).get(a));
+        });
     int current = 0;
+    tests.put(
+        "salaryYearPeriodAndBackupRoundTrip",
+        () -> {
+          Planning p = db.planning();
+          p.salary.current = "30000";
+          p.salary.year = "2026";
+          p.salary.firstYear = "2026";
+          p.salary.july = true;
+          p.salary.raises.put("2026-temmuz", "5");
+          p.salary.raises.put("2027-ocak", "20");
+          p.salary.inflation.put("2026-6", "-1,25");
+          db.savePlanning(p);
+          String backup = db.backup();
+          db.restore(backup);
+          SalarySettings salary = db.planning().salary;
+          truth(salary.july);
+          truth(salary.raises.get("2027-ocak").equals("20"));
+          truth(salary.inflation.get("2026-6").equals("-1,25"));
+          equal(2027, SalarySettings.year(salary.year) + 1);
+          equal(0, db.entries().size());
+        });
+    tests.put(
+        "invalidSalaryBackupLeavesLedgerUnchanged",
+        () -> {
+          db.saveEntry(expense(12345, "2026-10-10"));
+          JSONObject root = new JSONObject(db.backup());
+          root.getJSONObject("planning")
+              .getJSONObject("salary")
+              .getJSONObject("raises")
+              .put("2026-ocak", "-100");
+          String invalid = root.toString();
+          rejects(() -> db.restore(invalid));
+          equal(1, db.entries().size());
+          root = new JSONObject(db.backup());
+          root.getJSONObject("planning").remove("salary");
+          db.restore(root.toString());
+          truth(db.planning().salary.current.isEmpty());
+        });
     StringBuilder summary = new StringBuilder();
     for (Map.Entry<String, Check> test : tests.entrySet()) {
       Bundle status = new Bundle();

@@ -15,6 +15,7 @@ public final class Finance {
 
   public static final class Entry {
     public long id, accountId, targetId, categoryId, amount;
+    public long recordCount = 1, largestAmount;
     public String kind, note;
     public LocalDate date;
 
@@ -30,6 +31,7 @@ public final class Finance {
       this.id = id;
       this.kind = kind;
       this.amount = amount;
+      this.largestAmount = amount;
       this.date = date;
       this.accountId = accountId;
       this.targetId = targetId;

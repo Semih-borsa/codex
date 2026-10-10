@@ -36,7 +36,17 @@ public class MainActivity extends Activity {
       DATE = DateTimeFormatter.ofPattern("dd.MM.yyyy", Finance.TR);
   private Ledger ledger;
   private Planning plan = new Planning();
-  private List<Finance.Entry> entries;
+  private List<Finance.Entry> entries = new ArrayList<>(), recent = new ArrayList<>();
+  private Map<Long, Long> accountBalances = new HashMap<>();
+  private Map<Long, LocalDate> paidDates = new HashMap<>();
+  private Map<Long, String> accountNames = new HashMap<>(), categoryNames = new HashMap<>();
+  private String loadedKey = "";
+  private int loadGeneration = 0;
+  private LinearLayout dayPanel;
+  private LocalDate selectedDay;
+  private int paymentOffset = 0;
+  private final android.os.Handler ui = new android.os.Handler(android.os.Looper.getMainLooper());
+  private boolean loaded = false;
   private List<Finance.Account> accounts;
   private List<Finance.Category> categories;
   private LinearLayout root, body, navigation;
@@ -52,13 +62,17 @@ public class MainActivity extends Activity {
   private static java.lang.ref.WeakReference<MainActivity> foreground =
       new java.lang.ref.WeakReference<>(null);
 
-  private void fileFinished(String success, Exception failure) {
+  private void fileFinished(String success, Exception failure, boolean restored) {
     busy = false;
     new android.os.Handler(android.os.Looper.getMainLooper())
         .post(
             () -> {
               MainActivity current = foreground.get();
               if (current == null || current.isDestroyed()) return;
+              if (restored) {
+                current.salaryDraft = null;
+                current.salaryRaisesTab = false;
+              }
               current.refresh();
               if (failure != null) current.error("Dosya işlemi tamamlanamadı", failure);
               else current.toast(success);
@@ -91,6 +105,8 @@ public class MainActivity extends Activity {
       filterCategory = state.getLong("filterCategory");
       categoryIncome = state.getBoolean("categoryIncome");
       advisorExpanded = state.getBoolean("advisorExpanded");
+      if (state.containsKey("selectedDay"))
+        selectedDay = LocalDate.parse(state.getString("selectedDay"));
       customFrom = LocalDate.parse(state.getString("customFrom", customFrom.toString()));
       customTo = LocalDate.parse(state.getString("customTo", customTo.toString()));
     }
@@ -98,6 +114,7 @@ public class MainActivity extends Activity {
       getOnBackInvokedDispatcher()
           .registerOnBackInvokedCallback(
               android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT, this::navigateBack);
+    if (getIntent().getBooleanExtra("payments", false)) page = 5;
     refresh();
   }
 
@@ -132,22 +149,87 @@ public class MainActivity extends Activity {
     state.putLong("filterCategory", filterCategory);
     state.putBoolean("categoryIncome", categoryIncome);
     state.putBoolean("advisorExpanded", advisorExpanded);
+    if (selectedDay != null) state.putString("selectedDay", selectedDay.toString());
     state.putString("customFrom", customFrom.toString());
     state.putString("customTo", customTo.toString());
   }
 
+  private String dataKey() {
+    return month + "/" + analysisMode + "/" + customFrom + "/" + customTo + "/" + plan.payday;
+  }
+
   private void refresh() {
-    try {
-      ledger.processRecurring(LocalDate.now());
-      plan = ledger.planning();
-      applyPalette();
-      entries = ledger.entries();
-      accounts = ledger.accounts();
-      categories = ledger.categories(null);
-      render();
-    } catch (Exception e) {
-      error("Veriler açılamadı", e);
+    if (isDestroyed() || io.isShutdown()) return;
+    int generation = ++loadGeneration;
+    YearMonth selected = month;
+    int mode = analysisMode;
+    LocalDate cFrom = customFrom, cTo = customTo;
+    if (!loaded) {
+      TextView loading = text("Bütçen hazırlanıyor…", 18, WHITE, true);
+      loading.setGravity(Gravity.CENTER);
+      loading.setBackgroundColor(BG);
+      setContentView(loading);
     }
+    io.execute(
+        () -> {
+          try {
+            ledger.processRecurring(LocalDate.now());
+            Planning nextPlan = ledger.planning();
+            LocalDate from = Finance.cycleStart(selected.minusMonths(6), nextPlan.payday),
+                to = Finance.cycleEnd(selected, nextPlan.payday);
+            if (mode == 2) {
+              from = Finance.cycleStart(YearMonth.of(selected.getYear() - 1, 1), nextPlan.payday);
+              to = Finance.cycleEnd(YearMonth.of(selected.getYear(), 12), nextPlan.payday);
+            } else if (mode == 3) {
+              long days = ChronoUnit.DAYS.between(cFrom, cTo) + 1;
+              LocalDate prev = cFrom.minusDays(days);
+              LocalDate chart =
+                  Finance.cycleStart(YearMonth.from(cTo).minusMonths(5), nextPlan.payday);
+              from = Collections.min(Arrays.asList(from, prev, chart));
+              to = Collections.max(Arrays.asList(to, cTo));
+            }
+            List<Finance.Entry> reports = ledger.reportEntries(from, to);
+            List<Finance.Account> nextAccounts = ledger.accounts();
+            List<Finance.Category> nextCategories = ledger.categories(null);
+            Map<Long, Long> balances = ledger.balances(LocalDate.now());
+            Map<Long, LocalDate> dates = ledger.paidDates(nextPlan);
+            List<Finance.Entry> nextRecent =
+                ledger.recentEntries(
+                    Finance.cycleStart(selected, nextPlan.payday),
+                    Finance.cycleEnd(selected, nextPlan.payday),
+                    8);
+            Reminders.check(getApplicationContext());
+            ui.post(
+                () -> {
+                  if (isDestroyed() || generation != loadGeneration) return;
+                  plan = nextPlan;
+                  entries = reports;
+                  accounts = nextAccounts;
+                  categories = nextCategories;
+                  accountBalances = balances;
+                  paidDates = dates;
+                  recent = nextRecent;
+                  accountNames.clear();
+                  categoryNames.clear();
+                  for (Finance.Account x : accounts) accountNames.put(x.id, x.name);
+                  for (Finance.Category x : categories) categoryNames.put(x.id, x.name);
+                  loaded = true;
+                  loadedKey = dataKey();
+                  applyPalette();
+                  render();
+                  Reminders.schedule(this);
+                });
+          } catch (Exception e) {
+            ui.post(
+                () -> {
+                  if (!isDestroyed() && generation == loadGeneration) error("Veriler açılamadı", e);
+                });
+          }
+        });
+  }
+
+  private long balance(Finance.Account a) {
+    return accountBalances.getOrDefault(a.id, a.opening);
   }
 
   private int dp(float n) {
@@ -262,6 +344,10 @@ public class MainActivity extends Activity {
   }
 
   private void render() {
+    if (!loaded || !loadedKey.equals(dataKey())) {
+      refresh();
+      return;
+    }
     root = column();
     root.setBackgroundColor(BG);
     root.setFitsSystemWindows(true);
@@ -288,7 +374,9 @@ public class MainActivity extends Activity {
       "Bütçeler",
       "Hesap & ayarlar",
       "Ödeme takvimi",
-      "Bütçe asistanı"
+      "Bütçe asistanı",
+      "Kredilerim",
+      "Maaş hesaplayıcı"
     };
     add(branding, text(names[page], 23, WHITE, true));
     weighted(header, branding);
@@ -305,7 +393,7 @@ public class MainActivity extends Activity {
           render();
         });
     add(root, header);
-    if (page != 4 && page != 5) {
+    if (page != 4 && page != 5 && page != 8) {
       LinearLayout period = row();
       period.setPadding(dp(18), dp(4), dp(18), dp(6));
       period.setBackground(shape(CARD, 16));
@@ -359,7 +447,14 @@ public class MainActivity extends Activity {
         paymentPage();
         break;
       case 6:
+        topicAdvice();
         advice(current(), periodStart(month), effectiveEnd(periodEnd(month)), true);
+        break;
+      case 7:
+        loansPage();
+        break;
+      case 8:
+        salaryPage();
         break;
     }
     navigation = row();
@@ -422,13 +517,11 @@ public class MainActivity extends Activity {
   }
 
   private String category(long id) {
-    for (Finance.Category c : categories) if (c.id == id) return c.name;
-    return "Diğer";
+    return categoryNames.getOrDefault(id, "Diğer");
   }
 
   private String account(long id) {
-    for (Finance.Account a : accounts) if (a.id == id) return a.name;
-    return "Hesap";
+    return accountNames.getOrDefault(id, "Hesap");
   }
 
   private void pickMonth() {
@@ -455,8 +548,7 @@ public class MainActivity extends Activity {
   private void dashboard() {
     List<Finance.Entry> list = current();
     long income = Finance.total(list, "I"), expense = Finance.total(list, "E"), balance = 0;
-    for (Finance.Account a : accounts)
-      balance = Math.addExact(balance, Finance.balance(a, entries, LocalDate.now()));
+    for (Finance.Account a : accounts) balance = Math.addExact(balance, balance(a));
     double rate = Finance.spendingRate(income, expense);
     int accent = Design.spendingColor(rate, plan.light);
     LinearLayout hero = card(body);
@@ -535,7 +627,7 @@ public class MainActivity extends Activity {
                 + " · Kalan tutar "
                 + Finance.money(income - expense)
                 + ". Bu tutar banka bakiyesi değildir.");
-    quickRepeat(list);
+    quickRepeat(recent);
     creditCardOverview();
     section("Nakit ve banka hesapların", "Bugünün bakiyeleri · detay için dokun");
     HorizontalScrollView wallets = new HorizontalScrollView(this);
@@ -543,7 +635,7 @@ public class MainActivity extends Activity {
     LinearLayout walletRow = row();
     for (Finance.Account a : accounts) {
       if (plan.cards.stream().anyMatch(c -> c.account == a.id)) continue;
-      long value = Finance.balance(a, entries, LocalDate.now());
+      long value = balance(a);
       boolean cardAccount = plan.cards.stream().anyMatch(c -> c.account == a.id);
       LinearLayout wallet = column();
       wallet.setPadding(dp(16), dp(16), dp(16), dp(16));
@@ -580,11 +672,13 @@ public class MainActivity extends Activity {
         gradient(plan.light ? 0xFFF1EFFF : 0xFF232442, plan.light ? 0xFFEAF6F4 : 0xFF152D35, 22));
     cardTitle(assistant, "spark", "Bütçe asistanı", BLUE);
     long pending = 0, paid = 0;
-    Set<Long> ids = new HashSet<>();
-    for (Finance.Entry e : list) ids.add(e.id);
+
     for (Planning.Bill b : plan.bills) {
-      if (b.paid == 0 && !b.due.isAfter(periodEnd(month))) pending += b.amount;
-      if (b.paid != 0 && ids.contains(b.paid)) paid += b.amount;
+      if (!b.isPaid() && !b.due.isAfter(periodEnd(month))) pending += b.amount;
+      if (b.paid != 0
+          && paidDates.containsKey(b.paid)
+          && !paidDates.get(b.paid).isBefore(periodStart(month))
+          && !paidDates.get(b.paid).isAfter(effectiveEnd(periodEnd(month)))) paid += b.amount;
     }
     long forecast =
         Finance.obligationForecast(expense, paid, pending, month, plan.payday, LocalDate.now());
@@ -643,7 +737,7 @@ public class MainActivity extends Activity {
         break;
       }
     section("Son işlemler", "Düzenlemek için dokun · tekrar eklemek için basılı tut");
-    List<Finance.Entry> monthAll = Finance.period(entries, periodStart(month), periodEnd(month));
+    List<Finance.Entry> monthAll = recent;
     if (monthAll.isEmpty())
       empty(
           "İlk kaydınla başlayalım",
@@ -806,8 +900,7 @@ public class MainActivity extends Activity {
   private void accountDetail(Finance.Account a) {
     LinearLayout f = column();
     cardTitle(f, "wallet", a.name, GREEN);
-    keyValue(
-        f, "Bugünkü bakiye", Finance.money(Finance.balance(a, entries, LocalDate.now())), WHITE);
+    keyValue(f, "Bugünkü bakiye", Finance.money(balance(a)), WHITE);
     keyValue(f, "Açılış", Finance.money(a.opening), MUTED);
     List<Finance.Entry> list = current();
     long in = 0, out = 0;
@@ -841,7 +934,7 @@ public class MainActivity extends Activity {
     add(c, h);
     space(c, 14);
     List<Planning.Bill> pending = new ArrayList<>();
-    for (Planning.Bill b : plan.bills) if (b.paid == 0) pending.add(b);
+    for (Planning.Bill b : plan.bills) if (!b.isPaid()) pending.add(b);
     pending.sort(Comparator.comparing(b -> b.due));
     if (pending.isEmpty())
       hint(
@@ -896,7 +989,7 @@ public class MainActivity extends Activity {
     long total = 0;
     int overdue = 0, paid = 0;
     for (Planning.Bill b : plan.bills) {
-      if (b.paid != 0) {
+      if (b.isPaid()) {
         paid++;
         continue;
       }
@@ -911,6 +1004,16 @@ public class MainActivity extends Activity {
         c,
         "Kart borçları bu fatura toplamına dahil değildir. Kart ödemeleri ayrı hesap transferleri"
             + " olarak izlenir.");
+    add(
+        c,
+        button(
+            "Kredilerim ve taksitler",
+            false,
+            () -> {
+              page = 7;
+              render();
+            }));
+    add(c, button("+ Fatura ekle", false, () -> billDialog(null)));
     obligations(body, true);
   }
 
@@ -953,10 +1056,7 @@ public class MainActivity extends Activity {
             false));
     TextView total =
         text(
-            Finance.money(
-                card.updated == null
-                    ? Math.max(0, -Finance.balance(a, entries, LocalDate.now()))
-                    : card.bankTotal()),
+            Finance.money(card.updated == null ? Math.max(0, -balance(a)) : card.bankTotal()),
             27,
             WHITE,
             true);
@@ -978,9 +1078,10 @@ public class MainActivity extends Activity {
             card.updated == null ? null : card.pending,
             plan.light ? 0xFF9D5700 : 0xFFF6BD60));
     add(c, buckets);
-    LocalDate close = Finance.cycleStart(YearMonth.now(), card.closing);
-    if (close.isAfter(LocalDate.now()))
-      close = Finance.cycleStart(YearMonth.now().minusMonths(1), card.closing);
+    LocalDate snapshot = card.updated == null ? LocalDate.now() : card.updated;
+    LocalDate close = Finance.cycleStart(YearMonth.from(snapshot), card.closing);
+    if (close.isAfter(snapshot))
+      close = Finance.cycleStart(YearMonth.from(snapshot).minusMonths(1), card.closing);
     LocalDate due = Finance.cardDue(close, card.due);
     space(c, 14);
     keyValue(c, "Son hesap kesimi", close.format(DATE), MUTED);
@@ -1071,7 +1172,7 @@ public class MainActivity extends Activity {
   }
 
   private void spendingMap() {
-    section("Harcama haritası", "Maaş dönemin · koyu/yoğun renk daha yüksek gider demek");
+    section("Harcama haritası", "Maaş dönemin · bir gün seç, özetini aşağıda gör");
     LinearLayout c = card(body);
     LocalDate start = periodStart(month), end = periodEnd(month);
     Map<LocalDate, Long> amounts = Finance.dailyExpenses(entries, start, effectiveEnd(end));
@@ -1081,50 +1182,98 @@ public class MainActivity extends Activity {
             this, start, end, LocalDate.now(), amounts, plan.light, this::dayDetail));
     hint(
         c,
-        "Bir güne dokunarak işlemlerini aç. Gelecek günler soluk gösterilir; transferler harcama"
-            + " değildir.");
-    add(
-        c,
-        button(
-            "Günlük harcamalar",
-            false,
-            () -> {
-              LinearLayout f = column();
-              for (LocalDate d = start; !d.isAfter(end); d = d.plusDays(1)) {
-                LocalDate date = d;
-                add(
-                    f,
-                    button(
-                        date.format(DATE)
-                            + " · "
-                            + (date.isAfter(LocalDate.now())
-                                ? "Henüz gerçekleşmedi"
-                                : Finance.money(amounts.getOrDefault(date, 0L))),
-                        false,
-                        () -> dayDetail(date)));
-              }
-              AlertDialog dialog = dialog("Günlük harcamalar", f, "Kapat");
-              dialog.setOnShowListener(
-                  v -> dialog.getButton(-1).setOnClickListener(w -> dialog.dismiss()));
-              dialog.show();
+        "Seçilen günün geliri ve gideri takvimin altında görünür. İşlem listesi isteğe bağlı"
+            + " açılır; transferler toplamların dışında kalır.");
+    List<String> labels = new ArrayList<>();
+    List<LocalDate> dates = new ArrayList<>();
+    labels.add("Gün seç…");
+    for (LocalDate d = start; !d.isAfter(end); d = d.plusDays(1)) {
+      dates.add(d);
+      labels.add(d.format(DATE));
+    }
+    Spinner chooser = spinner(labels);
+    add(c, chooser);
+    chooser.setOnItemSelectedListener(
+        selected(
+            pos -> {
+              if (pos > 0) dayDetail(dates.get(pos - 1));
             }));
+    dayPanel = column();
+    add(c, dayPanel);
+    if (selectedDay != null && !selectedDay.isBefore(start) && !selectedDay.isAfter(end))
+      dayDetail(selectedDay);
   }
 
   private void dayDetail(LocalDate date) {
-    LinearLayout f = column();
+    if (dayPanel == null) return;
+    selectedDay = date;
+    dayPanel.removeAllViews();
+    divider(dayPanel);
+    add(dayPanel, text(date.format(DATE) + " · Gün özeti", 16, WHITE, true));
+    space(dayPanel, 12);
     List<Finance.Entry> day = Finance.period(entries, date, date);
-    keyValue(f, "Toplam gelir", Finance.money(Finance.total(day, "I")), GREEN);
-    keyValue(f, "Toplam gider", Finance.money(Finance.total(day, "E")), RED);
-    if (day.isEmpty()) hint(f, "Bu gün için işlem kaydı yok.");
-    for (Finance.Entry e : day) {
-      divider(f);
-      entryRow(f, e);
-    }
+    long income = Finance.total(day, "I"), expense = Finance.total(day, "E");
+    keyValue(dayPanel, "Toplam gelir", Finance.money(income), GREEN);
+    keyValue(dayPanel, "Toplam gider", Finance.money(expense), RED);
+    keyValue(
+        dayPanel, "Gün dengesi", Finance.money(income - expense), income >= expense ? GREEN : RED);
     if (date.isAfter(LocalDate.now()))
-      hint(f, "Bu gün gelecekte; kayıtlar henüz bakiyeye dahil değil.");
-    AlertDialog d = dialog(date.format(DATE), f, "Kapat");
-    d.setOnShowListener(v -> d.getButton(-1).setOnClickListener(w -> d.dismiss()));
-    d.show();
+      hint(dayPanel, "Planlanan gün · henüz gerçekleşmiş bakiyeye dahil değil.");
+    LinearLayout list = column();
+    list.setVisibility(View.GONE);
+    Button expand = button("İşlem detaylarını göster ▾", false, () -> {});
+    add(dayPanel, expand);
+    add(dayPanel, list);
+    final boolean[] open = {false};
+    final int[] offset = {0};
+    final int[] request = {0};
+    Runnable[] load = {null};
+    load[0] =
+        () -> {
+          int token = ++request[0];
+          int position = offset[0];
+          io.execute(
+              () -> {
+                List<Finance.Entry> rows = ledger.dayEntries(date, 50, position);
+                ui.post(
+                    () -> {
+                      if (isDestroyed() || !date.equals(selectedDay) || token != request[0]) return;
+                      list.removeAllViews();
+                      if (rows.isEmpty()) hint(list, "Bu gün için işlem kaydı yok.");
+                      for (Finance.Entry e : rows) {
+                        divider(list);
+                        entryRow(list, e);
+                      }
+                      if (position > 0)
+                        add(
+                            list,
+                            button(
+                                "Önceki 50 işlem",
+                                false,
+                                () -> {
+                                  offset[0] = Math.max(0, offset[0] - 50);
+                                  load[0].run();
+                                }));
+                      if (rows.size() == 50)
+                        add(
+                            list,
+                            button(
+                                "Sonraki 50 işlem",
+                                false,
+                                () -> {
+                                  offset[0] += 50;
+                                  load[0].run();
+                                }));
+                    });
+              });
+        };
+    expand.setOnClickListener(
+        v -> {
+          open[0] = !open[0];
+          list.setVisibility(open[0] ? View.VISIBLE : View.GONE);
+          expand.setText(open[0] ? "İşlem detaylarını gizle ▴" : "İşlem detaylarını göster ▾");
+          if (open[0]) load[0].run();
+        });
   }
 
   private void keyValue(LinearLayout c, String label, String value, int color) {
@@ -1240,69 +1389,90 @@ public class MainActivity extends Activity {
     space(body, 12);
     LinearLayout results = column();
     add(body, results);
-    final int[] shown = {100};
+    final int[] offset = {0}, requests = {0};
     final Runnable[] update = {null};
     update[0] =
         () -> {
-          results.removeAllViews();
-          List<Finance.Entry> filtered = new ArrayList<>();
-          String needle = search.toLowerCase(Finance.TR);
+          int token = ++requests[0], position = offset[0];
+          String needle = search;
           String kind =
               transactionType == 1
                   ? "E"
                   : transactionType == 2 ? "I" : transactionType == 3 ? "T" : "";
-          for (Finance.Entry e : Finance.period(entries, periodStart(month), periodEnd(month)))
-            if ((kind.isEmpty() || kind.equals(e.kind))
-                && (filterAccount == 0
-                    || filterAccount == e.accountId
-                    || filterAccount == e.targetId)
-                && (filterCategory == 0 || filterCategory == e.categoryId)
-                && (e.note
-                        + " "
-                        + category(e.categoryId)
-                        + " "
-                        + account(e.accountId)
-                        + " "
-                        + (e.targetId > 0 ? account(e.targetId) : ""))
-                    .toLowerCase(Finance.TR)
-                    .contains(needle)) filtered.add(e);
-          summary.setText(
-              getResources()
-                  .getQuantityString(
-                      R.plurals.transaction_summary,
-                      filtered.size(),
-                      filtered.size(),
-                      Finance.money(Finance.total(filtered, "I")),
-                      Finance.money(Finance.total(filtered, "E"))));
-          if (filtered.isEmpty()) {
-            LinearLayout c = card(results);
-            add(c, text("Eşleşen işlem yok", 16, WHITE, true));
-            space(c, 7);
-            hint(c, "Maaş dönemini veya filtreleri değiştir; yeni kaydın tarihini kontrol et.");
-          } else {
-            LinearLayout c = card(results);
-            LocalDate last = null;
-            for (Finance.Entry e : filtered.subList(0, Math.min(shown[0], filtered.size()))) {
-              if (last != null) divider(c);
-              if (!e.date.equals(last)) {
-                add(c, text(e.date.format(DATE), 11, MUTED, true));
-                space(c, 10);
-              }
-              entryRow(c, e);
-              last = e.date;
-            }
-            if (filtered.size() > shown[0]) {
-              add(
-                  results,
-                  button(
-                      "Daha fazla göster (" + (filtered.size() - shown[0]) + " kayıt)",
-                      false,
-                      () -> {
-                        shown[0] += 100;
-                        update[0].run();
-                      }));
-            }
-          }
+          long accountId = filterAccount, categoryId = filterCategory;
+          LocalDate from = periodStart(month), to = periodEnd(month);
+          summary.setText(R.string.transactions_loading);
+          ui.postDelayed(
+              () -> {
+                if (token != requests[0] || isDestroyed()) return;
+                io.execute(
+                    () -> {
+                      try {
+                        Ledger.EntryPage found =
+                            ledger.entryPage(
+                                from, to, kind, accountId, categoryId, needle, 50, position);
+                        ui.post(
+                            () -> {
+                              if (isDestroyed()
+                                  || token != requests[0]
+                                  || page != 1
+                                  || !results.isAttachedToWindow()) return;
+                              results.removeAllViews();
+                              summary.setText(
+                                  getResources()
+                                      .getQuantityString(
+                                          R.plurals.transaction_summary,
+                                          (int) found.count,
+                                          found.count,
+                                          Finance.money(found.income),
+                                          Finance.money(found.expense)));
+                              if (found.rows.isEmpty()) {
+                                LinearLayout c = card(results);
+                                hint(c, "Eşleşen işlem yok. Dönemi veya filtreleri değiştir.");
+                              } else {
+                                LinearLayout c = card(results);
+                                LocalDate last = null;
+                                for (Finance.Entry e : found.rows) {
+                                  if (last != null) divider(c);
+                                  if (!e.date.equals(last)) {
+                                    add(c, text(e.date.format(DATE), 11, MUTED, true));
+                                    space(c, 10);
+                                  }
+                                  entryRow(c, e);
+                                  last = e.date;
+                                }
+                              }
+                              if (position > 0)
+                                add(
+                                    results,
+                                    button(
+                                        "Önceki 50 işlem",
+                                        false,
+                                        () -> {
+                                          offset[0] = Math.max(0, offset[0] - 50);
+                                          update[0].run();
+                                        }));
+                              if (found.count > position + 50)
+                                add(
+                                    results,
+                                    button(
+                                        "Sonraki 50 işlem",
+                                        false,
+                                        () -> {
+                                          offset[0] += 50;
+                                          update[0].run();
+                                        }));
+                            });
+                      } catch (Exception ex) {
+                        ui.post(
+                            () -> {
+                              if (token == requests[0] && !isDestroyed())
+                                summary.setText(message(ex));
+                            });
+                      }
+                    });
+              },
+              180);
         };
     query.addTextChangedListener(
         new TextWatcher() {
@@ -1310,6 +1480,7 @@ public class MainActivity extends Activity {
 
           public void onTextChanged(CharSequence s, int start, int before, int count) {
             search = s.toString();
+            offset[0] = 0;
             update[0].run();
           }
 
@@ -1319,18 +1490,21 @@ public class MainActivity extends Activity {
         selected(
             pos -> {
               transactionType = pos;
+              offset[0] = 0;
               update[0].run();
             }));
     ac.setOnItemSelectedListener(
         selected(
             pos -> {
               filterAccount = pos == 0 ? 0 : accounts.get(pos - 1).id;
+              offset[0] = 0;
               update[0].run();
             }));
     cats.setOnItemSelectedListener(
         selected(
             pos -> {
               filterCategory = pos == 0 ? 0 : categories.get(pos - 1).id;
+              offset[0] = 0;
               update[0].run();
             }));
     update[0].run();
@@ -1486,15 +1660,15 @@ public class MainActivity extends Activity {
     c = card(body);
     Map<Long, Long> spending = Finance.byCategory(list, "E");
     Set<LocalDate> spendingDays = new HashSet<>();
-    int count = 0;
+    long count = 0;
     Finance.Entry largest = null;
     for (Finance.Entry e : list)
       if (e.kind.equals("E")) {
-        count++;
+        count += e.recordCount;
         spendingDays.add(e.date);
-        if (largest == null || e.amount > largest.amount) largest = e;
+        if (largest == null || e.largestAmount > largest.largestAmount) largest = e;
       }
-    keyValue(c, "Gider işlemi sayısı", Integer.toString(count), WHITE);
+    keyValue(c, "Gider işlemi sayısı", Long.toString(count), WHITE);
     keyValue(
         c,
         "Günlük ortalama",
@@ -1513,7 +1687,7 @@ public class MainActivity extends Activity {
           "En büyük gider: "
               + category(largest.categoryId)
               + " · "
-              + Finance.money(largest.amount)
+              + Finance.money(largest.largestAmount)
               + " · "
               + largest.date.format(DATE));
     }
@@ -1745,15 +1919,752 @@ public class MainActivity extends Activity {
     }
   }
 
+  private void financeTools() {
+    LinearLayout c = card(body);
+    cardTitle(c, "target", "Finans araçların", GREEN);
+    add(
+        c,
+        button(
+            "Kredilerim ve taksitler",
+            false,
+            () -> {
+              page = 7;
+              render();
+            }));
+    space(c, 8);
+    add(
+        c,
+        button(
+            "Maaş hesaplayıcı",
+            false,
+            () -> {
+              page = 8;
+              render();
+            }));
+    space(c, 8);
+    add(
+        c,
+        button(
+            "Konuya özel yardım",
+            false,
+            () -> {
+              page = 6;
+              render();
+            }));
+  }
+
+  private void loansPage() {
+    LinearLayout intro = card(body);
+    cardTitle(intro, "card", "Krediler ve geri ödeme", BLUE);
+    hint(
+        intro,
+        "Bankanın gerçek taksitini ve vadesini kaydet. Taksitler ödeme takvimine eklenir. Öderken"
+            + " gidere eklemeyi veya yalnızca takip etmeyi seçersin. Anapara otomatik gelir"
+            + " yazılmaz.");
+    add(intro, button("+ Kredi ekle", true, this::loanDialog));
+    if (plan.loans.isEmpty()) hint(intro, "Henüz kayıtlı kredi yok.");
+    for (Planning.Loan l : plan.loans) {
+      LinearLayout c = card(body);
+      cardTitle(c, "card", l.name, BLUE);
+      long paid = 0;
+      int paidCount = 0, trackedCount = 0;
+      Planning.Bill next = null;
+      for (Planning.Bill b : plan.bills)
+        if (b.loan == l.id) {
+          if (b.isPaid()) {
+            paid += b.amount;
+            paidCount++;
+            if (b.trackedPaid != null) trackedCount++;
+          } else if (next == null || b.due.isBefore(next.due)) next = b;
+        }
+      keyValue(c, "Anapara", Finance.money(l.principal), WHITE);
+      keyValue(c, "Taksit / vade", Finance.money(l.installment) + " / " + l.count + " ay", WHITE);
+      keyValue(c, "Toplam geri ödeme", Finance.money(l.total()), WHITE);
+      keyValue(c, "Finansman maliyeti", Finance.money(l.total() - l.principal), MUTED);
+      keyValue(c, "Ödenen taksitler", paidCount + " / " + l.count, GREEN);
+      if (trackedCount > 0)
+        hint(
+            c, trackedCount + " taksit yalnızca takip için işaretli; gider ve bakiyeye eklenmedi.");
+      keyValue(c, "Kalan taksit toplamı", Finance.money(l.total() - paid), BLUE);
+      hint(c, "Kalan tutar gelecekteki taksit toplamıdır; bankanın erken kapama borcu değildir.");
+      progress(c, (double) paidCount / l.count, GREEN);
+      if (next != null) {
+        space(c, 10);
+        Planning.Bill upcoming = next;
+        keyValue(
+            c,
+            "Sıradaki taksit",
+            next.due.format(DATE),
+            next.due.isBefore(LocalDate.now()) ? RED : BLUE);
+        add(c, button("Bu taksiti ödedim", true, () -> loanPaymentChoice(upcoming)));
+      }
+      space(c, 8);
+      add(
+          c,
+          button(
+              "Takibi kaldır",
+              false,
+              () ->
+                  confirm(
+                      "Kredi takibi kaldırılsın mı?",
+                      "Bekleyen taksitler ve kredi planı kaldırılır. Önceden ödediğin taksitlerin"
+                          + " gider kayıtları korunur.",
+                      () -> {
+                        try {
+                          ledger.removeLoan(l.id);
+                          refresh();
+                        } catch (Exception e) {
+                          error("Kredi kaldırılamadı", e);
+                        }
+                      })));
+    }
+    add(
+        body,
+        button(
+            "Ödeme takvimini aç",
+            false,
+            () -> {
+              page = 5;
+              render();
+            }));
+  }
+
+  private void loanPaymentChoice(Planning.Bill bill) {
+    java.util.function.Consumer<Boolean> record =
+        deduct ->
+            chooseDate(
+                LocalDate.now(),
+                date -> {
+                  try {
+                    ledger.payLoan(bill.id, date, deduct);
+                    refresh();
+                    toast(
+                        deduct
+                            ? "Taksit gider olarak kaydedildi"
+                            : "Taksit yalnızca takipte ödendi; bakiye değişmedi");
+                  } catch (Exception e) {
+                    error("Taksit kaydedilemedi", e);
+                  }
+                });
+    new AlertDialog.Builder(this)
+        .setTitle("Bakiyeden düşülsün mü?")
+        .setMessage(
+            bill.name
+                + " · "
+                + Finance.money(bill.amount)
+                + "\n\nEvet: "
+                + account(bill.account)
+                + " hesabına gider eklenir.\n"
+                + "Hayır: yalnızca kredi takibinde ödenmiş görünür; bakiye ve gelir/gider"
+                + " toplamları değişmez.")
+        .setPositiveButton("Evet · gider ekle", (d, w) -> record.accept(true))
+        .setNegativeButton("Hayır · yalnızca takip", (d, w) -> record.accept(false))
+        .setNeutralButton("Vazgeç", null)
+        .show();
+  }
+
+  private void loanDialog() {
+    LinearLayout f = column();
+    label(f, "Kredi adı");
+    EditText name = field("Örn. İhtiyaç kredisi", "", false);
+    add(f, name);
+    label(f, "Anapara · TL");
+    EditText principal = field("50000,00", "", true);
+    add(f, principal);
+    label(f, "Vade · ay (1–360)");
+    EditText count = field("12", "12", true);
+    add(f, count);
+    label(f, "Bankanın gerçek aylık taksiti · TL");
+    EditText installment = field("", "", true);
+    add(f, installment);
+    label(f, "İsteğe bağlı aylık faiz · % (tahmin)");
+    EditText rate = field("3,5", "", true);
+    add(f, rate);
+    TextView problem = text("", 12, RED, false);
+    add(
+        f,
+        button(
+            "Faizle taksit tahmini hesapla",
+            false,
+            () -> {
+              try {
+                long estimate =
+                    Calculators.creditInstallment(
+                        Finance.parseMoney(principal.getText().toString()),
+                        Calculators.decimal(rate.getText().toString()),
+                        Integer.parseInt(count.getText().toString()));
+                installment.setText(Finance.editable(estimate));
+                problem.setText(R.string.credit_estimate_note);
+              } catch (Exception e) {
+                problem.setText(message(e));
+              }
+            }));
+    label(f, "Ödeme hesabı");
+    Spinner account = spinner(accounts);
+    add(f, account);
+    List<Finance.Category> expenseCats = ledger.categories("E");
+    label(f, "Gider kategorisi");
+    Spinner category = spinner(expenseCats);
+    add(f, category);
+    for (int i = 0; i < expenseCats.size(); i++)
+      if (expenseCats.get(i).name.equals("Faturalar")) category.setSelection(i);
+    LocalDate[] first = {LocalDate.now()};
+    label(f, "İlk taksit tarihi");
+    Button date = button(first[0].format(DATE), false, () -> {});
+    date.setOnClickListener(
+        v ->
+            chooseDate(
+                first[0],
+                d -> {
+                  first[0] = d;
+                  date.setText(d.format(DATE));
+                }));
+    add(f, date);
+    hint(
+        f,
+        "Eşit taksitli kredi takibi. Aynı ödeme için ayrıca fatura/düzenli gider oluşturma."
+            + " Değişken taksitler bu modelin kapsamı dışında.");
+    add(f, problem);
+    AlertDialog dialog = dialog("Yeni kredi", f, "Kaydet");
+    dialog.setOnShowListener(
+        v ->
+            dialog
+                .getButton(-1)
+                .setOnClickListener(
+                    w -> {
+                      try {
+                        Planning.Loan loan = new Planning.Loan();
+                        loan.name = name.getText().toString().trim();
+                        loan.principal = Finance.parseMoney(principal.getText().toString());
+                        loan.installment = Finance.parseMoney(installment.getText().toString());
+                        loan.count = Integer.parseInt(count.getText().toString());
+                        loan.first = first[0];
+                        loan.account = ((Finance.Account) account.getSelectedItem()).id;
+                        loan.category = ((Finance.Category) category.getSelectedItem()).id;
+                        if (loan.count < 1 || loan.count > 360)
+                          throw new IllegalArgumentException("Vade 1–360 ay olmalı.");
+                        ledger.addLoan(loan);
+                        dialog.dismiss();
+                        refresh();
+                        toast("Kredi ve taksitleri eklendi");
+                      } catch (Exception e) {
+                        problem.setText(message(e));
+                      }
+                    }));
+    dialog.show();
+  }
+
+  private SalarySettings salaryDraft;
+  private boolean salaryRaisesTab = false;
+  private static final String[] SALARY_MONTHS = {
+    "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
+    "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"
+  };
+
+  private void salaryWatch(EditText input, java.util.function.Consumer<String> change) {
+    input.addTextChangedListener(
+        new TextWatcher() {
+          public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+          public void onTextChanged(CharSequence s, int start, int before, int count) {
+            change.accept(s.toString());
+          }
+
+          public void afterTextChanged(Editable e) {}
+        });
+  }
+
+  private String salaryPct(java.math.BigDecimal value) {
+    return "%" + String.format(Finance.TR, "%.2f", value);
+  }
+
+  private void salaryPage() {
+    try {
+      if (salaryDraft == null) salaryDraft = SalarySettings.parse(plan.salary.json());
+    } catch (Exception e) {
+      toast(message(e));
+      return;
+    }
+    SalarySettings draft = salaryDraft;
+    LinearLayout tabs = row();
+    weighted(
+        tabs,
+        button(
+            "Maaş Hesapla",
+            !salaryRaisesTab,
+            () -> {
+              salaryRaisesTab = false;
+              render();
+            }));
+    weighted(
+        tabs,
+        button(
+            "Zam Oranları",
+            salaryRaisesTab,
+            () -> {
+              salaryRaisesTab = true;
+              render();
+            }));
+    add(body, tabs);
+    LinearLayout result = column();
+    TextView status = text("", 12, MUTED, false);
+    Button save =
+        button(
+            "Kaydet",
+            true,
+            () -> {
+              try {
+                SalarySettings validated = SalarySettings.parse(draft.json());
+                SalarySettings previous = plan.salary;
+                plan.salary = validated;
+                try {
+                  ledger.savePlanning(plan);
+                } catch (Exception e) {
+                  plan.salary = previous;
+                  throw e;
+                }
+                toast("Maaş bilgileri kaydedildi");
+                render();
+              } catch (Exception e) {
+                status.setText(message(e));
+                status.setTextColor(RED);
+              }
+            });
+    Runnable calculate =
+        () -> {
+          result.removeAllViews();
+          try {
+            boolean changed = !draft.json().toString().equals(plan.salary.json().toString());
+            save.setEnabled(changed);
+            save.setText(changed ? "Kaydet" : "Kaydedildi");
+            status.setText(changed ? "Kaydedilmemiş değişiklik var" : "Maaş bilgilerin kaydedildi");
+            status.setTextColor(changed ? BLUE : MUTED);
+            if (draft.current.trim().isEmpty()) {
+              hint(result, "Mevcut maaşını gir, hesaplama burada görünsün.");
+              return;
+            }
+            int year = SalarySettings.year(draft.year), start = draft.july ? 6 : 0;
+            java.math.BigDecimal[] rates = new java.math.BigDecimal[6];
+            for (int i = 0; i < 6; i++)
+              rates[i] =
+                  Calculators.salaryPercent(
+                      draft.inflation.getOrDefault(year + "-" + (start + i), ""));
+            java.math.BigDecimal periodRaise =
+                Calculators.salaryPercent(
+                    draft.raises.getOrDefault(year + (draft.july ? "-temmuz" : "-ocak"), ""));
+            int nextYear = draft.july ? year + 1 : year;
+            String nextPeriod = draft.july ? "Ocak" : "Temmuz";
+            java.math.BigDecimal nextRaise =
+                Calculators.salaryPercent(
+                    draft.raises.getOrDefault(nextYear + (draft.july ? "-ocak" : "-temmuz"), ""));
+            long current = Finance.parseMoney(draft.current);
+            if (current == 0) {
+              hint(result, "Mevcut maaşını gir, hesaplama burada görünsün.");
+              return;
+            }
+            Calculators.Salary salary = Calculators.salary(current, periodRaise, nextRaise, rates);
+            LinearLayout detail = card(result);
+            cardTitle(detail, "chart", "Hesaplama Detayı", BLUE);
+            keyValue(detail, "Mevcut maaş", Finance.money(current), WHITE);
+            keyValue(detail, "6 aylık kümülatif enflasyon", salaryPct(salary.cumulative), BLUE);
+            keyValue(
+                detail,
+                "Enflasyon farkı",
+                salary.difference.signum() > 0 ? salaryPct(salary.difference) : "Yok",
+                GREEN);
+            keyValue(detail, nextYear + " " + nextPeriod + " zammı", salaryPct(nextRaise), GREEN);
+            hint(
+                detail,
+                "Mevcut maaş "
+                    + year
+                    + " "
+                    + (draft.july ? "Temmuz" : "Ocak")
+                    + " zammını zaten içerir ("
+                    + salaryPct(periodRaise)
+                    + "). Bu zam yalnızca enflasyon farkının kıyas tabanıdır.");
+            LinearLayout estimate = card(result);
+            cardTitle(estimate, "up", nextYear + " " + nextPeriod + " Tahmini Maaşın", GREEN);
+            add(estimate, text(Finance.money(salary.estimated), 30, GREEN, true));
+            hint(estimate, "Mevcuttan " + salaryPct(salary.increase) + " artış");
+            hint(
+                estimate,
+                "Boş aylık enflasyon ve zam alanları hesapta %0 kabul edilir. Bu tahmin bordro veya"
+                    + " kesin ödeme tutarı değildir; gelir kaydı oluşturmaz.");
+          } catch (Exception e) {
+            hint(result, message(e));
+          }
+        };
+    if (salaryRaisesTab) {
+      LinearLayout f = card(body);
+      cardTitle(f, "calendar", "Başlangıç Yılı", BLUE);
+      EditText first = field(String.valueOf(LocalDate.now().getYear()), draft.firstYear, true);
+      add(f, first);
+      LinearLayout rates = column();
+      add(body, rates);
+      Runnable showRates =
+          () -> {
+            rates.removeAllViews();
+            try {
+              int firstYear = SalarySettings.year(draft.firstYear);
+              for (int year = firstYear; year <= firstYear + 1; year++) {
+                LinearLayout c = card(rates);
+                cardTitle(c, "up", year + " Toplu Sözleşme Zamları", BLUE);
+                for (String period : Arrays.asList("ocak", "temmuz")) {
+                  String key = year + "-" + period;
+                  label(c, period.equals("ocak") ? "Ocak Zammı · %" : "Temmuz Zammı · %");
+                  EditText input = field("0,00", draft.raises.getOrDefault(key, ""), true);
+                  input.setInputType(
+                      android.text.InputType.TYPE_CLASS_NUMBER
+                          | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
+                          | android.text.InputType.TYPE_NUMBER_FLAG_SIGNED);
+                  add(c, input);
+                  salaryWatch(
+                      input,
+                      value -> {
+                        draft.raises.put(key, value);
+                        calculate.run();
+                      });
+                }
+              }
+            } catch (Exception e) {
+              hint(rates, "Geçerli bir başlangıç yılı gir (2000–2099).");
+            }
+          };
+      salaryWatch(
+          first,
+          value -> {
+            draft.firstYear = value;
+            showRates.run();
+            calculate.run();
+          });
+      showRates.run();
+    } else {
+      LinearLayout f = card(body);
+      cardTitle(f, "up", "Maaş Hesapla", GREEN);
+      label(f, "Mevcut (güncel) maaşın · TL");
+      EditText current = field("0,00", draft.current, true);
+      add(f, current);
+      label(f, "Yıl");
+      EditText yearInput = field(String.valueOf(LocalDate.now().getYear()), draft.year, true);
+      add(f, yearInput);
+      label(f, "Dönem");
+      Spinner period = spinner(Arrays.asList("Ocak – Haziran", "Temmuz – Aralık"));
+      period.setSelection(draft.july ? 1 : 0);
+      add(f, period);
+      LinearLayout inflation = card(body);
+      cardTitle(inflation, "chart", "Aylık Enflasyon · %", BLUE);
+      hint(inflation, "Bilmediğin aylar boş kalabilir; hesapta %0 kabul edilir.");
+      LinearLayout months = column();
+      add(inflation, months);
+      Runnable showMonths =
+          () -> {
+            months.removeAllViews();
+            try {
+              int year = SalarySettings.year(draft.year), start = draft.july ? 6 : 0;
+              for (int i = start; i < start + 6; i++) {
+                String key = year + "-" + i;
+                label(months, SALARY_MONTHS[i]);
+                EditText input = field("boş", draft.inflation.getOrDefault(key, ""), true);
+                input.setInputType(
+                    android.text.InputType.TYPE_CLASS_NUMBER
+                        | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
+                        | android.text.InputType.TYPE_NUMBER_FLAG_SIGNED);
+                add(months, input);
+                salaryWatch(
+                    input,
+                    value -> {
+                      draft.inflation.put(key, value);
+                      calculate.run();
+                    });
+              }
+            } catch (Exception e) {
+              hint(months, "Geçerli bir hesap yılı gir (2000–2099).");
+            }
+          };
+      salaryWatch(
+          current,
+          value -> {
+            draft.current = value;
+            calculate.run();
+          });
+      salaryWatch(
+          yearInput,
+          value -> {
+            draft.year = value;
+            showMonths.run();
+            calculate.run();
+          });
+      period.setOnItemSelectedListener(
+          selected(
+              position -> {
+                if (draft.july != (position == 1)) {
+                  draft.july = position == 1;
+                  showMonths.run();
+                  calculate.run();
+                }
+              }));
+      showMonths.run();
+      add(body, result);
+    }
+    add(body, save);
+    add(body, status);
+    calculate.run();
+  }
+
+  private void topicAdvice() {
+    LinearLayout c = card(body);
+    cardTitle(c, "target", "Hangi konuda yardımcı olayım?", GREEN);
+    Spinner topic =
+        spinner(
+            Arrays.asList(
+                "Maaşa kadar harcama payım",
+                "Kredi taksit yüküm",
+                "Kredi kartı ödemelerim",
+                "Kategori tasarrufu",
+                "Satın almadan önce dene"));
+    add(c, topic);
+    EditText purchase = field("Planladığın alışveriş · TL", "", true);
+    purchase.setVisibility(View.GONE);
+    add(c, purchase);
+    LinearLayout answer = column();
+    add(c, answer);
+    Runnable calculate =
+        () -> {
+          answer.removeAllViews();
+          List<Finance.Entry> current = current();
+          long income = Finance.total(current, "I"), expense = Finance.total(current, "E");
+          LocalDate end = periodEnd(month);
+          int choice = topic.getSelectedItemPosition();
+          long unpaid = 0;
+          for (Planning.Bill b : plan.bills)
+            if (!b.isPaid() && !b.due.isAfter(end)) unpaid += b.amount;
+          if (choice == 0 || choice == 4) {
+            if (!month.equals(Finance.cycleMonth(LocalDate.now(), plan.payday))) {
+              hint(answer, "Bu hesap bugünkü maaş dönemin için anlamlıdır. Güncel dönemi seç.");
+              return;
+            }
+            if (income == 0) {
+              hint(
+                  answer,
+                  "Önce bu dönemin gerçekleşmiş gelirini kaydet; beklenen maaşı kazanılmış gibi"
+                      + " saymıyorum.");
+              return;
+            }
+            long buy = 0;
+            if (choice == 4)
+              try {
+                buy = nonnegativeMoney(purchase);
+              } catch (Exception ex) {
+                hint(answer, message(ex));
+                return;
+              }
+            long target = Math.round(income * plan.target / 100d),
+                available = income - expense - unpaid - target;
+            long remaining = ChronoUnit.DAYS.between(LocalDate.now(), end) + 1;
+            keyValue(answer, "Bekleyen faturalar + taksitler", Finance.money(unpaid), BLUE);
+            keyValue(
+                answer,
+                "Tasarruf hedefi sonrası pay",
+                Finance.money(available),
+                available < 0 ? RED : GREEN);
+            keyValue(
+                answer,
+                "Bugün dahil günlük pay",
+                Finance.money(Math.max(0, available) / remaining),
+                GREEN);
+            if (choice == 4) {
+              keyValue(
+                  answer,
+                  "Alışveriş sonrası günlük pay",
+                  Finance.money(Math.max(0, available - buy) / remaining),
+                  BLUE);
+              if (buy > Math.max(0, available))
+                hint(
+                    answer,
+                    "Bu alışveriş hedef payını "
+                        + Finance.money(buy - Math.max(0, available))
+                        + " aşar. Ertelemeyi veya daha düşük tutarı deneyebilirsin.");
+              hint(answer, "Bu bir senaryo; hiçbir işlem oluşturulmadı.");
+            }
+            hint(
+                answer,
+                "Kaydettiğin gelir, gider, tasarruf hedefi ve dönem sonuna kadar bekleyen ödemeler"
+                    + " kullanıldı. Kart ödemeleri gider olarak ikinci kez düşülmez; banka nakit"
+                    + " durumunu ayrıca kontrol et.");
+          } else if (choice == 1) {
+            long burden = 0;
+            for (Planning.Bill b : plan.bills)
+              if (b.loan != 0 && !b.due.isBefore(periodStart(month)) && !b.due.isAfter(end))
+                burden += b.amount;
+            keyValue(answer, "Dönemin planlı kredi taksitleri", Finance.money(burden), BLUE);
+            hint(
+                answer,
+                income > 0
+                    ? "Kayıtlı gelirinin "
+                        + pct(100d * burden / income)
+                        + " kadarı. Yeni kredi almadan önce faturalar ve yaşam giderleri sonrası"
+                        + " kalan payı karşılaştır."
+                    : "Gelir kaydı olmadan taksit/gelir oranı hesaplanamaz.");
+            hint(
+                answer,
+                "Bu oran kişisel bir gösterge; kredi onayı veya erken kapama teklifi değildir.");
+          } else if (choice == 2) {
+            long statements = 0;
+            for (Planning.Card card : plan.cards)
+              if (card.updated != null) statements += card.statement;
+            keyValue(answer, "Son girilen ekstre borçları", Finance.money(statements), BLUE);
+            hint(
+                answer,
+                "Bu tutar elle girilen banka özetlerinden gelir. Ödeme yaptıysan önce kart"
+                    + " tutarlarını güncelle; provizyon kesinleşmiş ekstre değildir.");
+            add(
+                answer,
+                button(
+                    "Ödeme takvimini aç",
+                    false,
+                    () -> {
+                      page = 5;
+                      render();
+                    }));
+          } else {
+            Map<Long, Long> sums = Finance.byCategory(current, "E");
+            if (sums.isEmpty()) {
+              hint(answer, "Öneri için bu dönemde gider kaydı gerekli.");
+              return;
+            }
+            Map.Entry<Long, Long> top = sums.entrySet().iterator().next();
+            hint(
+                answer,
+                "En yüksek harcama "
+                    + category(top.getKey())
+                    + ": "
+                    + Finance.money(top.getValue())
+                    + ". %10 azaltma senaryosu "
+                    + Finance.money(Math.round(top.getValue() * .1))
+                    + " bırakır. Zorunlu giderlerde kesinti yerine aynı ihtiyacın daha uygun"
+                    + " alternatifini değerlendir.");
+          }
+        };
+    topic.setOnItemSelectedListener(
+        selected(
+            pos -> {
+              purchase.setVisibility(pos == 4 ? View.VISIBLE : View.GONE);
+              if (pos != 4) calculate.run();
+              else {
+                answer.removeAllViews();
+                hint(answer, "Alışveriş tutarını girip senaryoyu hesapla.");
+              }
+            }));
+    add(c, button("Seçtiğim konuyu değerlendir", true, calculate));
+    hint(
+        c,
+        "Açıklanabilir yerel hesaplar · internete veri göndermez · yalnızca kayıtlarını kullanır.");
+  }
+
+  private void reminderSettings() {
+    LinearLayout c = card(body);
+    cardTitle(c, "calendar", "Ödeme bildirimleri", BLUE);
+    android.content.SharedPreferences prefs = Reminders.prefs(this);
+    boolean enabled = prefs.getBoolean("enabled", false);
+    hint(
+        c,
+        enabled
+            ? "Hatırlatma açık · Android izin durumu: "
+                + (Reminders.allowed(this) ? "izinli" : "bildirim izni kapalı")
+            : "Hatırlatma kapalı. Açtığında fatura, kredi taksiti ve ekstre ödemeleri kontrol"
+                + " edilir.");
+    add(
+        c,
+        button(
+            enabled ? "Hatırlatmayı kapat" : "Ödeme hatırlatmalarını aç",
+            !enabled,
+            () -> {
+              prefs.edit().putBoolean("enabled", !enabled).remove("lastSent").apply();
+              if (!enabled
+                  && android.os.Build.VERSION.SDK_INT >= 33
+                  && checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
+                      != android.content.pm.PackageManager.PERMISSION_GRANTED)
+                requestPermissions(
+                    new String[] {android.Manifest.permission.POST_NOTIFICATIONS}, 71);
+              Reminders.schedule(this);
+              if (!enabled && Reminders.allowed(this)) io.execute(() -> Reminders.check(this));
+              render();
+            }));
+    if (enabled) {
+      label(c, "Kaç gün önceden?");
+      Spinner lead = spinner(Arrays.asList("Vade günü", "1 gün önce", "3 gün önce"));
+      int current = prefs.getInt("lead", 1);
+      lead.setSelection(current == 0 ? 0 : current == 1 ? 1 : 2);
+      add(c, lead);
+      lead.setOnItemSelectedListener(
+          selected(
+              pos -> {
+                int value = pos == 0 ? 0 : pos == 1 ? 1 : 3;
+                if (value != prefs.getInt("lead", 1)) {
+                  prefs.edit().putInt("lead", value).remove("lastSent").apply();
+                  Reminders.schedule(this);
+                }
+              }));
+      label(c, "Günlük kontrol saati");
+      Spinner hour = spinner(Arrays.asList("09:00", "12:00", "18:00"));
+      int saved = prefs.getInt("hour", 9);
+      hour.setSelection(saved == 9 ? 0 : saved == 12 ? 1 : 2);
+      add(c, hour);
+      hour.setOnItemSelectedListener(
+          selected(
+              pos -> {
+                int value = pos == 0 ? 9 : pos == 1 ? 12 : 18;
+                if (value != prefs.getInt("hour", 9)) {
+                  prefs.edit().putInt("hour", value).apply();
+                  Reminders.schedule(this);
+                }
+              }));
+      add(
+          c,
+          button(
+              "Deneme bildirimi gönder",
+              false,
+              () -> {
+                if (!Reminders.allowed(this)) {
+                  toast("Android ayarlarından Cep Bütçem bildirimlerine izin ver.");
+                  Intent settings =
+                      new Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                          .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, getPackageName());
+                  startActivity(settings);
+                } else {
+                  Reminders.test(this);
+                  toast("Deneme bildirimi gönderildi");
+                }
+              }));
+    }
+    hint(
+        c,
+        "Telefonun yerel saatine göre günlük kontrol. Enerji tasarrufu bildirimi geciktirebilir;"
+            + " kesin dakika alarmı değildir. Zorla durdurma sonrası uygulamayı yeniden aç. Kilit"
+            + " ekranında tutarlar gizlenir.");
+  }
+
+  @Override
+  public void onRequestPermissionsResult(int code, String[] permissions, int[] grants) {
+    super.onRequestPermissionsResult(code, permissions, grants);
+    if (code == 71) {
+      Reminders.schedule(this);
+      if (Reminders.allowed(this)) io.execute(() -> Reminders.check(this));
+      render();
+    }
+  }
+
   private void settings() {
     preferences();
+    financeTools();
+    reminderSettings();
     LinearLayout payments = card(body);
     cardTitle(payments, "calendar", "Ödemelerin", BLUE);
     hint(
         payments,
         plan.cards.size()
             + " kredi kartı · "
-            + plan.bills.stream().filter(b -> b.paid == 0).count()
+            + plan.bills.stream().filter(b -> !b.isPaid()).count()
             + " bekleyen fatura");
     add(
         payments,
@@ -1778,7 +2689,7 @@ public class MainActivity extends Activity {
       LinearLayout c = card(body);
       LinearLayout r = row();
       weighted(r, text(a.name, 17, WHITE, true));
-      r.addView(text(Finance.money(Finance.balance(a, entries, LocalDate.now())), 19, GREEN, true));
+      r.addView(text(Finance.money(balance(a)), 19, GREEN, true));
       add(c, r);
       space(c, 10);
       hint(c, "Açılış bakiyesi: " + Finance.money(a.opening));
@@ -2081,13 +2992,14 @@ public class MainActivity extends Activity {
       divider(c);
       int remaining = (int) ChronoUnit.DAYS.between(LocalDate.now(), periodEnd(month));
       long pending = 0, paidBills = 0;
-      Set<Long> periodIds = new HashSet<>();
-      for (Finance.Entry e : list) periodIds.add(e.id);
+
       for (Planning.Bill b : plan.bills)
-        if (b.paid != 0 && periodIds.contains(b.paid))
-          paidBills = Math.addExact(paidBills, b.amount);
+        if (b.paid != 0
+            && paidDates.containsKey(b.paid)
+            && !paidDates.get(b.paid).isBefore(from)
+            && !paidDates.get(b.paid).isAfter(to)) paidBills = Math.addExact(paidBills, b.amount);
       for (Planning.Bill b : plan.bills)
-        if (b.paid == 0 && !b.due.isAfter(periodEnd(month)))
+        if (!b.isPaid() && !b.due.isAfter(periodEnd(month)))
           pending = Math.addExact(pending, b.amount);
       long estimate =
           Finance.obligationForecast(
@@ -2166,17 +3078,30 @@ public class MainActivity extends Activity {
       creditCardTile(parent, card, full);
     }
     List<Planning.Bill> sorted = new ArrayList<>(plan.bills);
-    sorted.sort(Comparator.comparing((Planning.Bill b) -> b.paid != 0).thenComparing(b -> b.due));
+    sorted.sort(Comparator.comparing((Planning.Bill b) -> b.isPaid()).thenComparing(b -> b.due));
     shown = 0;
-    for (Planning.Bill b : sorted) {
-      if (!full && (b.paid != 0 || shown++ >= 3)) continue;
+    if (full) {
+      paymentOffset = Math.min(paymentOffset, Math.max(0, ((sorted.size() - 1) / 20) * 20));
+      hint(
+          parent,
+          "Ödemeler "
+              + (sorted.isEmpty() ? 0 : paymentOffset + 1)
+              + "–"
+              + Math.min(sorted.size(), paymentOffset + 20)
+              + " / "
+              + sorted.size());
+    }
+    List<Planning.Bill> visible =
+        full ? sorted.subList(paymentOffset, Math.min(sorted.size(), paymentOffset + 20)) : sorted;
+    for (Planning.Bill b : visible) {
+      if (!full && (b.isPaid() || shown++ >= 3)) continue;
       LinearLayout c = card(parent);
-      add(c, text(b.name + " · " + Finance.money(b.amount), 16, b.paid != 0 ? GREEN : RED, true));
+      add(c, text(b.name + " · " + Finance.money(b.amount), 16, b.isPaid() ? GREEN : RED, true));
       space(c, 8);
       hint(
           c,
-          (b.paid != 0
-                  ? "Ödendi"
+          (b.isPaid()
+                  ? (b.trackedPaid != null ? "Ödendi · yalnızca takip" : "Ödendi · gider kaydı")
                   : b.due.isBefore(LocalDate.now())
                       ? "Gecikmiş"
                       : b.due.equals(LocalDate.now()) ? "Bugün ödenecek" : "Bekliyor")
@@ -2185,26 +3110,31 @@ public class MainActivity extends Activity {
               + " · "
               + account(b.account)
               + (b.monthly ? " · Aylık tekrar" : ""));
-      if (full && b.paid == 0) {
+      if (full && !b.isPaid()) {
         add(
             c,
             button(
                 "Ödemeyi kaydet",
                 true,
-                () ->
-                    chooseDate(
-                        LocalDate.now(),
-                        date -> {
-                          try {
-                            ledger.payBill(b.id, date);
-                            refresh();
-                            toast("Fatura ödendi; gider kaydı eklendi");
-                          } catch (Exception e) {
-                            error("Ödeme kaydedilemedi", e);
-                          }
-                        })));
+                () -> {
+                  if (b.loan != 0) {
+                    loanPaymentChoice(b);
+                    return;
+                  }
+                  chooseDate(
+                      LocalDate.now(),
+                      date -> {
+                        try {
+                          ledger.payBill(b.id, date);
+                          refresh();
+                          toast("Fatura ödendi; gider kaydı eklendi");
+                        } catch (Exception e) {
+                          error("Ödeme kaydedilemedi", e);
+                        }
+                      });
+                }));
         space(c, 6);
-        add(c, button("Faturayı düzenle", false, () -> billDialog(b)));
+        if (b.loan == 0) add(c, button("Faturayı düzenle", false, () -> billDialog(b)));
       } else if (full) {
         add(
             c,
@@ -2214,8 +3144,9 @@ public class MainActivity extends Activity {
                 () ->
                     confirm(
                         "Ödeme geri alınsın mı?",
-                        "Bağlı gider silinir. Oluşmuş sonraki fatura korunur; bu eski fatura"
-                            + " yeniden ödeme sonrası tekrar oluşturmaz.",
+                        "Gider kaydı varsa silinir; yalnızca takip ödemesinde bakiye değişmez."
+                            + " Sonraki fatura korunur; bu eski fatura yeniden ödeme sonrası tekrar"
+                            + " oluşturmaz.",
                         () -> {
                           try {
                             ledger.undoBill(b.id);
@@ -2227,6 +3158,26 @@ public class MainActivity extends Activity {
       }
     }
     if (full) {
+      if (paymentOffset > 0)
+        add(
+            parent,
+            button(
+                "Önceki 20 ödeme",
+                false,
+                () -> {
+                  paymentOffset -= 20;
+                  render();
+                }));
+      if (sorted.size() > paymentOffset + 20)
+        add(
+            parent,
+            button(
+                "Sonraki 20 ödeme",
+                false,
+                () -> {
+                  paymentOffset += 20;
+                  render();
+                }));
       add(parent, button("+ Kredi kartı ekle", true, () -> cardDialog(null)));
       space(parent, 8);
       add(parent, button("+ Fatura ekle", false, () -> billDialog(null)));
@@ -2765,7 +3716,7 @@ public class MainActivity extends Activity {
       toast("En az bir hesap kalmalı. Önce yeni bir hesap ekle.");
       return;
     }
-    long count = entries.stream().filter(e -> e.accountId == a.id || e.targetId == a.id).count();
+    long count = ledger.accountEntryCount(a.id);
     long bills = plan.bills.stream().filter(b -> b.account == a.id).count();
     int recurring = 0;
     try {
@@ -3118,9 +4069,9 @@ public class MainActivity extends Activity {
               success =
                   request == EXPORT_JSON ? "JSON yedeği kaydedildi" : "CSV dosyası kaydedildi";
             }
-            fileFinished(success, null);
+            fileFinished(success, null, request == IMPORT_JSON);
           } catch (Exception e) {
-            fileFinished(null, e);
+            fileFinished(null, e, false);
           }
         });
   }

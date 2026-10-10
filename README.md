@@ -66,6 +66,21 @@ Debug APK kişisel deneme için imzalı ve kurulabilirdir. Kalıcı sürüm içi
 
 Grafiklerdeki tutarlar metin listelerinde de bulunur. Tahminler istatistiksel yön göstergesidir; kaydedilmemiş faturaları, fiyat değişimlerini veya gelecekteki gelirleri tahmin etmez. Asistanın ayrı senaryosu kayıtlı bekleyen faturaları dikkate alır.
 
+## v1.4: kredi takibi, maaş araçları, bildirim ve gün özeti
+
+- Yeni mint/altın cüzdan simgesi; Android adaptive ve tek renk tema simgesi.
+- **Ayarlar → Finans araçların → Kredilerim ve taksitler**: bankanın eşit taksitli kredi planını kaydet; ödeme takviminde izle. **Ödedim → Bakiyeden düşülsün mü?** Evet gider oluşturur, Hayır yalnızca takipte ödenmiş gösterir. Her iki seçenek için ödeme geri alınabilir; aynı taksit ikinci kez ödenemez.
+- Kredi ekranı anapara, toplam geri ödeme, finansman maliyeti, ödenen taksitler ve kalan taksit toplamını gösterir. Kalan taksit toplamı erken kapama borcu değildir. Faizle taksit hesaplama vergi/sigorta/masraf hariç tahmindir; bankanın tutarıyla düzelt.
+- **Maaş hesaplayıcı**: `App.jsx` ile aynı Ocak/Temmuz hesabı: altı aylık bileşik enflasyon, enflasyon farkı ve sonraki dönem toplu sözleşme zammı. İki yıllık zam tablosu, yıl bazında enflasyon girişleri ve taslak/Kaydet akışı. Mevcut dönem zammı tekrar maaşa eklenmez; hesap gelir kaydı oluşturmaz.
+- **Ayarlar → Ödeme bildirimleri**: aç/kapat, vade günü/1/3 gün önce, 09:00/12:00/18:00, deneme bildirimi. Android 13+ bildirim izni gerekir. Günlük yerel kontrol; Android enerji tasarrufu teslimi geciktirebilir. Zorla durdurmadan sonra uygulamayı yeniden aç. Kilit ekranında özel finansal tutarlar gizlenir. Fatura ve kredi taksitleri ile pozitif ekstre özeti olan kartlar kontrol edilir; eski kart özeti yeni bir ekstreymiş gibi ileri taşınmaz.
+- **Konuya özel yardım**: günlük harcama payı, kredi yükü, kart özeti, kategori tasarrufu ve alışveriş senaryosu. Yerel, açıklanabilir hesaplar; otomatik finansal kayıt üretmez.
+- **Analiz → Harcama haritası**: güne dokununca gelir/gider/net özet takvimin altında açılır. İşlem detayları varsayılan olarak kapalıdır; açıldığında 50 kayıtlık sayfalarla gösterilir. Gün seçimi için erişilebilir açılır liste de vardır.
+- Geçmişin tamamını her ekran açılışında Java nesnelerine okumak kaldırıldı. Dönem raporları SQL'de gruplandırılır; gerçek işlemler SQL'de filtrelenerek 50'lik sayfalarda alınır. Ödeme kartları 20'lik sayfalardır. Okuma ve rapor işleri arka planda, arama 180 ms gecikmeyle; eski yanıtlar yeni ekranı değiştirmez. Tarih/hesap/hedef/kategori ve covering rapor indeksleri, günlük bakiye toplamları ve WAL etkin. Düzenleme/silme/transfer toplamları aynı veritabanı işleminde güncellenir.
+
+JSON **v4**, SQLite **v3**. JSON v1–v3 ve eski SQLite v1/v2 korunarak yükseltilir. Kredi planı, yalnızca takip ödeme tarihleri ve gerçek ödeme kayıtları yedekte korunur. Bildirim izni/cihaz bildirim tercihi cihaz bazlıdır, JSON'a taşınmaz; yeni telefonda yeniden açılır.
+
+<img src="docs/screenshots/app-icon.png" width="120" alt="Yeni Cep Bütçem uygulama simgesi" /> <img src="docs/screenshots/loans.png" width="240" alt="Kredi taksitleri ve takip ödemesi" /> <img src="docs/screenshots/day-summary.png" width="240" alt="Takvim altında seçilen günün gelir gider özeti" /> <img src="docs/screenshots/salary.png" width="240" alt="App.jsx ile aynı enflasyon ve zamla maaş hesabı" />
+
 ## v1.3: dinamik renkler, banka özeti ve hesap yönetimi
 
 Net varlık kartı, dönem bütçesi ve gösterge aynı maaş dönemi harcama oranını kullanır: **%50 altı yeşil, %50–80 sarı, %80+ kırmızı**. Gelir yoksa nötrdür. Yüzde açılışta 0'dan gerçek değere bir saniyede ilerler; Android animasyonları kapalıysa doğrudan son değeri gösterir.
@@ -102,9 +117,9 @@ Uyarlanan fikirler ve korunan muhasebe kuralları: [Tasarım notları](docs/DESI
 
 Dönem sonu senaryosu `(gerçekleşmiş gider − ödenmiş takipli faturalar) / geçen gün × dönem gün sayısı + ödenmiş takipli faturalar + dönem sonuna kadar bekleyen/gecikmiş faturalar` kullanır. Bilinen fatura ödemeleri günlük ortalamadan çıkarılır; bir kez eklenir ve dönem sonuna doğru tekrar büyütülmez. Diğer giderler günlük hızla tahmin edilir. Gelecek gelir varsayılmaz. Kalan günlük hedef payı, kayıtlı gelirden giderleri, bekleyen faturaları ve tasarruf hedefini çıkarıp yarından dönem sonuna kalan günlere böler; bu tutar bankadaki kullanılabilir bakiye değildir. Kredi kartı ödeme transferleri harcama senaryosuna eklenmez; ayrıca ödeme takviminden takip edilir. İlk 7 günde tahminin oynaklığı açıklanır.
 
-Asistan çevrimdışı hesaplama ve açıklanabilir kurallar kullanır; bir dil modeli veya banka bağlantısı içermez. Yorumlar kayıtlara dayanır; eksik kayıtlar sonuçları değiştirir. Arka planda ödeme bildirimi gönderilmez; takvim uygulama içinde gösterilir.
+Asistan çevrimdışı hesaplama ve açıklanabilir kurallar kullanır; bir dil modeli veya banka bağlantısı içermez. Yorumlar kayıtlara dayanır; eksik kayıtlar sonuçları değiştirir. v1.1’de takvim uygulama içindeydi; v1.4’te isteğe bağlı yerel ödeme bildirimleri de vardır.
 
-Güncelleme SQLite v1 kayıtlarını silmeden v2'ye geçirir. Hazır APK önceki yayımlanan APK ile aynı debug anahtarıyla imzalanır. Kurmadan önce **JSON yedeğini kaydet** ile yedek al; APK'yı güncelleme olarak kur, uygulamayı kaldırma. Android Studio'da farklı imzayla derlenen bir sürümün üzerine kurmak imza uyuşmazlığı oluşturabilir.
+v1.1 güncellemesi SQLite v1 kayıtlarını silmeden v2'ye geçirdi; güncel v1.4, v1/v2'yi v3'e yükseltir. Hazır APK önceki yayımlanan APK ile aynı debug anahtarıyla imzalanır. Kurmadan önce **JSON yedeğini kaydet** ile yedek al; APK'yı güncelleme olarak kur, uygulamayı kaldırma. Android Studio'da farklı imzayla derlenen bir sürümün üzerine kurmak imza uyuşmazlığı oluşturabilir.
 
 ## İlk kullanım
 
@@ -128,7 +143,7 @@ Düzenli işlemler **Ayarlar → Aylık düzenli işlem** ile tanımlanır. Uygu
 
 Uygulama internet izni istemez, banka bağlantısı veya reklam içermez. SQLite dosyası Android'in uygulamaya özel alanındadır. Otomatik Android bulut yedeklemesi kapalıdır. Uygulamayı kaldırmak yerel verileri siler.
 
-JSON v3 yedeği hesapları, kategorileri, işlemleri, düzenli kuralları, bütçeleri, kart tarihlerini, faturaları, maaş günü, tema ve hedef ayarlarını içerir. Eski v1/v2 yedekleri desteklenir; v1 yeni ayarlar için varsayılanları kullanır; banka özeti olmayan v2 kartlarında alanlar henüz girilmemiş gösterilir. Geri yükleme mevcut verileri tamamen değiştirir; dosya önce doğrulanır, veritabanı işlemi başarısızsa eski veriler geri alınır. En fazla 16 MB JSON dosyası kabul edilir. Yedek ve CSV dosyaları **şifrelenmez**; bunları güvenli bir yerde saklayın. CSV geri yükleme desteklenmez; geri yüklemek için JSON kullanın.
+JSON v4 yedeği maaş hesaplama ayarları, yıl bazında enflasyon/zam tabloları, kredi planları ve takip ödeme durumları ile hesapları, kategorileri, işlemleri, düzenli kuralları, bütçeleri, kart tarihlerini, faturaları, maaş günü, tema ve hedef ayarlarını içerir. Eski v1/v2/v3 yedekleri desteklenir; v1 yeni ayarlar için varsayılanları kullanır; banka özeti olmayan v2 kartlarında alanlar henüz girilmemiş gösterilir. Geri yükleme mevcut verileri tamamen değiştirir; dosya önce doğrulanır, veritabanı işlemi başarısızsa eski veriler geri alınır. En fazla 16 MB JSON dosyası kabul edilir. Yedek ve CSV dosyaları **şifrelenmez**; bunları güvenli bir yerde saklayın. CSV geri yükleme desteklenmez; geri yüklemek için JSON kullanın.
 
 ## Komut satırı ve testler
 
@@ -159,7 +174,9 @@ Android testleri ayrı `ledger-validation.db` veritabanında çalışır; kişis
 ## Proje düzeni
 
 - `Finance.java`: Android bağımsız para ve analiz hesapları.
-- `Planning.java`: kart/fatura ve kalıcı ayarlar; yedek doğrulaması.
+- `Planning.java`: kart/fatura/kredi ve kalıcı ayarlar; yedek doğrulaması.
+- `Calculators.java`: bileşik enflasyonla maaş ve eşit taksit tahminleri.
+- `Reminders.java` / `ReminderReceiver.java`: yerel bildirim ve günlük kontrol.
 - `Ledger.java`: SQLite, düzenli kayıt üretimi, CSV ve JSON.
 - `MainActivity.java`: beş ana bölüm, ödeme/asistan ekranları, formlar ve sistem dosya seçicisi.
 - `Design.java`: yerel ikonlar, harcama göstergesi ve günlük harita.
@@ -167,7 +184,7 @@ Android testleri ayrı `ledger-validation.db` veritabanında çalışır; kişis
 - `app/src/test`: para hesaplama testleri.
 - `app/src/androidTest`: gerçek Android veritabanı testleri.
 
-APK imzalama, telefon bağlantısı ve emülatör Android Studio tarafından yönetilir. Bu sürüm TL kullanır; döviz dönüşümü, banka senkronizasyonu, arka plan bildirimleri ve uygulama içi PIN/kilit içermez.
+APK imzalama, telefon bağlantısı ve emülatör Android Studio tarafından yönetilir. Bu sürüm TL kullanır; döviz dönüşümü, banka senkronizasyonu ve uygulama içi PIN/kilit içermez.
 
 ## Ekran görüntüleri ve doğrulama
 
@@ -179,4 +196,4 @@ Aşağıdaki tutarlar emülatörde girilen test kayıtlarıdır; uygulama boş v
 
 Web referansı: [mobil](docs/screenshots/web-mobile.png) · [masaüstü](docs/screenshots/web-desktop.png).
 
-Derleme, 45 Android testi ve 6 web hesaplama testi ve UI kontrolü sonuçları: [Doğrulama kaydı](docs/VALIDATION.md).
+Derleme, Android/web testleri, 100.000 kayıt ve UI kontrolü sonuçları: [Doğrulama kaydı](docs/VALIDATION.md).

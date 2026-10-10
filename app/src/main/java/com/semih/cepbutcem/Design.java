@@ -308,7 +308,7 @@ public final class Design {
       this.light = light;
       this.selected = selected;
       setContentDescription(
-          "Maaş dönemi harcama haritası. Her günün tutarı Günlük harcamalar düğmesinden"
+          "Maaş dönemi harcama haritası. Gün özetleri takvimin altındaki Gün seç listesinden"
               + " okunabilir.");
     }
 

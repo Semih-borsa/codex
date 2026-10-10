@@ -5,4 +5,6 @@
         <item quantity="other">%1$d işlem · Gelir %2$s · Gider %3$s</item>
     </plurals>
     <string name="bill_repeat">Ödendiğinde sonraki ay için yeni fatura oluştur</string>
+    <string name="transactions_loading">İşlemler yükleniyor…</string>
+    <string name="credit_estimate_note">Tahmin: vergi, sigorta ve masraflar dahil değil. Bankanın tutarıyla düzelt.</string>
 </resources>

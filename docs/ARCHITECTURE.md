@@ -1,6 +1,6 @@
 # Cep Bütçem · Mobil/Web Mimari ve Kod Rehberi
 
-Bu rehber mevcut yerel Android uygulamasını koruyarak web ve isteğe bağlı senkronizasyon katmanı eklemek için uygulanabilir tasarımdır. Bugün Android v1.3 ve çalışan React/Tailwind arayüz referansı vardır. PostgreSQL şeması ve REST controller örnekleri hazırlanmıştır; sunuculu ürün henüz dağıtılmamıştır. Production mimarisi, çalışan arayüz örneği ve canlıya çıkış için gereken işler ayrı belirtilir.
+Bu rehber mevcut yerel Android uygulamasını koruyarak web ve isteğe bağlı senkronizasyon katmanı eklemek için uygulanabilir tasarımdır. Bugün Android v1.4 ve çalışan React/Tailwind arayüz referansı vardır. PostgreSQL şeması ve REST controller örnekleri hazırlanmıştır; sunuculu ürün henüz dağıtılmamıştır. Production mimarisi, çalışan arayüz örneği ve canlıya çıkış için gereken işler ayrı belirtilir.
 
 ## 1. KULLANICI DENEYİMİ VE ARAYÜZ (UI/UX) TASARIMI
 
@@ -723,3 +723,13 @@ Dört hafta tek geliştirici için odaklanmış web/senkronizasyon MVP planıdı
 ### Bu teslimin doğrulama kapsamı
 
 Android build, unit/SQLite testleri ve APK güncelleme/UI akışı `docs/VALIDATION.md` dosyasındadır. React helper testleri, Vite production build ve Chromium mobil/masaüstü akışları doğrulanır. SQL şeması, sahiplik FK'leri, tutar/istek kısıtları ve rapor sorguları PGlite PostgreSQL motorunda denenmiştir; gerçek uzak PostgreSQL/TLS, JWT oturumları, refresh/email ve production deployment bu teslimde çalıştırılmamıştır.
+
+### v1.4 uygulama notları
+
+Android kredi planı eşit taksitli bankacılık tutarlarına dayanır. `Bill.paid` gerçek gider kimliğidir; `Bill.trackedPaid` yalnızca takip ödeme tarihidir. `isPaid()` her ikisini kapsar. Yalnızca takip ödemesi bakiye/gelir/gider oluşturmaz; bekleyen yükümlülük ve hatırlatma listesinden çıkar. Gider tahminindeki ödenmiş fatura düzeltmesi yalnızca gerçek gider kayıtlarını kullanır. Aynı taksit için bu iki durum birlikte kaydedilemez.
+
+Maaş/annüite hesapları `Calculators` içinde BigDecimal ile yapılır. Maaş motoru `App.jsx/MaasTab` ile aynı altı aylık bileşik enflasyon, mevcut dönem zammını bölen ve negatif farkı sıfırlayan formülü uygular; mevcut zam maaşa tekrar uygulanmaz. Ocak→Temmuz ve Temmuz→sonraki yıl Ocak zam anahtarları, iki yıllık zam tablosu, aylık enflasyon ve taslak/Kaydet akışı `SalarySettings`/Planning içinde JSON yedeğine dahil edilir. Boş oranlar sıfırdır. Sonuç ledger'a yazılmaz. Faiz örneği vergi/masraf hariçtir.
+
+UI için tüm kayıtları okuma yerine SQL tarih aralığı/gruplama, 50 kayıtlık işlem/gün sayfaları ve 20 ödeme kartı uygulanır. Özet satırlarında `recordCount` ve `largestAmount` korunur; işlem sayısı ve en büyük tek gider gruplamayla bozulmaz. Bakiye tüm gerçekleşmiş geçmişin `account_daily` günlük toplamlarından SQL ile hesaplanır, görünümün tarih aralığına indirgenmez. SQLite insert/update/delete trigger'ları bu türetilmiş toplamları aynı transaction içinde günceller; JSON restore toplamları kayıtlardan yeniden üretir. Trigger içi ekleme `WHERE NOT EXISTS` kullanır; dış işlemin conflict policy'si iç `OR IGNORE` davranışını değiştiremez. Okumalar tek IO executor'ında, stale yanıtlar generation kontrolüyle reddedilir. SQL araması seçili dönemi tarayabilir ve OFFSET derin sayfalarda maliyetlidir; milyonlarca kayıt için keyset/FTS ve ayrı ölçüm gerekir, sınırsız performans vaadi yoktur.
+
+Yerel bildirim: AlarmManager inexact günlük alarm, boot/saat dilimi/güncelleme sonrası yeniden kurulum, notification channel, Android 13+ runtime permission. Exact alarm yetkisi istenmez. Günlük özet aynı gün tekrarlanmaz; kilit ekranı sürümü tutar içermez. Bildirim tercihi cihazda tutulur. Ağ servisi veya push sağlayıcısı yoktur.

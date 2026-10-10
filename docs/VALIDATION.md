@@ -1,4 +1,57 @@
-# Doğrulama · v1.3.0 · 10 Ekim 2026
+# Doğrulama · v1.4.0 · 10 Ekim 2026
+
+JDK17, SDK35/Build-Tools34.0.0, Gradle8.9; Android11/API30 yazılımsal emülatör. versionCode5/versionName1.4.0, minSDK26, targetSDK35.
+
+## Otomatik testler
+
+- JVM: **29 test**, 0 başarısız/hatalı/atlanan. Önceki 19 finans testi ve 10 bileşik enflasyonla maaş/annüite/ondalık doğrulama testi.
+- Android SQLite: **35 test**, 0 başarısız/hatalı/atlanan. Son teslim APK’sında `am instrument -w` ile tam koşu: **84.033 saniye**. Önceki connectedDebugAndroidTest koşusunda 33 test geçti; yeni maaş yedek/bozuk yedek testleriyle toplam35 oldu. Testler ayrı `ledger-validation.db` kullanır.
+- `lintDebug`: **No issues found**, 0 hata/uyarı; app ve test APK derlemeleri geçti.
+- Kredi planı: 31 Ocak→29 Şubat→31 Mart; takip ödemesinde gider/bakiye değişmemesi, gerçek ödemede tek gider, tekrar ödemenin engellenmesi, her iki ödemeyi geri alma, kredi planını kaldırırken gerçek gideri koruma ve yedek dönüşü.
+- Maaş ayarlarının yıl/dönem/negatif aylık enflasyonla JSON yedek dönüşü; geçersiz %-100 zam içeren restore’un mevcut kaydı koruyarak reddedilmesi; maaş alanı olmayan eski yedekte varsayılan ayarlar.
+- Geçmiş JSON v1/v2/v3 uyumu, eksik taksitli bozuk kredi yedeğini reddetme ve eski kayıtları koruma. JSON v4 yazılır; SQLite v1/v2→v3 migration kayıtları korur.
+- Günlük bakiye türetilmiş tablosu: tutar/tarih/transfer yönü düzenleme, ileri tarihli geliri gerçekleşmiş bakiyeye katmama, silme, restore ve FK temizliği. Tekrarlayan işlemi durdururken oluşan FK `SET NULL` güncellemesi de kapsanır.
+- Günlük bildirim adayları: ödenen/yalnızca takip ödemelerini dışlama, 0/1 gün öncesi sınırı, eski kart özetini yeni kesim döngüsüne taşımama; yerel kontrol saati seçimi.
+
+- Hazır APK imzası `apksigner verify --verbose --print-certs` ile doğrulandı; sertifika SHA-256 `a3c71704fc4e5a498772ad1825325fc493203b962d3b7c3f9f9db5c0dbf273c8`, önceki yayımlanmış sürümle aynı.
+
+## App.jsx maaş hesabıyla karşılaştırma
+
+Yüklenen dosyadaki `MaasTab`/`useMemo` hesap gövdesi doğrudan Node.js ile çalıştırıldı; aynı girişler Java `Calculators.salary` motoruna verildi. Sabit seed ile oluşturulmuş **300 senaryonun tamamında tahmini maaş kuruş düzeyinde eşleşti**. Ocak/Temmuz, sonraki yılın Ocak zammı, aylık negatif enflasyon ve mevcut dönem zammına göre farkın sıfırlanması kapsandı. JVM testleri ayrıca boş ayları sıfır kabul etme, zam çift uygulamama, bileşik çarpım ve geçersiz %-100 bölenini reddetmeyi doğrular. Referans dosyadaki kayan nokta işlemleri Android'de BigDecimal ile uygulanır; para sonuçları son adımda kuruşa yuvarlanır.
+
+## 100.000 kayıt doğrulaması
+
+Tek hesap/kategori, 100 güne dağıtılmış 100.000 gider; gerçek Android SQLite, yerel test verisi. Raporda **100 özet nesnesi**, SQL sayfasında **50 gerçek işlem**; count100.000, toplam10.000.000 kuruş ve bakiye−10.000.000 kuruş doğrulandı. Dönem sorgusunun index kullanması ayrıca `EXPLAIN QUERY PLAN` ile kontrol edildi.
+
+| Ölçüm | İlk yaklaşım | Son yaklaşım |
+|---|---:|---:|
+| 100.000 fixture ekleme | 50.425 s | 66.114 s |
+| Rapor + ilk sayfa/toplamlar + bakiye sorguları | 16.774 s | 0.542 s |
+| Java rapor/sayfa nesnesi | 100 / 50 | 100 / 50 |
+
+Son yaklaşım: covering rapor indeksi, arama yokken gereksiz join'leri kaldırma ve transaction içi trigger'larla günlük bakiye toplamları. Ek yazma işi vardır; bunun karşılığı geçmiş büyürken bakiyenin işlem sayısı yerine hesap/gün toplamlarından okunmasıdır. Fixture ekleme süresi uygulamada tek işlem ekleme süresi değildir. Sonuç TCG yazılımsal emülatör ölçümüdür; fiziksel telefonda süre garantisi değildir. Metin araması seçili dönemi tarayabilir; derin OFFSET ve milyonlarca kayıt ayrıca ölçülmelidir.
+
+## APK güncelleme ve ekran kontrolü
+
+v1.3 APK'da 3.000 TL gelir/100 TL gider oluşturuldu; v1.4 güncellemesinde iki kayıt ve 2.900 TL bakiye korundu. 300 TL anapara, 3×120 TL taksitli kredi eklendi. **Hayır · yalnızca takip** sonrası 1/3 ödendi, iki işlem ve 2.900 TL bakiye korundu. **Evet · gider ekle** sonrası 2/3 ödendi, üç işlem ve 2.780 TL bakiye doğrulandı.
+
+- Maaş: mevcut30.000 TL; Ocak/Şubat enflasyonları %10/%10, mevcut Ocak zammı %10, Temmuz zammı %5 → **34.650 TL**. Kaydet/force-stop/yeniden açma sonrası aynı sonuç. Temmuz–Aralık boş enflasyon + sonraki yıl Ocak zammı %20 → **36.000 TL**. SQL snapshot'ta yıl/dönem/zam ayarları korunmuş, işlem sayısı hâlâ3.
+- Harcama haritasının gerçek Canvas gün hücresine dokunuldu: **10.10.2026 · Gün özeti** aynı ekranda takvimin altında; gelir3.000/gider220/net2.780 TL. Detay listesi varsayılan kapalı, açıldıktan sonra gerçek Market işlemi görüldü.
+- Konuya özel yardım kartı, günlük harcama payı ve finans araçlarının gezinmesi kontrol edildi.
+- Bildirim açıldı; `dumpsys notification` içinde **Cep Bütçem · Bildirim testi**, PRIVATE görünürlük ve publicVersion; `dumpsys alarm` içinde günlük **CHECK_PAYMENTS** alarmı doğrulandı. Yeniden açılışta açık ayar korundu, ardından kapatma kontrol edildi. Bunlar API30 deneme bildirimi/alarm kontrolleridir; gerçek vade saatinde fiziksel telefona teslim denemesi değildir.
+- Son SQLite snapshot: schema3, üç işlem, bir kredi, bir takip ödemesi, bir gerçek gider ödemesi; günlük bakiye toplamı278.000 kuruş.
+
+Örnek ekranlar: [Krediler](screenshots/loans.png), [Takvim altında gün özeti](screenshots/day-summary.png), [Açılmış işlem listesi](screenshots/day-details.png), [Maaş hesabı](screenshots/salary.png). Son teslim APK’sı yeniden kuruldu; 2.780 TL bakiye ve kaydedilmiş Temmuz dönemi korundu, genel gelir/gider dönemi seçicisi maaş ekranından kaldırılmış halde 36.000 TL tahmin tekrar doğrulandı.
+
+## Teslim sınırları
+
+Android13+ izin akışı manifest/SDK35 lint ile doğrulandı; runtime ekran testleri API30 üzerindedir. Fiziksel telefon, üretici enerji tasarrufu, gerçek yeniden başlatma ve bildirim teslim saati henüz denenmedi. Alarm inexact olduğundan kesin dakika teslimi vaat edilmez. Bildirim ayarı cihaz bazlıdır. Maaş aracı App.jsx ile aynı enflasyon/zam tahmini, faiz aracı vergi/masraf hariç senaryodur.
+
+Web kaynakları bu sürümde değişmedi; aşağıdaki v1.3 web doğrulamaları referans olarak korunur. Backend örnekleri dağıtılmış servis değildir.
+
+---
+
+# Önceki v1.3 doğrulama kaydı · 10 Ekim 2026
 
 JDK 17, Android SDK35, Build-Tools34.0.0 ve Gradle8.9; Android11/API30 emülatörü. Hazır APK versionCode4, versionName1.3.0, minSDK26/Android8, targetSDK35.
 

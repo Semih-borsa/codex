@@ -16,12 +16,13 @@ public final class Ledger extends SQLiteOpenHelper {
   }
 
   Ledger(Context context, String name) {
-    super(context, name, null, 2);
+    super(context, name, null, 3);
   }
 
   @Override
   public void onConfigure(SQLiteDatabase db) {
     db.setForeignKeyConstraintsEnabled(true);
+    db.enableWriteAheadLogging();
   }
 
   @Override
@@ -51,6 +52,8 @@ public final class Ledger extends SQLiteOpenHelper {
         "CREATE TABLE budgets (category_id INTEGER PRIMARY KEY REFERENCES categories(id), amount"
             + " INTEGER NOT NULL CHECK(amount>0))");
     createPlanning(db);
+    createReadIndexes(db);
+    createDailyBalances(db);
     db.execSQL("INSERT INTO accounts(name,opening) VALUES ('Nakit',0),('Banka',0)");
     for (String name :
         Arrays.asList(
@@ -77,8 +80,91 @@ public final class Ledger extends SQLiteOpenHelper {
 
   @Override
   public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-    if (oldVersion == 1 && newVersion == 2) createPlanning(db);
-    else throw new IllegalStateException("Desteklenmeyen veritabanı sürümü.");
+    if (oldVersion < 2) createPlanning(db);
+    if (oldVersion < 3) {
+      createReadIndexes(db);
+      createDailyBalances(db);
+    }
+  }
+
+  private void createReadIndexes(SQLiteDatabase db) {
+    db.execSQL("CREATE INDEX IF NOT EXISTS entries_date_id ON entries(date DESC,id DESC)");
+    db.execSQL(
+        "CREATE INDEX IF NOT EXISTS entries_account_date ON entries(account_id,date,kind,amount)");
+    db.execSQL("CREATE INDEX IF NOT EXISTS entries_target_date ON entries(target_id,date,amount)");
+    db.execSQL("CREATE INDEX IF NOT EXISTS entries_category_date ON entries(category_id,date)");
+    db.execSQL(
+        "CREATE INDEX IF NOT EXISTS entries_report_cover ON"
+            + " entries(date,kind,account_id,target_id,category_id,amount)");
+  }
+
+  /** Derived day balances bound lifetime balance reads by days, not number of transactions. */
+  private void createDailyBalances(SQLiteDatabase db) {
+    db.execSQL(
+        "CREATE TABLE account_daily (account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE"
+            + " CASCADE,date TEXT NOT NULL,delta INTEGER NOT NULL,PRIMARY KEY(account_id,date))"
+            + " WITHOUT ROWID");
+    db.execSQL(
+        "INSERT INTO account_daily SELECT account_id,date,SUM(delta) FROM (SELECT"
+            + " account_id,date,CASE WHEN kind='I' THEN amount ELSE -amount END AS delta FROM"
+            + " entries UNION ALL SELECT target_id AS account_id,date,amount AS delta FROM entries"
+            + " WHERE kind='T') GROUP BY account_id,date");
+    String add = balanceTrigger("NEW", 1), subtract = balanceTrigger("OLD", -1);
+    db.execSQL("CREATE TRIGGER entries_daily_insert AFTER INSERT ON entries BEGIN " + add + " END");
+    db.execSQL(
+        "CREATE TRIGGER entries_daily_delete AFTER DELETE ON entries BEGIN " + subtract + " END");
+    db.execSQL(
+        "CREATE TRIGGER entries_daily_update AFTER UPDATE ON entries BEGIN "
+            + subtract
+            + add
+            + " END");
+  }
+
+  private String balanceTrigger(String row, int sign) {
+    // INSERT ... WHERE NOT EXISTS avoids inherited outer ON CONFLICT policy in SQLite triggers.
+    String source = row + ".account_id", target = row + ".target_id", date = row + ".date";
+    return "INSERT INTO account_daily(account_id,date,delta) SELECT "
+        + source
+        + ","
+        + date
+        + ",0 WHERE NOT EXISTS(SELECT 1 FROM account_daily WHERE account_id="
+        + source
+        + " AND date="
+        + date
+        + "); UPDATE account_daily SET delta=delta+("
+        + sign
+        + ")*(CASE WHEN "
+        + row
+        + ".kind='I' THEN "
+        + row
+        + ".amount ELSE -"
+        + row
+        + ".amount END) WHERE account_id="
+        + source
+        + " AND date="
+        + date
+        + "; "
+        + "INSERT INTO account_daily(account_id,date,delta) SELECT "
+        + target
+        + ","
+        + date
+        + ",0 WHERE "
+        + row
+        + ".kind='T' AND NOT EXISTS(SELECT 1 FROM account_daily WHERE account_id="
+        + target
+        + " AND date="
+        + date
+        + "); UPDATE account_daily SET delta=delta+("
+        + sign
+        + ")*"
+        + row
+        + ".amount WHERE "
+        + row
+        + ".kind='T' AND account_id="
+        + target
+        + " AND date="
+        + date
+        + "; ";
   }
 
   private void createPlanning(SQLiteDatabase db) {
@@ -89,9 +175,33 @@ public final class Ledger extends SQLiteOpenHelper {
     try (Cursor c = getReadableDatabase().rawQuery("SELECT data FROM planning WHERE id=1", null)) {
       return c.moveToFirst()
           ? validatePlanning(
-              new JSONObject(c.getString(0)), accounts(), categories(null), entries())
+              new JSONObject(c.getString(0)),
+              accounts(),
+              categories(null),
+              paidEntries(new JSONObject(c.getString(0))))
           : new Planning();
     }
+  }
+
+  private List<Finance.Entry> paidEntries(JSONObject plan) throws JSONException {
+    List<Finance.Entry> result = new ArrayList<>();
+    JSONArray bills = plan.getJSONArray("bills");
+    for (int i = 0; i < bills.length(); i++) {
+      long id = bills.getJSONObject(i).getLong("paid");
+      if (id != 0)
+        result.addAll(
+            readEntries(
+                "SELECT id,kind,amount,date,account_id,target_id,category_id,note FROM entries"
+                    + " WHERE id=?",
+                new String[] {Long.toString(id)}));
+    }
+    return result;
+  }
+
+  public Map<Long, LocalDate> paidDates(Planning p) throws JSONException {
+    Map<Long, LocalDate> dates = new HashMap<>();
+    for (Finance.Entry e : paidEntries(p.json())) dates.put(e.id, e.date);
+    return dates;
   }
 
   private Planning validatePlanning(
@@ -111,7 +221,7 @@ public final class Ledger extends SQLiteOpenHelper {
 
   public void savePlanning(Planning p) throws JSONException {
     JSONObject o = p.json();
-    validatePlanning(o, accounts(), categories(null), entries());
+    validatePlanning(o, accounts(), categories(null), paidEntries(o));
     ContentValues v = new ContentValues();
     v.put("id", 1);
     v.put("data", o.toString());
@@ -130,7 +240,7 @@ public final class Ledger extends SQLiteOpenHelper {
       Planning p = planning();
       Planning.Bill found = null;
       for (Planning.Bill b : p.bills) if (b.id == id) found = b;
-      if (found == null || found.paid != 0)
+      if (found == null || found.isPaid())
         throw new IllegalArgumentException("Fatura zaten ödenmiş veya bulunamadı.");
       Finance.Entry e =
           new Finance.Entry(
@@ -169,9 +279,10 @@ public final class Ledger extends SQLiteOpenHelper {
     try {
       Planning p = planning();
       for (Planning.Bill b : p.bills)
-        if (b.id == id && b.paid != 0) {
-          db.delete("entries", "id=?", new String[] {Long.toString(b.paid)});
+        if (b.id == id && b.isPaid()) {
+          if (b.paid != 0) db.delete("entries", "id=?", new String[] {Long.toString(b.paid)});
           b.paid = 0;
+          b.trackedPaid = null;
           // A generated next bill is retained, preventing loss of later edits/payments.
           b.monthly = false;
         }
@@ -240,6 +351,209 @@ public final class Ledger extends SQLiteOpenHelper {
                 c.getString(7)));
     }
     return result;
+  }
+
+  private List<Finance.Entry> readEntries(String sql, String[] args) {
+    List<Finance.Entry> out = new ArrayList<>();
+    try (Cursor c = getReadableDatabase().rawQuery(sql, args)) {
+      while (c.moveToNext()) {
+        Finance.Entry e =
+            new Finance.Entry(
+                c.getLong(0),
+                c.getString(1),
+                c.getLong(2),
+                LocalDate.parse(c.getString(3)),
+                c.getLong(4),
+                c.getLong(5),
+                c.getLong(6),
+                c.getString(7));
+        if (c.getColumnCount() > 8) {
+          e.recordCount = c.getLong(8);
+          e.largestAmount = c.getLong(9);
+        }
+        out.add(e);
+      }
+    }
+    return out;
+  }
+
+  /** Aggregation bounds Java memory by occupied day/category/account combinations. */
+  public List<Finance.Entry> reportEntries(LocalDate from, LocalDate to) {
+    return readEntries(
+        "SELECT 0,kind,SUM(amount),date,account_id,target_id,category_id,'',COUNT(*),MAX(amount)"
+            + " FROM entries WHERE date>=? AND date<=? GROUP BY"
+            + " date,kind,account_id,target_id,category_id ORDER BY date DESC",
+        new String[] {from.toString(), to.toString()});
+  }
+
+  public List<Finance.Entry> dayEntries(LocalDate day, int limit, int offset) {
+    return readEntries(
+        "SELECT id,kind,amount,date,account_id,target_id,category_id,note FROM entries WHERE date=?"
+            + " ORDER BY id DESC LIMIT ? OFFSET ?",
+        new String[] {day.toString(), Integer.toString(limit), Integer.toString(offset)});
+  }
+
+  public List<Finance.Entry> recentEntries(LocalDate from, LocalDate to, int limit) {
+    return readEntries(
+        "SELECT id,kind,amount,date,account_id,target_id,category_id,note FROM entries WHERE"
+            + " date>=? AND date<=? ORDER BY date DESC,id DESC LIMIT ?",
+        new String[] {from.toString(), to.toString(), Integer.toString(limit)});
+  }
+
+  public Map<Long, Long> balances(LocalDate day) {
+    Map<Long, Long> out = new HashMap<>();
+    try (Cursor c =
+        getReadableDatabase()
+            .rawQuery(
+                "SELECT a.id,a.opening+COALESCE((SELECT SUM(d.delta) FROM account_daily d WHERE"
+                    + " d.account_id=a.id AND d.date<=?),0) FROM accounts a",
+                new String[] {day.toString()})) {
+      while (c.moveToNext()) out.put(c.getLong(0), c.getLong(1));
+    }
+    return out;
+  }
+
+  public long accountEntryCount(long id) {
+    try (Cursor c =
+        getReadableDatabase()
+            .rawQuery(
+                "SELECT COUNT(*) FROM entries WHERE account_id=? OR target_id=?",
+                new String[] {Long.toString(id), Long.toString(id)})) {
+      c.moveToFirst();
+      return c.getLong(0);
+    }
+  }
+
+  private String foldSql(String value) {
+    String expression = value;
+    for (String[] pair :
+        new String[][] {
+          {"İ", "i"}, {"I", "ı"}, {"Ş", "ş"}, {"Ğ", "ğ"}, {"Ü", "ü"}, {"Ö", "ö"}, {"Ç", "ç"}
+        }) expression = "replace(" + expression + ",'" + pair[0] + "','" + pair[1] + "')";
+    return "lower(" + expression + ")";
+  }
+
+  public static final class EntryPage {
+    public List<Finance.Entry> rows;
+    public long count, income, expense;
+  }
+
+  public EntryPage entryPage(
+      LocalDate from,
+      LocalDate to,
+      String kind,
+      long account,
+      long category,
+      String search,
+      int limit,
+      int offset) {
+    String join =
+        " FROM entries e JOIN accounts a ON a.id=e.account_id LEFT JOIN accounts t ON"
+            + " t.id=e.target_id LEFT JOIN categories c ON c.id=e.category_id";
+    if (search.trim().isEmpty()) join = " FROM entries e";
+    String where = " WHERE e.date>=? AND e.date<=?";
+    List<String> args = new ArrayList<>(Arrays.asList(from.toString(), to.toString()));
+    if (!kind.isEmpty()) {
+      where += " AND e.kind=?";
+      args.add(kind);
+    }
+    if (account != 0) {
+      where += " AND (e.account_id=? OR e.target_id=?)";
+      args.add(Long.toString(account));
+      args.add(Long.toString(account));
+    }
+    if (category != 0) {
+      where += " AND e.category_id=?";
+      args.add(Long.toString(category));
+    }
+    if (!search.trim().isEmpty()) {
+      where +=
+          " AND instr("
+              + foldSql("e.note||' '||a.name||' '||COALESCE(t.name,'')||' '||COALESCE(c.name,'')")
+              + ",?)>0";
+      args.add(search.toLowerCase(Finance.TR).trim());
+    }
+    EntryPage page = new EntryPage();
+    try (Cursor c =
+        getReadableDatabase()
+            .rawQuery(
+                "SELECT COUNT(*),COALESCE(SUM(CASE WHEN e.kind='I' THEN e.amount ELSE 0"
+                    + " END),0),COALESCE(SUM(CASE WHEN e.kind='E' THEN e.amount ELSE 0 END),0)"
+                    + join
+                    + where,
+                args.toArray(new String[0]))) {
+      c.moveToFirst();
+      page.count = c.getLong(0);
+      page.income = c.getLong(1);
+      page.expense = c.getLong(2);
+    }
+    args.add(Integer.toString(limit));
+    args.add(Integer.toString(offset));
+    page.rows =
+        readEntries(
+            "SELECT e.id,e.kind,e.amount,e.date,e.account_id,e.target_id,e.category_id,e.note"
+                + join
+                + where
+                + " ORDER BY e.date DESC,e.id DESC LIMIT ? OFFSET ?",
+            args.toArray(new String[0]));
+    return page;
+  }
+
+  public void addLoan(Planning.Loan loan) throws JSONException {
+    SQLiteDatabase db = getWritableDatabase();
+    db.beginTransaction();
+    try {
+      Planning p = planning();
+      loan.id = p.nextLoanId();
+      p.loans.add(loan);
+      long next = p.nextBillId();
+      for (int i = 1; i <= loan.count; i++) {
+        Planning.Bill b = new Planning.Bill();
+        b.id = next++;
+        b.loan = loan.id;
+        b.installment = i;
+        b.name = loan.name + " · " + i + "/" + loan.count;
+        b.amount = loan.installment;
+        b.account = loan.account;
+        b.category = loan.category;
+        b.day = loan.first.getDayOfMonth();
+        b.due = Finance.cycleStart(YearMonth.from(loan.first).plusMonths(i - 1), b.day);
+        p.bills.add(b);
+      }
+      savePlanning(p);
+      db.setTransactionSuccessful();
+    } finally {
+      db.endTransaction();
+    }
+  }
+
+  public void payLoan(long billId, LocalDate date, boolean deduct) throws JSONException {
+    validDate(date.toString());
+    if (date.isAfter(LocalDate.now()))
+      throw new IllegalArgumentException("Ödeme tarihi gelecekte olamaz.");
+    SQLiteDatabase db = getWritableDatabase();
+    db.beginTransaction();
+    try {
+      Planning p = planning();
+      Planning.Bill found = p.bills.stream().filter(b -> b.id == billId).findFirst().orElse(null);
+      if (found == null || found.loan == 0 || found.isPaid())
+        throw new IllegalArgumentException("Taksit zaten ödenmiş veya bulunamadı.");
+      if (deduct) payBill(billId, date);
+      else {
+        found.trackedPaid = date;
+        savePlanning(p);
+      }
+      db.setTransactionSuccessful();
+    } finally {
+      db.endTransaction();
+    }
+  }
+
+  public void removeLoan(long id) throws JSONException {
+    Planning p = planning();
+    p.loans.removeIf(l -> l.id == id);
+    p.bills.removeIf(b -> b.loan == id);
+    savePlanning(p);
   }
 
   private ContentValues entryValues(Finance.Entry e) {
@@ -334,6 +648,7 @@ public final class Ledger extends SQLiteOpenHelper {
       Planning p = planning();
       p.cards.removeIf(c -> c.account == id);
       p.bills.removeIf(b -> b.account == id);
+      p.loans.removeIf(l -> l.account == id);
       String value = Long.toString(id);
       db.delete("entries", "account_id=? OR target_id=?", new String[] {value, value});
       db.delete("recurring", "account_id=?", new String[] {value});
@@ -471,7 +786,7 @@ public final class Ledger extends SQLiteOpenHelper {
     try {
       JSONObject result = new JSONObject();
       result.put("format", "cepbutcem");
-      result.put("version", 3);
+      result.put("version", 4);
       result.put("planning", planning().json());
       result.put("created", LocalDateTime.now().toString());
       for (String name : Arrays.asList("accounts", "categories", "recurring", "entries", "budgets"))
@@ -523,7 +838,7 @@ public final class Ledger extends SQLiteOpenHelper {
   public void restore(String input) throws JSONException {
     JSONObject root = new JSONObject(input);
     if (!"cepbutcem".equals(root.getString("format"))
-        || (integer(root, "version") < 1 || integer(root, "version") > 3))
+        || (integer(root, "version") < 1 || integer(root, "version") > 4))
       throw new JSONException("Uyumlu Cep Bütçem yedeği değil.");
     Map<String, JSONArray> tables = new LinkedHashMap<>();
     for (String name : Arrays.asList("accounts", "categories", "recurring", "entries", "budgets")) {

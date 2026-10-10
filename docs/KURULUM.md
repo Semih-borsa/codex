@@ -1,4 +1,4 @@
-# Cep Bütçem v1.3 — indirme, kurulum ve ilk ayarlar
+# Cep Bütçem v1.4 — indirme, kurulum ve ilk ayarlar
 
 ## Bilgisayara indirmenin kolay yolu
 
@@ -27,7 +27,7 @@ Tam paketi indirdiysen ayıklandığında kökte **CepButcem.apk**, yanında **C
 5. Android izin isterse dosyayı açan uygulama için **Bu kaynaktan yüklemeye izin ver** seçeneğini aç, geri dön ve **Yükle / Güncelle** seç.
 6. **Aç** düğmesine bas. Android 8.0 veya üzeri gerekir. Bilgisayarda APK dosyasını açman gerekmez; Android telefon kurar.
 
-v1.3 hazır APK, önceki yayımlanan v1.0/v1.1/v1.2 APK ile aynı imzayı kullanır. Güncelleme kurulumu mevcut gelir, gider, hesap ve bütçeleri korur; veritabanı silinmeden yükseltilir. **Uygulamayı kaldırmadan güncelle**. Farklı bilgisayarda farklı imzayla oluşturulmuş bir APK üzerine kurulumda imza uyuşmazlığı olabilir; kayıtlarını önce JSON olarak yedekle.
+v1.4 hazır APK, önceki yayımlanan v1.0/v1.1/v1.2/v1.3 APK ile aynı imzayı kullanır. Güncelleme kurulumu mevcut gelir, gider, hesap ve bütçeleri korur; veritabanı silinmeden yükseltilir. **Uygulamayı kaldırmadan güncelle**. Farklı bilgisayarda farklı imzayla oluşturulmuş bir APK üzerine kurulumda imza uyuşmazlığı olabilir; kayıtlarını önce JSON olarak yedekle.
 
 ## Android Studio'da aç ve kendi APK'nı üret
 
@@ -56,7 +56,7 @@ Kendi derlemelerini güncellerken aynı imza anahtarını koru. Keystore dosyas�
 **Kart silme:** Kartı yönet → Kart takibini sil yalnızca kart görünümünü ve banka özetini kaldırır; hesabı/işlemlerini korur. Kart hesabını tamamen silmek için Kart hesabını ve kayıtlarını sil kullan.
 
 **Hesap silme:** Ayarlar → ilgili hesap → Hesabı sil; veya Özet'teki hesap kartına dokun → Hesabı sil. Bağlı kayıt sayıları ve transfer etkisini onay ekranından oku. Silme, işlemler/faturalar/düzenli kuralları da kaldırır; önce JSON yedek al. Son kalan hesap silinemez.
-**Fatura:** Ödeme takvimi → Fatura ekle ile ad, tutar, ödeme hesabı, kategori ve son ödeme tarihini gir. Vadesi gelen/geciken faturalar görünür. **Ödemeyi kaydet** gider oluşturur. Aylık tekrar seçilirse sonraki fatura aynı tahmini tutarla açılır; yeni tutarı geldiğinde düzenle. Aynı ödeme için ayrıca düzenli gider tanımlama. Hatalı ödemeyi **Ödemeyi geri al** ile düzelt. Ödeme takvimi uygulama içinde gösterilir; arka plan bildirimi gönderilmez.
+**Fatura:** Ödeme takvimi → Fatura ekle ile ad, tutar, ödeme hesabı, kategori ve son ödeme tarihini gir. Vadesi gelen/geciken faturalar görünür. **Ödemeyi kaydet** gider oluşturur. Aylık tekrar seçilirse sonraki fatura aynı tahmini tutarla açılır; yeni tutarı geldiğinde düzenle. Aynı ödeme için ayrıca düzenli gider tanımlama. Hatalı ödemeyi **Ödemeyi geri al** ile düzelt. Ödeme takvimi uygulama içinde gösterilir; v1.4’te Ayarlar → Ödeme bildirimleri ile yerel hatırlatmaları açabilirsin.
 
 ## Asistan yorumlarını kullan
 
@@ -70,8 +70,22 @@ Kendi derlemelerini güncellerken aynı imza anahtarını koru. Keystore dosyas�
 
 **İşlem tekrarı:** İşlemler ekranında bir kayıt satırına basılı tut. Yeni tarih ve tutarı gözden geçirip Kaydet seç; Vazgeç mevcut kaydı korur.
 
-**Harcama haritası:** Analiz → Harcama haritası. Bir güne dokunarak detayına gir; Günlük harcamalar düğmesi tarih/tutar listesini açar.
+**Harcama haritası:** Analiz → Harcama haritası. Güne dokun; toplam gelir/gider ve gün dengesi takvimin altında görünür. **İşlem detaylarını göster** ile listeyi aç/kapat; gün seçimi ayrı pencere açmaz.
 
 ## Web referansı ve mimari rehber
 
 Tam paketteki CepButcem/web-reference veya depodaki web-reference klasöründe Node 22.12+/24 ile npm ci, npm test, npm run build çalıştır. npm run dev geliştirme sunucusunu açar. Kayıtlar demo oturumundadır ve sayfa yenilenince temizlenir. Android kayıtlarına bağlantı yoktur. Sunucu mimarisi, SQL, JWT ve dört haftalık plan: docs/ARCHITECTURE.md.
+
+## v1.4: krediler, maaş ve bildirim
+
+Ayarlar → Finans araçların → Kredilerim ve taksitler → Kredi ekle. Anapara, bankanın aylık taksiti, toplam vade, ilk taksit tarihi, hesap ve kategori gir. Ödemeyi işaretlerken **Bakiyeden düşülsün mü?** sorusunda **Evet · gider ekle** bakiyeyi azaltır; **Hayır · yalnızca takip** kredi planında ödenmiş gösterir, gider yaratmaz. Ödeme takviminden geri alabilirsin. Takibi kaldırma mevcut gider kayıtlarını korur.
+
+**Ayarlar → Maaş hesaplayıcı → Maaş Hesapla:** Mevcut maaşını, yılı ve Ocak–Haziran veya Temmuz–Aralık dönemini seç. Altı ayın aylık enflasyonlarını gir; boş aylar %0 sayılır. **Zam Oranları** sekmesinde başlangıç yılı ve sonraki yılın Ocak/Temmuz toplu sözleşme zamlarını gir. Tahmini maaş ve artış oranı giriş yaptıkça güncellenir. **Kaydet** iki sekmedeki taslağı birlikte saklar; kaydetmeden kalıcı veri değişmez. Hesaplama ayarları JSON yedeğinde korunur.
+
+Hesap `App.jsx` içindeki `MaasTab` ile aynıdır: aylık enflasyonlar bileşik çarpılır; enflasyon farkı = `max(0, ((1 + kümülatif enflasyon / 100) / (1 + mevcut dönem zammı / 100) − 1) × 100)`; tahmini maaş = `mevcut maaş × (1 + fark / 100) × (1 + sonraki dönem zammı / 100)`. Mevcut maaş dönem zammını zaten içerir. Temmuz–Aralık seçilince sonraki yılın Ocak zammı kullanılır. Tahmin gelir kaydı oluşturmaz; fiilen yatan maaşı **Gelir ekle** ile kaydet.
+
+**Ayarlar → Ödeme bildirimleri → Ödeme hatırlatmalarını aç.** Android izin sorarsa izin ver. Vade günü/1/3 gün önce ve kontrol saatini seç. **Deneme bildirimi gönder** ile kontrol et. İzin kapalıysa Android bildirim ayarlarına yönlendirilirsin. Enerji tasarrufu nedeniyle belirtilen saatten sonra gelebilir; zorla durdurma sonrası uygulamayı aç. Banka özetini ödeme sonrası güncelle.
+
+Analiz → Harcama haritasında seçtiğin günün toplam geliri, gideri ve dengesi takvimin altında görünür. **İşlem detaylarını göster** düğmesiyle ayrıntıyı aç veya gizle; ayrı gün penceresi açılmaz.
+
+Konuya özel yardımda hangi konuyu istediğini seç; alışveriş senaryosu gerçek gelir/gideri değiştirmez. JSON v4 yedek kredi planını da taşır; eski yedekler okunur. Yeni telefonda bildirimleri yeniden etkinleştir.
