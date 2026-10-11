@@ -1,3 +1,11 @@
+# Doğrulama · v1.8.1
+
+Görsel düzenleme: versionCode10/versionName1.8.1; hesaplama ve veri/yedek modeli korunur. `lintDebug`, `assembleDebug`: başarılı, Lint 0 hata/uyarı. İbre görünümü açık/koyu temada emülatörde kontrol edildi; güncelleme 2.780 TL örnek net varlığı korudu. Ayrı panel kaldırıldı; renk dilimlerinin koyu sınırı, beyaz ibre/yüzde ve kart üstündeki metinler kontrol edildi. İbre/halka ve tema tercihleri kontrol sonrasında eski ayarlarına döndürüldü.
+
+Önceki 40 JVM ve 51 Android finans/çizim kontrolleri bu görsel değişiklik için yeniden çalıştırılmadı. Paket ve APK aynı imzayla güncellenir; ZIP/kaynak/sağlama toplamları kontrol edilir.
+
+---
+
 # Doğrulama · v1.8.0 · 11 Ekim 2026
 
 versionCode9/versionName1.8.0; JDK17, SDK35/BuildTools34, Gradle8.9. SQLite v3 korunur; JSON yedek v7, v1–v6 dosyaları okunur.

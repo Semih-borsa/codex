@@ -147,6 +147,7 @@ public final class Design {
     private final Typeface bold = Typeface.create("sans-serif", Typeface.BOLD);
     private final double ratio;
     private final int textColor, mutedColor, surfaceColor, tickColor;
+    private boolean onAccent;
     private double displayed;
     private android.animation.ValueAnimator animator;
 
@@ -162,6 +163,17 @@ public final class Design {
           light ? 0xFF645447 : 0xFF9EACC1,
           light ? 0xFFF5EAE1 : 0xFF182238,
           light ? 0xFF726052 : 0xFFA4B2C7);
+    }
+
+    public BudgetGauge(Context context, double ratio, boolean light, boolean onAccent) {
+      this(
+          context,
+          ratio,
+          onAccent ? 0xFFFFFFFF : light ? 0xFF302821 : 0xFFF8FAFC,
+          onAccent ? 0xFFF0E9E0 : light ? 0xFF645447 : 0xFF9EACC1,
+          onAccent ? 0xFF22312C : light ? 0xFFF5EAE1 : 0xFF182238,
+          onAccent ? 0xFFFFFFFF : light ? 0xFF726052 : 0xFFA4B2C7);
+      this.onAccent = onAccent;
     }
 
     public BudgetGauge(
@@ -250,6 +262,12 @@ public final class Design {
       paint.setStyle(Paint.Style.STROKE);
       paint.setStrokeWidth(14);
       paint.setStrokeCap(Paint.Cap.BUTT);
+      if (onAccent) {
+        paint.setColor(0xB3152020);
+        paint.setStrokeWidth(18);
+        for (int i = 0; i < 10; i++) canvas.drawArc(arc, 180 + i * 18 + .7f, 16.6f, false, paint);
+        paint.setStrokeWidth(14);
+      }
       for (int i = 0; i < 10; i++) {
         paint.setColor(i < 2 ? 0xFF059669 : i < 5 ? 0xFF10B981 : i < 8 ? 0xFFF59E0B : 0xFFEF4444);
         canvas.drawArc(arc, 180 + i * 18 + .7f, 16.6f, false, paint);
@@ -286,6 +304,7 @@ public final class Design {
           Double.isNaN(displayed)
               ? mutedColor
               : displayed < 50 ? 0xFF10B981 : displayed < 80 ? 0xFFF59E0B : 0xFFEF4444;
+      if (onAccent) color = textColor;
       label(
           canvas,
           Double.isNaN(displayed) ? "—" : "%" + Math.round(displayed),

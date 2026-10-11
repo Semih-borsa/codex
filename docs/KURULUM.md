@@ -1,4 +1,4 @@
-# Cep Bütçem v1.8 — indirme, kurulum ve ilk ayarlar
+# Cep Bütçem v1.8.1 — indirme, kurulum ve ilk ayarlar
 
 ## Bilgisayara indirmenin kolay yolu
 

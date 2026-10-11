@@ -4,6 +4,10 @@
 
 Türkçe, çevrimdışı kişisel gelir-gider takibi ve ayrıntılı finans analizi için yerel Android uygulaması. Android Studio'da açılır ve telefona kurulabilen APK üretir. Java 17, Android'in yerel arayüz bileşenleri ve SQLite kullanır; hesap açma, internet bağlantısı veya ücretli bir servis gerekmez.
 
+## v1.8.1 · Kartla bütünleşen ibre
+
+İbre görünümündeki ayrı açık/koyu panel kaldırıldı; ana finans kartının zemini devam eder. Beyaz ibre, yüzde ve metinler iki temada da okunur. Yeşil/sarı/kırmızı dilimlerin ince koyu sınırı kartın risk rengiyle karışmalarını önler. Oran hesabı ve 3,5 saniyelik animasyon korunur.
+
 ## v1.8 · App.jsx göstergeleri ve kişisel planlama
 
 - **App.jsx bütçe göstergesi:** güncel App.jsx'teki 128×128 üç renkli halka; %0–50 yeşil, %50–80 sarı, %80–100 kırmızı dilimler, aynı çizgi kalınlığı ve 3,5 saniyelik ease-out-cubic animasyon. **Ayarlar → Maaş dönemi ve görünüm → Yarım daire ibreye geç** ile ilk referanstaki 320×235 ibreyi seçebilirsin: 10 renk dilimi, 21 çizgi ve üçgen ibre. İki görünümde de gerçek gider/gelir oranı kullanılır; transferler hariçtir. %100'ün üstünde sayı gerçek oranı gösterir, çizim sınırda kalır. Gelir yoksa “—”; animasyonlar kapalıysa doğrudan son değer.

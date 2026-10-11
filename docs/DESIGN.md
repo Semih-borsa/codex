@@ -1,3 +1,15 @@
+# v1.8.1 · Kartla bütünleşen ibre
+
+## v1.8.1 · Kartla bütünleşen ibre
+
+İbre görünümündeki ayrı açık/koyu panel kaldırıldı; ana finans kartının zemini devam eder. Beyaz ibre, yüzde ve metinler iki temada da okunur. Yeşil/sarı/kırmızı dilimlerin ince koyu sınırı kartın risk rengiyle karışmalarını önler. Oran hesabı ve 3,5 saniyelik animasyon korunur.
+
+![İbre · açık tema](screenshots/needle-light-v181.png)
+
+![İbre · koyu tema](screenshots/needle-dark-v181.png)
+
+## Önceki sürüm
+
 # v1.8 · Bütçe göstergeleri ve kişisel planlama
 
 ## v1.8 · App.jsx göstergeleri ve kişisel planlama
