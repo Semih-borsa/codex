@@ -548,6 +548,7 @@ function yedekVerisiniDogrula(paket) {
     if (key === "ft_donem_gun" && !tamSayiGecerli(value, 1, 28)) throw new Error("Maaş dönemi günü geçersiz.");
     if (key === "ft_schema_version" && typeof value !== "string") throw new Error("Sürüm kaydı geçersiz.");
     if (key === "ft_bakiye_hesap_modu" && typeof value !== "string") throw new Error("Bakiye hesap modu geçersiz.");
+    if (key === "ft_tasarruf_hedefi" && !tamSayiGecerli(value,0,100)) throw new Error("Tasarruf hedefi geçersiz.");
     if (key === "ft_tema" && !["light", "dark"].includes(value)) throw new Error("Tema geçersiz.");
     if (key === "ft_butceler" && Object.values(value).some(v => v !== "" && !tutarGecerli(v, true))) throw new Error("Bütçe limiti geçersiz.");
     if (["ft_zamlar", "ft_enflasyon"].includes(key) && Object.values(value).some(v => v !== "" && (!Number.isFinite(sayisalOku(v)) || sayisalOku(v) <= -100 || sayisalOku(v) > 10000))) throw new Error("Oran kaydı geçersiz.");
@@ -871,7 +872,7 @@ function HarcamaGauge({ oran }) {
 }
 
 // ── ÖZET ──────────────────────────────────────────────────────────────────────
-function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategoriler, odemeler, setOdemeler, hizliModal, setHizliModal, hizliSablonlar, setHizliSablonlar, taksitler, setTaksitler, kartOdemeleri, setKartOdemeleri, bakiyeHesapModu }) {
+function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategoriler, odemeler, setOdemeler, hizliModal, setHizliModal, hizliSablonlar, setHizliSablonlar, taksitler, setTaksitler, kartOdemeleri, setKartOdemeleri, bakiyeHesapModu, tasarrufHedefi = 0 }) {
   const [donemOffset, setDonemOffset] = useState(0);
   const [kartDuzenle, setKartDuzenle] = useState(null);
   const [kartDuzForm, setKartDuzForm] = useState({ donemIci: "", provizyon: "", ekstre: "", bakiyedenDussun: true });
@@ -1097,9 +1098,11 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
       const t = yerelTarihOku(o.tarih);
       return (t >= bugun && t <= donemBit) ? paraTopla(s, o.tutar) : s;
     }, 0);
-    const kullanilabilir = Math.max(0, kalanBakiye);
-    return { limit: kullanilabilir / kalanGun, kalanGun, yaklasanToplam, kullanilabilir };
-  }, [donemOffset, donemGun, secilenDonem, odemeler, kalanBakiye]);
+    const ekBekleyen = (odemeler || []).filter(o=>!o.odendi && o.tarih <= yerelTarihAnahtari(donemBit) && !buDonemIslemler.some(i=>String(i.id)===String(o.islemId)||String(i.odemeId)===String(o.id))).reduce((s,o)=>paraTopla(s,o.tutar),0);
+    const gercekGelir = buDonemIslemler.filter(i=>i.tip === "gelir" && i.tarih <= yerelTarihAnahtari(bugun) && i.kategori !== "Birikim" && !(i.kategori === "Kira Geliri" && i.donemeDahil === false)).reduce((s,i)=>paraTopla(s,i.tutar),0);
+    const hedef = tasarrufPayiHesapla({gelir:gercekGelir,gider:toplamGider,birikim:buAyBirikim,hedef:tasarrufHedefi,kalanGun,ekBekleyen});
+    return { ...hedef, kalanGun, yaklasanToplam, kullanilabilir:Math.max(0,hedef.pay) };
+  }, [donemOffset, donemGun, secilenDonem, odemeler, kalanBakiye, buDonemIslemler, buAyGelir, toplamGider, buAyBirikim, tasarrufHedefi]);
 
   // Önceki döneme göre kıyas (Gelir / Harcama / Birikim)
   const oncekiDonemKarsilastirma = useMemo(() => {
@@ -1306,17 +1309,17 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
       })()}
 
       {/* GÜNLÜK HARCAMA LİMİTİ */}
-      {gunlukHarcamaLimiti && kalanBakiye > 0 && (
+      {gunlukHarcamaLimiti && buAyGelir > 0 && (
         <div className="home-panel home-daily-limit" style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "14px 16px", marginBottom: 12, display: "flex", alignItems: "center", gap: 13 }}>
           <div style={{ width: 42, height: 42, borderRadius: 12, background: "#f59e0b22", border: "1px solid #f59e0b44", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, flexShrink: 0 }}><Icon name="wallet" size={20} /></div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ color: "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 3 }}>Günlük Harcama Limiti</div>
+            <div style={{ color: "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 3 }}>Tasarruf Sonrası Günlük Pay</div>
             <div style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
               <span style={{ color: "var(--text)", fontSize: 17, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>₺{fmt(gunlukHarcamaLimiti.limit)}</span>
               <span style={{ color: "var(--text5)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif" }}>/ gün</span>
             </div>
             <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 3 }}>
-              {gunlukHarcamaLimiti.kalanGun} gün kaldı{gunlukHarcamaLimiti.yaklasanToplam > 0 ? ` · ₺${fmt(gunlukHarcamaLimiti.yaklasanToplam)} yaklaşan ödeme bakiyeye dahil` : ""}
+              %{tasarrufHedefi} hedef · ₺{fmt(gunlukHarcamaLimiti.hedefTutar)} ayır · {gunlukHarcamaLimiti.kalanGun} gün kaldı{gunlukHarcamaLimiti.pay < 0 ? ` · Hedef için ₺${fmt(-gunlukHarcamaLimiti.pay)} eksik` : ""}{gunlukHarcamaLimiti.yaklasanToplam > 0 ? ` · ₺${fmt(gunlukHarcamaLimiti.yaklasanToplam)} yaklaşan ödeme bakiyeye dahil` : ""}
             </div>
           </div>
         </div>
@@ -1666,7 +1669,103 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
 }
 
 // ── İŞLEMLER ──────────────────────────────────────────────────────────────────
-function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler, setKategoriler, kartlar, donemGun }) {
+const fmtTL = n => "₺" + fmt(n);
+// Yeni araçlar kayıtları değiştirmeden aynı işlem listesi üzerinde çalışır.
+function csvMetniOlustur(islemler, odemeler = []) {
+  const hucre = value => {
+    let s = String(value ?? "");
+    if (/^[\s]*[=+@-]/.test(s)) s = "'" + s;
+    return '"' + s.replace(/"/g, '""') + '"';
+  };
+  const satirlar = [["Tarih", "Tür", "Kategori", "Açıklama", "Tutar (TL)", "Durum", "Kayıt türü"]];
+  [...islemler].sort((a,b) => a.tarih.localeCompare(b.tarih)).forEach(i => {
+    const o = odemeler.find(o => String(o.id) === String(i.odemeId) || String(o.islemId) === String(i.id));
+    satirlar.push([i.tarih, i.tip === "gelir" ? "Gelir" : "Gider", i.kategori, i.aciklama || "", (paraKurus(i.tutar) / 100).toFixed(2).replace('.', ','), o ? (o.odendi ? "Ödendi" : "Bekleyen ödeme") : i.tarih > yerelTarihAnahtari() ? "Planlanan" : "Kayıtlı", i.kartHarcama ? "Kart toplamı" : i.sabitId ? "Sabit gider" : "İşlem"]);
+  });
+  return '\uFEFF' + satirlar.map(s => s.map(hucre).join(';')).join('\r\n');
+}
+async function csvAktar(islemler, odemeler = []) {
+  if (!islemler.length) { toast("Aktarılacak işlem yok", "uyari"); return; }
+  try {
+    const isim = `butce-islemler-${yerelTarihAnahtari()}.csv`;
+    const blob = new Blob([csvMetniOlustur(islemler, odemeler)], {type:"text/csv;charset=utf-8"});
+    if (navigator.share && typeof File !== "undefined") {
+      const file = new File([blob], isim, {type:"text/csv"});
+      if (navigator.canShare?.({files:[file]})) {
+        try { await navigator.share({files:[file],title:"İşlemler"}); toast("CSV paylaşım ekranı açıldı"); return; }
+        catch(e) { if(e.name === "AbortError") return; }
+      }
+    }
+    const url = URL.createObjectURL(blob), a = document.createElement('a');
+    a.href = url; a.download = isim; document.body.appendChild(a); a.click();
+    setTimeout(() => {a.remove();URL.revokeObjectURL(url);},1000);
+    toast("CSV indirme isteği gönderildi");
+  } catch { toast("CSV oluşturulamadı", "hata"); }
+}
+function esnekRaporAraligi(mod, donemGun, offset, yil, ilk, son, bugun = yerelTarihAnahtari()) {
+  const aktif = maasDonemiBul(bugun, donemGun);
+  const bas = new Date(aktif.yil, aktif.ay + offset, aktif.gun);
+  if(mod === 'ozel') return yerelTarihOku(ilk) && yerelTarihOku(son) && ilk <= son ? {ilk,son} : null;
+  if(mod === 'yil') return {ilk:yerelTarihAnahtari(new Date(yil,0,aktif.gun)),son:yerelTarihAnahtari(new Date(Number(yil)+1,0,aktif.gun-1))};
+  return {ilk:yerelTarihAnahtari(new Date(bas.getFullYear(),bas.getMonth()-(mod==='uc'?2:0),aktif.gun)),son:yerelTarihAnahtari(new Date(bas.getFullYear(),bas.getMonth()+1,aktif.gun-1))};
+}
+function aralikOzeti(islemler, ilk, son, bugun = yerelTarihAnahtari()) {
+  const kayitlar = islemler.filter(i => i.tarih >= ilk && i.tarih <= son && i.tarih <= bugun);
+  const gelir = kayitlar.filter(i => i.tip === 'gelir' && i.kategori !== 'Birikim' && !(i.kategori === 'Kira Geliri' && i.donemeDahil === false)).reduce((s,i)=>paraTopla(s,i.tutar),0);
+  const gider = kayitlar.filter(i => i.tip === 'gider').reduce((s,i)=>paraTopla(s,i.tutar),0);
+  return {kayitlar,gelir,gider,net:paraTopla(gelir,-gider),oran:gelir>0?(gelir-gider)/gelir*100:null};
+}
+function tasarrufPayiHesapla({gelir,gider,birikim=0,hedef,kalanGun,ekBekleyen=0}) {
+  const hedefTutar = Math.round(paraKurus(gelir)*hedef/100)/100;
+  const ayrilacak = Math.max(0,paraTopla(hedefTutar,-birikim));
+  const pay = paraTopla(gelir,-gider,-birikim,-ayrilacak,-ekBekleyen);
+  return {hedefTutar,ayrilacak,pay,limit:Math.max(0,pay)/Math.max(1,kalanGun)};
+}
+function TasarrufHedefi({hedef,setHedef}) {
+  const [taslak,setTaslak] = useState(String(hedef));
+  useEffect(()=>setTaslak(String(hedef)),[hedef]);
+  return <section className="tools-card"><h3>Tasarruf hedefi</h3><p className="tools-note">Gelirinin ayırmak istediğin yüzdesi. Günlük harcama payı bu hedef ve kayıtlı ödemeler dikkate alınarak hesaplanır.</p><div className="tools-grid"><Input label="Hedef (%)" type="number" min="0" max="100" step="1" value={taslak} onChange={e=>setTaslak(e.target.value)} /><Btn onClick={()=>{if(!tamSayiGecerli(taslak,0,100)){toast("0–100 arasında tam sayı gir", "uyari");return;}setHedef(Number(taslak));toast("Tasarruf hedefi kaydedildi");}}>Hedefi kaydet</Btn></div></section>;
+}
+function HarcamaHaritasi({islemler,odemeler,ilk,son}) {
+  const [ay,setAy] = useState(ilk.slice(0,7));
+  const [secili,setSecili] = useState(null);
+  useEffect(()=>{setAy(ilk.slice(0,7));setSecili(null);},[ilk,son]);
+  const bugun = yerelTarihAnahtari();
+  const hareketler = useMemo(()=>islemler.filter(i=>i.tip==='gider').flatMap(i=>{
+    if(i.kartHarcama) return habitHareketleri(i).map(h=>({...i,...h}));
+    if(i.kaynak==='odeme') {
+      const o=odemeler.find(o=>String(o.id)===String(i.odemeId)||String(o.islemId)===String(i.id));
+      if(!o?.odendi)return [];
+      const t=o.odendiTarih?new Date(o.odendiTarih):yerelTarihOku(i.tarih);
+      if(!t || !Number.isFinite(t.getTime()))return [];
+      return [{...i,tarih:yerelTarihAnahtari(t)}];
+    }
+    return [i];
+  }).filter(i=>i.tarih>=ilk&&i.tarih<=son&&i.tarih<=bugun),[islemler,odemeler,ilk,son,bugun]);
+  const map = {};
+  hareketler.forEach(i=>{map[i.tarih]=paraTopla(map[i.tarih]||0,i.tutar);});
+  const [y,m]=ay.split('-').map(Number), bas=new Date(y,m-1,1), gunler=new Date(y,m,0).getDate();
+  const max=Math.max(1,...Object.entries(map).filter(([t])=>t.startsWith(ay)).map(([,v])=>v));
+  const ayDegistir=delta=>{const t=yerelTarihAnahtari(new Date(y,m-1+delta,1)).slice(0,7);if(t>=ilk.slice(0,7)&&t<=son.slice(0,7)){setAy(t);setSecili(null);}};
+  return <section className="tools-card"><h3>Harcama haritası</h3><div className="tools-row"><button className="tools-button" aria-label="Haritada önceki ay" disabled={ay<=ilk.slice(0,7)} onClick={()=>ayDegistir(-1)}>‹</button><strong>{bas.toLocaleDateString('tr-TR',{month:'long',year:'numeric'})}</strong><button className="tools-button" aria-label="Haritada sonraki ay" disabled={ay>=son.slice(0,7)} onClick={()=>ayDegistir(1)}>›</button></div><div className="heat-grid">{['Pt','Sa','Ça','Pe','Cu','Ct','Pa'].map(g=><span className="tools-note" key={g}>{g}</span>)}{Array.from({length:(bas.getDay()+6)%7},(_,i)=><span key={'blank'+i}/>)}{Array.from({length:gunler},(_,i)=>{
+    const t=yerelTarihAnahtari(new Date(y,m-1,i+1)),tutar=map[t]||0,dis=t<ilk||t>son||t>bugun;
+    return <button key={t} className="heat-day" disabled={dis} aria-pressed={secili===t} aria-label={`${t}: ${fmtTL(tutar)}`} onClick={()=>setSecili(t)} style={{background:tutar>0?`rgba(167,78,50,${.12+.65*tutar/max})`:'var(--card2)',color:tutar/max>.6?'#fff':'var(--text)',borderColor:secili===t?'var(--accent)':'var(--border)'}}><span>{i+1}</span><small>{tutar>0?'●':'·'}</small></button>;
+  })}</div><p className="tools-note">Koyu renk daha fazla harcama demektir. Boş gün, kayıt olmadığı anlamına gelir. Bekleyen ödemeler ve ilk kart toplamı haritada yer almaz; kartların günlük farkları gösterilir.</p>{secili&&<div aria-live="polite"><h4>{secili.split('-').reverse().join('.')} · {fmtTL(map[secili]||0)}</h4>{hareketler.filter(i=>i.tarih===secili).map((i,k)=><div className="tools-row" key={`${i.id}-${k}`}><span>{i.aciklama||i.kategori}<small className="tools-note"> · {i.kategori}</small></span><strong>{fmtTL(i.tutar)}</strong></div>)}{!map[secili]&&<p className="tools-note">Bu gün için harcama kaydı yok.</p>}</div>}</section>;
+}
+function EsnekRapor({islemler,odemeler,donemGun}) {
+  const [mod,setMod]=useState('donem'),[offset,setOffset]=useState(0),[yil,setYil]=useState(new Date().getFullYear());
+  const [ilk,setIlk]=useState(yerelTarihAnahtari(maasDonemiBul(yerelTarihAnahtari(),donemGun).baslangic)),[son,setSon]=useState(yerelTarihAnahtari());
+  const aralik=esnekRaporAraligi(mod,donemGun,offset,yil,ilk,son);
+  const ozet=aralik?aralikOzeti(islemler,aralik.ilk,aralik.son):null;
+  const bitis=aralik?(aralik.son<yerelTarihAnahtari()?aralik.son:yerelTarihAnahtari()):null;
+  const onceki=aralik&&bitis>=aralik.ilk?(()=>{const gun=takvimGunFarki(bitis,aralik.ilk)+1;return aralikOzeti(islemler,yerelTarihAnahtari(takvimGunuEkle(aralik.ilk,-gun)),yerelTarihAnahtari(takvimGunuEkle(aralik.ilk,-1)));})():null;
+  const kat={};
+  ozet?.kayitlar.filter(i=>i.tip==='gider').forEach(i=>{kat[i.kategori]=paraTopla(kat[i.kategori]||0,i.tutar);});
+  const degisim=(simdi,eski)=>eski>0?`${((simdi-eski)/eski*100).toFixed(1).replace('.',',')}%`:"Önceki tutar yok";
+  return <><section className="tools-card"><h3>Dönem raporu</h3><Select label="Rapor aralığı" value={mod} onChange={e=>setMod(e.target.value)}><option value="donem">Maaş dönemi</option><option value="uc">Son 3 maaş dönemi</option><option value="yil">12 maaş dönemi · seçili yıl</option><option value="ozel">Özel tarih aralığı</option></Select>{(mod==='donem'||mod==='uc')&&<div className="tools-row"><button className="tools-button" onClick={()=>setOffset(o=>o-1)}>Önceki dönem</button><button className="tools-button" disabled={offset>=0} onClick={()=>setOffset(o=>Math.min(0,o+1))}>Sonraki dönem</button></div>}{mod==='yil'&&<Input label="Rapor yılı" type="number" min="2000" max="2100" value={yil} onChange={e=>{if(tamSayiGecerli(e.target.value,2000,2100))setYil(Number(e.target.value));}}/>}{mod==='ozel'&&<div className="tools-grid"><Input label="Rapor başlangıcı" type="date" value={ilk} onChange={e=>setIlk(e.target.value)}/><Input label="Rapor bitişi" type="date" value={son} onChange={e=>setSon(e.target.value)}/></div>}{!aralik?<p role="alert">Geçerli bir tarih aralığı seç; başlangıç bitişten sonra olamaz.</p>:<><p className="tools-note">{aralik.ilk.split('-').reverse().join('.')} – {aralik.son.split('-').reverse().join('.')}</p><div className="tools-grid">{[['Gelir',ozet.gelir,'var(--income-text)'],['Gider',ozet.gider,'var(--expense-text)'],['Net',ozet.net,'var(--text)']].map(([ad,v,c])=><div className="report-stat" key={ad}><span>{ad}</span><strong style={{color:c}}>{fmtTL(v)}</strong></div>)}</div><p className="tools-note">Tasarruf oranı: {ozet.oran==null?'Henüz gelir yok':`%${ozet.oran.toFixed(1).replace('.',',')}`}. İleri tarihli kayıtlar hariçtir. Giderler, kayıtlı bekleyen ödemeleri ve kart toplamlarını içerir; kart ödeme transferi eklenmez.</p>{onceki&&<p className="tools-note">Önceki eşit uzunluktaki aralığa göre gelir: {degisim(ozet.gelir,onceki.gelir)} · gider: {degisim(ozet.gider,onceki.gider)}. Karşılaştırma bugüne kadar geçen günler içindir.</p>}<h4>Gider kategorileri</h4>{Object.entries(kat).sort((a,b)=>b[1]-a[1]).map(([k,v])=><div className="tools-row" key={k}><span>{k}</span><span>{fmtTL(v)} · %{ozet.gider>0?(v/ozet.gider*100).toFixed(1):0}</span></div>)}{!ozet.kayitlar.length&&<p className="tools-note">Bu aralıkta henüz veri yok.</p>}<Btn disabled={!ozet.kayitlar.length} onClick={()=>csvAktar(ozet.kayitlar,odemeler)}>Rapor işlemlerini CSV aktar</Btn></>}</section>{aralik&&<HarcamaHaritasi islemler={islemler} odemeler={odemeler} ilk={aralik.ilk} son={aralik.son}/>}</>;
+}
+
+function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler, setKategoriler, kartlar, donemGun, odemeler = [] }) {
   const [modal, setModal] = useState(false);
   const [duzenleModal, setDuzenleModal] = useState(false);
   const [butceModal, setButceModal] = useState(false);
@@ -1676,6 +1775,11 @@ function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler
   const [duzenleForm, setDuzenleForm] = useState({ tip: "gider", kategori: "Market", tutar: "", aciklama: "", tarih: "", donemeDahil: true, donemIci: "", provizyon: "" });
   const [filtre, setFiltre] = useState("hepsi");
   const [arama, setArama] = useState("");
+  const [kategoriFiltre,setKategoriFiltre] = useState("");
+  const [tarihIlk,setTarihIlk] = useState("");
+  const [tarihSon,setTarihSon] = useState("");
+  const tarihFiltreHatasi = !!(tarihIlk && tarihSon && tarihIlk > tarihSon);
+  const filtreKategorileri = [...new Set([...kategoriler.gelir,...kategoriler.gider,...islemler.map(i=>i.kategori)])].sort((a,b)=>a.localeCompare(b,'tr'));
   const [form, setForm] = useState({ tip: "gider", kategori: "Market", tutar: "", aciklama: "", tarih: yerelTarihAnahtari(), donemeDahil: true, donemIci: "", provizyon: "" });
   const [acikDonemler, setAcikDonemler] = useState({});
   const donemToggle = (key) => setAcikDonemler(p => ({ ...p, [key]: !p[key] }));
@@ -1699,6 +1803,9 @@ function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler
   };
   const filtered = islemler
     .filter(i =>
+      !tarihFiltreHatasi &&
+      (!kategoriFiltre || i.kategori === kategoriFiltre) &&
+      (!tarihIlk || i.tarih >= tarihIlk) && (!tarihSon || i.tarih <= tarihSon) &&
       (filtre === "hepsi" || i.tip === filtre) &&
       (!arama || (i.aciklama || "").toLowerCase().includes(arama.toLowerCase()) || i.kategori.toLowerCase().includes(arama.toLowerCase()))
     )
@@ -1761,6 +1868,7 @@ function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler
   };
   return (
     <div>
+      <section className="tools-card"><h3>İşlem filtreleri</h3><Select label="Kategori filtresi" value={kategoriFiltre} onChange={e=>setKategoriFiltre(e.target.value)}><option value="">Tüm kategoriler</option>{filtreKategorileri.map(k=><option key={k} value={k}>{k}</option>)}</Select><div className="tools-grid"><Input label="Başlangıç tarihi" type="date" value={tarihIlk} onChange={e=>setTarihIlk(e.target.value)}/><Input label="Bitiş tarihi" type="date" value={tarihSon} onChange={e=>setTarihSon(e.target.value)}/></div>{tarihFiltreHatasi&&<p role="alert">Başlangıç tarihi bitişten sonra olamaz.</p>}<div className="tools-row"><button className="tools-button" onClick={()=>{setKategoriFiltre("");setTarihIlk("");setTarihSon("");setArama("");setFiltre("hepsi");}}>Filtreleri temizle</button><button className="tools-button" disabled={!filtered.length} onClick={()=>csvAktar(filtered,odemeler)}>CSV aktar ({filtered.length})</button></div></section>
       {/* Arama kutusu */}
       <div style={{ position: "relative", marginBottom: 10 }}>
         <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text5)", fontSize: 14 }}>🔍</span>
@@ -2211,7 +2319,7 @@ function OdemelerTab({ odemeler, setOdemeler, islemler, setIslemler, kategoriler
 // ── BİLDİRİM HELPERs ─────────────────────────────────────────────────────────
 
 // ── AYARLAR ───────────────────────────────────────────────────────────────────
-function AyarlarTab({ donemGun, setDonemGun, kartlar, setKartlar, kategoriler, setKategoriler, tema, setTema, sonBildirimPlanlama, islemler, bildirimAyarlari, setBildirimAyarlari, bakiyeHesapModu, setBakiyeHesapModu }) {
+function AyarlarTab({ donemGun, setDonemGun, kartlar, setKartlar, kategoriler, setKategoriler, tema, setTema, sonBildirimPlanlama, islemler, odemeler = [], tasarrufHedefi, setTasarrufHedefi, bildirimAyarlari, setBildirimAyarlari, bakiyeHesapModu, setBakiyeHesapModu }) {
   const [bildirimDurum, setBildirimDurum] = useState("");
   const bildirimTest = async () => {
     setBildirimDurum("Kontrol ediliyor...");
@@ -2421,6 +2529,8 @@ function AyarlarTab({ donemGun, setDonemGun, kartlar, setKartlar, kategoriler, s
         </div>
       </div>
 
+      <TasarrufHedefi hedef={tasarrufHedefi} setHedef={setTasarrufHedefi}/>
+      <section className="tools-card"><h3>Excel / CSV aktarımı</h3><p className="tools-note">Tüm işlemlerini Türkçe sütunlar ve kuruş hassasiyetiyle aktar. İşlemler ekranında filtrelenmiş kayıtları da aktarabilirsin. CSV tam yedeğin yerine geçmez.</p><Btn onClick={()=>csvAktar(islemler,odemeler)} disabled={!islemler.length}>Tüm işlemleri CSV aktar</Btn></section>
       {/* Veri yedekleme */}
       <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "18px 16px", marginBottom: 14 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 7 }}>
@@ -3197,6 +3307,8 @@ function AnalizTab({ islemler, kategoriler, donemGun, kartlar, odemeler = [] }) 
 
   return (
     <div>
+      <EsnekRapor islemler={islemler} odemeler={odemeler} donemGun={donemGun}/>
+      <details className="annual-details"><summary>Yıllık grafikler ve mevcut yorumlar</summary>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", background:"var(--card2)", border:"1px solid var(--border)", borderRadius:12, padding:"10px 14px", marginBottom:14 }}>
         <button onClick={() => setSecilenYil(y => y - 1)} style={{ background:"none", border:"none", color:"#f59e0b", fontSize:20, cursor:"pointer", padding:"0 6px" }}>&#8249;</button>
         <div style={{ textAlign:"center" }}>
@@ -3250,6 +3362,7 @@ function AnalizTab({ islemler, kategoriler, donemGun, kartlar, odemeler = [] }) 
       {analizSekme === "dagilim" && renderDagilim()}
       {analizSekme === "trend" && renderTrend()}
       {analizSekme === "birikim" && renderBirikim()}
+      </details>
     </div>
   );
 }
@@ -3912,6 +4025,7 @@ export default function App() {
   // Hamburger menü
   const [menuAcik, setMenuAcik] = useState(false);
   const [hizliModal, setHizliModal] = useState(false);
+  const [tasarrufHedefi,setTasarrufHedefi] = useLocalStorage("ft_tasarruf_hedefi", 0);
   const [tema, setTema] = useLocalStorage("ft_tema", "light");
   const [bildirimAyarlari, setBildirimAyarlari] = useLocalStorage("ft_bildirim_ayarlari", { gunler: [0, 1], saat: "18:00" });
   const [sonBildirimPlanlama, setSonBildirimPlanlama] = useLocalStorage("ft_son_bildirim_planlama", null);
@@ -4178,6 +4292,21 @@ export default function App() {
 
 
         .category-trend-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; color:var(--text); font-size:16px; font-weight:700; margin-bottom:16px; }
+        .tools-card { background:var(--card); color:var(--text); border:1px solid var(--border); border-radius:18px; padding:16px; margin-bottom:14px; min-width:0; }
+        .tools-card h3 { font-size:14px; margin:0 0 12px; }
+        .tools-card h4 { font-size:12px; margin:14px 0 8px; }
+        .tools-note { font-size:11px; line-height:1.6; color:var(--text3); overflow-wrap:anywhere; }
+        .tools-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; align-items:center; }
+        .tools-grid > * { min-width:0; }
+        .tools-row { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; padding:7px 0; font-size:12px; }
+        .tools-button { min-height:44px; padding:8px 12px; border-radius:10px; border:1px solid var(--border); background:var(--card2); color:var(--text); cursor:pointer; font-size:12px; }
+        .tools-button:disabled,.heat-day:disabled { opacity:.4; cursor:default; }
+        .report-stat { padding:12px; background:var(--card2); border-radius:12px; font-size:11px; }
+        .report-stat strong { display:block; font-size:15px; margin-top:7px; overflow-wrap:anywhere; }
+        .heat-grid { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:4px; text-align:center; }
+        .heat-day { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:0; min-height:44px; border:2px solid var(--border); border-radius:8px; cursor:pointer; font-size:12px; }
+        .heat-day small { font-size:10px; line-height:12px; }
+        .annual-details > summary { padding:14px; margin-bottom:12px; color:var(--text); background:var(--card2); border:1px solid var(--border); border-radius:12px; cursor:pointer; font-size:12px; }
         .category-trend-heading > span { color:var(--text3); font-size:12px; font-weight:600; background:var(--card2); border:1px solid var(--border); border-radius:10px; padding:5px 10px; }
         .category-trend-card { background:var(--card2); border:1px solid var(--border); border-radius:18px; padding:16px; margin-bottom:12px; font-variant-numeric:tabular-nums; }
         .category-trend-card:last-child { margin-bottom:0; }
@@ -4334,16 +4463,16 @@ export default function App() {
               sekmeler arasında bağlı tutuyoruz. Görsel içerik gizlenir; modal
               document.body üzerinde açılarak mevcut sekmeyi değiştirmez. */}
           <div style={{ display: aktifTab === "ozet" ? "block" : "none" }}>
-            <Ozet islemler={islemler} setIslemler={setIslemler} kartlar={kartlar} setKartlar={setKartlar} donemGun={parseInt(donemGun)||15} kategoriler={kategoriler} odemeler={odemeler} setOdemeler={setOdemeler} hizliModal={hizliModal} setHizliModal={setHizliModal} hizliSablonlar={hizliSablonlar} setHizliSablonlar={setHizliSablonlar} taksitler={taksitler} setTaksitler={setTaksitler} kartOdemeleri={kartOdemeleri} setKartOdemeleri={setKartOdemeleri} bakiyeHesapModu={bakiyeHesapModu} />
+            <Ozet islemler={islemler} setIslemler={setIslemler} kartlar={kartlar} setKartlar={setKartlar} donemGun={parseInt(donemGun)||15} kategoriler={kategoriler} odemeler={odemeler} setOdemeler={setOdemeler} hizliModal={hizliModal} setHizliModal={setHizliModal} hizliSablonlar={hizliSablonlar} setHizliSablonlar={setHizliSablonlar} taksitler={taksitler} setTaksitler={setTaksitler} kartOdemeleri={kartOdemeleri} setKartOdemeleri={setKartOdemeleri} bakiyeHesapModu={bakiyeHesapModu} tasarrufHedefi={tasarrufHedefi} />
           </div>
-          {aktifTab === "islemler" && <IslemlerTab islemler={islemler} setIslemler={setIslemler} butceler={butceler} setButceler={setButceler} kategoriler={kategoriler} setKategoriler={setKategoriler} kartlar={kartlar} donemGun={parseInt(donemGun)||15} />}
+          {aktifTab === "islemler" && <IslemlerTab islemler={islemler} setIslemler={setIslemler} odemeler={odemeler} butceler={butceler} setButceler={setButceler} kategoriler={kategoriler} setKategoriler={setKategoriler} kartlar={kartlar} donemGun={parseInt(donemGun)||15} />}
           {aktifTab === "odemeler" && <OdemelerTab odemeler={odemeler} setOdemeler={setOdemeler} islemler={islemler} setIslemler={setIslemler} kategoriler={kategoriler} donemGun={parseInt(donemGun)||15} />}
           {aktifTab === "tekrarlayan" && <TekrarlayanTab tekrarlayan={tekrarlayan} setTekrarlayan={setTekrarlayan} kategoriler={kategoriler} setKategoriler={setKategoriler} />}
           {aktifTab === "analiz" && <AnalizTab islemler={islemler} kategoriler={kategoriler} donemGun={parseInt(donemGun)||15} kartlar={kartlar} odemeler={odemeler} />}
           {aktifTab === "krediler" && <KredilerTab krediler={krediler} setKrediler={setKrediler} />}
           {aktifTab === "taksitler" && <TaksitlerTab taksitler={taksitler} setTaksitler={setTaksitler} />}
           {aktifTab === "maas" && <MaasTab zamlar={zamlar} setZamlar={setZamlar} maasAyarlar={maasAyarlar} setMaasAyarlar={setMaasAyarlar} enflasyon={enflasyon} setEnflasyon={setEnflasyon} />}
-          {aktifTab === "ayarlar" && <AyarlarTab donemGun={donemGun} setDonemGun={setDonemGun} kartlar={kartlar} setKartlar={setKartlar} kategoriler={kategoriler} setKategoriler={setKategoriler} tema={tema} setTema={setTema} sonBildirimPlanlama={sonBildirimPlanlama} islemler={islemler} bildirimAyarlari={bildirimAyarlari} setBildirimAyarlari={setBildirimAyarlari} bakiyeHesapModu={bakiyeHesapModu} setBakiyeHesapModu={setBakiyeHesapModu} />}
+          {aktifTab === "ayarlar" && <AyarlarTab donemGun={donemGun} setDonemGun={setDonemGun} kartlar={kartlar} setKartlar={setKartlar} kategoriler={kategoriler} setKategoriler={setKategoriler} tema={tema} setTema={setTema} sonBildirimPlanlama={sonBildirimPlanlama} islemler={islemler} odemeler={odemeler} tasarrufHedefi={tasarrufHedefi} setTasarrufHedefi={setTasarrufHedefi} bildirimAyarlari={bildirimAyarlari} setBildirimAyarlari={setBildirimAyarlari} bakiyeHesapModu={bakiyeHesapModu} setBakiyeHesapModu={setBakiyeHesapModu} />}
         </main>
 
         {/* ALT NAVİGASYON */}
