@@ -293,14 +293,14 @@ const VARSAYILAN_KATEGORILER = {
 const KATEGORI_RENKLER = {
   Maaş: "#f59e0b", Freelance: "#fbbf24", "Kira Geliri": "#d97706",
   Market: "#ef4444", Fatura: "#f97316", Ulaşım: "#8b5cf6", Sağlık: "#06b6d4",
-  Eğlence: "#ec4899", Giyim: "#6366f1", Restoran: "#14b8a6", Diğer: "#78716c",
+  Eğlence: "#ec4899", Giyim: "#A74E32", Restoran: "#14b8a6", Diğer: "#78716c",
 };
 const KATEGORI_IKON = {
-  Maaş: "💼", Freelance: "💻", "Kira Geliri": "🏠", Birikim: "🏦",
-  Market: "🛒", Fatura: "📄", Ulaşım: "🚗", Sağlık: "🏥",
-  Eğlence: "🎬", Giyim: "👕", Restoran: "🍽️", Kira: "🏠", Diğer: "📌",
+  Maaş: "briefcase", Freelance: "screen", "Kira Geliri": "home", Birikim: "coins",
+  Market: "cart", Fatura: "receipt", Ulaşım: "car", Sağlık: "medical",
+  Eğlence: "play", Giyim: "shirt", Restoran: "utensils", Kira: "home", Diğer: "tag",
 };
-const katIkon = (kat, tip) => KATEGORI_IKON[kat] || (tip === "gelir" ? "💰" : "💳");
+const katIkon = (kat, tip) => <Icon name={KATEGORI_IKON[kat] || (tip === 'gelir' ? 'arrowUp' : 'tag')} size={18}/>;
 
 // Alışkanlık analizi (en pahalı gün / haftalık dağılım / genel alışkanlık) için bir işlemin sayılacak tutarı.
 // Sabit giderler tamamen hariç. Kredi kartında İLK kez girilen toplam (geçmiş birikmiş tutar) hariç,
@@ -326,41 +326,39 @@ const habitHareketleri = (i) => {
 
 // Taksit adına göre akıllı ikon seçimi (anahtar kelime eşleştirme)
 const TAKSIT_IKON_KURAL = [
-  { k: ["mtv", "vergi", "trafik ceza", "harç"], i: "🧾" },
-  { k: ["sigorta", "kasko", "dask", "ray sompo", "sompo", "poliçe"], i: "🛡️" },
-  { k: ["hepsiburada", "trendyol", "n11", "amazon", "gittigidiyor", "e-ticaret", "eticaret", "online alışveriş"], i: "📦" },
-  { k: ["nakit avans", "avans", "kredi kartı", "kart borcu", "ekstre"], i: "💳" },
-  { k: ["gözlük", "atasun", "optik", "lens", "numaralı"], i: "👓" },
-  { k: ["lcw", "lc waikiki", "waikiki", "penti", "koton", "mavi", "defacto", "giyim", "kıyafet", "elbise", "mont", "ceket", "pantolon", "gömlek", "iç giyim"], i: "👕" },
-  { k: ["superstep", "flo", "ayakkabı", "spor ayakkabı", "sneaker", "bot"], i: "👟" },
-  { k: ["telefon", "iphone", "samsung", "xiaomi", "cep"], i: "📱" },
-  { k: ["laptop", "bilgisayar", "pc", "macbook", "notebook"], i: "💻" },
-  { k: ["tablet", "ipad"], i: "📱" },
-  { k: ["tv", "televizyon", "ekran", "monitör"], i: "📺" },
+  { k: ["mtv", "vergi", "trafik ceza", "harç"], i: "receipt" },
+  { k: ["sigorta", "kasko", "dask", "ray sompo", "sompo", "poliçe"], i: "shield" },
+  { k: ["hepsiburada", "trendyol", "n11", "amazon", "gittigidiyor", "e-ticaret", "eticaret", "online alışveriş"], i: "package" },
+  { k: ["nakit avans", "avans", "kredi kartı", "kart borcu", "ekstre"], i: "card" },
+  { k: ["gözlük", "atasun", "optik", "lens", "numaralı"], i: "medical" },
+  { k: ["lcw", "lc waikiki", "waikiki", "penti", "koton", "mavi", "defacto", "giyim", "kıyafet", "elbise", "mont", "ceket", "pantolon", "gömlek", "iç giyim"], i: "shirt" },
+  { k: ["superstep", "flo", "ayakkabı", "spor ayakkabı", "sneaker", "bot"], i: "tag" },
+  { k: ["telefon", "iphone", "samsung", "xiaomi", "cep"], i: "screen" },
+  { k: ["laptop", "bilgisayar", "pc", "macbook", "notebook"], i: "screen" },
+  { k: ["tablet", "ipad"], i: "screen" },
+  { k: ["tv", "televizyon", "ekran", "monitör"], i: "screen" },
   { k: ["saat", "watch", "kol saat"], i: "⌚" },
-  { k: ["kulaklık", "airpod", "headphone"], i: "🎧" },
-  { k: ["kamera", "fotoğraf", "objektif"], i: "📷" },
-  { k: ["oyun", "playstation", "ps5", "xbox", "konsol"], i: "🎮" },
-  { k: ["koltuk", "kanepe", "mobilya", "masa", "dolap", "yatak", "mutfak"], i: "🛋️" },
-  { k: ["buzdolabı", "çamaşır", "bulaşık", "fırın", "beyaz eşya", "kombi", "klima", "elektrikli süpürge", "süpürge"], i: "🔌" },
-  { k: ["araba", "araç", "oto", "lastik", "araç kredisi"], i: "🚗" },
-  { k: ["motor", "motosiklet", "scooter"], i: "🏍️" },
-  { k: ["bisiklet"], i: "🚲" },
-  { k: ["ev", "daire", "konut", "tapu"], i: "🏠" },
-  { k: ["tatil", "seyahat", "uçak", "otel", "gezi"], i: "✈️" },
-  { k: ["mücevher", "altın", "yüzük", "kolye", "takı"], i: "💍" },
-  { k: ["market", "gıda", "alışveriş"], i: "🛒" },
-  { k: ["kitap", "eğitim", "kurs", "ders"], i: "📚" },
-  { k: ["sağlık", "diş", "hastane", "gözlük", "tedavi"], i: "🏥" },
-  { k: ["spor", "fitness", "gym", "bisiklet aleti"], i: "🏋️" },
-  { k: ["mobilya", "halı", "perde", "ev eşya"], i: "🪑" },
+  { k: ["kulaklık", "airpod", "headphone"], i: "headphones" },
+  { k: ["kamera", "fotoğraf", "objektif"], i: "screen" },
+  { k: ["oyun", "playstation", "ps5", "xbox", "konsol"], i: "play" },
+  { k: ["koltuk", "kanepe", "mobilya", "masa", "dolap", "yatak", "mutfak"], i: "home" },
+  { k: ["buzdolabı", "çamaşır", "bulaşık", "fırın", "beyaz eşya", "kombi", "klima", "elektrikli süpürge", "süpürge"], i: "screen" },
+  { k: ["araba", "araç", "oto", "lastik", "araç kredisi"], i: "car" },
+  { k: ["motor", "motosiklet", "scooter"], i: "car" },
+  { k: ["bisiklet"], i: "car" },
+  { k: ["ev", "daire", "konut", "tapu"], i: "home" },
+  { k: ["tatil", "seyahat", "uçak", "otel", "gezi"], i: "plane" },
+  { k: ["mücevher", "altın", "yüzük", "kolye", "takı"], i: "coins" },
+  { k: ["market", "gıda", "alışveriş"], i: "cart" },
+  { k: ["kitap", "eğitim", "kurs", "ders"], i: "book" },
+  { k: ["sağlık", "diş", "hastane", "gözlük", "tedavi"], i: "medical" },
+  { k: ["spor", "fitness", "gym", "bisiklet aleti"], i: "medical" },
+  { k: ["mobilya", "halı", "perde", "ev eşya"], i: "home" },
 ];
 const taksitIkon = (ad) => {
-  const s = (ad || "").toLowerCase();
-  for (const kural of TAKSIT_IKON_KURAL) {
-    if (kural.k.some(kelime => s.includes(kelime))) return kural.i;
-  }
-  return "🧾";
+  const s = (ad || '').toLocaleLowerCase('tr-TR');
+  const rule = TAKSIT_IKON_KURAL.find(r=>r.k.some(k=>s.includes(k)));
+  return <Icon name={rule?.i || 'receipt'} size={18}/>;
 };
 
 // ── TOAST ─────────────────────────────────────────────────────────────────────
@@ -402,10 +400,10 @@ function ToastKutusu() {
   }, []);
   if (!veri) return null;
   const renk = veri.tip === "hata" ? "#ef4444" : veri.tip === "uyari" ? "#f59e0b" : "#10b981";
-  const ikon = veri.tip === "hata" ? "✕" : veri.tip === "uyari" ? "!" : "✓";
+  const ikon = veri.tip === "hata" ? "alert" : veri.tip === "uyari" ? "warning" : "check";
   return (
     <div key={veri.id} style={{ position: "fixed", top: "calc(14px + env(safe-area-inset-top))", left: "50%", transform: "translateX(-50%)", zIndex: 300, background: renk, color: "#fff", borderRadius: 16, padding: "10px 12px", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, display: "flex", alignItems: "center", gap: 9, boxShadow: "0 12px 32px rgba(0,0,0,0.3)", animation: "toastIn 0.28s ease", width: "min(92%, 430px)" }}>
-      <span style={{ width: 20, height: 20, borderRadius: 99, background: "rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, flexShrink: 0 }}>{ikon}</span>
+      <span style={{ width: 20, height: 20, borderRadius: 99, background: "rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, flexShrink: 0 }}><Icon name={ikon} size={17}/></span>
       <span style={{ flex: 1 }}>{veri.mesaj}</span>
       {veri.geriAl && <button onClick={() => { veri.geriAl(); setVeri(null); }} style={{ border: "1px solid rgba(255,255,255,.45)", background: "rgba(255,255,255,.18)", color: "#fff", borderRadius: 9, padding: "5px 9px", fontSize: 11, fontWeight: 800, cursor: "pointer" }}>Geri Al</button>}
     </div>
@@ -423,7 +421,7 @@ const krediKartiMarkaRengi = (isim = "") => {
   if (ad.includes("bonus")) return { ana: "#4ade80", soft: "rgba(22,163,74,.22)", border: "rgba(74,222,128,.65)" };
   if (ad.includes("maximum")) return { ana: "#93c5fd", soft: "rgba(30,58,138,.48)", border: "rgba(96,165,250,.72)" };
   if (ad.includes("world")) return { ana: "#facc15", soft: "rgba(161,98,7,.34)", border: "rgba(250,204,21,.72)" };
-  return { ana: "#a5b4fc", soft: "rgba(99,102,241,.20)", border: "rgba(165,180,252,.58)" };
+  return { ana: "#a5b4fc", soft: "rgba(167,78,50,.20)", border: "rgba(165,180,252,.58)" };
 };
 
 // ── LOCALSTORAGE HOOK ─────────────────────────────────────────────────────────
@@ -681,7 +679,7 @@ function Select({ label, children, ...props }) {
   );
 }
 function Btn({ children, onClick, variant = "primary", style = {}, disabled }) {
-  const styles = { primary: { background: disabled ? "var(--text5)" : "linear-gradient(135deg,#f59e0b,#d97706)", color: "#302111" }, secondary: { background: "var(--border)", color: "var(--text)" }, danger: { background: "#ef444422", color: "#ef4444", border: "1px solid #ef444444" } };
+  const styles = { primary: { background: disabled ? "var(--text5)" : "var(--accent-strong)", color: "var(--on-accent)" }, secondary: { background: "var(--border)", color: "var(--text)" }, danger: { background: "#ef444422", color: "var(--expense-text)", border: "1px solid #ef444444" } };
   return <button onClick={onClick} disabled={disabled} style={{ border: "none", borderRadius: 10, padding: "10px 18px", fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, fontSize: 13, cursor: disabled ? "not-allowed" : "pointer", letterSpacing: "0.04em", opacity: disabled ? 0.6 : 1, ...styles[variant], ...style }}>{children}</button>;
 }
 function Badge({ text, color }) {
@@ -690,6 +688,29 @@ function Badge({ text, color }) {
 
 function Icon({ name, size = 22, strokeWidth = 1.9 }) {
   const paths = {
+    briefcase: <><rect x="3" y="7" width="18" height="14" rx="2"/><path d="M8 7V3h8v4M3 12h18M10 12v3h4v-3"/></>,
+    screen: <><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></>,
+    cart: <><path d="M2 3h3l3 13h11l3-9H6M9 20h.01M18 20h.01"/><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></>,
+    car: <><path d="m5 10 2-6h10l2 6M3 10h18v8H3v-8M5 18v3M19 18v3M6 14h2M16 14h2"/></>,
+    medical: <><path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6V3Z"/></>,
+    play: <><circle cx="12" cy="12" r="9"/><path d="m10 8 6 4-6 4V8Z"/></>,
+    shirt: <><path d="m8 3-6 4 3 5 3-2v11h8V10l3 2 3-5-6-4a4 4 0 0 1-8 0Z"/></>,
+    utensils: <><path d="M4 3v6a3 3 0 0 0 6 0V3M7 3v18M18 3c-3 4-3 8 0 9h2V3h-2ZM20 12v9"/></>,
+    package: <><path d="m3 7 9-5 9 5v10l-9 5-9-5V7Zm0 0 9 5 9-5M12 12v10M7 4l9 5"/></>,
+    headphones: <><path d="M3 14v-2a9 9 0 0 1 18 0v2"/><rect x="3" y="12" width="4" height="8" rx="2"/><rect x="17" y="12" width="4" height="8" rx="2"/></>,
+    plane: <><path d="m2 16 8-4V4a2 2 0 0 1 4 0v8l8 4v3l-8-2v4l-2 1-2-1v-4l-8 2v-3Z"/></>,
+    book: <><path d="M12 5v16M3 3l9 2 9-2v16l-9 2-9-2V3Z"/></>,
+    arrowDown: <><path d="M7 7l10 10M17 7v10H7"/></>,
+    arrowUp: <><path d="M7 17 17 7M7 7h10v10"/></>,
+    filter: <><path d="M4 6h16M7 12h10M10 18h4"/></>,
+    download: <><path d="M12 3v12m-4-4 4 4 4-4M4 16v5h16v-5"/></>,
+    edit: <><path d="m15 4 5 5M4 20l4-1L20 7a2 2 0 0 0-3-3L5 16l-1 4Z"/></>,
+    trash: <><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/></>,
+    search: <><circle cx="10" cy="10" r="6"/><path d="m15 15 6 6"/></>,
+    target: <><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="m12 12 8-8"/></>,
+    bell: <><path d="M5 17h14l-2-3V9a5 5 0 0 0-10 0v5l-2 3ZM10 21h4"/></>,
+    tag: <><path d="M3 3h8l10 10-8 8L3 11V3Z"/><circle cx="7" cy="7" r="1"/></>,
+    check: <><path d="m5 12 4 4L19 6"/></>,
     menu: <><path d="M4 7h16M4 12h16M4 17h16" /></>,
     home: <><path d="m3 11 9-8 9 8" /><path d="M5 10v10h14V10M9 20v-6h6v6" /></>,
     card: <><rect x="3" y="5" width="18" height="14" rx="3" /><path d="M3 10h18M7 15h3" /></>,
@@ -805,14 +826,14 @@ function buAnkiDonem() {
   return `${bas.getFullYear()}-${bas.getMonth()}-${gun}`;
 }
 function donemLabel(yil, ay, basGun) {
-  const gun = basGun || getDonemGun();
-  const bitGun = gun - 1;
-  const bitisAy = ay === 11 ? AYLAR[0] : AYLAR[ay + 1];
-  return `${gun} ${AYLAR[ay]}-${bitGun} ${bitisAy}`;
+  const gun = Math.min(28,Math.max(1,Number(basGun)||15));
+  const ilk = new Date(yil,ay,gun);
+  const son = new Date(yil,ay+1,gun-1);
+  const opts = {day:'numeric',month:'short'};
+  return `${ilk.toLocaleDateString('tr-TR',opts)} – ${son.toLocaleDateString('tr-TR',opts)}`;
 }
 
-
-// Harcama ibresi (TradingView tarzı yarım daire gauge)
+// Aynı eşikler ve aynı 3500 ms animasyon; çizim artık kompakt bir halka.
 function HarcamaGauge({ oran }) {
   const [animOran, setAnimOran] = useState(0);
   useEffect(() => {
@@ -821,54 +842,49 @@ function HarcamaGauge({ oran }) {
     let baslangic = null;
     const sure = 3500;
     let raf;
-    const adim = (zaman) => {
+    const adim = zaman => {
       if (baslangic === null) baslangic = zaman;
-      const gecen = zaman - baslangic;
-      const t = Math.min(1, gecen / sure);
-      // easeOutCubic
-      const e = 1 - Math.pow(1 - t, 3);
-      setAnimOran(hedef * e);
+      const t = Math.min(1, (zaman - baslangic) / sure);
+      setAnimOran(hedef * (1 - Math.pow(1 - t, 3)));
       if (t < 1) raf = requestAnimationFrame(adim);
     };
     raf = requestAnimationFrame(adim);
     return () => cancelAnimationFrame(raf);
   }, [oran]);
-  const gosterOran = animOran;
-  const cx = 160, cy = 145, r = 117;
-  const rad = angle => angle * Math.PI / 180;
-  const point = (angle, radius) => [cx + radius * Math.cos(rad(angle)), cy - radius * Math.sin(rad(angle))];
-  const arc = (from, to) => {
-    const [x1, y1] = point(from, r), [x2, y2] = point(to, r);
-    return `M ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2}`;
-  };
-  const oranRenk = gosterOran < 50 ? "#10b981" : gosterOran < 80 ? "#f59e0b" : "#ef4444";
-  const angle = 180 - Math.min(100, gosterOran) * 1.8;
-  const [tipX, tipY] = point(angle, 89);
-  const [leftX, leftY] = point(angle + 90, 5);
-  const [rightX, rightY] = point(angle - 90, 5);
+  const gosterOran = Math.max(0, animOran);
+  const doluluk = Math.min(100, gosterOran);
+  const veriVar = Number.isFinite(oran);
   return (
-    <svg className="home-gauge-svg" viewBox="0 0 320 235" role="img" aria-label={`Kullanılan bütçe oranı yüzde ${Math.round(Math.max(0, oran || 0))}`} style={{ display: "block", width: "100%", maxWidth: 350, margin: "0 auto" }}>
-      {Array.from({ length: 10 }, (_, index) => {
-        // Yalnızca çizim dilimleri; risk ve bakiye eşikleri aynen korunur.
-        const from = 180 - index * 18 - 0.7;
-        const to = 180 - (index + 1) * 18 + 0.7;
-        const color = index < 2 ? "#059669" : index < 5 ? "#10b981" : index < 8 ? "#f59e0b" : "#ef4444";
-        return <path key={`segment-${index}`} d={arc(from, to)} fill="none" stroke={color} strokeWidth="14" strokeLinecap="butt" />;
-      })}
-      {Array.from({ length: 21 }, (_, n) => {
-        const [x1, y1] = point(180 - n * 9, n % 5 === 0 ? 94 : 99);
-        const [x2, y2] = point(180 - n * 9, 105);
-        return <line key={n} x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--text4)" strokeWidth={n % 5 === 0 ? 1.8 : 1} opacity={n % 5 === 0 ? 0.8 : 0.35} />;
-      })}
-      <text x="33" y="168" textAnchor="middle" fill="var(--text4)" fontSize="12">0</text>
-      <text x="287" y="168" textAnchor="middle" fill="var(--text4)" fontSize="12">100</text>
-      <path d={`M ${leftX} ${leftY} L ${tipX} ${tipY} L ${rightX} ${rightY} Z`} fill="var(--text)" />
-      <circle cx={cx} cy={cy} r="8" fill="var(--text)" />
-      <circle cx={cx} cy={cy} r="3" fill="var(--card2)" />
-      <text x={cx} y="195" textAnchor="middle" fontFamily="'Inter', system-ui, sans-serif" fontSize="35" fontWeight="700" fill={oranRenk}>%{Math.round(gosterOran)}</text>
-      <text x={cx} y="218" textAnchor="middle" fontFamily="'Inter', system-ui, sans-serif" fontSize="12" fill="var(--text3)">Kullanılan bütçe oranı</text>
+    <svg className="budget-ring" viewBox="0 0 128 128" role="img" aria-label={veriVar ? `Kullanılan bütçe oranı yüzde ${Math.round(Math.max(0,oran))}` : "Bütçe oranı için henüz gelir yok"}>
+      <circle cx="64" cy="64" r="51" fill="none" stroke="var(--ring-track)" strokeWidth="10" />
+      {[{bas:0,boy:50,renk:'#10b981'},{bas:50,boy:30,renk:'#f59e0b'},{bas:80,boy:20,renk:'#ef4444'}].map(s => (
+        <g key={s.bas} transform="rotate(-90 64 64)">
+          <circle cx="64" cy="64" r="51" pathLength="100" fill="none" stroke={s.renk} strokeWidth="10" strokeDasharray={`${s.boy} ${100-s.boy}`} strokeDashoffset={-s.bas} opacity=".22" />
+          {veriVar && doluluk > s.bas && <circle data-ring-segment={s.bas} cx="64" cy="64" r="51" pathLength="100" fill="none" stroke={s.renk} strokeWidth="10" strokeDasharray={`${Math.min(s.boy,Math.max(0,doluluk-s.bas))} ${100-Math.min(s.boy,Math.max(0,doluluk-s.bas))}`} strokeDashoffset={-s.bas} />}
+        </g>
+      ))}
+      <text x="64" y="66" textAnchor="middle" dominantBaseline="middle" fill="currentColor" fontSize={Math.min(26,88/(String(Math.round(gosterOran)).length+1)/.65)} fontWeight="750">{veriVar ? `%${Math.round(gosterOran)}` : '—'}</text>
+      <text x="64" y="86" textAnchor="middle" fill="currentColor" opacity=".75" fontSize="9">bütçe kullanımı</text>
     </svg>
   );
+}
+function Money({value, prefix="₺", size=15}) {
+  const ref = useRef(null);
+  const text = prefix + fmt(value);
+  useEffect(()=>{
+    const el=ref.current;
+    if(!el) return;
+    const fit=()=>{
+      el.style.fontSize=`${size}px`;
+      const width=el.clientWidth;
+      if(width>0 && el.scrollWidth>width) el.style.fontSize=`${Math.max(9,size*width/el.scrollWidth)}px`;
+    };
+    fit();
+    const observer = typeof ResizeObserver!=='undefined' ? new ResizeObserver(fit) : null;
+    observer?.observe(el);
+    return ()=>observer?.disconnect();
+  },[text,size]);
+  return <span className="money-fit" ref={ref} title={text} style={{fontSize:size}}>{text}</span>;
 }
 
 // ── ÖZET ──────────────────────────────────────────────────────────────────────
@@ -1182,39 +1198,20 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
           </label>
           <button aria-label="Sonraki dönem" disabled={donemOffset === 0} onClick={() => setDonemOffset(o => Math.min(o + 1, 0))}>›</button>
         </div>
-        {donemOffset !== 0 && <div className="home-period-history"><span>🔒 Tamamlanan dönem · dönem sonu görünümü</span><button onClick={() => setDonemOffset(0)}>Bugüne dön</button></div>}
+        {donemOffset !== 0 && <div className="home-period-history"><span><span className="inline-icon"><Icon name="shield" size={14}/></span>Tamamlanan dönem · dönem sonu görünümü</span><button onClick={() => setDonemOffset(0)}>Bugüne dön</button></div>}
       </div>
 
-      {/* KALAN BAKİYE KARTI */}
+      {/* Bakiye ve bütçe kullanımı aynı ana kartta. */}
       {(() => {
-        // Durum: gauge ile aynı eşikler (0-50 güvende, 50-80 dikkat, 80+ riskli)
         const veriYok = islemler.length === 0 && odemeler.length === 0 && kartlar.length === 0;
-        const durum = veriYok ? "bos" : gosterilenBakiye < 0 ? "kotu" : gosterilenRiskOrani < 50 ? "iyi" : gosterilenRiskOrani < 80 ? "orta" : "kotu";
-        const kartBg = durum === "bos" ? "linear-gradient(135deg,#65594f,#877365)" : durum === "iyi"
-          ? "linear-gradient(135deg,#047857 0%,#10b981 55%,#0d9488 100%)"
-          : durum === "orta"
-          ? "linear-gradient(135deg,#b45309 0%,#f59e0b 55%,#d97706 100%)"
-          : "linear-gradient(135deg,#991b1b 0%,#ef4444 55%,#b91c1c 100%)";
-        const kartGolge = durum === "bos" ? "0 10px 28px rgba(90,72,58,.2)" : durum === "iyi"
-          ? "0 10px 28px rgba(4,120,87,0.42)"
-          : durum === "orta"
-          ? "0 10px 28px rgba(180,83,9,0.42)"
-          : "0 10px 28px rgba(153,27,27,0.42)";
-        return (
-          <div className="home-balance" style={{ background: kartBg, borderRadius: 24, padding: "20px 22px", marginBottom: 12, position: "relative", overflow: "hidden", boxShadow: kartGolge, border: "1px solid rgba(255,255,255,0.14)", transition: "background 0.5s ease" }}>
-            <div className="home-balance-wave" aria-hidden="true" />
-            <div className="home-balance-heading">
-              <span>Kalan Bakiye</span>
-              <span className="home-balance-badge"><Icon name={veriYok ? "wallet" : durum === "iyi" ? "shield" : durum === "orta" ? "warning" : "alert"} size={16} />{veriYok ? "Henüz veri yok" : durum === "iyi" ? "Güvende" : durum === "orta" ? "Dikkat" : "Riskli"}</span>
-            </div>
-            <div className="home-balance-value">{gosterilenBakiye < 0 ? "−" : ""}₺{fmt(Math.abs(gosterilenBakiye))}</div>
-            <div className="home-balance-caption">{veriYok ? "İlk gelirini veya giderini ekleyerek başla." : "Dönem Bütçesi · Harcanabilir Tutar"}</div>
-            {veriYok && <div className="ilk-kullanim"><button onClick={() => { setHizliForm(f => ({ ...f, tip: "gelir", kategori: "Maaş" })); setHizliModal(true); }}>İlk gelirini ekle</button></div>}
-            {gosterilenBakiye < 0 && (
-              <div style={{ color: "rgba(255,255,255,0.82)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 2 }}>Dönem bütçesi aşıldı</div>
-            )}
-          </div>
-        );
+        const durum = veriYok || buAyGelir <= 0 ? "bos" : gosterilenBakiye < 0 ? "kotu" : gosterilenRiskOrani < 50 ? "iyi" : gosterilenRiskOrani < 80 ? "orta" : "kotu";
+        return <section className="home-balance finance-hero" data-status={durum}>
+          <div className="home-balance-heading"><span>Dönem bakiyesi</span><span className="home-balance-badge"><Icon name={durum==='bos'?'wallet':durum==='iyi'?'shield':durum==='orta'?'warning':'alert'} size={14}/>{veriYok?'Henüz veri yok':buAyGelir<=0?'Gelir kaydı yok':durum==='iyi'?'Güvende':durum==='orta'?'Dikkat':'Riskli'}</span></div>
+          <div className="home-balance-value"><Money value={Math.abs(gosterilenBakiye)} prefix={gosterilenBakiye<0?'−₺':'₺'} size={34}/></div>
+          <p className="hero-caption">{veriYok?'İlk gelirini veya giderini ekleyerek başla.':'Seçili dönemin gelir, harcama ve birikim dengesi'}</p>
+          {!veriYok && <div className="hero-budget"><HarcamaGauge oran={buAyGelir>0?gosterilenRiskOrani:null}/><div className="hero-budget-copy"><h3>Dönem bütçem</h3><p><strong>₺{fmt(paraTopla(toplamGider,buAyBirikim))}</strong><span> / ₺{fmt(buAyGelir)}</span></p><p className="hero-caption">Harcama ve birikim dahil{gosterilenBakiye<0?' · Bütçe aşıldı':''}</p><div className="ring-legend"><span><i style={{background:'#10b981'}}/>0–50</span><span><i style={{background:'#f59e0b'}}/>50–80</span><span><i style={{background:'#ef4444'}}/>80+</span></div></div></div>}
+          {veriYok&&<div className="ilk-kullanim"><button onClick={()=>{setHizliForm(f=>({...f,tip:'gelir',kategori:'Maaş'}));setHizliModal(true);}}><Icon name="plus" size={16}/>İlk gelirini ekle</button></div>}
+        </section>;
       })()}
 
       {/* GELİR / HARCAMA / BİRİKİM — önceki döneme göre kıyas */}
@@ -1234,24 +1231,25 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
                 <span style={{ color: k.renk, fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>{k.etiket}</span>
                 <span style={{ width: 22, height: 22, borderRadius: 7, background: "var(--card2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, flexShrink: 0 }}><Icon name={k.ikon} size={15} /></span>
               </div>
-              <div className="home-summary-value" style={{ color: "var(--text)", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, marginBottom: 5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>₺{fmt(k.veri.deger)}</div>
+              <div className="home-summary-value" style={{ color: "var(--text)", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, marginBottom: 5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}><Money value={k.veri.deger} size={15}/></div>
               {k.veri.varMi ? (
                 <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
                   <span style={{ color: okRenk, fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>{artti ? "↗" : "↘"} %{Math.abs(k.veri.yuzde).toFixed(1)}</span>
                 </div>
               ) : (
-                <span style={{ color: "var(--text5)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif" }}>—</span>
+                null
               )}
-              <div className="home-summary-caption" style={{ color: "var(--text5)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 2 }}>geçen döneme göre</div>
+              <div className="home-summary-caption" style={{ color: "var(--text5)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 2 }}>{k.veri.varMi ? "Önceki dönem" : "Geçmiş yok"}</div>
             </div>
           );
         })}
       </div>
+      <div className="home-quick-actions"><button onClick={()=>{setHizliForm(f=>({...f,tip:'gider',kategori:'Market'}));setHizliModal(true);}}><Icon name="arrowDown" size={18}/>Gider ekle</button><button onClick={()=>{setHizliForm(f=>({...f,tip:'gelir',kategori:'Maaş'}));setHizliModal(true);}}><Icon name="arrowUp" size={18}/>Gelir ekle</button></div>
       {/* Sabit gider uyarısı */}
       {sabitGider > 0 && (
         <div style={{ background:"#ef444411", border:"1px solid #ef444433", borderRadius:10, padding:"8px 14px", marginBottom:10, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-          <span style={{ color:"#ef4444", fontSize:11, fontFamily:"'Inter', system-ui, sans-serif" }}>🔄 Sabit Giderler (Aktif)</span>
-          <span style={{ color:"#ef4444", fontFamily:"'Inter', system-ui, sans-serif", fontWeight:700, fontSize:13 }}>₺{fmt(sabitGider)}</span>
+          <span style={{ color: "var(--expense-text)", fontSize:11, fontFamily:"'Inter', system-ui, sans-serif" }}><span className="inline-icon"><Icon name="repeat" size={16}/></span>Sabit Giderler (Aktif)</span>
+          <span style={{ color: "var(--expense-text)", fontFamily:"'Inter', system-ui, sans-serif", fontWeight:700, fontSize:13 }}>₺{fmt(sabitGider)}</span>
         </div>
       )}
 
@@ -1265,24 +1263,6 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
                 ? `${odemeDurumu.gecikenAdet} gecikmiş ödeme bulunuyor: ₺${fmt(odemeDurumu.gecikenToplam)}.`
                 : `Önümüzdeki 7 günde ${odemeDurumu.yaklasanAdet} ödeme var: ₺${fmt(odemeDurumu.yaklasanToplam)}.`}
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* HARCAMA İBRESİ — hesaplama ve durum eşikleri değişmez */}
-      {(buAyGelir > 0 || toplamGider > 0) && (
-        <div className="home-panel home-gauge-panel">
-          <div className="home-panel-heading"><span>Bütçe Kullanımı</span><Icon name="chart" size={19} /></div>
-          <HarcamaGauge oran={gosterilenRiskOrani} />
-          <div className="home-gauge-split">
-            <div><span className="home-detail-label">Kullanılan</span><strong className="home-percent-value"><i className="home-percent-dot" style={{ background: gosterilenRiskOrani < 50 ? "#10b981" : gosterilenRiskOrani < 80 ? "#f59e0b" : "#ef4444" }} aria-hidden="true" />%{Math.round(gosterilenRiskOrani)}</strong></div>
-            <div><span className="home-detail-label">Kalan</span><strong className="home-percent-value"><i className="home-percent-dot" style={{ background: "#8490a7" }} aria-hidden="true" />%{Math.round(Math.max(0, 100 - gosterilenRiskOrani))}</strong></div>
-          </div>
-          <div className="home-gauge-note">Kullanılan oran harcama ve birikimi içerir.</div>
-          <div className="home-gauge-legend">
-            <span><i style={{ background: "#10b981" }} />%0–50</span>
-            <span><i style={{ background: "#f59e0b" }} />%50–80</span>
-            <span><i style={{ background: "#ef4444" }} />%80 ve üzeri</span>
           </div>
         </div>
       )}
@@ -1335,7 +1315,7 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
         const gunFark = (t) => takvimGunFarki(t, bugun);
         return (
           <div className="home-panel home-payments" style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "14px 16px", marginBottom: 12 }}>
-            <div style={{ color: "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>{donemOffset === 0 ? "🔔 Yaklaşan Ödemeler" : "🔒 Dönem Ödemeleri"}</div>
+            <div style={{ color: "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>{donemOffset === 0 ? "Yaklaşan Ödemeler" : "Dönem Ödemeleri"}</div>
             {gosterilecek.map(o => {
               const gf = gunFark(o.tarih);
               const acil = donemOffset === 0 && gf <= 3;
@@ -1347,8 +1327,8 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
                     <div style={{ color: acil ? "#ef4444" : "var(--text4)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif" }}>{donemOffset === 0 ? (gf === 0 ? "Bugün" : gf === 1 ? "Yarın" : `${gf} gün sonra`) : (o.odendi ? "Ödendi" : "Ödenmedi")} · {o.tarih.split("-").reverse().join(".")}</div>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ color: "#ef4444", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>₺{fmt(o.tutar)}</span>
-                    {donemOffset === 0 && <button onClick={() => ozettenOdendiYap(o)} style={{ background: "#10b98122", border: "1px solid #10b98155", borderRadius: 8, padding: "4px 8px", color: "#10b981", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", cursor: "pointer" }}>✓ Ödendi</button>}
+                    <span style={{ color: "var(--expense-text)", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>₺{fmt(o.tutar)}</span>
+                    {donemOffset === 0 && <button onClick={() => ozettenOdendiYap(o)} style={{ background: "#10b98122", border: "1px solid #10b98155", borderRadius: 8, padding: "4px 8px", color: "var(--income-text)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", cursor: "pointer" }}>✓ Ödendi</button>}
                   </div>
                 </div>
               );
@@ -1361,10 +1341,10 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
       {buAyBirikim > 0 && (
         <div style={{ background: "var(--card)", border: "1px solid #10b98144", borderRadius: 14, padding: "12px 18px", marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ fontSize: 18 }}>🏦</span>
+            <span style={{ fontSize: 18 }}><Icon name="coins" size={18}/></span>
             <span style={{ color: "var(--text4)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif" }}>Dönem Birikimi (net'e dahil değil)</span>
           </div>
-          <span style={{ color: "#10b981", fontSize: 15, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>₺{fmt(buAyBirikim)}</span>
+          <span style={{ color: "var(--income-text)", fontSize: 15, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>₺{fmt(buAyBirikim)}</span>
         </div>
       )}
       {/* Kredi Kartı Özeti */}
@@ -1382,8 +1362,8 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
         const toplamGuncelBorc = kartOzetleri.reduce((s, k) => paraTopla(s, k.guncelBorc), 0);
 
         return (
-          <div className="kredi-karti-alani home-credit-panel" style={{ background: "var(--card)", border: "1px solid #6366f133", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "14px 16px", marginBottom: 12 }}>
-            <div style={{ color: "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>💳 Kredi Kartları</div>
+          <div className="kredi-karti-alani home-credit-panel" style={{ background: "var(--card)", border: "1px solid #A74E3233", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "14px 16px", marginBottom: 12 }}>
+            <div style={{ color: "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}><span className="inline-icon"><Icon name="card" size={16}/></span>Kredi Kartları</div>
 
             {/* Tüm kartların toplu özeti */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8, marginBottom: 12 }}>
@@ -1423,7 +1403,7 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
                           ekstre: k.ekstre > 0 ? String(k.ekstre) : "",
                           bakiyedenDussun: k.bakiyedenDussun !== false
                         });
-                      }} style={{ border: "none", color: marka.ana, cursor: "pointer", fontSize: 13, padding: 0, background: marka.soft, borderRadius: 7 }}>✏️</button>
+                      }} style={{ border: "none", color: marka.ana, cursor: "pointer", fontSize: 13, padding: 0, background: marka.soft, borderRadius: 7 }} aria-label="Düzenle"><Icon name="edit" size={16}/></button>
                     )}
                   </div>
 
@@ -1467,7 +1447,7 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
           <div style={{ color: "var(--text4)", fontSize: 11, lineHeight: 1.5, marginBottom: 12 }}>Ekstreyi ödendi olarak işaretle. Seçtiğin ödeme tarihi, ödemenin düşeceği maaş dönemini belirler.</div>
           <div style={{ padding: "10px 12px", background: "var(--card2)", borderRadius: 10, marginBottom: 12 }}>
             <div style={{ color: "var(--text5)", fontSize: 11, fontWeight: 800 }}>ÖDENECEK EKSTRE</div>
-            <div style={{ color: "#ef4444", fontSize: 17, fontWeight: 800, marginTop: 3 }}>₺{fmt(Math.min(Number(kartOdemeModal.ekstre) || 0, Math.max(0, (Number(kartOdemeModal.ekstre) || 0) - kartEkstreOdemeToplami(kartOdemeModal))))}</div>
+            <div style={{ color: "var(--expense-text)", fontSize: 17, fontWeight: 800, marginTop: 3 }}>₺{fmt(Math.min(Number(kartOdemeModal.ekstre) || 0, Math.max(0, (Number(kartOdemeModal.ekstre) || 0) - kartEkstreOdemeToplami(kartOdemeModal))))}</div>
           </div>
           <Input label="Ödeme Tarihi" type="date" value={kartOdemeTarih} onChange={e => setKartOdemeTarih(e.target.value)} />
           <div style={{ color: "var(--text5)", fontSize: 11, marginTop: -5, marginBottom: 8 }}>Bu tarih hangi maaş dönemine aitse ekstre ödemesi o dönemin giderine eklenir.</div>
@@ -1476,7 +1456,7 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
       )}
 
       <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "18px 16px", marginBottom: 16 }}>
-        <div style={{ color: "var(--text3)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 14 }}>📈 Harcama Trendin</div>
+        <div style={{ color: "var(--text3)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 14 }}><span className="inline-icon"><Icon name="chart" size={16}/></span>Harcama Trendin</div>
         {aylikVeriler.length === 0 ? (
           <div style={{ textAlign: "center", color: "var(--text5)", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", padding: "20px 0" }}>Henüz veri yok</div>
         ) : (
@@ -1529,7 +1509,7 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
           <Input label="Ekstre (₺) — kesilmiş son dönem borcu" type="number" value={kartDuzForm.ekstre} onChange={e => setKartDuzForm(f => ({ ...f, ekstre: e.target.value }))} placeholder="0.00" />
           <Input label="Dönem İçi (₺)" type="number" value={kartDuzForm.donemIci} onChange={e => setKartDuzForm(f => ({ ...f, donemIci: e.target.value }))} placeholder="0.00" />
           <Input label="Provizyon (₺)" type="number" value={kartDuzForm.provizyon} onChange={e => setKartDuzForm(f => ({ ...f, provizyon: e.target.value }))} placeholder="0.00" />
-          <button type="button" onClick={() => setKartDuzForm(f => ({ ...f, bakiyedenDussun: !f.bakiyedenDussun }))} style={{ width: "100%", display: "flex", alignItems: "center", gap: 11, padding: "11px 12px", marginBottom: 10, borderRadius: 12, border: kartDuzForm.bakiyedenDussun ? "1px solid #6366f166" : "1px solid var(--border)", background: kartDuzForm.bakiyedenDussun ? "var(--accent-soft)" : "var(--card2)", color: "var(--text)", cursor: "pointer", textAlign: "left" }}>
+          <button type="button" onClick={() => setKartDuzForm(f => ({ ...f, bakiyedenDussun: !f.bakiyedenDussun }))} style={{ width: "100%", display: "flex", alignItems: "center", gap: 11, padding: "11px 12px", marginBottom: 10, borderRadius: 12, border: kartDuzForm.bakiyedenDussun ? "1px solid #A74E3266" : "1px solid var(--border)", background: kartDuzForm.bakiyedenDussun ? "var(--accent-soft)" : "var(--card2)", color: "var(--text)", cursor: "pointer", textAlign: "left" }}>
             <span style={{ width: 22, height: 22, borderRadius: 7, border: kartDuzForm.bakiyedenDussun ? "none" : "2px solid var(--border2)", background: kartDuzForm.bakiyedenDussun ? "var(--accent)" : "var(--card)", color: "#fff", display: "grid", placeItems: "center", fontSize: 13, flexShrink: 0 }}>{kartDuzForm.bakiyedenDussun ? "✓" : ""}</span>
             <span>
               <span style={{ display: "block", fontSize: 12, fontWeight: 800 }}>Dönem içi ve provizyon güncel bakiyeden düşülsün</span>
@@ -1591,11 +1571,11 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
         <Modal title="Yeni İşlem" onClose={() => setHizliModal(false)}>
           <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
             {[
-              { id: "gider", label: "📉 Gider", renk: "#ef4444" },
-              { id: "gelir", label: "📈 Gelir", renk: "#10b981" },
-              { id: "taksit", label: "🧾 Taksit", renk: "#8b5cf6" },
+              { id: "gider", label: "Gider", renk: "#ef4444" },
+              { id: "gelir", label: "Gelir", renk: "#10b981" },
+              { id: "taksit", label: "Taksit", renk: "#8b5cf6" },
             ].map(t => (
-              <button key={t.id} onClick={() => setHizliForm(f => ({ ...f, tip: t.id, kategori: t.id === "taksit" ? f.kategori : (kategoriler?.[t.id] || VARSAYILAN_KATEGORILER[t.id])[0] }))} style={{ flex: 1, padding: "10px 4px", borderRadius: 10, border: "none", cursor: "pointer", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12, fontWeight: 700, background: hizliForm.tip === t.id ? t.renk : "var(--border)", color: hizliForm.tip === t.id ? "#fff" : "var(--text3)" }}>
+              <button key={t.id} onClick={() => setHizliForm(f => ({ ...f, tip: t.id, kategori: t.id === "taksit" ? f.kategori : (kategoriler?.[t.id] || VARSAYILAN_KATEGORILER[t.id])[0] }))} style={{ flex: 1, padding: "10px 4px", borderRadius: 10, border: "none", cursor: "pointer", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12, fontWeight: 700, background: hizliForm.tip === t.id ? "var(--accent-strong)" : "var(--card2)", color: hizliForm.tip === t.id ? "#fff" : "var(--text3)" }}>
                 {t.label}
               </button>
             ))}
@@ -1603,7 +1583,7 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
           {(hizliSablonlar || []).length > 0 && (
             <div style={{ marginBottom: 14 }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 7 }}>
-                <span style={{ color: "var(--text4)", fontSize: 11, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase" }}>⚡ Hızlı giderler</span>
+                <span style={{ color: "var(--text4)", fontSize: 11, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase" }}><span className="inline-icon"><Icon name="plus" size={16}/></span>Hızlı giderler</span>
                 <span style={{ color: "var(--text5)", fontSize: 11 }}>Dokununca hemen eklenir</span>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 7 }}>
@@ -1614,7 +1594,7 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
                         <span style={{ width: 27, height: 27, flexShrink: 0, display: "grid", placeItems: "center", borderRadius: 9, background: "#ef444417", fontSize: 13 }}>{katIkon(s.kategori, "gider")}</span>
                         <div style={{ minWidth: 0 }}>
                           <div style={{ color: "var(--text2)", fontSize: 11, fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.ad || s.kategori}</div>
-                          <div style={{ color: "#ef4444", fontSize: 11, fontWeight: 800, marginTop: 2 }}>₺{fmt(Number(s.tutar) || 0)}</div>
+                          <div style={{ color: "var(--expense-text)", fontSize: 11, fontWeight: 800, marginTop: 2 }}>₺{fmt(Number(s.tutar) || 0)}</div>
                         </div>
                       </div>
                       <button aria-label="Şablonu sil" onClick={e => { e.stopPropagation(); hizliSablonSil(s.id); }} style={{ position: "absolute", top: 6, right: 6, width: 22, height: 22, border: "none", borderRadius: 7, background: "transparent", color: "var(--text5)", cursor: "pointer", fontSize: 14 }}>×</button>
@@ -1626,7 +1606,7 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
           )}
           {hizliForm.tip === "taksit" ? (
             <>
-              <div style={{ background: "#8b5cf611", border: "1px solid #8b5cf633", borderRadius: 10, padding: "9px 12px", marginBottom: 12, color: "#8b5cf6", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.5 }}>
+              <div style={{ background: "var(--accent-soft)", border: "1px solid var(--border)", borderRadius: 10, padding: "9px 12px", marginBottom: 12, color: "var(--accent)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.5 }}>
                 Taksitli harcamalar giderinden düşmez, sadece takip amaçlıdır. Özet ekranında ilerlemesini görürsün.
               </div>
               <Input label="Ürün / Harcama Adı" value={hizliForm.taksitAd} onChange={e => setHizliForm(f => ({ ...f, taksitAd: e.target.value }))} placeholder="Örn: Telefon" />
@@ -1752,17 +1732,92 @@ function HarcamaHaritasi({islemler,odemeler,ilk,son}) {
     return <button key={t} className="heat-day" disabled={dis} aria-pressed={secili===t} aria-label={`${t}: ${fmtTL(tutar)}`} onClick={()=>setSecili(t)} style={{background:tutar>0?`rgba(167,78,50,${.12+.65*tutar/max})`:'var(--card2)',color:tutar/max>.6?'#fff':'var(--text)',borderColor:secili===t?'var(--accent)':'var(--border)'}}><span>{i+1}</span><small>{tutar>0?'●':'·'}</small></button>;
   })}</div><p className="tools-note">Koyu renk daha fazla harcama demektir. Boş gün, kayıt olmadığı anlamına gelir. Bekleyen ödemeler ve ilk kart toplamı haritada yer almaz; kartların günlük farkları gösterilir.</p>{secili&&<div aria-live="polite"><h4>{secili.split('-').reverse().join('.')} · {fmtTL(map[secili]||0)}</h4>{hareketler.filter(i=>i.tarih===secili).map((i,k)=><div className="tools-row" key={`${i.id}-${k}`}><span>{i.aciklama||i.kategori}<small className="tools-note"> · {i.kategori}</small></span><strong>{fmtTL(i.tutar)}</strong></div>)}{!map[secili]&&<p className="tools-note">Bu gün için harcama kaydı yok.</p>}</div>}</section>;
 }
-function EsnekRapor({islemler,odemeler,donemGun}) {
-  const [mod,setMod]=useState('donem'),[offset,setOffset]=useState(0),[yil,setYil]=useState(new Date().getFullYear());
-  const [ilk,setIlk]=useState(yerelTarihAnahtari(maasDonemiBul(yerelTarihAnahtari(),donemGun).baslangic)),[son,setSon]=useState(yerelTarihAnahtari());
+function EsnekRapor({islemler,odemeler,donemGun,gelismisYorum,birikimRaporu}) {
+  const [mod,setMod]=useState('donem');
+  const [offset,setOffset]=useState(0);
+  const [yil,setYil]=useState(new Date().getFullYear());
+  const [ilk,setIlk]=useState(yerelTarihAnahtari(maasDonemiBul(yerelTarihAnahtari(),donemGun).baslangic));
+  const [son,setSon]=useState(yerelTarihAnahtari());
+  const [sekme,setSekme]=useState('ozet');
   const aralik=esnekRaporAraligi(mod,donemGun,offset,yil,ilk,son);
-  const ozet=aralik?aralikOzeti(islemler,aralik.ilk,aralik.son):null;
-  const bitis=aralik?(aralik.son<yerelTarihAnahtari()?aralik.son:yerelTarihAnahtari()):null;
-  const onceki=aralik&&bitis>=aralik.ilk?(()=>{const gun=takvimGunFarki(bitis,aralik.ilk)+1;return aralikOzeti(islemler,yerelTarihAnahtari(takvimGunuEkle(aralik.ilk,-gun)),yerelTarihAnahtari(takvimGunuEkle(aralik.ilk,-1)));})():null;
-  const kat={};
-  ozet?.kayitlar.filter(i=>i.tip==='gider').forEach(i=>{kat[i.kategori]=paraTopla(kat[i.kategori]||0,i.tutar);});
-  const degisim=(simdi,eski)=>eski>0?`${((simdi-eski)/eski*100).toFixed(1).replace('.',',')}%`:"Önceki tutar yok";
-  return <><section className="tools-card"><h3>Dönem raporu</h3><Select label="Rapor aralığı" value={mod} onChange={e=>setMod(e.target.value)}><option value="donem">Maaş dönemi</option><option value="uc">Son 3 maaş dönemi</option><option value="yil">12 maaş dönemi · seçili yıl</option><option value="ozel">Özel tarih aralığı</option></Select>{(mod==='donem'||mod==='uc')&&<div className="tools-row"><button className="tools-button" onClick={()=>setOffset(o=>o-1)}>Önceki dönem</button><button className="tools-button" disabled={offset>=0} onClick={()=>setOffset(o=>Math.min(0,o+1))}>Sonraki dönem</button></div>}{mod==='yil'&&<Input label="Rapor yılı" type="number" min="2000" max="2100" value={yil} onChange={e=>{if(tamSayiGecerli(e.target.value,2000,2100))setYil(Number(e.target.value));}}/>}{mod==='ozel'&&<div className="tools-grid"><Input label="Rapor başlangıcı" type="date" value={ilk} onChange={e=>setIlk(e.target.value)}/><Input label="Rapor bitişi" type="date" value={son} onChange={e=>setSon(e.target.value)}/></div>}{!aralik?<p role="alert">Geçerli bir tarih aralığı seç; başlangıç bitişten sonra olamaz.</p>:<><p className="tools-note">{aralik.ilk.split('-').reverse().join('.')} – {aralik.son.split('-').reverse().join('.')}</p><div className="tools-grid">{[['Gelir',ozet.gelir,'var(--income-text)'],['Gider',ozet.gider,'var(--expense-text)'],['Net',ozet.net,'var(--text)']].map(([ad,v,c])=><div className="report-stat" key={ad}><span>{ad}</span><strong style={{color:c}}>{fmtTL(v)}</strong></div>)}</div><p className="tools-note">Tasarruf oranı: {ozet.oran==null?'Henüz gelir yok':`%${ozet.oran.toFixed(1).replace('.',',')}`}. İleri tarihli kayıtlar hariçtir. Giderler, kayıtlı bekleyen ödemeleri ve kart toplamlarını içerir; kart ödeme transferi eklenmez.</p>{onceki&&<p className="tools-note">Önceki eşit uzunluktaki aralığa göre gelir: {degisim(ozet.gelir,onceki.gelir)} · gider: {degisim(ozet.gider,onceki.gider)}. Karşılaştırma bugüne kadar geçen günler içindir.</p>}<h4>Gider kategorileri</h4>{Object.entries(kat).sort((a,b)=>b[1]-a[1]).map(([k,v])=><div className="tools-row" key={k}><span>{k}</span><span>{fmtTL(v)} · %{ozet.gider>0?(v/ozet.gider*100).toFixed(1):0}</span></div>)}{!ozet.kayitlar.length&&<p className="tools-note">Bu aralıkta henüz veri yok.</p>}<Btn disabled={!ozet.kayitlar.length} onClick={()=>csvAktar(ozet.kayitlar,odemeler)}>Rapor işlemlerini CSV aktar</Btn></>}</section>{aralik&&<HarcamaHaritasi islemler={islemler} odemeler={odemeler} ilk={aralik.ilk} son={aralik.son}/>}</>;
+  const bugun=yerelTarihAnahtari();
+  const ozet=useMemo(()=>aralik?aralikOzeti(islemler,aralik.ilk,aralik.son):null,[islemler,aralik?.ilk,aralik?.son]);
+  const bitis=aralik?(aralik.son<bugun?aralik.son:bugun):null;
+  const onceki=aralik&&bitis>=aralik.ilk?(()=>{
+    const gun=takvimGunFarki(bitis,aralik.ilk)+1;
+    return aralikOzeti(islemler,yerelTarihAnahtari(takvimGunuEkle(aralik.ilk,-gun)),yerelTarihAnahtari(takvimGunuEkle(aralik.ilk,-1)));
+  })():null;
+  const kategoriToplamlari=tip=>{
+    const map={};
+    ozet?.kayitlar.filter(i=>i.tip===tip && (tip!=='gelir'||(i.kategori!=='Birikim'&&!(i.kategori==='Kira Geliri'&&i.donemeDahil===false)))).forEach(i=>{map[i.kategori]=paraTopla(map[i.kategori]||0,i.tutar);});
+    return Object.entries(map).sort((a,b)=>b[1]-a[1]);
+  };
+  const giderKategorileri=kategoriToplamlari('gider');
+  const gelirKategorileri=kategoriToplamlari('gelir');
+  const grafik=useMemo(()=>{
+    if(!aralik||bitis<aralik.ilk)return [];
+    const gunSayisi=takvimGunFarki(bitis,aralik.ilk)+1;
+    const mod=gunSayisi<=45?'gun':gunSayisi<=730?'ay':'yil';
+    const map={};
+    const key=t=>mod==='gun'?t:mod==='ay'?t.slice(0,7):t.slice(0,4);
+    for(let t=yerelTarihOku(aralik.ilk);yerelTarihAnahtari(t)<=bitis;){
+      const k=key(yerelTarihAnahtari(t));
+      if(!map[k])map[k]={key:k,label:mod==='gun'?t.toLocaleDateString('tr-TR',{day:'numeric',month:'short'}):mod==='ay'?t.toLocaleDateString('tr-TR',{month:'short',year:'2-digit'}):String(t.getFullYear()),gelir:0,gider:0};
+      if(mod==='gun')t.setDate(t.getDate()+1);
+      else if(mod==='ay')t=new Date(t.getFullYear(),t.getMonth()+1,1);
+      else t=new Date(t.getFullYear()+1,0,1);
+    }
+    ozet?.kayitlar.forEach(i=>{
+      const bucket=map[key(i.tarih)];
+      if(!bucket||i.kategori==='Birikim'||(i.tip==='gelir'&&i.kategori==='Kira Geliri'&&i.donemeDahil===false))return;
+      bucket[i.tip]=paraTopla(bucket[i.tip],i.tutar);
+    });
+    return Object.values(map);
+  },[ozet,aralik?.ilk,bitis]);
+  const fark=(simdi,eski)=>eski>0?`${simdi>=eski?'+':''}${((simdi-eski)/eski*100).toFixed(1).replace('.',',')}%`:'Önceki tutar yok';
+  const dagilim=(liste,toplam,tip)=><section className="tools-card"><h3><Icon name={tip==='gelir'?'arrowUp':'arrowDown'} size={17}/>{tip==='gelir'?'Gelir kaynakları':'Gider kategorileri'}</h3>{liste.length?liste.map(([k,v])=><div className="category-distribution" key={k}><div className="tools-row"><span>{k}</span><strong>{fmtTL(v)} <small>%{toplam>0?(v/toplam*100).toFixed(1):0}</small></strong></div><div className="distribution-track"><span style={{width:`${toplam>0?v/toplam*100:0}%`,background:tip==='gelir'?'var(--income-text)':'var(--expense-text)'}}/></div></div>):<p className="tools-note">Bu aralıkta {tip} kaydı yok.</p>}</section>;
+  const gunSayisi=aralik&&bitis>=aralik.ilk?takvimGunFarki(bitis,aralik.ilk)+1:0;
+  return <div className="reports-page">
+    <section className="tools-card report-period"><h3><Icon name="calendar" size={17}/>Dönem raporu</h3>
+      <Select label="Rapor aralığı" value={mod} onChange={e=>setMod(e.target.value)}>
+        <option value="donem">Maaş dönemi</option><option value="uc">Son 3 maaş dönemi</option><option value="yil">12 maaş dönemi · seçili yıl</option><option value="ozel">Özel tarih aralığı</option>
+      </Select>
+      {(mod==='donem'||mod==='uc')&&<div className="tools-row report-period-nav"><button className="tools-button" aria-label="Raporda önceki dönem" onClick={()=>setOffset(o=>o-1)}>‹ Önceki</button><button className="tools-button" aria-label="Raporda sonraki dönem" disabled={offset>=0} onClick={()=>setOffset(o=>Math.min(0,o+1))}>Sonraki ›</button></div>}
+      {mod==='yil'&&<Input label="Rapor yılı" type="number" min="2000" max="2100" value={yil} onChange={e=>{if(tamSayiGecerli(e.target.value,2000,2100))setYil(Number(e.target.value));}}/>}
+      {mod==='ozel'&&<div className="tools-grid"><Input label="Rapor başlangıcı" type="date" value={ilk} onChange={e=>setIlk(e.target.value)}/><Input label="Rapor bitişi" type="date" value={son} onChange={e=>setSon(e.target.value)}/></div>}
+      {!aralik?<p role="alert" className="form-alert">Geçerli bir tarih aralığı seç; başlangıç bitişten sonra olamaz.</p>:<p className="tools-note report-range">{aralik.ilk.split('-').reverse().join('.')} – {aralik.son.split('-').reverse().join('.')}</p>}
+    </section>
+    <div className="report-tabs" role="tablist" aria-label="Rapor bölümleri">
+      {[['ozet','Özet','wallet'],['dagilim','Dağılım','tag'],['trend','Trend','chart'],['harita','Harita','calendar'],['yorum','Yorumlar','target']].map(([id,label,icon])=><button key={id} role="tab" id={`report-tab-${id}`} aria-controls="report-panel" aria-selected={sekme===id} tabIndex={sekme===id?0:-1} onKeyDown={e=>{const ids=['ozet','dagilim','trend','harita','yorum'];let idx=ids.indexOf(sekme);if(!['ArrowRight','ArrowLeft','Home','End'].includes(e.key))return;e.preventDefault();idx=e.key==='Home'?0:e.key==='End'?4:(idx+(e.key==='ArrowRight'?1:4))%5;setSekme(ids[idx]);document.getElementById(`report-tab-${ids[idx]}`)?.focus();}} onClick={()=>setSekme(id)}><Icon name={icon} size={16}/>{label}</button>)}
+    </div>
+    <div role="tabpanel" id="report-panel" aria-labelledby={`report-tab-${sekme}`}>
+    {ozet&&<>
+      {sekme==='ozet'&&<>
+        <section className="tools-card report-overview"><div className="report-stat-grid">{[['Gelir',ozet.gelir,'var(--income-text)','arrowUp'],['Gider',ozet.gider,'var(--expense-text)','arrowDown'],['Net',ozet.net,'var(--text)','wallet']].map(([ad,v,c,icon])=><div className="report-stat" key={ad}><span><Icon name={icon} size={14}/>{ad}</span><strong style={{color:c}}><Money value={v} size={17}/></strong></div>)}</div>
+          <div className="savings-result"><span>Tasarruf oranı</span><strong>{ozet.oran==null?'—':`%${ozet.oran.toFixed(1).replace('.',',')}`}</strong></div>
+          {onceki&&<div className="report-comparisons"><span>Gelir <strong>{fark(ozet.gelir,onceki.gelir)}</strong></span><span>Gider <strong>{fark(ozet.gider,onceki.gider)}</strong></span><p className="tools-note">Önceki eşit uzunluktaki aralığa göre; bugüne kadar geçen günler karşılaştırılır.</p></div>}
+          {!ozet.kayitlar.length&&<div className="empty-state"><Icon name="receipt" size={26}/><p>Bu aralıkta henüz veri yok.</p></div>}
+          <details className="calculation-help"><summary>Nasıl hesaplanır?</summary><p className="tools-note">Gelir, birikim kayıtlarını ve döneme dahil edilmeyen kira gelirini içermez. Giderler kayıtlı bekleyen ödemeleri ve kart toplamlarını içerir. İleri tarihli kayıtlar hariçtir. Kart ödeme transferi eklenmez. Tasarruf oranı gelir ile gider arasındaki farkın gelire oranıdır.</p></details>
+        </section>
+        {dagilim(giderKategorileri.slice(0,5),ozet.gider,'gider')}
+      </>}
+      {sekme==='dagilim'&&<>{dagilim(giderKategorileri,ozet.gider,'gider')}{dagilim(gelirKategorileri,ozet.gelir,'gelir')}</>}
+      {sekme==='trend'&&<section className="tools-card"><h3><Icon name="chart" size={17}/>Gelir ve gider trendi</h3>
+        {grafik.length&&ozet.kayitlar.length?<><div className="report-chart"><ResponsiveContainer width="100%" height={220}><LineChart data={grafik} margin={{top:12,right:8,left:0,bottom:8}}><CartesianGrid stroke="var(--border)" vertical={false} strokeDasharray="3 4"/><XAxis dataKey="label" tick={{fontSize:10,fill:'var(--text3)'}} tickLine={false} axisLine={false} minTickGap={24}/><YAxis width={42} tick={{fontSize:10,fill:'var(--text3)'}} tickLine={false} axisLine={false} tickFormatter={v=>v>=1000?`${Math.round(v/1000)}B`:v}/><Tooltip content={({active,payload,label})=>active&&payload?.length?<div className="chart-tooltip"><strong>{label}</strong>{payload.map(p=><div key={p.dataKey}>{p.name}: {fmtTL(p.value)}</div>)}</div>:null}/><Line type="monotone" dataKey="gelir" name="Gelir" stroke="var(--income-text)" strokeWidth={2.3} dot={false}/><Line type="monotone" dataKey="gider" name="Gider" stroke="var(--expense-text)" strokeWidth={2.3} dot={false}/></LineChart></ResponsiveContainer></div><div className="chart-legend"><span><i style={{background:'var(--income-text)'}}/>Gelir</span><span><i style={{background:'var(--expense-text)'}}/>Gider</span></div><details className="calculation-help"><summary>Tutarları listele</summary><div className="trend-table">{grafik.map(g=><div className="tools-row" key={g.key}><span>{g.label}</span><span>{fmtTL(g.gelir)} / {fmtTL(g.gider)}</span></div>)}</div></details></>:<div className="empty-state"><Icon name="chart" size={26}/><p>Trend için henüz veri yok.</p></div>}
+      </section>}
+      {sekme==='harita'&&<HarcamaHaritasi islemler={islemler} odemeler={odemeler} ilk={aralik.ilk} son={aralik.son}/>}
+      {sekme==='yorum'&&<><section className="tools-card"><h3><Icon name="target" size={17}/>Seçili aralığın yorumu</h3>
+        {!ozet.kayitlar.length?<p className="tools-note">Yorum için henüz veri yok.</p>:<>
+          <div className="insight-row"><Icon name={ozet.net>=0?'shield':'warning'} size={18}/><p>Bu aralıkta {fmtTL(Math.abs(ozet.net))} {ozet.net>=0?'gelir fazlası':'gider fazlası'} kaydedildi.{ozet.oran!==null?` Tasarruf oranı %${ozet.oran.toFixed(1).replace('.',',')}.`:' Gelir olmadığı için tasarruf oranı hesaplanmaz.'}</p></div>
+          {giderKategorileri.length>0&&<div className="insight-row"><Icon name="tag" size={18}/><p>En yüksek gider {giderKategorileri[0][0]}: {fmtTL(giderKategorileri[0][1])}. Bu kategoride %10 azaltma {fmtTL(Math.round(paraKurus(giderKategorileri[0][1])*.1)/100)} pay bırakır.</p></div>}
+          {gunSayisi>0&&<div className="insight-row"><Icon name="calendar" size={18}/><p>Günlük kayıtlı gider ortalaması {fmtTL(ozet.gider/gunSayisi)}. Hesap, aralıktaki tüm {gunSayisi} günü içerir.</p></div>}
+        </>}
+        <details className="calculation-help"><summary>Yorumların dayanağı</summary><p className="tools-note">Yorumlar kayıtlara dayanır; eksik kayıtlar sonucu değiştirir. Bekleyen ödeme kayıtları gider toplamına dahildir. %10 azaltma bir senaryodur.</p></details>
+      </section>{gelismisYorum&&<details className="legacy-insights"><summary>Gelişmiş dönem ve alışkanlık yorumları</summary><p className="tools-note">Aşağıdaki eski yorum araçlarının dönem seçimi ayrıdır; her yorumun kapsamı kendi başlığında belirtilir.</p>{gelismisYorum()}</details>}{birikimRaporu&&<details className="legacy-insights"><summary>Yıllık birikim raporu</summary>{birikimRaporu()}</details>}</>}
+      <div className="report-export"><button className="tools-button" disabled={!ozet.kayitlar.length} onClick={()=>csvAktar(ozet.kayitlar,odemeler)}><Icon name="download" size={16}/>Rapor işlemlerini CSV aktar</button></div>
+    </>}
+    </div>
+  </div>;
 }
 
 function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler, setKategoriler, kartlar, donemGun, odemeler = [] }) {
@@ -1775,6 +1830,7 @@ function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler
   const [duzenleForm, setDuzenleForm] = useState({ tip: "gider", kategori: "Market", tutar: "", aciklama: "", tarih: "", donemeDahil: true, donemIci: "", provizyon: "" });
   const [filtre, setFiltre] = useState("hepsi");
   const [arama, setArama] = useState("");
+  const [filtreAcik,setFiltreAcik] = useState(false);
   const [kategoriFiltre,setKategoriFiltre] = useState("");
   const [tarihIlk,setTarihIlk] = useState("");
   const [tarihSon,setTarihSon] = useState("");
@@ -1782,7 +1838,7 @@ function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler
   const filtreKategorileri = [...new Set([...kategoriler.gelir,...kategoriler.gider,...islemler.map(i=>i.kategori)])].sort((a,b)=>a.localeCompare(b,'tr'));
   const [form, setForm] = useState({ tip: "gider", kategori: "Market", tutar: "", aciklama: "", tarih: yerelTarihAnahtari(), donemeDahil: true, donemIci: "", provizyon: "" });
   const [acikDonemler, setAcikDonemler] = useState({});
-  const donemToggle = (key) => setAcikDonemler(p => ({ ...p, [key]: !p[key] }));
+  const donemToggle = (key) => setAcikDonemler(p => ({ ...p, [key]: p[key] === false }));
 
   const katEkle = () => {
     const isim = yeniKat.isim.trim();
@@ -1867,21 +1923,23 @@ function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler
     });
   };
   return (
-    <div>
-      <section className="tools-card"><h3>İşlem filtreleri</h3><Select label="Kategori filtresi" value={kategoriFiltre} onChange={e=>setKategoriFiltre(e.target.value)}><option value="">Tüm kategoriler</option>{filtreKategorileri.map(k=><option key={k} value={k}>{k}</option>)}</Select><div className="tools-grid"><Input label="Başlangıç tarihi" type="date" value={tarihIlk} onChange={e=>setTarihIlk(e.target.value)}/><Input label="Bitiş tarihi" type="date" value={tarihSon} onChange={e=>setTarihSon(e.target.value)}/></div>{tarihFiltreHatasi&&<p role="alert">Başlangıç tarihi bitişten sonra olamaz.</p>}<div className="tools-row"><button className="tools-button" onClick={()=>{setKategoriFiltre("");setTarihIlk("");setTarihSon("");setArama("");setFiltre("hepsi");}}>Filtreleri temizle</button><button className="tools-button" disabled={!filtered.length} onClick={()=>csvAktar(filtered,odemeler)}>CSV aktar ({filtered.length})</button></div></section>
+    <div className="transactions-page">
       {/* Arama kutusu */}
       <div style={{ position: "relative", marginBottom: 10 }}>
-        <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text5)", fontSize: 14 }}>🔍</span>
-        <input value={arama} onChange={e => setArama(e.target.value)} placeholder="İşlem ara..." style={{ width: "100%", background: "var(--card2)", border: "1px solid var(--border)", borderRadius: 10, padding: "9px 12px 9px 36px", color: "var(--text)", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, outline: "none", boxSizing: "border-box" }} />
-        {arama && <button onClick={() => setArama("")} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "var(--text4)", cursor: "pointer", fontSize: 14 }}>×</button>}
+        <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text5)", fontSize: 14 }}><Icon name="search" size={17}/></span>
+        <input aria-label="İşlem ara" value={arama} onChange={e => setArama(e.target.value)} placeholder="İşlem ara..." style={{ width: "100%", background: "var(--card2)", border: "1px solid var(--border)", borderRadius: 10, padding: "9px 12px 9px 36px", color: "var(--text)", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+        {arama && <button aria-label="Aramayı temizle" onClick={() => setArama("")} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "var(--text4)", cursor: "pointer", fontSize: 14 }}>×</button>}
       </div>
+      <div className="filter-toolbar"><button className="tools-button" aria-expanded={filtreAcik} aria-controls="islem-filtreleri" onClick={()=>setFiltreAcik(p=>!p)}><Icon name="filter" size={16}/>Filtreler{(kategoriFiltre||tarihIlk||tarihSon)&&<span className="filter-count">{[kategoriFiltre,tarihIlk,tarihSon].filter(Boolean).length}</span>}</button><span className="tools-note">{filtered.length} işlem</span><button className="tools-button" disabled={!filtered.length} onClick={()=>csvAktar(filtered,odemeler)}><Icon name="download" size={16}/>CSV</button></div>
+      <div className="filter-chips">{kategoriFiltre&&<button onClick={()=>setKategoriFiltre('')}>{kategoriFiltre}<Icon name="close" size={12}/></button>}{tarihIlk&&<button onClick={()=>setTarihIlk('')}>Başlangıç: {tarihIlk.split('-').reverse().join('.')}<Icon name="close" size={12}/></button>}{tarihSon&&<button onClick={()=>setTarihSon('')}>Bitiş: {tarihSon.split('-').reverse().join('.')}<Icon name="close" size={12}/></button>}</div>
+      {filtreAcik && (<section className="tools-card filter-panel" id="islem-filtreleri"><Select label="Kategori filtresi" value={kategoriFiltre} onChange={e=>setKategoriFiltre(e.target.value)}><option value="">Tüm kategoriler</option>{filtreKategorileri.map(k=><option key={k} value={k}>{k}</option>)}</Select><div className="tools-grid"><Input label="Başlangıç tarihi" type="date" value={tarihIlk} onChange={e=>setTarihIlk(e.target.value)}/><Input label="Bitiş tarihi" type="date" value={tarihSon} onChange={e=>setTarihSon(e.target.value)}/></div>{tarihFiltreHatasi&&<p role="alert">Başlangıç tarihi bitişten sonra olamaz.</p>}<div className="tools-row"><button className="tools-button" onClick={()=>{setKategoriFiltre("");setTarihIlk("");setTarihSon("");setArama("");setFiltre("hepsi");}}>Filtreleri temizle</button><button className="tools-button" disabled={!filtered.length} onClick={()=>csvAktar(filtered,odemeler)}>CSV aktar ({filtered.length})</button></div></section>)}
       <div style={{ display: "flex", gap: 8, marginBottom: 16, justifyContent: "space-between", alignItems: "center" }}>
         <div style={{ display: "flex", gap: 6 }}>
-          {["hepsi", "gelir", "gider"].map(f => <button key={f} onClick={() => setFiltre(f)} style={{ padding: "6px 14px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12, fontWeight: 600, background: filtre === f ? "#f59e0b" : "var(--border)", color: filtre === f ? "var(--bg)" : "var(--text3)" }}>{f.charAt(0).toUpperCase() + f.slice(1)}</button>)}
+          {["hepsi", "gelir", "gider"].map(f => <button key={f} onClick={() => setFiltre(f)} style={{ padding: "6px 14px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12, fontWeight: 600, background: filtre === f ? "var(--accent-strong)" : "var(--border)", color: filtre === f ? "var(--on-accent)" : "var(--text3)" }}>{f.charAt(0).toUpperCase() + f.slice(1)}</button>)}
         </div>
         <div style={{ display: "flex", gap: 6 }}>
-          <button onClick={() => setKatModal(true)} style={{ background: "var(--border)", border: "none", borderRadius: 10, padding: "8px 10px", color: "var(--text3)", cursor: "pointer", fontSize: 13 }} title="Kategoriler">🏷️</button>
-          <button onClick={() => setButceModal(true)} style={{ background: "var(--border)", border: "none", borderRadius: 10, padding: "8px 10px", color: "var(--text3)", cursor: "pointer", fontSize: 13 }} title="Bütçe Hedefleri">🎯</button>
+          <button onClick={() => setKatModal(true)} style={{ background: "var(--border)", border: "none", borderRadius: 10, padding: "8px 10px", color: "var(--text3)", cursor: "pointer", fontSize: 13 }} title="Kategoriler" aria-label="Kategoriler"><Icon name="tag" size={17}/></button>
+          <button onClick={() => setButceModal(true)} style={{ background: "var(--border)", border: "none", borderRadius: 10, padding: "8px 10px", color: "var(--text3)", cursor: "pointer", fontSize: 13 }} title="Bütçe Hedefleri" aria-label="Bütçe hedefleri"><Icon name="target" size={17}/></button>
           <Btn onClick={() => setModal(true)}>+ Ekle</Btn>
         </div>
       </div>
@@ -1890,7 +1948,7 @@ function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler
           <div style={{ textAlign: "center", color: "var(--text5)", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, padding: "32px 0" }}>İşlem bulunamadı</div>
         )}
         {donemGruplari.map(grup => {
-          const acik = acikDonemler[grup.key] === true;
+          const acik = acikDonemler[grup.key] !== false;
           const net = grup.gelir - grup.gider;
           return (
             <div key={grup.key}>
@@ -1906,8 +1964,8 @@ function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler
                 <div style={{ textAlign: "right" }}>
                   <div style={{ color: net >= 0 ? "#10b981" : "#ef4444", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>{net >= 0 ? "+" : ""}₺{fmt(net)}</div>
                   <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 1 }}>
-                    <span style={{ color: "#10b981", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif" }}>+₺{fmt(grup.gelir)}</span>
-                    <span style={{ color: "#ef4444", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif" }}>-₺{fmt(grup.gider)}</span>
+                    <span style={{ color: "var(--income-text)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif" }}>+₺{fmt(grup.gelir)}</span>
+                    <span style={{ color: "var(--expense-text)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif" }}>-₺{fmt(grup.gider)}</span>
                   </div>
                 </div>
               </button>
@@ -1915,10 +1973,10 @@ function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler
               {acik && (
                 <div style={{ border: "1px solid var(--border)", borderTop: "none", borderRadius: "0 0 12px 12px", overflow: "hidden" }}>
                   {grup.islemler.map((i, idx) => {
-                    const renk = i.tip === "gelir" ? "#10b981" : "#ef4444";
+                    const renk = i.tip === "gelir" ? "var(--income-text)" : "var(--expense-text)";
                     const katRenk = KATEGORI_RENKLER[i.kategori] || "#78716c";
                     return (
-                      <div key={i.id} style={{ background: "var(--card)", borderTop: idx > 0 ? "1px solid var(--divider)" : "none", padding: "12px 14px", display: "flex", alignItems: "center", gap: 11 }}>
+                      <div className="transaction-row" key={i.id} style={{ background: "var(--card)", borderTop: idx > 0 ? "1px solid var(--divider)" : "none", padding: "12px 14px", display: "flex", alignItems: "center", gap: 11 }}>
                         <div style={{ width: 42, height: 42, borderRadius: 13, background: katRenk + "1c", border: `1px solid ${katRenk}3a`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, flexShrink: 0 }}>{katIkon(i.kategori, i.tip)}</div>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ color: "var(--text)", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{i.aciklama || i.kategori}</div>
@@ -1934,17 +1992,17 @@ function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler
                               if (i.tip !== "gider" || !butceler[i.kategori]) return null;
                               const ayHarcama = islemler.filter(x => x.tip === "gider" && x.kategori === i.kategori && maasDonemKey(x.tarih, donemGun).key === maasDonemKey(i.tarih, donemGun).key).reduce((s, x) => paraTopla(s, x.tutar), 0);
                               const limit = paraOku(butceler[i.kategori]);
-                              if (ayHarcama > limit) return <span style={{ background: "#ef444422", color: "#ef4444", border: "1px solid #ef444444", borderRadius: 6, padding: "1px 6px", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif" }}>Bütçe Aşıldı!</span>;
+                              if (ayHarcama > limit) return <span style={{ background: "#ef444422", color: "var(--expense-text)", border: "1px solid #ef444444", borderRadius: 6, padding: "1px 6px", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif" }}>Bütçe Aşıldı!</span>;
                               if (ayHarcama / limit > 0.8) return <span style={{ background: "#f59e0b22", color: "#f59e0b", border: "1px solid #f59e0b44", borderRadius: 6, padding: "1px 6px", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif" }}>%{Math.round(ayHarcama / limit * 100)} kullanıldı</span>;
                               return null;
                             })()}
                           </div>
                         </div>
-                        <div style={{ textAlign: "right", flexShrink: 0 }}>
+                        <div className="transaction-amount" style={{ textAlign: "right", flexShrink: 0 }}>
                           <div style={{ color: renk, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, fontSize: 14 }}>{i.tip === "gelir" ? "+" : "-"}₺{fmt(i.tutar)}</div>
                           <div style={{ display: "flex", gap: 4, marginTop: 2, justifyContent: "flex-end" }}>
-                            <button onClick={() => { setDuzenleHedef(i); setDuzenleForm({ tip: i.tip, kategori: i.kategori, tutar: String(i.tutar), aciklama: i.aciklama || "", tarih: i.tarih || yerelTarihAnahtari(), donemeDahil: i.donemeDahil !== false, donemIci: i.donemIci != null ? String(i.donemIci) : "", provizyon: i.provizyon != null ? String(i.provizyon) : "" }); setDuzenleModal(true); }} style={{ background: "none", border: "none", color: "var(--text4)", cursor: "pointer", fontSize: 13 }}>✏️</button>
-                            <button onClick={() => islemSil(i)} style={{ background: "none", border: "none", color: "var(--text5)", cursor: "pointer", fontSize: 13 }}>🗑</button>
+                            <button onClick={() => { setDuzenleHedef(i); setDuzenleForm({ tip: i.tip, kategori: i.kategori, tutar: String(i.tutar), aciklama: i.aciklama || "", tarih: i.tarih || yerelTarihAnahtari(), donemeDahil: i.donemeDahil !== false, donemIci: i.donemIci != null ? String(i.donemIci) : "", provizyon: i.provizyon != null ? String(i.provizyon) : "" }); setDuzenleModal(true); }} style={{ background: "none", border: "none", color: "var(--text4)", cursor: "pointer", fontSize: 13 }} aria-label="Düzenle"><Icon name="edit" size={16}/></button>
+                            <button onClick={() => islemSil(i)} style={{ background: "none", border: "none", color: "var(--text5)", cursor: "pointer", fontSize: 13 }} aria-label="Sil"><Icon name="trash" size={16}/></button>
                           </div>
                         </div>
                       </div>
@@ -1957,11 +2015,11 @@ function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler
         })}
       </div>
       {katModal && (
-        <Modal title="🏷️ Kategorileri Yönet" onClose={() => setKatModal(false)}>
+        <Modal title="Kategorileri Yönet" onClose={() => setKatModal(false)}>
           {["gelir", "gider"].map(tip => (
             <div key={tip} style={{ marginBottom: 20 }}>
               <div style={{ color: tip === "gelir" ? "#10b981" : "#ef4444", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>
-                {tip === "gelir" ? "📈 Gelir Kategorileri" : "📉 Gider Kategorileri"}
+                {tip === "gelir" ? "Gelir Kategorileri" : "Gider Kategorileri"}
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
                 {(kategoriler[tip] || []).map(kat => {
@@ -1970,7 +2028,7 @@ function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler
                     <div key={kat} style={{ display: "flex", alignItems: "center", gap: 4, background: "var(--card2)", border: "1px solid var(--border)", borderRadius: 8, padding: "5px 10px" }}>
                       <span style={{ color: "var(--text2)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif" }}>{kat}</span>
                       {!varsayilan && (
-                        <button onClick={() => katSil(tip, kat)} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 13, lineHeight: 1, padding: 0, marginLeft: 2 }}>×</button>
+                        <button onClick={() => katSil(tip, kat)} style={{ background: "none", border: "none", color: "var(--expense-text)", cursor: "pointer", fontSize: 13, lineHeight: 1, padding: 0, marginLeft: 2 }}>×</button>
                       )}
                       {varsayilan && <span style={{ color: "var(--text5)", fontSize: 11, marginLeft: 2 }}>●</span>}
                     </div>
@@ -1985,7 +2043,7 @@ function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler
                   placeholder={`Yeni ${tip} kategorisi...`}
                   style={{ flex: 1, background: "var(--card2)", border: "1px solid var(--border)", borderRadius: 8, padding: "8px 12px", color: "var(--text)", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, outline: "none" }}
                 />
-                <button onClick={() => { setYeniKat({ tip, isim: yeniKat.tip === tip ? yeniKat.isim : "" }); katEkle(); }} style={{ background: "linear-gradient(135deg,#f59e0b,#d97706)", border: "none", borderRadius: 8, padding: "8px 14px", color: "var(--bg)", fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>+ Ekle</button>
+                <button onClick={() => { setYeniKat({ tip, isim: yeniKat.tip === tip ? yeniKat.isim : "" }); katEkle(); }} style={{ background: "var(--accent-strong)", border: "none", borderRadius: 8, padding: "8px 14px", color: "var(--on-accent)", fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>+ Ekle</button>
               </div>
             </div>
           ))}
@@ -1993,7 +2051,7 @@ function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler
         </Modal>
       )}
       {butceModal && (
-        <Modal title="🎯 Bütçe Hedefleri" onClose={() => setButceModal(false)}>
+        <Modal title="Bütçe Hedefleri" onClose={() => setButceModal(false)}>
           <div style={{ color: "var(--text4)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 16 }}>Kategoriye aylık limit koy. Aşınca kırmızı uyarı çıkar.</div>
           {(kategoriler?.gider || VARSAYILAN_KATEGORILER.gider).map(kat => {
             const aylikHarcama = islemler.filter(i => i.tip === "gider" && i.kategori === kat && maasDonemKey(i.tarih, donemGun).key === buAnkiDonem()).reduce((s, i) => paraTopla(s, i.tutar), 0);
@@ -2002,7 +2060,7 @@ function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler
             return (
               <div key={kat} style={{ marginBottom: 12 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                  <span style={{ color: asim ? "#ef4444" : "var(--text2)", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, fontWeight: 600 }}>{asim ? "🔴 " : ""}{kat}</span>
+                  <span style={{ color: asim ? "#ef4444" : "var(--text2)", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, fontWeight: 600 }}>{asim ? "" : ""}{kat}</span>
                   <span style={{ color: "var(--text4)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif" }}>Harcanan: ₺{fmt(aylikHarcama)}</span>
                 </div>
                 <input
@@ -2030,7 +2088,7 @@ function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler
       {modal && (
         <Modal title="İşlem Ekle" onClose={() => setModal(false)}>
           <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-            {["gider", "gelir"].map(t => <button key={t} onClick={() => setForm(f => ({ ...f, tip: t, kategori: t === "gelir" ? "Maaş" : "Market" }))} style={{ flex: 1, padding: "8px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, fontWeight: 700, background: form.tip === t ? (t === "gelir" ? "#10b981" : "#ef4444") : "var(--border)", color: form.tip === t ? "#fff" : "var(--text3)" }}>{t === "gelir" ? "📈 Gelir" : "📉 Gider"}</button>)}
+            {["gider", "gelir"].map(t => <button key={t} onClick={() => setForm(f => ({ ...f, tip: t, kategori: t === "gelir" ? "Maaş" : "Market" }))} style={{ flex: 1, padding: "8px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, fontWeight: 700, background: form.tip === t ? (t === "gelir" ? "#10b981" : "#ef4444") : "var(--border)", color: form.tip === t ? "#fff" : "var(--text3)" }}>{t === "gelir" ? "Gelir" : "Gider"}</button>)}
           </div>
           <Select label="Kategori" value={form.kategori} onChange={e => setForm(f => ({ ...f, kategori: e.target.value }))}>{(kategoriler[form.tip] || []).map(k => <option key={k}>{k}</option>)}</Select>
           {kartMi ? (
@@ -2055,7 +2113,7 @@ function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler
       {duzenleModal && duzenleHedef && (
         <Modal title="İşlemi Düzenle" onClose={() => { setDuzenleModal(false); setDuzenleHedef(null); }}>
           <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-            {["gider", "gelir"].map(t => <button key={t} onClick={() => setDuzenleForm(f => ({ ...f, tip: t, kategori: t === "gelir" ? "Maaş" : "Market" }))} style={{ flex: 1, padding: "8px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, fontWeight: 700, background: duzenleForm.tip === t ? (t === "gelir" ? "#10b981" : "#ef4444") : "var(--border)", color: duzenleForm.tip === t ? "#fff" : "var(--text3)" }}>{t === "gelir" ? "📈 Gelir" : "📉 Gider"}</button>)}
+            {["gider", "gelir"].map(t => <button key={t} onClick={() => setDuzenleForm(f => ({ ...f, tip: t, kategori: t === "gelir" ? "Maaş" : "Market" }))} style={{ flex: 1, padding: "8px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, fontWeight: 700, background: duzenleForm.tip === t ? (t === "gelir" ? "#10b981" : "#ef4444") : "var(--border)", color: duzenleForm.tip === t ? "#fff" : "var(--text3)" }}>{t === "gelir" ? "Gelir" : "Gider"}</button>)}
           </div>
           <Select label="Kategori" value={duzenleForm.kategori} onChange={e => setDuzenleForm(f => ({ ...f, kategori: e.target.value }))}>{(kategoriler[duzenleForm.tip] || []).map(k => <option key={k}>{k}</option>)}</Select>
           {duzenleKartMi ? (
@@ -2091,7 +2149,7 @@ function OdemelerTab({ odemeler, setOdemeler, islemler, setIslemler, kategoriler
   const [duzenleId, setDuzenleId] = useState(null);
   const fmt = n => n.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-  const donemToggle = key => setAcikDonemler(p => ({ ...p, [key]: !p[key] }));
+  const donemToggle = key => setAcikDonemler(p => ({ ...p, [key]: p[key] === false }));
 
   const kaydet = () => {
     if (!islemFormuGecerli(form)) return;
@@ -2204,42 +2262,46 @@ function OdemelerTab({ odemeler, setOdemeler, islemler, setIslemler, kategoriler
     });
   };
 
-  // Dönem gruplama
   const donemGruplari = useMemo(() => {
-    const map = {};
-    odemeler.filter(o => odemeFiltre === "hepsi" || (odemeFiltre === "odendi" ? o.odendi : !o.odendi)).forEach(o => {
-      const dk = maasDonemKey(o.tarih, donemGun);
-      if (!map[dk.key]) map[dk.key] = { key: dk.key, label: dk.label, baslangic: dk.baslangic, odemeler: [], toplam: 0, odendi: 0 };
-      map[dk.key].odemeler.push(o);
-      map[dk.key].toplam = paraTopla(map[dk.key].toplam, o.tutar);
-      if (o.odendi) map[dk.key].odendi += o.tutar;
+    const bugun = yerelTarihAnahtari();
+    const hafta = yerelTarihAnahtari(takvimGunuEkle(bugun,7));
+    const gruplar = [
+      {key:'gecikmis',label:'Gecikmiş',odemeler:[]},
+      {key:'yaklasan',label:'Yaklaşan · 7 gün',odemeler:[]},
+      {key:'planlanan',label:'Daha sonraki ödemeler',odemeler:[]},
+      {key:'odendi',label:'Ödenmiş',odemeler:[]},
+    ];
+    odemeler.forEach(o=>{
+      const durum=o.odendi?'odendi':o.tarih<bugun?'gecikmis':o.tarih<=hafta?'yaklasan':'planlanan';
+      if(odemeFiltre!=='hepsi' && (odemeFiltre==='bekleyen'?o.odendi:durum!==odemeFiltre))return;
+      gruplar.find(g=>g.key===durum).odemeler.push(o);
     });
-    return Object.values(map).sort((a, b) => yerelTarihOku(b.baslangic) - yerelTarihOku(a.baslangic));
-  }, [odemeler, donemGun, odemeFiltre]);
+    return gruplar.filter(g=>g.odemeler.length).map(g=>({...g,toplam:g.odemeler.reduce((n,o)=>paraTopla(n,o.tutar),0),odendi:g.odemeler.filter(o=>o.odendi).reduce((n,o)=>paraTopla(n,o.tutar),0)}));
+  },[odemeler,odemeFiltre]);
 
   return (
-    <div>
+    <div className="payments-page">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
         <div style={{ color: "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em" }}>
           {odemeler.length} ödeme kaydı
         </div>
         <Btn onClick={() => { setForm(bos); setModal(true); }}>+ Ekle</Btn>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 7, marginBottom: 12 }}>
-        {[{ id: "bekleyen", label: "Bekleyen" }, { id: "odendi", label: "Ödendi" }, { id: "hepsi", label: "Tümü" }].map(f => (
-          <button key={f.id} onClick={() => setOdemeFiltre(f.id)} style={{ border: odemeFiltre === f.id ? "1px solid rgba(99,102,241,.45)" : "1px solid var(--border)", background: odemeFiltre === f.id ? "var(--accent-soft)" : "var(--card2)", color: odemeFiltre === f.id ? "var(--accent)" : "var(--text4)", borderRadius: 11, padding: "8px", fontSize: 11, fontWeight: 800, cursor: "pointer" }}>{f.label}</button>
+      <div className="payment-filters">
+        {[{ id: "bekleyen", label: "Bekleyen" }, { id: "gecikmis", label: "Gecikmiş" }, { id: "yaklasan", label: "Yaklaşan" }, { id: "odendi", label: "Ödenmiş" }, { id: "hepsi", label: "Tümü" }].map(f => (
+          <button key={f.id} onClick={() => setOdemeFiltre(f.id)} style={{ border: odemeFiltre === f.id ? "1px solid rgba(167,78,50,.45)" : "1px solid var(--border)", background: odemeFiltre === f.id ? "var(--accent-soft)" : "var(--card2)", color: odemeFiltre === f.id ? "var(--accent)" : "var(--text4)", borderRadius: 11, padding: "8px", fontSize: 11, fontWeight: 800, cursor: "pointer" }}>{f.label}</button>
         ))}
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {donemGruplari.length === 0 && (
-          <div style={{ textAlign: "center", color: "var(--text5)", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, padding: "32px 0" }}>Henüz ödeme kaydı yok</div>
+          <div style={{ textAlign: "center", color: "var(--text5)", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, padding: "32px 0" }}>{odemeler.length ? "Bu grupta ödeme yok" : "Henüz ödeme kaydı yok"}</div>
         )}
         {donemGruplari.map(grup => {
-          const acik = acikDonemler[grup.key] === true;
+          const acik = acikDonemler[grup.key] !== false;
           const bekleyen = grup.toplam - grup.odendi;
           return (
-            <div key={grup.key}>
+            <section className="payment-group" data-group={grup.key} key={grup.key}>
               <button onClick={() => donemToggle(grup.key)} style={{ width: "100%", background: "var(--card2)", border: "1px solid var(--border)", borderRadius: acik ? "12px 12px 0 0" : 12, padding: "10px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <span style={{ color: acik ? "#f59e0b" : "var(--text4)", fontSize: 13, display: "inline-block", transform: acik ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.2s" }}>▼</span>
@@ -2264,29 +2326,29 @@ function OdemelerTab({ odemeler, setOdemeler, islemler, setIslemler, kategoriler
                   {grup.odemeler.sort((a, b) => yerelTarihOku(a.tarih) - yerelTarihOku(b.tarih)).map((o, idx) => {
                     const katRenk = KATEGORI_RENKLER[o.kategori] || "#78716c";
                     return (
-                      <div key={o.id} style={{ background: o.odendi ? "var(--header)" : "var(--card)", borderTop: idx > 0 ? "1px solid var(--divider)" : "none", padding: "12px 14px", display: "flex", alignItems: "center", gap: 10, opacity: o.odendi ? 0.5 : 1, transition: "opacity 0.2s" }}>
+                      <div className="payment-row" key={o.id} style={{ background: o.odendi ? "var(--header)" : "var(--card)", borderTop: idx > 0 ? "1px solid var(--divider)" : "none", padding: "12px 14px", display: "flex", alignItems: "center", gap: 10, opacity: o.odendi ? 0.5 : 1, transition: "opacity 0.2s" }}>
                         {/* Checkbox */}
-                        <button onClick={() => toggleOdendi(o)} style={{ width: 22, height: 22, borderRadius: 6, border: `2px solid ${o.odendi ? "#10b981" : "var(--border2)"}`, background: o.odendi ? "#10b981" : "transparent", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "var(--bg)", transition: "all 0.2s" }}>
-                          {o.odendi ? "✓" : ""}
+                        <button className="payment-check" aria-label={`${o.odendi ? "Ödemeyi geri al" : "Ödendi olarak işaretle"}: ${o.aciklama || o.kategori}`} onClick={() => toggleOdendi(o)} style={{ width: 22, height: 22, borderRadius: 6, border: `2px solid ${o.odendi ? "#10b981" : "var(--border2)"}`, background: o.odendi ? "#10b981" : "transparent", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "var(--bg)", transition: "all 0.2s" }}>
+                          <Icon name={o.odendi ? "check" : "receipt"} size={17}/>
                         </button>
-                        <div style={{ width: 40, height: 40, borderRadius: 12, background: katRenk + "1c", border: `1px solid ${katRenk}3a`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>{katIkon(o.kategori, "gider")}</div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
+
+                        <div className="payment-description" style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ color: "var(--text)", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textDecoration: o.odendi ? "line-through" : "none" }}>
                             {o.aciklama || o.kategori}
                           </div>
                           <div style={{ display: "flex", gap: 6, marginTop: 3, alignItems: "center" }}>
                             <span style={{ color: katRenk, fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 600 }}>{o.kategori}</span>
                             <span style={{ color: "var(--text5)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif" }}>· {o.tarih.split("-").reverse().join(".")}</span>
-                            {o.odendi && <span style={{ color: "#10b981", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif" }}>✓ Ödendi</span>}
+                            <span className={`payment-status ${o.odendi?'paid':o.tarih<yerelTarihAnahtari()?'late':'pending'}`}>{o.odendi?'Ödenmiş':o.tarih<yerelTarihAnahtari()?'Gecikmiş':o.tarih===yerelTarihAnahtari()?'Bugün':`${takvimGunFarki(o.tarih,yerelTarihAnahtari())} gün kaldı`}</span>
                           </div>
                         </div>
-                        <div style={{ textAlign: "right", flexShrink: 0 }}>
+                        <div className="payment-amount" style={{ textAlign: "right", flexShrink: 0 }}>
                           <div style={{ color: o.odendi ? "var(--text4)" : "#ef4444", fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, fontSize: 14, textDecoration: o.odendi ? "line-through" : "none" }}>
                             ₺{fmt(o.tutar)}
                           </div>
                           <div style={{ display: "flex", gap: 8, marginTop: 3, justifyContent: "flex-end" }}>
-                            <button onClick={() => duzenleAc(o)} style={{ background: "none", border: "none", color: "var(--text4)", cursor: "pointer", fontSize: 13 }}>✏️</button>
-                            <button onClick={() => sil(o)} style={{ background: "none", border: "none", color: "var(--text5)", cursor: "pointer", fontSize: 13 }}>🗑</button>
+                            <button onClick={() => duzenleAc(o)} style={{ background: "none", border: "none", color: "var(--text4)", cursor: "pointer", fontSize: 13 }} aria-label="Düzenle"><Icon name="edit" size={16}/></button>
+                            <button onClick={() => sil(o)} style={{ background: "none", border: "none", color: "var(--text5)", cursor: "pointer", fontSize: 13 }} aria-label="Sil"><Icon name="trash" size={16}/></button>
                           </div>
                         </div>
                       </div>
@@ -2294,7 +2356,7 @@ function OdemelerTab({ odemeler, setOdemeler, islemler, setIslemler, kategoriler
                   })}
                 </div>
               )}
-            </div>
+            </section>
           );
         })}
       </div>
@@ -2519,11 +2581,11 @@ function AyarlarTab({ donemGun, setDonemGun, kartlar, setKartlar, kategoriler, s
 
       {/* Tema seçici */}
       <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "18px 16px", marginBottom: 14 }}>
-        <div style={{ color: "var(--text)", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, marginBottom: 12 }}>🎨 Görünüm</div>
+        <div style={{ color: "var(--text)", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, marginBottom: 12 }}><span className="inline-icon"><Icon name="sun" size={16}/></span>Görünüm</div>
         <div style={{ display: "flex", gap: 8 }}>
-          {[{id:"dark",label:"🌙 Koyu",bg:"#16161f",fg:"#f1f0ee"},{id:"light",label:"☀️ Açık",bg:"#ffffff",fg:"#16243f"}].map(t => (
-            <button key={t.id} onClick={() => setTema(t.id)} style={{ flex: 1, padding: "14px 8px", borderRadius: 12, cursor: "pointer", border: tema === t.id ? "2px solid #6366f1" : "2px solid var(--border)", background: t.bg, color: t.fg, fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, fontWeight: 700, transition: "all 0.2s" }}>
-              {t.label}
+          {[{id:"dark",label:"Koyu",bg:"#16161f",fg:"#f1f0ee"},{id:"light",label:"Açık",bg:"#ffffff",fg:"#16243f"}].map(t => (
+            <button key={t.id} onClick={() => setTema(t.id)} style={{ flex: 1, padding: "14px 8px", borderRadius: 12, cursor: "pointer", border: tema === t.id ? "2px solid #A74E32" : "2px solid var(--border)", background: t.bg, color: t.fg, fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, fontWeight: 700, transition: "all 0.2s" }}>
+              <span className="inline-icon"><Icon name={t.id==='dark'?'moon':'sun'} size={16}/></span>{t.label}
             </button>
           ))}
         </div>
@@ -2543,7 +2605,7 @@ function AyarlarTab({ donemGun, setDonemGun, kartlar, setKartlar, kategoriler, s
         <div style={{ color: "var(--text4)", fontSize: 11, lineHeight: 1.55, marginBottom: 13 }}>
           Tüm işlemler, kartlar, bütçeler ve ayarlar tek bir dosyada saklanır. Yedek önce uygulama içinde güvenli kopya olarak tutulur; cihaz destekliyorsa ayrıca dosya olarak kaydetme/paylaşma ekranı açılır.
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 7, background: "#10b98114", border: "1px solid #10b98135", color: "#10b981", borderRadius: 10, padding: "8px 10px", fontSize: 11, fontWeight: 700, marginBottom: 11 }}><span>✓</span><span>Veri uyumluluğu ve otomatik güvenlik kopyası etkin</span></div>
+        <div style={{ display: "flex", alignItems: "center", gap: 7, background: "#10b98114", border: "1px solid #10b98135", color: "var(--income-text)", borderRadius: 10, padding: "8px 10px", fontSize: 11, fontWeight: 700, marginBottom: 11 }}><span>✓</span><span>Veri uyumluluğu ve otomatik güvenlik kopyası etkin</span></div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
           <button onClick={yedekIndir} style={{ border: "none", borderRadius: 12, padding: "11px 10px", background: "linear-gradient(135deg,var(--accent),var(--accent-strong))", color: "#fff", fontWeight: 800, fontSize: 12, cursor: "pointer" }}>Yedek Al</button>
           <label style={{ borderRadius: 12, padding: "10px", background: "var(--card2)", border: "1px solid var(--border)", color: "var(--text2)", fontWeight: 800, fontSize: 12, cursor: "pointer", textAlign: "center" }}>
@@ -2555,31 +2617,31 @@ function AyarlarTab({ donemGun, setDonemGun, kartlar, setKartlar, kategoriler, s
 
       {/* Bildirim testi */}
       <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "18px 16px", marginBottom: 14 }}>
-        <div style={{ color: "var(--text)", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, marginBottom: 6 }}>🔔 Bildirimler</div>
+        <div style={{ color: "var(--text)", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, marginBottom: 6 }}><span className="inline-icon"><Icon name="bell" size={16}/></span>Bildirimler</div>
         <div style={{ color: "var(--text4)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 12 }}>
           Aynı zamana denk gelen faturalar ve kredi kartı son ödeme tarihleri tek bildirimde birleşir. Hatırlatma zamanlarını seçebilirsin.
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 7, marginBottom: 10 }}>
           {[{ gun: 3, label: "3 gün önce" }, { gun: 1, label: "1 gün önce" }, { gun: 0, label: "Aynı gün" }].map(secenek => {
             const aktif = (bildirimAyarlari?.gunler || [0]).includes(secenek.gun);
-            return <button key={secenek.gun} onClick={() => bildirimGunuDegistir(secenek.gun)} style={{ border: aktif ? "1px solid rgba(99,102,241,.5)" : "1px solid var(--border)", background: aktif ? "var(--accent-soft)" : "var(--card2)", color: aktif ? "var(--accent)" : "var(--text4)", borderRadius: 11, padding: "9px 5px", fontSize: 11, fontWeight: 800, cursor: "pointer" }}>{aktif ? "✓ " : ""}{secenek.label}</button>;
+            return <button key={secenek.gun} onClick={() => bildirimGunuDegistir(secenek.gun)} style={{ border: aktif ? "1px solid rgba(167,78,50,.5)" : "1px solid var(--border)", background: aktif ? "var(--accent-soft)" : "var(--card2)", color: aktif ? "var(--accent)" : "var(--text4)", borderRadius: 11, padding: "9px 5px", fontSize: 11, fontWeight: 800, cursor: "pointer" }}>{aktif ? "✓ " : ""}{secenek.label}</button>;
           })}
         </div>
         <Input label="Bildirim Saati" type="time" value={bildirimAyarlari?.saat || "18:00"} onChange={e => setBildirimAyarlari(a => ({ ...(a || {}), saat: e.target.value || "18:00" }))} style={{ marginBottom: 0 }} />
-        <Btn onClick={bildirimTest} style={{ width: "100%", padding: 12 }}>🔔 Bildirim Testi Yap</Btn>
+        <Btn onClick={bildirimTest} style={{ width: "100%", padding: 12 }}><span className="inline-icon"><Icon name="bell" size={16}/></span>Bildirim Testi Yap</Btn>
         <div style={{ color: "var(--text5)", fontSize: 11, lineHeight: 1.5, marginTop: 7 }}>
           Ödeme bildirimleri özel alarm izni istemeden, Android pil tasarrufuyla uyumlu şekilde seçtiğin saate yakın gönderilir.
         </div>
         {bildirimDurum && (
           <div style={{ marginTop: 10, padding: "10px 12px", background: "var(--card2)", borderRadius: 10, color: bildirimDurum.startsWith("✅") ? "#10b981" : bildirimDurum.startsWith("❌") ? "#ef4444" : "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.5 }}>
-            {bildirimDurum}
+            <span className="inline-icon"><Icon name={bildirimDurum.startsWith("❌") ? "alert" : "check"} size={16}/></span>{bildirimDurum.replace(/^[❌✅]\s*/, "")}
           </div>
         )}
         {sonBildirimPlanlama && (
           <div style={{ marginTop: 10, padding: "10px 12px", background: "var(--card2)", borderRadius: 10, border: "1px solid var(--border)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.6 }}>
             <div style={{ color: "var(--text4)" }}>Son otomatik planlama: {new Date(sonBildirimPlanlama.zaman).toLocaleString("tr-TR")}</div>
             {sonBildirimPlanlama.hata
-              ? <div style={{ color: "#ef4444" }}>❌ Hata: {sonBildirimPlanlama.hata}</div>
+              ? <div style={{ color: "var(--expense-text)" }}><span className="inline-icon"><Icon name="alert" size={16}/></span>Hata: {sonBildirimPlanlama.hata}</div>
               : <div style={{ color: sonBildirimPlanlama.sayi > 0 ? "#10b981" : "var(--text3)" }}>
                   {sonBildirimPlanlama.sayi > 0
                     ? `✓ Telefonda doğrulanan ${sonBildirimPlanlama.sayi} birleşik bildirim bekliyor`
@@ -2588,14 +2650,14 @@ function AyarlarTab({ donemGun, setDonemGun, kartlar, setKartlar, kategoriler, s
                   {sonBildirimPlanlama.kartSayisi ? ` · ${sonBildirimPlanlama.kartSayisi} kredi kartı` : ""}
                 </div>}
             {sonBildirimPlanlama.telafiSayisi > 0 && <div style={{ color: "#f59e0b" }}>↻ Saati geçen {sonBildirimPlanlama.telafiSayisi} aynı-gün bildirimi telafi olarak kuruldu.</div>}
-            {sonBildirimPlanlama.uyari && <div style={{ color: "#f59e0b" }}>⚠️ {sonBildirimPlanlama.uyari}</div>}
+            {sonBildirimPlanlama.uyari && <div style={{ color: "#f59e0b" }}><span className="inline-icon"><Icon name="warning" size={16}/></span>{sonBildirimPlanlama.uyari}</div>}
           </div>
         )}
       </div>
 
       {/* Dönem başlangıç günü */}
       <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "18px 16px", marginBottom: 14 }}>
-        <div style={{ color: "var(--text)", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, marginBottom: 6 }}>📅 Maaş Dönemi Başlangıcı</div>
+        <div style={{ color: "var(--text)", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, marginBottom: 6 }}><span className="inline-icon"><Icon name="calendar" size={16}/></span>Maaş Dönemi Başlangıcı</div>
         <div style={{ color: "var(--text4)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 14 }}>
           Dönem her ayın kaçında başlasın? Bitiş bir önceki gün olur.
         </div>
@@ -2621,7 +2683,7 @@ function AyarlarTab({ donemGun, setDonemGun, kartlar, setKartlar, kategoriler, s
 
       {/* Kredi Kartları */}
       <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "18px 16px", marginBottom: 14 }}>
-        <div style={{ color: "var(--text)", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, marginBottom: 6 }}>💳 Kredi Kartları</div>
+        <div style={{ color: "var(--text)", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, marginBottom: 6 }}><span className="inline-icon"><Icon name="card" size={16}/></span>Kredi Kartları</div>
         <div style={{ color: "var(--text4)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 14 }}>
           Hesap kesim ve son ödeme tarihini takvimden gün–ay–yıl olarak seç. Tarihler ait oldukları maaş döneminde saklanır ve bildirim son ödeme tarihine göre gönderilir.
         </div>
@@ -2634,7 +2696,7 @@ function AyarlarTab({ donemGun, setDonemGun, kartlar, setKartlar, kategoriler, s
           return (
           <div key={k.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, background: "var(--card2)", borderRadius: 10, padding: "10px 12px", marginBottom: 8, border: "1px solid var(--border)" }}>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ color: "var(--text)", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, marginBottom: 4 }}>💳 {k.isim}</div>
+              <div style={{ color: "var(--text)", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, marginBottom: 4 }}><span className="inline-icon"><Icon name="card" size={16}/></span>{k.isim}</div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                 <label>
                   <span style={{ display: "block", color: "var(--text4)", fontSize: 11, marginBottom: 4 }}>Hesap kesim tarihi</span>
@@ -2642,12 +2704,12 @@ function AyarlarTab({ donemGun, setDonemGun, kartlar, setKartlar, kategoriler, s
                 </label>
                 <label>
                   <span style={{ display: "block", color: "var(--text4)", fontSize: 11, marginBottom: 4 }}>Son ödeme tarihi</span>
-                  <input aria-label={`${k.isim} son ödeme tarihi`} type="date" value={taslak.sonOdemeTarihi} onChange={e => kartTarihTaslagiDegistir(k, "sonOdemeTarihi", e.target.value)} style={{ width: "100%", minWidth: 0, boxSizing: "border-box", background: "var(--card)", border: "1px solid #10b98144", borderRadius: 7, padding: "6px", color: "#10b981", fontSize: 11, fontWeight: 700, outline: "none" }} />
+                  <input aria-label={`${k.isim} son ödeme tarihi`} type="date" value={taslak.sonOdemeTarihi} onChange={e => kartTarihTaslagiDegistir(k, "sonOdemeTarihi", e.target.value)} style={{ width: "100%", minWidth: 0, boxSizing: "border-box", background: "var(--card)", border: "1px solid #10b98144", borderRadius: 7, padding: "6px", color: "var(--income-text)", fontSize: 11, fontWeight: 700, outline: "none" }} />
                 </label>
               </div>
-              <button onClick={() => kartTarihleriniKaydet(k)} disabled={!degisti} style={{ width: "100%", marginTop: 8, border: degisti ? "1px solid #6366f155" : "1px solid var(--border)", borderRadius: 8, padding: "7px 10px", background: degisti ? "linear-gradient(135deg,#6366f1,#4f46e5)" : "var(--card)", color: degisti ? "#fff" : "var(--text5)", fontSize: 11, fontWeight: 800, cursor: degisti ? "pointer" : "default", opacity: degisti ? 1 : 0.7 }}>Kaydet</button>
+              <button onClick={() => kartTarihleriniKaydet(k)} disabled={!degisti} style={{ width: "100%", marginTop: 8, border: degisti ? "1px solid #A74E3255" : "1px solid var(--border)", borderRadius: 8, padding: "7px 10px", background: degisti ? "linear-gradient(135deg,#A74E32,#4f46e5)" : "var(--card)", color: degisti ? "#fff" : "var(--text5)", fontSize: 11, fontWeight: 800, cursor: degisti ? "pointer" : "default", opacity: degisti ? 1 : 0.7 }}>Kaydet</button>
             </div>
-            <button onClick={() => kartSil(k)} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 16, marginLeft: 8 }}>🗑</button>
+            <button onClick={() => kartSil(k)} style={{ background: "none", border: "none", color: "var(--expense-text)", cursor: "pointer", fontSize: 16, marginLeft: 8 }} aria-label="Sil"><Icon name="trash" size={16}/></button>
           </div>
           );
         })}
@@ -2674,11 +2736,11 @@ function AyarlarTab({ donemGun, setDonemGun, kartlar, setKartlar, kategoriler, s
             type="date"
             value={kartSonOdemeTarihi}
             onChange={e => setKartSonOdemeTarihi(e.target.value)}
-            style={{ minWidth: 0, background: "var(--card2)", border: "1px solid #10b98144", borderRadius: 8, padding: "9px", color: "#10b981", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 11, outline: "none" }}
+            style={{ minWidth: 0, background: "var(--card2)", border: "1px solid #10b98144", borderRadius: 8, padding: "9px", color: "var(--income-text)", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 11, outline: "none" }}
           />
         </div>
         <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 4, marginBottom: 10 }}>Kart adı · Hesap kesim tarihi · Son ödeme tarihi</div>
-        <button onClick={kartEkle} style={{ width: "100%", background: "linear-gradient(135deg,#6366f1,#4f46e5)", border: "none", borderRadius: 10, padding: "10px", color: "#fff", fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>+ Kart Ekle</button>
+        <button onClick={kartEkle} style={{ width: "100%", background: "linear-gradient(135deg,#A74E32,#4f46e5)", border: "none", borderRadius: 10, padding: "10px", color: "#fff", fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>+ Kart Ekle</button>
       </div>
 
       <div style={{ textAlign: "center", color: "var(--border)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 24 }}>
@@ -2855,7 +2917,7 @@ function AnalizTab({ islemler, kategoriler, donemGun, kartlar, odemeler = [] }) 
     if (onGider > 0) {
       const fark = Math.round((buGider - onGider) / onGider * 100);
       if (fark > 10) yorumlar.push({ tip: "uyari", metin: `Toplam giderin ${karsilastirma} göre %${fark} arttı (${fmtTL(onGider)} → ${fmtTL(buGider)}).` });
-      else if (fark < -10) yorumlar.push({ tip: "iyi", metin: `Toplam giderin ${karsilastirma} göre %${Math.abs(fark)} azaldı 👏 (${fmtTL(onGider)} → ${fmtTL(buGider)}).` });
+      else if (fark < -10) yorumlar.push({ tip: "iyi", metin: `Toplam giderin ${karsilastirma} göre %${Math.abs(fark)} azaldı (${fmtTL(onGider)} → ${fmtTL(buGider)}).` });
     }
     const katMap = {};
     buIslem.filter(i => i.tip === "gider").forEach(i => { katMap[i.kategori] = paraTopla(katMap[i.kategori] || 0, i.tutar); });
@@ -2914,7 +2976,7 @@ function AnalizTab({ islemler, kategoriler, donemGun, kartlar, odemeler = [] }) 
         if (kat_ >= 2) anormaller.push({ kat, kat_, tutar, ort });
       });
       anormaller.sort((a, b) => b.kat_ - a.kat_).slice(0, 2).forEach(a => {
-        yorumlar.push({ tip: "uyari", metin: `⚡ Yüksek kategori gideri: ${a.kat} bu dönem kayıtlı geçmiş ortalamanın ${a.kat_.toFixed(1)} katı (${fmtTL(a.tutar)}, ${gecmisKat[a.kat].donemler.size} kayıtlı dönem ortalaması ~${fmtTL(a.ort)}).` });
+        yorumlar.push({ tip: "uyari", metin: `Yüksek kategori gideri: ${a.kat} bu dönem kayıtlı geçmiş ortalamanın ${a.kat_.toFixed(1)} katı (${fmtTL(a.tutar)}, ${gecmisKat[a.kat].donemler.size} kayıtlı dönem ortalaması ~${fmtTL(a.ort)}).` });
       });
     })();
 
@@ -2943,7 +3005,7 @@ function AnalizTab({ islemler, kategoriler, donemGun, kartlar, odemeler = [] }) 
       const tahminGelir = donemKayitlari.filter(gelirDahil).reduce((s, i) => paraTopla(s, i.tutar), 0);
       const tahminNet = tahminGelir - tahminGider;
       yorumlar.push({ tip: tahminNet < 0 ? "uyari" : "iyi", metin:
-        `📊 Mevcut kayıtlara göre dönem sonu tahmini: ${fmtTL(Math.abs(tahminNet))} ${tahminNet < 0 ? "açık" : "artı"}. Tahmini gider ${fmtTL(tahminGider)}. Sabit giderler, ödeme kayıtları ve kart toplamları bir kez sayılır; günlük değişken gider ortalaması ${fmtTL(gunlukOrt)}. Kesin sonuç değildir.` });
+        `Mevcut kayıtlara göre dönem sonu tahmini: ${fmtTL(Math.abs(tahminNet))} ${tahminNet < 0 ? "açık" : "artı"}. Tahmini gider ${fmtTL(tahminGider)}. Sabit giderler, ödeme kayıtları ve kart toplamları bir kez sayılır; günlük değişken gider ortalaması ${fmtTL(gunlukOrt)}. Kesin sonuç değildir.` });
       if (kartIsimleri.length > 0 && kartGunSayisi < 7) yorumlar.push({ tip: "bilgi", metin: "Kartlar için en az 7 gün güncelleme verisi olmadığından ek kart harcaması tahmin edilmedi; dönem sonu gideri daha yüksek olabilir." });
     })();
 
@@ -2957,7 +3019,7 @@ function AnalizTab({ islemler, kategoriler, donemGun, kartlar, odemeler = [] }) 
       const siraliGunler = Object.entries(gunMap).sort((a, b) => b[1] - a[1]);
       if (siraliGunler.length > 0) {
         const [enGun, enTutar] = siraliGunler[0];
-        yorumlar.push({ tip: "bilgi", metin: `📅 Bu dönem en fazla harcamayı ${enGun.split("-").reverse().join(".")} tarihinde kayıtlı — ${fmtTL(enTutar)} (sabit giderler ve kredi kartı ilk-giriş toplamı hariç).` });
+        yorumlar.push({ tip: "bilgi", metin: `Bu dönem en fazla harcamayı ${enGun.split("-").reverse().join(".")} tarihinde kayıtlı — ${fmtTL(enTutar)} (sabit giderler ve kredi kartı ilk-giriş toplamı hariç).` });
       }
       // Haftalık dağılım (dönem başlangıcından itibaren 7'şer günlük dilimler)
       const donemBas = yorumDonemi.baslangic;
@@ -2980,7 +3042,7 @@ function AnalizTab({ islemler, kategoriler, donemGun, kartlar, odemeler = [] }) 
         const devam = yorumDonemOffset === 0 && index === haftaToplam.length - 1 && bugun <= donemBit ? " • devam ediyor" : "";
         return `${h.no}. Hafta (${kisaTarih(h.baslangic)}–${kisaTarih(h.bitis)}) ${fmtTL(h.tutar)}${devam}`;
       }).join(" · ");
-      yorumlar.push({ tip: "notr", metin: `🗓 Haftalık dağılım: ${metin}` });
+      yorumlar.push({ tip: "notr", metin: `Haftalık dağılım: ${metin}` });
     })();
 
     return yorumlar;
@@ -3033,7 +3095,7 @@ function AnalizTab({ islemler, kategoriler, donemGun, kartlar, odemeler = [] }) 
     if (ortalamalar.length >= 4) {
       ortalamalar.sort((a, b) => b.ort - a.ort);
       const en = ortalamalar[0];
-      yorumlar.push({ tip: "bilgi", metin: `🧠 Geçmiş tüm dönemlere göre harcama kaydı olan günler içinde en yüksek günlük ortalama ${gunAdlari[en.wd]} — ${fmtTL(en.ort)} (${en.adet} gün verisine dayanarak).` });
+      yorumlar.push({ tip: "bilgi", metin: `Geçmiş tüm dönemlere göre harcama kaydı olan günler içinde en yüksek günlük ortalama ${gunAdlari[en.wd]} — ${fmtTL(en.ort)} (${en.adet} gün verisine dayanarak).` });
       const az = ortalamalar[ortalamalar.length - 1];
       yorumlar.push({ tip: "notr", metin: `Harcama kaydı olan günler içinde en düşük günlük ortalama ${gunAdlari[az.wd]} — ${fmtTL(az.ort)}.` });
     }
@@ -3046,12 +3108,12 @@ function AnalizTab({ islemler, kategoriler, donemGun, kartlar, odemeler = [] }) 
     <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "16px 14px", marginBottom: 14 }}>
       <div style={{ color: "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>{baslik}</div>
       {yorumlar.map((y, i) => {
-        const renk = y.tip === "iyi" ? "#10b981" : y.tip === "uyari" ? "#ef4444" : y.tip === "notr" ? "#f59e0b" : "#6366f1";
-        const ikon = y.tip === "iyi" ? "✅" : y.tip === "uyari" ? "⚠️" : y.tip === "notr" ? "💡" : "📌";
+        const renk = y.tip === "iyi" ? "#10b981" : y.tip === "uyari" ? "#ef4444" : y.tip === "notr" ? "#f59e0b" : "#A74E32";
+        const ikon = y.tip === "iyi" ? "check" : y.tip === "uyari" ? "warning" : y.tip === "notr" ? "target" : "tag";
         return (
           <div key={i} style={{ display: "flex", gap: 10, padding: "10px 0", borderBottom: i < yorumlar.length - 1 ? "1px solid var(--divider)" : "none" }}>
-            <span style={{ fontSize: 14, flexShrink: 0 }}>{ikon}</span>
-            <span style={{ color: "var(--text2)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.5, borderLeft: `2px solid ${renk}`, paddingLeft: 10 }}>{y.metin}</span>
+            <span style={{ fontSize: 14, flexShrink: 0 }}><Icon name={ikon} size={17}/></span>
+            <span style={{ color: "var(--text2)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.5, borderLeft: `2px solid ${renk}`, paddingLeft: 10 }}>{y.metin.replace(/[\u{1F300}-\u{1FAFF}\u2600-\u27BF\uFE0F]/gu, "").trim()}</span>
           </div>
         );
       })}
@@ -3068,9 +3130,9 @@ function AnalizTab({ islemler, kategoriler, donemGun, kartlar, odemeler = [] }) 
         </div>
         <button onClick={() => setYorumDonemOffset(o => Math.min(0, o + 1))} disabled={yorumDonemOffset === 0} aria-label="Sonraki dönem" style={{ background:"none", border:"none", color:yorumDonemOffset === 0 ? "var(--border2)" : "#f59e0b", fontSize:20, cursor:yorumDonemOffset === 0 ? "default" : "pointer", padding:"0 8px" }}>›</button>
       </div>
-      {renderYorumKart(donemYorumlari, `🎯 ${yorumDonemi.label}`)}
-      {renderYorumKart(altiAyYorumlari, "📅 Son 6 Tamamlanmış Maaş Dönemi")}
-      {renderYorumKart(genelAliskanlikYorumlari, "🧠 Genel Alışkanlığın")}
+      {renderYorumKart(donemYorumlari, `${yorumDonemi.label}`)}
+      {renderYorumKart(altiAyYorumlari, "Son 6 Tamamlanmış Maaş Dönemi")}
+      {renderYorumKart(genelAliskanlikYorumlari, "Genel Alışkanlığın")}
       <div style={{ textAlign: "center", color: "var(--border)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 4 }}>
         Yorumlar eklediğin verilere göre otomatik güncellenir
       </div>
@@ -3080,8 +3142,8 @@ function AnalizTab({ islemler, kategoriler, donemGun, kartlar, odemeler = [] }) 
   const yillikGelir = raporIslemleri.filter(i => yerelTarihOku(i.tarih)?.getFullYear() === secilenYil && i.tip === "gelir" && i.kategori !== "Birikim").reduce((s, i) => paraTopla(s, i.tutar), 0);
   const yillikGider = raporIslemleri.filter(i => yerelTarihOku(i.tarih)?.getFullYear() === secilenYil && i.tip === "gider").reduce((s, i) => paraTopla(s, i.tutar), 0);
 
-  const PASTA_RENKLER = ["#f59e0b","#6366f1","#10b981","#ef4444","#06b6d4","#ec4899","#8b5cf6","#f97316","#84cc16","#14b8a6"];
-  const TREND_RENKLER = { "Market":"#f59e0b","Fatura":"#6366f1","Ulaşım":"#06b6d4","Sağlık":"#10b981","Eğlence":"#ec4899","Giyim":"#8b5cf6","Restoran":"#f97316" };
+  const PASTA_RENKLER = ["#f59e0b","#A74E32","#10b981","#ef4444","#06b6d4","#ec4899","#8b5cf6","#f97316","#84cc16","#14b8a6"];
+  const TREND_RENKLER = { "Market":"#f59e0b","Fatura":"#A74E32","Ulaşım":"#06b6d4","Sağlık":"#10b981","Eğlence":"#ec4899","Giyim":"#8b5cf6","Restoran":"#f97316" };
   const fmtTam = n => Math.round(n).toLocaleString("tr-TR");
   const fmtOndalik = n => n.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -3104,7 +3166,7 @@ function AnalizTab({ islemler, kategoriler, donemGun, kartlar, odemeler = [] }) 
       <div style={{ display:"flex", gap:8, marginBottom:14 }}>
         {["gider","gelir"].map(t => (
           <button key={t} onClick={() => setGorunum(t)} style={{ flex:1, padding:"9px", borderRadius:10, border:"none", cursor:"pointer", fontFamily:"'Inter', system-ui, sans-serif", fontSize:12, fontWeight:700, background: gorunum===t ? (t==="gider" ? "#ef4444" : "#10b981") : "var(--border)", color: gorunum===t ? "#fff" : "var(--text3)" }}>
-            {t === "gider" ? "📉 Gider" : "📈 Gelir"}
+            {t === "gider" ? "Gider" : "Gelir"}
           </button>
         ))}
       </div>
@@ -3243,17 +3305,17 @@ function AnalizTab({ islemler, kategoriler, donemGun, kartlar, odemeler = [] }) 
 
   const renderBirikim = () => (
     <div>
-      <div style={{ background:"#10b98111", border:"1px solid #10b98133", borderRadius:10, padding:"10px 14px", marginBottom:14, color:"#10b981", fontSize:11, fontFamily:"'Inter', system-ui, sans-serif" }}>
-        💡 Gelir eklerken kategori olarak <strong>Birikim</strong> seç — burada takip edilir.
+      <div style={{ background:"#10b98111", border:"1px solid #10b98133", borderRadius:10, padding:"10px 14px", marginBottom:14, color: "var(--income-text)", fontSize:11, fontFamily:"'Inter', system-ui, sans-serif" }}>
+        Gelir eklerken kategori olarak <strong>Birikim</strong> seç — burada takip edilir.
       </div>
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:14 }}>
         {[
-          { label:"Yıllık", value:"₺" + fmtTam(yillikBirikim), color:"#10b981", icon:"🏦" },
-          { label:"Aylık Ort.", value: ortBirikim > 0 ? "₺" + fmtTam(ortBirikim) : "—", color:"#f59e0b", icon:"📊" },
-          { label:"Birikim Ayı", value: birikimAySayisi > 0 ? birikimAySayisi + " ay" : "—", color:"#6366f1", icon:"📅" },
+          { label:"Yıllık", value:"₺" + fmtTam(yillikBirikim), color: "var(--income-text)", icon:"coins" },
+          { label:"Aylık Ort.", value: ortBirikim > 0 ? "₺" + fmtTam(ortBirikim) : "—", color:"#f59e0b", icon:"chart" },
+          { label:"Birikim Ayı", value: birikimAySayisi > 0 ? birikimAySayisi + " ay" : "—", color:"#A74E32", icon:"calendar" },
         ].map(c => (
           <div key={c.label} style={{ background:"linear-gradient(135deg,var(--card),var(--card2))", border:"1px solid var(--border)", borderRadius:14, padding:"12px 8px", textAlign:"center" }}>
-            <div style={{ fontSize:16, marginBottom:4 }}>{c.icon}</div>
+            <div style={{ fontSize:16, marginBottom:4 }}><Icon name={c.icon} size={17}/></div>
             <div style={{ color:"var(--text4)", fontSize: 12, fontFamily:"'Inter', system-ui, sans-serif", textTransform:"uppercase", marginBottom:4 }}>{c.label}</div>
             <div style={{ color:c.color, fontSize:13, fontFamily:"'Inter', system-ui, sans-serif", fontWeight:700 }}>{c.value}</div>
           </div>
@@ -3285,7 +3347,7 @@ function AnalizTab({ islemler, kategoriler, donemGun, kartlar, odemeler = [] }) 
                 <div key={i} style={{ marginBottom:10 }}>
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
                     <span style={{ color:"var(--text3)", fontSize:12, fontFamily:"'Inter', system-ui, sans-serif" }}>{d.ay}</span>
-                    <span style={{ color:"#10b981", fontSize:12, fontFamily:"'Inter', system-ui, sans-serif", fontWeight:700 }}>₺{fmtTam(d.tutar)}</span>
+                    <span style={{ color: "var(--income-text)", fontSize:12, fontFamily:"'Inter', system-ui, sans-serif", fontWeight:700 }}>₺{fmtTam(d.tutar)}</span>
                   </div>
                   <div style={{ height:4, background:"var(--border)", borderRadius:99 }}>
                     <div style={{ height:"100%", width: (d.tutar / maxT * 100) + "%", background:"#10b981", borderRadius:99 }} />
@@ -3305,66 +3367,7 @@ function AnalizTab({ islemler, kategoriler, donemGun, kartlar, odemeler = [] }) 
     </div>
   );
 
-  return (
-    <div>
-      <EsnekRapor islemler={islemler} odemeler={odemeler} donemGun={donemGun}/>
-      <details className="annual-details"><summary>Yıllık grafikler ve mevcut yorumlar</summary>
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", background:"var(--card2)", border:"1px solid var(--border)", borderRadius:12, padding:"10px 14px", marginBottom:14 }}>
-        <button onClick={() => setSecilenYil(y => y - 1)} style={{ background:"none", border:"none", color:"#f59e0b", fontSize:20, cursor:"pointer", padding:"0 6px" }}>&#8249;</button>
-        <div style={{ textAlign:"center" }}>
-          <div style={{ color:"var(--text3)", fontSize: 12, fontFamily:"'Inter', system-ui, sans-serif", textTransform:"uppercase", letterSpacing:"0.08em" }}>Yıllık Rapor</div>
-          <div style={{ color:"var(--text)", fontSize:20, fontFamily:"'Manrope', 'Inter', system-ui, sans-serif", fontWeight:700 }}>{secilenYil}</div>
-        </div>
-        <button onClick={() => setSecilenYil(y => Math.min(y + 1, new Date().getFullYear()))} style={{ background:"none", border:"none", color: secilenYil >= new Date().getFullYear() ? "var(--border)" : "#f59e0b", fontSize:20, cursor: secilenYil >= new Date().getFullYear() ? "default" : "pointer", padding:"0 6px" }}>&#8250;</button>
-      </div>
-
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:14 }}>
-        {[
-          { label:"Gelir", value:"₺" + fmtOndalik(yillikGelir), color:"#10b981", icon:"📈" },
-          { label:"Gider", value:"₺" + fmtOndalik(yillikGider), color:"#ef4444", icon:"📉" },
-          { label:"Net", value:(yillikGelir >= yillikGider ? "+" : "-") + "₺" + fmtOndalik(Math.abs(yillikGelir - yillikGider)), color: yillikGelir >= yillikGider ? "#10b981" : "#ef4444", icon:"💰" },
-        ].map(c => (
-          <div key={c.label} style={{ background:"linear-gradient(135deg,var(--card),var(--card2))", border:"1px solid var(--border)", borderRadius:14, padding:"14px 10px", textAlign:"center" }}>
-            <div style={{ fontSize:16, marginBottom:4 }}>{c.icon}</div>
-            <div style={{ color:"var(--text4)", fontSize: 12, fontFamily:"'Inter', system-ui, sans-serif", textTransform:"uppercase", marginBottom:4 }}>{c.label}</div>
-            <div style={{ color:c.color, fontSize:11, fontFamily:"'Inter', system-ui, sans-serif", fontWeight:700, wordBreak:"break-all" }}>{c.value}</div>
-          </div>
-        ))}
-      </div>
-
-      <div style={{ background:"var(--card)", border:"1px solid var(--border)", borderTop:"1px solid var(--border-light)", borderRadius:20, boxShadow:"var(--card-shadow)", padding:"16px 14px", marginBottom:14 }}>
-        <div style={{ color:"var(--text3)", fontSize:11, fontFamily:"'Inter', system-ui, sans-serif", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:14 }}>Aylık Gelir / Gider</div>
-        <ResponsiveContainer width="100%" height={200}>
-          <LineChart data={aylikVerisi} margin={{ top:10, right:10, left:0, bottom:0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-            <XAxis dataKey="ay" tick={{ fill:"var(--text4)", fontSize: 12, fontFamily:"'Inter', system-ui, sans-serif" }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fill:"var(--text4)", fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={v => (v / 1000).toFixed(0) + "K"} width={32} />
-            <Tooltip content={tt} />
-            <Line type="monotone" dataKey="gider" name="Gider" stroke="#ef4444" strokeWidth={2.5} dot={{ r:3, fill:"#ef4444" }} activeDot={{ r:5 }} />
-            <Line type="monotone" dataKey="gelir" name="Gelir" stroke="#10b981" strokeWidth={2.5} dot={{ r:3, fill:"#10b981" }} activeDot={{ r:5 }} />
-          </LineChart>
-        </ResponsiveContainer>
-        <div style={{ display:"flex", justifyContent:"center", gap:20, marginTop:8 }}>
-          <span style={{ display:"flex", alignItems:"center", gap:6, color:"var(--text3)", fontSize:11, fontFamily:"'Inter', system-ui, sans-serif" }}><span style={{ width:10, height:3, background:"#10b981", borderRadius:2 }} />Gelir</span>
-          <span style={{ display:"flex", alignItems:"center", gap:6, color:"var(--text3)", fontSize:11, fontFamily:"'Inter', system-ui, sans-serif" }}><span style={{ width:10, height:3, background:"#ef4444", borderRadius:2 }} />Gider</span>
-        </div>
-      </div>
-
-      <div style={{ display:"flex", gap:6, marginBottom:14, background:"var(--card2)", borderRadius:12, padding:4 }}>
-        {[{id:"yorum",label:"💡 Yorum"},{id:"dagilim",label:"📊 Dağılım"},{id:"trend",label:"📈 Trend"},{id:"birikim",label:"💰 Birikim"}].map(s => (
-          <button key={s.id} onClick={() => setAnalizSekme(s.id)} style={{ flex:1, padding:"8px 2px", borderRadius:9, border:"none", cursor:"pointer", fontFamily:"'Inter', system-ui, sans-serif", fontSize: 12, fontWeight:700, background: analizSekme === s.id ? "#f59e0b" : "transparent", color: analizSekme === s.id ? "var(--bg)" : "var(--text4)", transition:"all 0.2s" }}>
-            {s.label}
-          </button>
-        ))}
-      </div>
-
-      {analizSekme === "yorum" && renderAkilliYorum()}
-      {analizSekme === "dagilim" && renderDagilim()}
-      {analizSekme === "trend" && renderTrend()}
-      {analizSekme === "birikim" && renderBirikim()}
-      </details>
-    </div>
-  );
+  return <EsnekRapor islemler={islemler} odemeler={odemeler} donemGun={donemGun} gelismisYorum={renderAkilliYorum} birikimRaporu={()=><><Input label="Birikim raporu yılı" type="number" min="2000" max="2100" value={secilenYil} onChange={e=>{if(tamSayiGecerli(e.target.value,2000,2100))setSecilenYil(Number(e.target.value));}}/>{renderBirikim()}</>}/>;
 }
 
 function TekrarlayanTab({ tekrarlayan, setTekrarlayan, kategoriler, setKategoriler }) {
@@ -3421,15 +3424,15 @@ function TekrarlayanTab({ tekrarlayan, setTekrarlayan, kategoriler, setKategoril
                 <div style={{ color: "var(--text)", fontSize: 14, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 600 }}>{t.aciklama}</div>
                 <div style={{ display: "flex", gap: 8, marginTop: 4, alignItems: "center" }}><Badge text={t.kategori} color={katRenk} /><span style={{ color: "var(--text5)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif" }}>Her ayın {t.gun}. günü</span>
                 {t.bitis && <span style={{ color: "#f59e0b", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif" }}>Bitiş: {t.bitis}</span>}
-                {t.baslangic && yerelTarihOku(t.baslangic) > yerelTarihOku(yerelTarihAnahtari()) && <span style={{ color: "#6366f1", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif" }}>Başlangıç: {t.baslangic}</span>}
+                {t.baslangic && yerelTarihOku(t.baslangic) > yerelTarihOku(yerelTarihAnahtari()) && <span style={{ color: "#A74E32", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif" }}>Başlangıç: {t.baslangic}</span>}
                 </div>
               </div>
               <div style={{ textAlign: "right" }}>
-                <div style={{ color: "#ef4444", fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, fontSize: 15 }}>₺{fmt(t.tutar)}</div>
+                <div style={{ color: "var(--expense-text)", fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, fontSize: 15 }}>₺{fmt(t.tutar)}</div>
                 <div style={{ display: "flex", gap: 6, marginTop: 4, justifyContent: "flex-end" }}>
                   <button onClick={() => setTekrarlayan(p => p.map(x => x.id === t.id ? { ...x, aktif: !x.aktif } : x))} style={{ background: t.aktif ? "#10b98122" : "var(--border)", border: "none", borderRadius: 6, color: t.aktif ? "#10b981" : "var(--text4)", padding: "3px 8px", fontSize: 11, cursor: "pointer", fontFamily: "'Inter', system-ui, sans-serif" }}>{t.aktif ? "Aktif" : "Pasif"}</button>
-                  <button onClick={() => duzenleAc(t)} style={{ background: "none", border: "none", color: "#f59e0b", cursor: "pointer", fontSize: 14 }}>✏️</button>
-                  <button onClick={() => setTekrarlayan(p => p.filter(x => x.id !== t.id))} style={{ background: "none", border: "none", color: "var(--text5)", cursor: "pointer", fontSize: 14 }}>🗑</button>
+                  <button onClick={() => duzenleAc(t)} style={{ background: "none", border: "none", color: "#f59e0b", cursor: "pointer", fontSize: 14 }} aria-label="Düzenle"><Icon name="edit" size={16}/></button>
+                  <button onClick={() => setTekrarlayan(p => p.filter(x => x.id !== t.id))} style={{ background: "none", border: "none", color: "var(--text5)", cursor: "pointer", fontSize: 14 }} aria-label="Sil"><Icon name="trash" size={16}/></button>
                 </div>
               </div>
             </div>
@@ -3506,7 +3509,7 @@ function TaksitlerTab({ taksitler, setTaksitler }) {
         <Btn onClick={() => { setDuzenleId(null); setForm(bos); setModal(true); }}>+ Ekle</Btn>
       </div>
 
-      <div style={{ background: "#8b5cf611", border: "1px solid #8b5cf633", borderRadius: 12, padding: "9px 13px", marginBottom: 14, color: "#a78bfa", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.5 }}>
+      <div style={{ background: "var(--accent-soft)", border: "1px solid var(--border)", borderRadius: 12, padding: "9px 13px", marginBottom: 14, color: "#a78bfa", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.5 }}>
         Buradaki taksitler giderinden düşmez, sadece takip amaçlıdır.
       </div>
 
@@ -3520,7 +3523,7 @@ function TaksitlerTab({ taksitler, setTaksitler }) {
       {taksitler.length > 0 && (
         <div style={{ background: "var(--card)", border: "1px solid #8b5cf644", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "16px 16px", marginBottom: 16 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-            <span style={{ color: "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em" }}>📊 Genel Durum</span>
+            <span style={{ color: "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em" }}><span className="inline-icon"><Icon name="chart" size={16}/></span>Genel Durum</span>
             <span style={{ color: "var(--text4)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif" }}>{aktifSayi} Aktif · Aylık ₺{fmt(aylikToplam)}</span>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
@@ -3530,19 +3533,19 @@ function TaksitlerTab({ taksitler, setTaksitler }) {
             </div>
             <div style={{ background: "var(--card2)", borderRadius: 11, padding: "11px 6px", textAlign: "center" }}>
               <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 4 }}>ÖDENEN</div>
-              <div style={{ color: "#10b981", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>₺{fmt(genelOdenen)}</div>
+              <div style={{ color: "var(--income-text)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>₺{fmt(genelOdenen)}</div>
             </div>
             <div style={{ background: "var(--card2)", borderRadius: 11, padding: "11px 6px", textAlign: "center" }}>
               <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 4 }}>KALAN</div>
-              <div style={{ color: "#ef4444", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>₺{fmt(genelKalan)}</div>
+              <div style={{ color: "var(--expense-text)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>₺{fmt(genelKalan)}</div>
             </div>
           </div>
           <div style={{ height: 10, background: "var(--card2)", borderRadius: 99, overflow: "hidden", border: "1px solid var(--border)" }}>
             <div style={{ height: "100%", width: `${genelYuzde}%`, background: "linear-gradient(90deg,#10b981,#059669)", borderRadius: 99, transition: "width 0.8s ease" }} />
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
-            <span style={{ color: "#10b981", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>Ödenen %{genelYuzde.toFixed(1)}</span>
-            <span style={{ color: "#ef4444", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>Kalan %{(100 - genelYuzde).toFixed(1)}</span>
+            <span style={{ color: "var(--income-text)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>Ödenen %{genelYuzde.toFixed(1)}</span>
+            <span style={{ color: "var(--expense-text)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>Kalan %{(100 - genelYuzde).toFixed(1)}</span>
           </div>
         </div>
       )}
@@ -3568,8 +3571,8 @@ function TaksitlerTab({ taksitler, setTaksitler }) {
                 <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 2 }}>Aylık Taksit</div>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 6, flexShrink: 0, marginLeft: 4 }}>
-                <button onClick={() => duzenleAc(t)} style={{ background: "none", border: "none", color: "var(--text4)", cursor: "pointer", fontSize: 13, padding: 0 }}>✏️</button>
-                <button onClick={() => sil(t.id)} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 13, padding: 0 }}>🗑</button>
+                <button onClick={() => duzenleAc(t)} style={{ background: "none", border: "none", color: "var(--text4)", cursor: "pointer", fontSize: 13, padding: 0 }} aria-label="Düzenle"><Icon name="edit" size={16}/></button>
+                <button onClick={() => sil(t.id)} style={{ background: "none", border: "none", color: "var(--expense-text)", cursor: "pointer", fontSize: 13, padding: 0 }} aria-label="Sil"><Icon name="trash" size={16}/></button>
               </div>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 7, marginBottom: 10 }}>
@@ -3579,20 +3582,20 @@ function TaksitlerTab({ taksitler, setTaksitler }) {
               </div>
               <div style={{ background: "var(--card2)", borderRadius: 9, padding: "8px 5px", textAlign: "center" }}>
                 <div style={{ color: "var(--text5)", fontSize: 12.5, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 2 }}>ÖDENEN</div>
-                <div style={{ color: "#10b981", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>₺{fmt(odenenTutar)}</div>
+                <div style={{ color: "var(--income-text)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>₺{fmt(odenenTutar)}</div>
               </div>
               <div style={{ background: "var(--card2)", borderRadius: 9, padding: "8px 5px", textAlign: "center" }}>
                 <div style={{ color: "var(--text5)", fontSize: 12.5, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 2 }}>KALAN</div>
-                <div style={{ color: "#ef4444", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>₺{fmt(kalan)}</div>
+                <div style={{ color: "var(--expense-text)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>₺{fmt(kalan)}</div>
               </div>
             </div>
             <div style={{ height: 8, background: "var(--card2)", borderRadius: 99, overflow: "hidden", border: "1px solid var(--border)" }}>
               <div style={{ height: "100%", width: `${yuzde}%`, background: "linear-gradient(90deg,#10b981,#059669)", borderRadius: 99, transition: "width 0.8s ease" }} />
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6 }}>
-              <span style={{ color: "#10b981", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>Ödenen %{yuzde.toFixed(1)}</span>
-              {!bitti && <button onClick={() => taksitOde(t.id)} style={{ background: "#10b98122", border: "1px solid #10b98155", borderRadius: 8, padding: "3px 9px", color: "#10b981", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", cursor: "pointer", fontWeight: 700 }}>✓ Taksit Öde</button>}
-              <span style={{ color: "#ef4444", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>Kalan %{(100 - yuzde).toFixed(1)}</span>
+              <span style={{ color: "var(--income-text)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>Ödenen %{yuzde.toFixed(1)}</span>
+              {!bitti && <button onClick={() => taksitOde(t.id)} style={{ background: "#10b98122", border: "1px solid #10b98155", borderRadius: 8, padding: "3px 9px", color: "var(--income-text)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", cursor: "pointer", fontWeight: 700 }}>✓ Taksit Öde</button>}
+              <span style={{ color: "var(--expense-text)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>Kalan %{(100 - yuzde).toFixed(1)}</span>
             </div>
           </div>
         );
@@ -3699,7 +3702,7 @@ function KredilerTab({ krediler, setKrediler }) {
                 <div style={{ color: "var(--text)", fontSize: 15, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>{k.ad}</div>
                 <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 2 }}>{odenenAdet}/{k.vade} taksit ödendi</div>
               </div>
-              <button onClick={() => krediSil(k.id)} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 15 }}>🗑</button>
+              <button onClick={() => krediSil(k.id)} style={{ background: "none", border: "none", color: "var(--expense-text)", cursor: "pointer", fontSize: 15 }} aria-label="Sil"><Icon name="trash" size={16}/></button>
             </div>
 
             {/* Yatay ilerleme çubuğu */}
@@ -3707,8 +3710,8 @@ function KredilerTab({ krediler, setKrediler }) {
               <div style={{ height: "100%", width: `${yuzde}%`, background: "linear-gradient(90deg,#10b981,#059669)", borderRadius: 99, transition: "width 0.8s ease" }} />
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 14 }}>
-              <span style={{ color: "#10b981", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>Ödenen %{yuzde.toFixed(1)}</span>
-              <span style={{ color: "#ef4444", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>Kalan %{(100 - yuzde).toFixed(1)}</span>
+              <span style={{ color: "var(--income-text)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>Ödenen %{yuzde.toFixed(1)}</span>
+              <span style={{ color: "var(--expense-text)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>Kalan %{(100 - yuzde).toFixed(1)}</span>
             </div>
 
             {/* Tutar özeti */}
@@ -3719,11 +3722,11 @@ function KredilerTab({ krediler, setKrediler }) {
               </div>
               <div style={{ background: "var(--card2)", borderRadius: 10, padding: "9px 6px", textAlign: "center" }}>
                 <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 3 }}>ÖDENEN</div>
-                <div style={{ color: "#10b981", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>₺{fmt(odenen)}</div>
+                <div style={{ color: "var(--income-text)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>₺{fmt(odenen)}</div>
               </div>
               <div style={{ background: "var(--card2)", borderRadius: 10, padding: "9px 6px", textAlign: "center" }}>
                 <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 3 }}>KALAN</div>
-                <div style={{ color: "#ef4444", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>₺{fmt(kalan)}</div>
+                <div style={{ color: "var(--expense-text)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>₺{fmt(kalan)}</div>
               </div>
             </div>
 
@@ -3867,8 +3870,8 @@ function MaasTab({ zamlar, setZamlar, maasAyarlar, setMaasAyarlar, enflasyon, se
     <div>
       {/* Alt sekme */}
       <div style={{ display: "flex", gap: 6, marginBottom: 14, background: "var(--card2)", borderRadius: 12, padding: 4 }}>
-        {[{id:"hesapla",label:"🧮 Maaş Hesapla"},{id:"zamlar",label:"📋 Zam Oranları"}].map(s => (
-          <button key={s.id} onClick={() => setAltSekme(s.id)} style={{ flex: 1, padding: "9px 4px", borderRadius: 9, border: "none", cursor: "pointer", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12, fontWeight: 700, background: altSekme === s.id ? "#6366f1" : "transparent", color: altSekme === s.id ? "#fff" : "var(--text4)", transition: "all 0.2s" }}>
+        {[{id:"hesapla",label:"Maaş Hesapla"},{id:"zamlar",label:"Zam Oranları"}].map(s => (
+          <button key={s.id} onClick={() => setAltSekme(s.id)} style={{ flex: 1, padding: "9px 4px", borderRadius: 9, border: "none", cursor: "pointer", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12, fontWeight: 700, background: altSekme === s.id ? "#A74E32" : "transparent", color: altSekme === s.id ? "#fff" : "var(--text4)", transition: "all 0.2s" }}>
             {s.label}
           </button>
         ))}
@@ -3944,7 +3947,7 @@ function MaasTab({ zamlar, setZamlar, maasAyarlar, setMaasAyarlar, enflasyon, se
           {/* SONUÇ */}
           {hesapla ? (
             <div>
-              <div style={{ background: "linear-gradient(135deg,var(--card),var(--card2))", border: "1px solid #6366f133", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "18px 16px", marginBottom: 14 }}>
+              <div style={{ background: "linear-gradient(135deg,var(--card),var(--card2))", border: "1px solid #A74E3233", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "18px 16px", marginBottom: 14 }}>
                 <div style={{ color: "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 14 }}>Hesaplama Detayı</div>
                 <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid var(--divider)" }}>
                   <span style={{ color: "var(--text3)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif" }}>Mevcut maaş</span>
@@ -3960,7 +3963,7 @@ function MaasTab({ zamlar, setZamlar, maasAyarlar, setMaasAyarlar, enflasyon, se
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0" }}>
                   <span style={{ color: "var(--text3)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif" }}>{hesapla.sonrakiDonem === "ocak" ? `${hesapla.sonrakiYil} Ocak` : "Temmuz"} zammı</span>
-                  <span style={{ color: "#10b981", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>{fmtPct(hesapla.sonrakiZam)}</span>
+                  <span style={{ color: "var(--income-text)", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>{fmtPct(hesapla.sonrakiZam)}</span>
                 </div>
               </div>
 
@@ -3968,7 +3971,7 @@ function MaasTab({ zamlar, setZamlar, maasAyarlar, setMaasAyarlar, enflasyon, se
                 <div style={{ color: "var(--text4)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>
                   {hesapla.sonrakiDonem === "ocak" ? `${hesapla.sonrakiYil} Ocak` : `${hesapla.secYil} Temmuz`} Tahmini Maaşın
                 </div>
-                <div style={{ color: "#10b981", fontSize: 26, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>{fmtTL(hesapla.tahminiMaas)}</div>
+                <div style={{ color: "var(--income-text)", fontSize: 26, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>{fmtTL(hesapla.tahminiMaas)}</div>
                 <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 8 }}>
                   Mevcuttan {fmtPct((hesapla.tahminiMaas / hesapla.mevcutMaas - 1) * 100)} artış
                 </div>
@@ -3984,7 +3987,7 @@ function MaasTab({ zamlar, setZamlar, maasAyarlar, setMaasAyarlar, enflasyon, se
 
       {/* KAYDET BUTONU */}
       <button onClick={kaydet} disabled={!degisti} style={{ width: "100%", marginTop: 8, padding: 14, borderRadius: 12, border: "none", cursor: degisti ? "pointer" : "default", background: degisti ? "linear-gradient(135deg,#10b981,#059669)" : "var(--card2)", color: degisti ? "#fff" : "var(--text5)", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 14, fontWeight: 700, transition: "all 0.2s" }}>
-        {degisti ? "💾 Kaydet" : "✓ Kaydedildi"}
+        {degisti ? "Kaydet" : "✓ Kaydedildi"}
       </button>
       {degisti && (
         <div style={{ textAlign: "center", color: "#f59e0b", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 6 }}>
@@ -4080,7 +4083,7 @@ export default function App() {
   useEffect(() => {
     try {
       document.documentElement.setAttribute("data-theme", tema);
-      document.body.style.background = tema === "light" ? "#FCF5EF" : "#0b1020";
+      document.body.style.background = tema === "light" ? "#FCF5EF" : "#0e131c";
     } catch (e) {}
   }, [tema]);
 
@@ -4178,7 +4181,7 @@ export default function App() {
         tip: "gider",
         kategori: t.kategori,
         tutar: t.tutar,
-        aciklama: `🔄 ${t.aciklama}`,
+        aciklama: `${t.aciklama}`,
         tarih: odemeTarih,
         sabitId: t.id, // hangi sabitten geldiği
       });
@@ -4196,14 +4199,18 @@ export default function App() {
 
 
   const menuGruplari = [
-    { grup: "Bütçe", items: [
+    { grup: "Ana bölümler", items: [
       { id: "ozet", label: "Genel Bakış", icon: "home" },
       { id: "islemler", label: "İşlemler", icon: "wallet" },
       { id: "odemeler", label: "Ödemeler", icon: "card" },
-      { id: "tekrarlayan", label: "Sabit Giderler", icon: "repeat" },
+
       { id: "analiz", label: "Raporlar", icon: "chart" },
+
+    ]},
+    { grup: "Bütçe araçları", items: [
+      { id: "tekrarlayan", label: "Sabit Giderler", icon: "repeat" },
       { id: "krediler", label: "Krediler", icon: "receipt" },
-      { id: "taksitler", label: "Taksitli Harcamalar", icon: "receipt" },
+      { id: "taksitler", label: "Taksitli Harcamalar", icon: "calendar" },
     ]},
     { grup: "Maaş", items: [
       { id: "maas", label: "Maaş Hesaplama", icon: "coins" },
@@ -4225,13 +4232,12 @@ export default function App() {
           --text:#f8fafc; --text2:#dbe3ef; --text3:#9eacc1; --text4:#a4b2c7; --text5:#99a9c2;
           --border-light:rgba(255,255,255,.07);
           --card-shadow:0 14px 34px rgba(0,0,0,.22);
-          --balance:linear-gradient(145deg,#4f46e5 0%,#6366f1 48%,#0ea5a4 130%);
+          --balance:linear-gradient(145deg,#4f46e5 0%,#A74E32 48%,#0ea5a4 130%);
           --balance-shadow:0 18px 38px rgba(79,70,229,.32);
-          --accent:#6d6ff8; --accent-strong:#5657e8; --accent-soft:rgba(99,102,241,.14);
+          --accent:#A74E32; --accent-strong:#8B3D27; --accent-soft:rgba(167,78,50,.14);
           --success:#14b88a; --danger:#f05f70; --income-text:#4ade80; --expense-text:#fb7185; --saving-text:#93c5fd;
         }
-        [data-theme="dark"] .kredi-karti-alani * { color:#fff !important; }
-        [data-theme="light"] .kredi-karti-alani, [data-theme="light"] .kredi-karti-alani * { color:#000 !important; }
+        .kredi-karti-alani { color:var(--text); }
         [data-theme="light"] {
           --bg:#FCF5EF; --header:rgba(252,245,239,.96); --card:#fffdfa; --card2:#f5eae1;
           --border:#e6d8cd; --divider:#eee2d8; --border2:#d8c3b3;
@@ -4239,7 +4245,7 @@ export default function App() {
           --text:#302821; --text2:#493e35; --text3:#645447; --text4:#726052; --text5:#786657;
           --border-light:rgba(255,255,255,.9);
           --card-shadow:0 12px 30px rgba(37,45,77,.07);
-          --balance:linear-gradient(145deg,#5153e6 0%,#6d6ff8 52%,#24aaa8 135%);
+          --balance:linear-gradient(145deg,#5153e6 0%,#A74E32 52%,#24aaa8 135%);
           --balance-shadow:0 18px 38px rgba(81,83,230,.25);
         }
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
@@ -4390,7 +4396,7 @@ export default function App() {
         }
 
         .app-shell { width:100%; max-width:540px; margin:0 auto; min-height:100vh; padding-bottom:104px; font-family:'Inter',system-ui,sans-serif; }
-        .app-shell:before { content:""; position:fixed; inset:0; z-index:0; pointer-events:none; background:radial-gradient(circle at 10% -10%,rgba(99,102,241,.13),transparent 34%),radial-gradient(circle at 92% 18%,rgba(20,184,166,.08),transparent 30%); }
+        .app-shell:before { content:""; position:fixed; inset:0; z-index:0; pointer-events:none; background:radial-gradient(circle at 10% -10%,rgba(167,78,50,.13),transparent 34%),radial-gradient(circle at 92% 18%,rgba(20,184,166,.08),transparent 30%); }
         .app-content { padding:14px 16px 0; position:relative; z-index:1; }
         .app-content > div { animation:pageEnter .28s cubic-bezier(.16,1,.3,1); }
         .topbar { position:sticky; top:0; z-index:50; padding:calc(14px + env(safe-area-inset-top)) 16px 12px; background:var(--header); border-bottom:1px solid var(--border); backdrop-filter:blur(22px); -webkit-backdrop-filter:blur(22px); box-shadow:0 8px 28px rgba(15,23,42,.06); }
@@ -4405,6 +4411,169 @@ export default function App() {
           .app-content { padding:20px 24px 0; }
           .topbar { border:1px solid var(--border); border-radius:0 0 24px 24px; padding-left:24px; padding-right:24px; }
         }
+        :root {
+          --bg:#0e131c; --header:#111824; --card:#171f2b; --card2:#202b3a;
+          --border:#2c394b; --divider:#283343; --border2:#415066;
+          --text:#f3f5f8; --text2:#d3dce7; --text3:#a8b5c6; --text4:#a8b5c6; --text5:#99a9be;
+          --accent:#e9aa8f; --accent-strong:#A74E32; --accent-soft:rgba(233,170,143,.12); --on-accent:#fff;
+          --card-shadow:0 3px 12px rgba(0,0,0,.12); --ring-track:rgba(255,255,255,.12);
+        }
+        [data-theme="light"] {
+          --bg:#FCF5EF; --header:#FCF5EF; --card:#fffdfa; --card2:#f5eae1;
+          --accent:#A74E32; --accent-strong:#A74E32; --accent-soft:#f0dfd4; --on-accent:#fff;
+          --text:#302821; --text2:#493e35; --text3:#645447; --text4:#726052; --text5:#786657;
+          --border:#e6d8cd; --divider:#eee2d8; --border2:#d8c3b3;
+          --card-shadow:0 3px 12px rgba(76,48,28,.035); --ring-track:rgba(255,255,255,.16);
+        }
+        .app-shell { color:var(--text); }
+        .home-summary-card svg { color:var(--text3); }
+        .home-forecast > div:first-child, .home-daily-limit > div:first-child { color:var(--accent); }
+        .app-shell:before { display:none; }
+        .topbar { box-shadow:none; border-bottom:0; }
+        .app-content { padding-top:10px; }
+        .app-content h3 { font-size:14px; font-weight:700; letter-spacing:-.01em; }
+        .tools-card h3 { display:flex; align-items:center; gap:8px; }
+        .tools-card h3 svg { color:var(--accent); flex-shrink:0; }
+        .tools-card, .home-panel { box-shadow:var(--card-shadow); border-radius:18px !important; }
+        .tools-card { padding:16px; }
+        .inline-icon { display:inline-flex; vertical-align:-3px; margin-right:6px; color:inherit; }
+        .money-fit { display:block; width:100%; min-width:0; white-space:nowrap; font-variant-numeric:tabular-nums; line-height:1.25; letter-spacing:-.025em; }
+        .home-period-wrap { align-items:stretch; margin-bottom:12px; }
+        .home-overview .home-period-pill { display:grid; grid-template-columns:44px minmax(0,1fr) 44px; width:100%; border-radius:14px; padding:3px 4px; color:var(--text); background:var(--card); border:1px solid var(--border); }
+        .home-period-pill > button { width:44px; min-height:44px; color:var(--text3); }
+        .home-period-label { justify-content:center; min-height:44px; font-size:12px; }
+        .home-period-label > svg { color:var(--accent); }
+        .home-overview .finance-hero { position:relative; overflow:hidden; border-radius:24px; padding:18px !important; margin-bottom:12px !important; color:#fff; background:linear-gradient(120deg,#36483c,#536751); box-shadow:none; }
+        .finance-hero[data-status="bos"] { background:linear-gradient(120deg,#53453b,#766151); }
+        .finance-hero[data-status="orta"] { background:linear-gradient(120deg,#65472e,#99703f); }
+        .finance-hero[data-status="kotu"] { background:linear-gradient(120deg,#713b35,#9f5145); }
+        .finance-hero:after { content:""; position:absolute; width:240px; height:240px; border:1px solid rgba(255,255,255,.08); border-radius:50%; right:-145px; top:-100px; pointer-events:none; }
+        .finance-hero .home-balance-heading { font-size:12px; font-weight:600; color:rgba(255,255,255,.9); }
+        .finance-hero .home-balance-badge { padding:5px 8px; font-size:10px; background:rgba(255,255,255,.1); border-color:rgba(255,255,255,.12); }
+        .finance-hero .home-balance-value { margin:10px 0 3px; }
+        .hero-caption { font-size:11px; line-height:1.5; color:rgba(255,255,255,.78); }
+        .hero-budget { display:grid; grid-template-columns:112px minmax(0,1fr); gap:12px; align-items:center; background:rgba(0,0,0,.12); border:1px solid rgba(255,255,255,.08); border-radius:16px; padding:9px; margin-top:14px; }
+        .budget-ring { width:112px; height:112px; display:block; color:#fff; overflow:visible; flex-shrink:0; }
+        .hero-budget-copy { min-width:0; }
+        .hero-budget-copy h3 { font-size:13px; margin:0 0 7px; color:#fff; }
+        .hero-budget-copy > p:not(.hero-caption) { font-size:12px; line-height:1.5; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+        .hero-budget-copy > p span { color:rgba(255,255,255,.75); }
+        .hero-budget-copy .hero-caption { font-size:10px; margin-top:4px; }
+        .ring-legend { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; font-size:9px; color:rgba(255,255,255,.8); }
+        .ring-legend span { display:flex; align-items:center; gap:3px; }
+        .ring-legend i { width:5px; height:5px; border-radius:50%; }
+        .ilk-kullanim button { display:inline-flex; align-items:center; gap:7px; font-size:12px; }
+        .home-overview .home-summary { margin-bottom:12px !important; }
+        .home-overview .home-summary-card { padding:12px 9px !important; border-radius:15px !important; box-shadow:none !important; }
+        .home-overview .home-summary-card > div:first-child { margin-bottom:7px !important; }
+        .home-overview .home-summary-card > div:first-child > span:last-child { width:22px !important; height:22px !important; background:none !important; }
+        .home-overview .home-summary-value { margin-bottom:5px !important; white-space:nowrap !important; overflow-wrap:normal; }
+        .home-overview .home-summary-caption { font-size:10px !important; line-height:1.4; margin-top:4px !important; }
+        .home-quick-actions { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px; }
+        .home-quick-actions button { display:flex; align-items:center; justify-content:center; gap:8px; min-height:48px; padding:10px; color:var(--text); font-size:12px; font-weight:650; background:var(--card); border:1px solid var(--border); border-radius:14px; }
+        .home-quick-actions button svg { color:var(--accent); }
+        .home-quick-actions button:first-child { background:var(--accent-strong); color:var(--on-accent); border-color:transparent; }
+        .home-quick-actions button:first-child svg { color:inherit; }
+        .home-panel-heading { font-size:14px; }
+        .nav-dock-inner { min-height:66px; border-radius:20px; box-shadow:0 5px 20px rgba(48,30,18,.12); padding:6px; }
+        .nav-dock-inner > button { min-height:48px; }
+        .nav-dock { padding-left:12px; padding-right:12px; }
+        .filter-toolbar { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px; }
+        .filter-toolbar .tools-button { display:flex; align-items:center; gap:6px; padding:8px 10px; font-size:11px; }
+        .filter-count { background:var(--accent-soft); color:var(--accent); border-radius:7px; min-width:17px; padding:2px 4px; }
+        .filter-chips { display:flex; flex-wrap:wrap; gap:5px; }
+        .filter-chips:not(:empty) { margin-bottom:10px; }
+        .filter-chips button { display:inline-flex; align-items:center; gap:5px; background:var(--accent-soft); color:var(--accent); padding:6px 9px; min-height:32px; font-size:10px; border:1px solid var(--border); border-radius:9px; }
+        .filter-panel { margin-bottom:12px; }
+        .transactions-page > div[style*="margin-bottom: 16px"] { flex-wrap:wrap; gap:10px !important; }
+        .transaction-row { display:grid !important; grid-template-columns:34px minmax(0,1fr) auto; padding:12px !important; gap:9px !important; }
+        .transaction-row > div:first-child { width:34px !important; height:34px !important; border:0 !important; border-radius:10px !important; color:var(--text3); }
+        .transaction-row > div:nth-child(2) > div:first-child { white-space:normal !important; line-height:1.4; overflow-wrap:anywhere; }
+        .transaction-amount { min-width:0; max-width:140px; }
+        .transaction-amount > div:first-child { font-size:13px !important; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+        .transaction-amount button { width:44px; min-height:44px; display:grid; place-items:center; }
+        .transaction-row button { color:var(--text3); }
+        .payment-filters { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px; }
+        .payment-filters button { flex:1; min-width:58px; }
+        .payment-group { border-radius:16px; overflow:hidden; }
+        .payment-group > button { background:var(--card2) !important; }
+        .payment-group[data-group="gecikmis"] > button { border-left:3px solid var(--expense-text) !important; }
+        .payment-row { display:grid !important; grid-template-columns:44px minmax(0,1fr) auto; gap:9px !important; padding:12px !important; opacity:1 !important; }
+        .payment-check { width:44px !important; height:44px !important; min-width:44px !important; min-height:44px !important; border:1px solid var(--border) !important; background:var(--card2) !important; color:var(--text3) !important; border-radius:10px !important; }
+        .payment-description > div:first-child { white-space:normal !important; overflow-wrap:anywhere; line-height:1.4; }
+        .payment-description > div:nth-child(2) { flex-wrap:wrap; gap:4px !important; }
+        .payment-status { display:inline-block; font-size:10px; border-radius:6px; padding:3px 5px; background:var(--card2); color:var(--text3); }
+        .payment-status.late { color:var(--expense-text); background:rgba(239,68,68,.1); }
+        .payment-status.paid { color:var(--income-text); background:rgba(16,185,129,.1); }
+        .payment-amount { max-width:135px; min-width:0; }
+        .payment-amount > div:first-child { font-size:13px !important; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+        .payment-amount button { width:44px; min-height:44px; display:grid; place-items:center; }
+        .report-period { margin-bottom:10px; }
+        .report-period-nav { padding:0; }
+        .report-period-nav .tools-button { min-height:36px; font-size:11px; padding:6px 10px; }
+        .report-range { margin-top:8px; }
+        .report-tabs { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:3px; padding:4px; background:var(--card2); border:1px solid var(--border); border-radius:13px; margin-bottom:12px; }
+        .report-tabs button { display:flex; flex-direction:column; align-items:center; gap:5px; border:0; border-radius:9px; background:none; color:var(--text3); font-size:10px; padding:8px 1px; cursor:pointer; }
+        .report-tabs button[aria-selected="true"] { background:var(--card); color:var(--accent); box-shadow:0 2px 5px rgba(48,30,18,.05); font-weight:700; }
+        .report-stat-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+        .report-stat-grid .report-stat:last-child { grid-column:1/-1; display:flex; align-items:center; justify-content:space-between; }
+        .report-stat-grid .report-stat:last-child strong { margin-top:0; max-width:70%; width:70%; text-align:right; }
+        .report-stat > span { display:flex; align-items:center; gap:5px; }
+        .report-stat { border:1px solid var(--border); border-radius:12px; }
+        .savings-result { display:flex; justify-content:space-between; margin-top:14px; font-size:12px; }
+        .savings-result strong { color:var(--accent); }
+        .report-comparisons { display:flex; flex-wrap:wrap; gap:8px 18px; margin-top:14px; padding-top:12px; border-top:1px solid var(--border); font-size:11px; color:var(--text3); }
+        .report-comparisons > span { display:flex; flex-direction:column; gap:4px; }
+        .report-comparisons > p { flex-basis:100%; }
+        .report-export { display:flex; justify-content:flex-end; margin-bottom:12px; }
+        .report-export .tools-button { display:flex; align-items:center; gap:7px; font-size:11px; }
+        .calculation-help { margin-top:14px; font-size:11px; color:var(--text3); border-top:1px solid var(--border); padding-top:12px; }
+        .calculation-help > summary { cursor:pointer; min-height:32px; padding:5px 0; }
+        .calculation-help p { margin-top:6px; }
+        .category-distribution + .category-distribution { margin-top:9px; }
+        .category-distribution .tools-row { font-size:12px; gap:6px; }
+        .category-distribution strong { font-size:12px; font-variant-numeric:tabular-nums; }
+        .category-distribution small { font-size:10px; color:var(--text3); margin-left:4px; font-weight:500; }
+        .distribution-track { height:5px; border-radius:8px; background:var(--card2); overflow:hidden; }
+        .distribution-track span { height:100%; display:block; border-radius:8px; }
+        .report-chart { min-width:0; width:100%; margin-top:6px; }
+        .chart-tooltip { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:10px; color:var(--text); font-size:11px; line-height:1.7; }
+        .chart-legend { display:flex; justify-content:center; gap:18px; font-size:11px; color:var(--text3); }
+        .chart-legend span { display:flex; align-items:center; gap:5px; }
+        .chart-legend i { width:12px; height:3px; border-radius:3px; }
+        .trend-table { max-height:300px; overflow:auto; }
+        .insight-row { display:flex; align-items:flex-start; gap:10px; border-bottom:1px solid var(--border); padding:12px 0; font-size:12px; line-height:1.6; }
+        .insight-row > svg { color:var(--accent); flex-shrink:0; margin-top:2px; }
+        .legacy-insights { color:var(--text); background:var(--card); border:1px solid var(--border); border-radius:14px; padding:12px; margin-bottom:12px; }
+        .legacy-insights > summary { min-height:32px; cursor:pointer; font-size:12px; }
+        .legacy-insights > p { margin:8px 0 12px; }
+        .empty-state { display:flex; flex-direction:column; align-items:center; gap:10px; padding:20px 12px; color:var(--text3); font-size:12px; text-align:center; }
+        .heat-day { font-variant-numeric:tabular-nums; }
+        .form-alert { color:var(--expense-text); font-size:12px; line-height:1.5; }
+        @media(max-width:360px) {
+          .app-content { padding-left:12px; padding-right:12px; }
+          .finance-hero .home-balance-heading { font-size:11px; gap:5px; }
+          .finance-hero .home-balance-badge { font-size:9px; padding:5px 6px; }
+          .hero-budget { grid-template-columns:96px minmax(0,1fr); padding:7px; gap:8px; }
+          .budget-ring { width:96px; height:96px; }
+          .hero-budget-copy > p:not(.hero-caption) { font-size:11px; }
+          .ring-legend { gap:5px; font-size:8px; }
+          .home-overview .home-summary-card { padding:10px 7px !important; }
+          .home-overview .home-summary-caption { font-size:10px !important; }
+          .transaction-row,.payment-row { gap:6px !important; padding:10px !important; }
+          .transaction-amount,.payment-amount { max-width:112px; }
+          .transaction-row > div:first-child { width:30px !important; height:30px !important; }
+        }
+        @media(min-width:760px) {
+          .hero-budget { grid-template-columns:128px minmax(0,1fr); }
+          .budget-ring { width:128px; height:128px; }
+          .home-summary-card .money-fit { text-align:left; }
+          .report-stat-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+          .report-stat-grid .report-stat:last-child { grid-column:auto; display:block; }
+          .report-stat-grid .report-stat:last-child strong { text-align:left; margin-top:7px; width:100%; max-width:100%; }
+          .report-tabs button { flex-direction:row; justify-content:center; gap:8px; font-size:12px; }
+        }
+
       `}</style>
       <div data-theme={tema} style={{ background: "var(--bg)", minHeight: "100vh", width: "100%" }}>
       <div className="app-shell">
@@ -4420,7 +4589,7 @@ export default function App() {
                 <div style={{ color: "var(--text)", fontSize: 19, lineHeight: 1.15, fontFamily: "'Manrope', 'Inter', system-ui, sans-serif", fontWeight: 800, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{aktifSekmeBilgi.label}</div>
               </div>
             </div>
-            <button aria-label={tema === "dark" ? "Açık temaya geç" : "Koyu temaya geç"} onClick={() => setTema(tema === "dark" ? "light" : "dark")} style={{ width: 42, height: 42, borderRadius: 14, background: "var(--card)", border: "1px solid var(--border)", color: tema === "dark" ? "#f6c85f" : "#5961e9", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0, margin: 0, boxSizing: "border-box", lineHeight: 0, boxShadow: "var(--card-shadow)" }}>
+            <button aria-label={tema === "dark" ? "Açık temaya geç" : "Koyu temaya geç"} onClick={() => setTema(tema === "dark" ? "light" : "dark")} style={{ width: 42, height: 42, borderRadius: 14, background: "var(--card)", border: "1px solid var(--border)", color: "var(--accent)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0, margin: 0, boxSizing: "border-box", lineHeight: 0, boxShadow: "var(--card-shadow)" }}>
               <Icon name={tema === "dark" ? "sun" : "moon"} size={20} />
             </button>
           </div>
@@ -4433,7 +4602,7 @@ export default function App() {
             <aside style={{ position: "fixed", top: 0, left: 0, bottom: 0, width: 300, maxWidth: "86%", background: "var(--header)", borderRight: "1px solid var(--border)", zIndex: 101, padding: "calc(18px + env(safe-area-inset-top)) 12px 24px", overflowY: "auto", animation: "menuSlide 0.24s cubic-bezier(.16,1,.3,1)", backdropFilter: "blur(24px)", boxShadow: "24px 0 60px rgba(0,0,0,.25)" }}>
               <div style={{ padding: "4px 8px 20px", borderBottom: "1px solid var(--divider)", marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
-                  <div style={{ width: 42, height: 42, borderRadius: 14, background: "linear-gradient(145deg,#5457e8,#7274fa)", color: "#fff", display: "grid", placeItems: "center", boxShadow: "0 10px 20px rgba(84,87,232,.28)" }}><Icon name="wallet" size={21} /></div>
+                  <div style={{ width: 42, height: 42, borderRadius: 14, background: "var(--accent-strong)", color: "#fff", display: "grid", placeItems: "center", boxShadow: "none" }}><Icon name="wallet" size={21} /></div>
                   <div>
                     <div style={{ fontSize: 17, fontFamily: "'Manrope', 'Inter', system-ui, sans-serif", fontWeight: 800, color: "var(--text)" }}>Bütçe Takip</div>
                     <div style={{ color: "var(--text4)", fontSize: 11, marginTop: 2 }}>Finans merkeziniz</div>
@@ -4445,8 +4614,8 @@ export default function App() {
                 <div key={grup.grup} style={{ marginBottom: 8 }}>
                   <div style={{ color: "var(--text5)", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", padding: "10px 12px 6px" }}>{grup.grup}</div>
                   {grup.items.map(t => (
-                    <button key={t.id} onClick={() => { setAktifTab(t.id); setMenuAcik(false); }} style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "11px 12px", marginBottom: 3, borderRadius: 13, background: aktifTab === t.id ? "var(--accent-soft)" : "transparent", border: aktifTab === t.id ? "1px solid rgba(99,102,241,.2)" : "1px solid transparent", cursor: "pointer", textAlign: "left" }}>
-                      <span style={{ width: 35, height: 35, borderRadius: 11, display: "grid", placeItems: "center", color: aktifTab === t.id ? "var(--accent)" : "var(--text4)", background: aktifTab === t.id ? "rgba(99,102,241,.1)" : "var(--card2)" }}><Icon name={t.icon} size={18} /></span>
+                    <button key={t.id} onClick={() => { setAktifTab(t.id); setMenuAcik(false); }} style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "11px 12px", marginBottom: 3, borderRadius: 13, background: aktifTab === t.id ? "var(--accent-soft)" : "transparent", border: aktifTab === t.id ? "1px solid rgba(167,78,50,.2)" : "1px solid transparent", cursor: "pointer", textAlign: "left" }}>
+                      <span style={{ width: 35, height: 35, borderRadius: 11, display: "grid", placeItems: "center", color: aktifTab === t.id ? "var(--accent)" : "var(--text4)", background: aktifTab === t.id ? "rgba(167,78,50,.1)" : "var(--card2)" }}><Icon name={t.icon} size={18} /></span>
                       <span style={{ color: aktifTab === t.id ? "var(--text)" : "var(--text3)", fontSize: 13, fontWeight: aktifTab === t.id ? 700 : 500, flex: 1 }}>{t.label}</span>
                       <span style={{ color: "var(--text5)" }}><Icon name="chevron" size={16} /></span>
                     </button>
@@ -4487,7 +4656,7 @@ export default function App() {
             ].map(t => {
               if (t.id === "_ekle") {
                 return (
-                  <button aria-label="Yeni işlem ekle" key="_ekle" onClick={() => setHizliModal(true)} style={{ width: 58, height: 58, borderRadius: 19, border: "4px solid var(--header)", cursor: "pointer", background: "linear-gradient(145deg,#6264ef,#7a7cf9)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", padding: 0, margin: 0, marginTop: -27, boxShadow: "0 12px 25px rgba(87,89,232,.42)", flexShrink: 0, boxSizing: "border-box", lineHeight: 0 }}><Icon name="plus" size={27} strokeWidth={2.3} /></button>
+                  <button aria-label="Yeni işlem ekle" key="_ekle" onClick={() => setHizliModal(true)} style={{ width: 48, height: 48, borderRadius: 15, border: "none", cursor: "pointer", background: "var(--accent-strong)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", padding: 0, margin: 0, marginTop: 0, boxShadow: "none", flexShrink: 0, boxSizing: "border-box", lineHeight: 0 }}><Icon name="plus" size={23} strokeWidth={2.3} /></button>
                 );
               }
               const aktif = aktifTab === t.id;
