@@ -862,14 +862,15 @@ function HarcamaGauge({ oran, grafikTipi = "halka" }) {
     const arc=(from,to)=>{const a=point(from,r),b=point(to,r);return `M ${a[0]} ${a[1]} A ${r} ${r} 0 0 1 ${b[0]} ${b[1]}`;};
     const angle=180-doluluk*1.8;
     const tip=point(angle,89),left=point(angle+90,5),right=point(angle-90,5);
-    const percentageColor=!veriVar?'var(--text3)':gosterOran<50?'var(--income-text)':gosterOran<80?'var(--gauge-warning)':'var(--expense-text)';
+    const percentageColor='#fff';
     return <svg className="budget-needle" viewBox="0 0 320 235" role="img" aria-label={veriVar?`Kullanılan bütçe oranı yüzde ${Math.round(Math.max(0,oran))}`:'Bütçe oranı için henüz gelir yok'}>
+      <path d={arc(180,0)} fill="none" stroke="rgba(0,0,0,.25)" strokeWidth="18"/>
       {Array.from({length:10},(_,i)=><path data-gauge-segment={i} key={i} d={arc(180-i*18-.7,180-(i+1)*18+.7)} fill="none" stroke={i<2?'#059669':i<5?'#10b981':i<8?'#f59e0b':'#ef4444'} strokeWidth="14" strokeLinecap="butt"/>)}
-      {Array.from({length:21},(_,i)=>{const major=i%5===0,a=point(180-i*9,major?94:99),b=point(180-i*9,105);return <line data-gauge-tick={i} key={i} x1={a[0]} y1={a[1]} x2={b[0]} y2={b[1]} stroke="var(--text4)" strokeWidth={major?1.8:1} opacity={major ? .8 : .35}/>;})}
-      <text x="33" y="168" textAnchor="middle" fill="var(--text4)" fontSize="12">0</text><text x="287" y="168" textAnchor="middle" fill="var(--text4)" fontSize="12">100</text>
-      {veriVar&&<g data-gauge-angle={angle}><path d={`M ${left[0]} ${left[1]} L ${tip[0]} ${tip[1]} L ${right[0]} ${right[1]} Z`} fill="currentColor"/><circle cx={cx} cy={cy} r="8" fill="currentColor"/><circle cx={cx} cy={cy} r="3" fill="var(--card2)"/></g>}
+      {Array.from({length:21},(_,i)=>{const major=i%5===0,a=point(180-i*9,major?94:99),b=point(180-i*9,105);return <line data-gauge-tick={i} key={i} x1={a[0]} y1={a[1]} x2={b[0]} y2={b[1]} stroke="#fff" strokeWidth={major?1.8:1} opacity={major ? .8 : .35}/>;})}
+      <text x="33" y="168" textAnchor="middle" fill="rgba(255,255,255,.8)" fontSize="12">0</text><text x="287" y="168" textAnchor="middle" fill="rgba(255,255,255,.8)" fontSize="12">100</text>
+      {veriVar&&<g data-gauge-angle={angle}><path d={`M ${left[0]} ${left[1]} L ${tip[0]} ${tip[1]} L ${right[0]} ${right[1]} Z`} fill="currentColor"/><circle cx={cx} cy={cy} r="8" fill="currentColor"/><circle cx={cx} cy={cy} r="3" fill="rgba(0,0,0,.22)"/></g>}
       <text x="160" y="195" textAnchor="middle" fill={percentageColor} fontSize={Math.min(35,180/(String(Math.round(gosterOran)).length+1)/.65)} fontWeight="750">{veriVar?`%${Math.round(gosterOran)}`:'—'}</text>
-      <text x="160" y="218" textAnchor="middle" fill="var(--text3)" fontSize="12">{veriVar?'Kullanılan bütçe oranı':'Oran için gelir gerekli'}</text>
+      <text x="160" y="218" textAnchor="middle" fill="rgba(255,255,255,.8)" fontSize="12">{veriVar?'Kullanılan bütçe oranı':'Oran için gelir gerekli'}</text>
     </svg>;
   }
   return (
@@ -4643,20 +4644,20 @@ export default function App() {
         .hero-budget--ibre .hero-budget-copy { width:100%; text-align:center; padding:0 3px; }
         :root { --gauge-warning:#f6bd60; }
         [data-theme="light"] { --gauge-warning:#9d5700; }
-        .hero-budget.hero-budget--ibre { background:var(--card); color:var(--text); border:1px solid var(--border); border-radius:18px; padding:16px; gap:10px; justify-items:stretch; }
-        .needle-panel-title { color:var(--text); font-size:15px; margin:0 0 2px; text-align:left; }
-        .budget-needle { max-width:350px; margin:0 auto; color:var(--text); background:transparent; }
+        .hero-budget.hero-budget--ibre { background:transparent; color:#fff; border:0; border-radius:0; padding:10px 0 0; gap:10px; justify-items:stretch; }
+        .needle-panel-title { color:#fff; font-size:15px; margin:0 0 2px; text-align:left; }
+        .budget-needle { max-width:350px; margin:0 auto; color:#fff; background:transparent; }
         .needle-facts { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
         .needle-facts > div { min-width:0; }
-        .needle-facts span:not(.money-fit) { display:block; font-size:11px; color:var(--text3); margin-bottom:5px; }
-        .needle-facts strong { display:block; font-weight:700; }
-        .needle-legend { display:flex; justify-content:space-between; flex-wrap:wrap; gap:6px; font-size:10px; color:var(--text3); margin-top:2px; }
+        .needle-facts span:not(.money-fit) { display:block; font-size:11px; color:rgba(255,255,255,.8); margin-bottom:5px; }
+        .needle-facts strong { display:block; font-weight:700; color:#fff !important; }
+        .needle-legend { display:flex; justify-content:space-between; flex-wrap:wrap; gap:6px; font-size:10px; color:rgba(255,255,255,.85); margin-top:2px; }
         .needle-legend span { display:flex; align-items:center; gap:4px; }
-        .needle-legend i { width:6px; height:6px; border-radius:50%; }
-        .needle-balance { margin-top:3px; color:var(--text); }
+        .needle-legend i { width:6px; height:6px; border-radius:50%; background:#fff !important; }
+        .needle-balance { margin-top:3px; color:#fff; }
         .needle-balance strong { font-size:12px; overflow-wrap:anywhere; }
-        .needle-balance p { font-size:10px; line-height:1.5; color:var(--text3); margin-top:4px; }
-        @media(max-width:360px) { .hero-budget.hero-budget--ibre { padding:12px; } .needle-legend { font-size:9px; } }
+        .needle-balance p { font-size:10px; line-height:1.5; color:rgba(255,255,255,.8); margin-top:4px; }
+        @media(max-width:360px) { .hero-budget.hero-budget--ibre { padding:8px 0 0; } .needle-legend { font-size:9px; } }
       `}</style>
       <div data-theme={tema} style={{ background: "var(--bg)", minHeight: "100vh", width: "100%" }}>
       <div className="app-shell">
