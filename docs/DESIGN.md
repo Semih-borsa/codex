@@ -1,3 +1,23 @@
+# v1.6 · Birleşik finans kartı ve ödeme özeti
+
+Net varlık ve dönem bütçesi ortak bir yüzeyde birleştirildi. Risk rengi ve durum etiketi tüm kartı kapsar; yüzde, ilerleme çubuğu ve dönem dengesi beyaz kontrastla okunur. Hızlı işlemler bu kartın hemen altında yer alır.
+
+Kart bölümünün başında iki toplam kutusu bulunur: kalan ekstre/ödenen tutar ve dönem içi/provizyon dahil. Güncel banka özeti olmayan kartlar sıfır varsayılmaz; toplam dışında tutuldukları belirtilir. Bireysel kartlarda Hesap Kesim Tarihi etiketi kullanılır.
+
+Yaklaşan ödemeler bugünden 7 gün sonraya kadar bekleyen fatura, kredi ve kart ekstrelerini sıralar. Her satır gün sayısını, tutarı ve Ödendi olarak işaretle eylemini içerir. Liste 20 kayıt halinde sayfalanır; ödenmiş, gecikmiş ve daha uzak ödemeler ödeme merkezinde kalır.
+
+![Birleşik ana ekran](screenshots/combined-dashboard-v16.png)
+
+![Birleşik ana ekran · açık tema](screenshots/combined-dashboard-light-v16.png)
+
+![Kısmi ödeme sonrası ekstre toplamı](screenshots/card-totals-partial-v16.png)
+
+![Tam ödeme sonrası ekstre toplamı](screenshots/card-totals-paid-v16.png)
+
+![Haftalık ödemeler](screenshots/upcoming-week-v16.png)
+
+## Önceki sürüm tasarımları
+
 # v1.5 · Modern mobil tasarım
 
 Özet ekranında önce bugünkü net varlık, sonra seçili maaş döneminin gelir/gideri ve harcama oranı görünür. Net varlığın altındaki yaylar dekoratif marka öğesidir; finansal grafik olarak sunulmaz. Kaydırılan içerikten ayrı, sabit bir alt gezinme çubuğu ana bölümleri erişilebilir tutar. Finans araçlarında ilgili üst bölüm de seçili görünür.

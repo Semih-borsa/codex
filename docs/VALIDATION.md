@@ -1,3 +1,19 @@
+# Doğrulama · v1.6.0 · 11 Ekim 2026
+
+versionCode7/versionName1.6.0; JDK17, SDK35/BuildTools34, Gradle8.9. SQLite şeması v3 korunur; JSON yedek biçimi v5'tir.
+
+- `testDebugUnitTest`, `lintDebug`, `assembleDebug`, `assembleDebugAndroidTest` başarılı. **32 JVM testi**, 0 başarısız/hatalı/atlanan; **Lint 0 hata/uyarı**.
+- Android11/API30 gerçek SQLite üzerinde **39 test**, 0 başarısız; **86.244 saniye**. Testler ayrı ledger-validation.db üzerinde çalışır. Yeni testler kısmi ekstre ödemesini, transferin gider sayılmamasını, stale ekranda ikinci ödemeyi reddetmeyi, tam takip ödemesinde bakiyeyi korumayı, tutar/tarih/kaynak hatasında atomik rollback'i ve eski v4/bozuk yedekleri kapsar.
+- Yeni JVM testleri üç kartta30.000 TL ekstre/10.000 TL ödeme sonrası20.000 TL kalan ve tümü ödenince0 TL kalan/30.000 TL ödenen toplamını, dönem içi+provizyon toplamını, bilinmeyen banka özetlerini dışlamayı ve kısa ay kesim tarihlerini doğrular.
+- Haftalık listenin bugünü ve +7günü dahil, geçmişi ve +8günü hariç tutması; ödenen fatura/takip kredisi/sıfır ekstreyi dışlaması test edildi.
+- Sahip olunan emülatörde üç kart ve tarih sınırları içeren geçici örnek veriyle özet toplamı ve doğrudan ödeme akışları kontrol edildi. Finans motorunda 30.000 TL→20.000 TL/10.000 TL ödendi→0 TL/30.000 TL ödendi senaryosu doğrulandı; fatura onayı gider oluşturdu, kredi takip seçimi gider oluşturmadı. Örnek veri önce yedeklendi, kontrollerden sonra önceki emülatör verisi geri getirildi.
+- Birleşik net varlık/bütçe kartı, Hesap Kesim Tarihi etiketi, 5gün kaldı bilgisi ve ödenen tutarların küçük metni ekran görüntülerinde kontrol edildi.
+- APK aynı sertifikayla imzalandı. APK, ZIP içindeki APK/kaynaklar ve SHA256SUMS birbiriyle ve yayımlanan main ile karşılaştırıldı.
+
+Aşağıdaki raporlar önceki sürümlerin kapsamını korur. v1.4'teki 100.000 kayıt testi güncel39Android testinin içinde de geçti; bu sürüm için ayrıca performans karşılaştırması yapılmadı.
+
+---
+
 # Doğrulama · v1.5.0 · 10 Ekim 2026
 
 versionCode6/versionName1.5.0; JDK17, SDK35, Gradle8.9. Bu sürüm arayüz yenilemesidir; finans motoru ve SQLite/JSON şeması değişmedi.

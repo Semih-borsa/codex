@@ -119,6 +119,7 @@ public final class Design {
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final double ratio;
     private final boolean light;
+    private final boolean onAccent;
     private double displayed;
     private android.animation.ValueAnimator animator;
 
@@ -127,7 +128,12 @@ public final class Design {
     }
 
     public SpendingMeter(Context context, double ratio, boolean light) {
+      this(context, ratio, light, false);
+    }
+
+    public SpendingMeter(Context context, double ratio, boolean light, boolean onAccent) {
       super(context);
+      this.onAccent = onAccent;
       this.ratio = ratio;
       this.light = light;
       displayed = Double.isNaN(ratio) ? Double.NaN : 0;
@@ -176,7 +182,7 @@ public final class Design {
     @Override
     protected void onDraw(Canvas canvas) {
       super.onDraw(canvas);
-      int accent = spendingColor(ratio, light);
+      int accent = onAccent ? Color.WHITE : spendingColor(ratio, light);
       paint.setColor(accent);
       paint.setStyle(Paint.Style.FILL);
       paint.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
@@ -189,10 +195,10 @@ public final class Design {
       float textWidth = paint.measureText(number);
       paint.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
       paint.setTextSize(sp(11));
-      paint.setColor(light ? 0xFF657286 : 0xFF9AA8BA);
+      paint.setColor(onAccent ? 0xFFDCF4EF : light ? 0xFF657286 : 0xFF9AA8BA);
       if (textWidth + dp(12) + paint.measureText("gelirin harcanan kısmı") < getWidth())
         canvas.drawText("gelirin harcanan kısmı", textWidth + dp(12), sp(35), paint);
-      paint.setColor(light ? 0xFFE5E9EE : 0xFF2B3745);
+      paint.setColor(onAccent ? 0x40FFFFFF : light ? 0xFFE5E9EE : 0xFF2B3745);
       canvas.drawRoundRect(0, sp(42) + dp(15), getWidth(), sp(42) + dp(22), dp(4), dp(4), paint);
       if (!Double.isNaN(displayed) && displayed > 0) {
         paint.setColor(accent);

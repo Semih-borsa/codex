@@ -36,6 +36,7 @@ public class MainActivity extends Activity {
       DATE = DateTimeFormatter.ofPattern("dd.MM.yyyy", Finance.TR);
   private Ledger ledger;
   private Planning plan = new Planning();
+  private int upcomingOffset;
   private List<Finance.Entry> entries = new ArrayList<>(), recent = new ArrayList<>();
   private Map<Long, Long> accountBalances = new HashMap<>();
   private Map<Long, LocalDate> paidDates = new HashMap<>();
@@ -586,7 +587,6 @@ public class MainActivity extends Activity {
     long income = Finance.total(list, "I"), expense = Finance.total(list, "E"), balance = 0;
     for (Finance.Account a : accounts) balance = Math.addExact(balance, balance(a));
     double rate = Finance.spendingRate(income, expense);
-    int accent = Design.spendingColor(rate, plan.light);
     LinearLayout hero = card(body);
     hero.setBackground(new Design.BalanceSurface(Finance.spendingBand(rate), dp(24)));
     LinearLayout top = row();
@@ -602,12 +602,46 @@ public class MainActivity extends Activity {
     add(hero, amount);
     space(hero, 6);
     add(hero, text("Tüm hesapların · bugün", 11, 0xFFFAF3FF, false));
+    space(hero, 18);
+    LinearLayout budget = column();
+    budget.setPadding(dp(12), dp(12), dp(12), dp(12));
+    budget.setBackground(shape(0x25000000, 16));
+    add(budget, text("Dönem bütçem", 15, 0xFFFFFFFF, true));
+    add(budget, new Design.SpendingMeter(this, rate, plan.light, true));
+    LinearLayout facts = row();
+    LinearLayout remaining = column(), target = column();
+    add(remaining, text("Dönem dengesi", 10, 0xFFDCF4EF, false));
+    add(remaining, text(Finance.money(income - expense), 17, 0xFFFFFFFF, true));
+    add(target, text("Tasarruf hedefi", 10, 0xFFDCF4EF, false));
+    add(target, text("%" + plan.target, 17, 0xFFFFFFFF, true));
+    weighted(facts, remaining);
+    weighted(facts, target);
+    add(budget, facts);
+    space(budget, 8);
+    add(
+        budget,
+        text(
+            income == 0
+                ? "Harcama oranı için gelir kaydı gerekli."
+                : "Dönem dengesi = gelir − gider",
+            10,
+            0xFFDCF4EF,
+            false));
+    add(hero, budget);
     int days = Finance.cycleDays(month, plan.payday, LocalDate.now());
     LocalDate oldStart = periodStart(month.minusMonths(1)),
         oldEnd = oldStart.plusDays(Math.max(0, days - 1));
     if (oldEnd.isAfter(periodEnd(month.minusMonths(1)))) oldEnd = periodEnd(month.minusMonths(1));
     List<Finance.Entry> old =
         days == 0 ? Collections.emptyList() : Finance.period(entries, oldStart, oldEnd);
+    LinearLayout actions = row();
+    weighted(actions, quickAction("− Gider ekle", "down", RED, () -> entryDialog(null, "E")));
+    gap(actions, 8);
+    weighted(actions, quickAction("+ Gelir ekle", "up", GREEN, () -> entryDialog(null, "I")));
+    gap(actions, 8);
+    weighted(actions, quickAction("Transfer", "repeat", BLUE, () -> entryDialog(null, "T")));
+    add(body, actions);
+    space(body, 14);
     LinearLayout metrics = row();
     weighted(
         metrics,
@@ -618,42 +652,6 @@ public class MainActivity extends Activity {
         metric("Gider", expense, "down", RED, Finance.change(expense, Finance.total(old, "E"))));
     add(body, metrics);
     space(body, 12);
-    LinearLayout actions = row();
-    weighted(actions, quickAction("− Gider ekle", "down", RED, () -> entryDialog(null, "E")));
-    gap(actions, 8);
-    weighted(actions, quickAction("+ Gelir ekle", "up", GREEN, () -> entryDialog(null, "I")));
-    gap(actions, 8);
-    weighted(actions, quickAction("Transfer", "repeat", BLUE, () -> entryDialog(null, "T")));
-    add(body, actions);
-    space(body, 14);
-    LinearLayout health = card(body);
-    GradientDrawable healthSurface = gradient(riskSurface(rate), CARD, 20);
-    healthSurface.setStroke(dp(1), tint(accent, plan.light ? 45 : 65));
-    health.setBackground(healthSurface);
-    LinearLayout healthTitle = row();
-    weighted(healthTitle, text("Dönem bütçen", 15, WHITE, true));
-    healthTitle.addView(chip(spendingStatus(rate), accent, tint(accent, plan.light ? 18 : 26)));
-    add(health, healthTitle);
-    add(health, new Design.SpendingMeter(this, rate, plan.light));
-    LinearLayout budgetFacts = row();
-    LinearLayout remaining = column(), targetFact = column();
-    add(remaining, text("Dönem dengesi", 10, MUTED, false));
-    space(remaining, 5);
-    add(
-        remaining,
-        text(Finance.money(income - expense), 17, income >= expense ? GREEN : RED, true));
-    add(targetFact, text("Tasarruf hedefi", 10, MUTED, false));
-    space(targetFact, 5);
-    add(targetFact, text("%" + plan.target, 17, WHITE, true));
-    weighted(budgetFacts, remaining);
-    weighted(budgetFacts, targetFact);
-    add(health, budgetFacts);
-    space(health, 10);
-    hint(
-        health,
-        income == 0
-            ? "İlk gelirini ekle, dönem bütçen oluşsun."
-            : "Dönem dengesi, kayıtlı gelirin ile giderin arasındaki farktır.");
     quickRepeat(recent);
     creditCardOverview();
     section("Nakit ve banka hesapların", "Bugünün bakiyeleri · detay için dokun");
@@ -817,19 +815,6 @@ public class MainActivity extends Activity {
     }
   }
 
-  private int riskSurface(double rate) {
-    switch (Finance.spendingBand(rate)) {
-      case 0:
-        return plan.light ? 0xFFE7F6F0 : 0xFF10362E;
-      case 1:
-        return plan.light ? 0xFFFFF3D9 : 0xFF392D19;
-      case 2:
-        return plan.light ? 0xFFFFEAF0 : 0xFF3B2030;
-      default:
-        return plan.light ? 0xFFF0EEFF : 0xFF232442;
-    }
-  }
-
   private TextView chip(String label, int color, int background) {
     TextView t = text(label, 10, color, true);
     t.setPadding(dp(9), dp(5), dp(9), dp(5));
@@ -942,51 +927,78 @@ public class MainActivity extends Activity {
 
   private void upcomingPreview() {
     LinearLayout c = card(body);
-    LinearLayout h = row();
-    weighted(h, text("Yaklaşan ödemeler", 16, WHITE, true));
-    h.addView(chip("TAKVİM", BLUE, tint(BLUE, 24)));
-    add(c, h);
-    space(c, 14);
-    List<Planning.Bill> pending = new ArrayList<>();
-    for (Planning.Bill b : plan.bills) if (!b.isPaid()) pending.add(b);
-    pending.sort(Comparator.comparing(b -> b.due));
-    if (pending.isEmpty())
-      hint(
-          c,
-          plan.cards.isEmpty()
-              ? "Henüz bir ödeme planlamadın. Fatura veya kart tarihlerini ekle."
-              : plan.cards.size()
-                  + " kredi kartının hesap kesim ve ödeme tarihlerini takvimden izle.");
-    for (int i = 0; i < Math.min(3, pending.size()); i++) {
-      Planning.Bill b = pending.get(i);
+    cardTitle(c, "calendar", "Yaklaşan ödemeler", BLUE);
+    hint(c, "Bugün ve önümüzdeki 7 gün · güncel tarihe göre");
+    LocalDate today = LocalDate.now();
+    List<Planning.Upcoming> upcoming = plan.upcoming(today);
+    upcomingOffset = Math.min(upcomingOffset, Math.max(0, ((upcoming.size() - 1) / 20) * 20));
+    if (upcoming.isEmpty()) hint(c, "Önümüzdeki 7 gün için bekleyen ödeme yok.");
+    for (int i = upcomingOffset; i < Math.min(upcoming.size(), upcomingOffset + 20); i++) {
+      Planning.Upcoming item = upcoming.get(i);
+      String name = item.bill == null ? account(item.card.account) + " · Ekstre" : item.bill.name;
+      divider(c);
       LinearLayout r = row();
-      LinearLayout date = column();
-      date.setGravity(Gravity.CENTER);
-      date.setPadding(dp(9), dp(8), dp(9), dp(8));
-      date.setBackground(shape(plan.light ? 0xFFF1F3F7 : 0xFF202A3A, 12));
-      add(date, text(Integer.toString(b.due.getDayOfMonth()), 18, WHITE, true));
+      LinearLayout description = column();
+      add(description, text(name, 13, WHITE, true));
+      long days = ChronoUnit.DAYS.between(today, item.date);
       add(
-          date,
-          text(b.due.format(DateTimeFormatter.ofPattern("MMM", Finance.TR)), 10, MUTED, false));
-      r.addView(date, new LinearLayout.LayoutParams(dp(48), dp(52)));
-      gap(r, 10);
-      LinearLayout desc = column();
-      add(desc, text(b.name, 13, WHITE, true));
-      space(desc, 4);
-      add(
-          desc,
+          description,
           text(
-              b.due.isBefore(LocalDate.now())
-                  ? "Gecikmiş"
-                  : b.due.equals(LocalDate.now()) ? "Bugün ödenecek" : b.due.format(DATE),
+              days == 0 ? "Bugün ödenecek" : days + " gün kaldı · " + item.date.format(DATE),
               11,
-              b.due.isAfter(LocalDate.now()) ? MUTED : RED,
+              days == 0 ? RED : MUTED,
               false));
-      weighted(r, desc);
-      r.addView(text(Finance.money(b.amount), 13, WHITE, true));
+      weighted(r, description);
+      r.addView(text(Finance.money(item.amount), 13, WHITE, true));
       add(c, r);
-      if (i < Math.min(3, pending.size()) - 1) divider(c);
+      space(c, 8);
+      Button paid =
+          button(
+              "Ödendi olarak işaretle",
+              true,
+              () -> {
+                if (item.card != null) cardPayment(item.card);
+                else if (item.bill.loan != 0) loanPaymentChoice(item.bill);
+                else
+                  confirm(
+                      "Ödeme kaydedilsin mi?",
+                      name
+                          + " · "
+                          + Finance.money(item.amount)
+                          + " bugün ödendi olarak işaretlenir ve gider kaydı oluşturulur.",
+                      () -> {
+                        try {
+                          ledger.payBill(item.bill.id, LocalDate.now());
+                          refresh();
+                          toast("Ödendi; gider kaydı eklendi");
+                        } catch (Exception e) {
+                          error("Ödeme kaydedilemedi", e);
+                        }
+                      });
+              });
+      paid.setContentDescription(name + " ödemesini işaretle");
+      add(c, paid);
     }
+    if (upcomingOffset > 0)
+      add(
+          c,
+          button(
+              "Önceki 20 yaklaşan ödeme",
+              false,
+              () -> {
+                upcomingOffset -= 20;
+                render();
+              }));
+    if (upcoming.size() > upcomingOffset + 20)
+      add(
+          c,
+          button(
+              "Sonraki 20 yaklaşan ödeme",
+              false,
+              () -> {
+                upcomingOffset += 20;
+                render();
+              }));
     space(c, 12);
     add(
         c,
@@ -1041,6 +1053,31 @@ public class MainActivity extends Activity {
           "Kart adına, kesim ve ödeme günlerine göre ayrı bir kart oluştur. Banka tutarlarını"
               + " istediğin zaman güncelle.");
     }
+    if (!plan.cards.isEmpty()) {
+      Planning.CardTotals totals = plan.cardTotals();
+      LinearLayout summary = card(body);
+      LinearLayout amounts = row();
+      LinearLayout statement =
+          cardAmount("Toplam ekstre borcu", totals.known == 0 ? null : totals.remaining, BLUE);
+      space(statement, 5);
+      add(
+          statement,
+          text(
+              totals.known == 0 ? "Banka özeti gerekli" : Finance.money(totals.paid) + " ödendi",
+              10,
+              MUTED,
+              false));
+      weighted(amounts, statement);
+      gap(amounts, 8);
+      LinearLayout current =
+          cardAmount("Dönem içi", totals.known == 0 ? null : totals.current, GREEN);
+      space(current, 5);
+      add(current, text("Provizyon dahil", 10, MUTED, false));
+      weighted(amounts, current);
+      add(summary, amounts);
+      if (totals.unknown > 0)
+        hint(summary, totals.unknown + " kartın banka özeti girilmedi; toplamın dışında.");
+    }
     for (Planning.Card card : plan.cards) creditCardTile(body, card, false);
     add(body, button("+ Kredi kartı ekle", true, () -> cardDialog(null)));
     space(body, 16);
@@ -1092,13 +1129,12 @@ public class MainActivity extends Activity {
             card.updated == null ? null : card.pending,
             plan.light ? 0xFF9D5700 : 0xFFF6BD60));
     add(c, buckets);
-    LocalDate snapshot = card.updated == null ? LocalDate.now() : card.updated;
-    LocalDate close = Finance.cycleStart(YearMonth.from(snapshot), card.closing);
-    if (close.isAfter(snapshot))
-      close = Finance.cycleStart(YearMonth.from(snapshot).minusMonths(1), card.closing);
-    LocalDate due = Finance.cardDue(close, card.due);
+    if (card.updated != null)
+      hint(c, Finance.money(card.statementPaid) + " ekstre ödemesi yapıldı");
+    LocalDate close = card.statementClosing();
+    LocalDate due = card.statementDue();
     space(c, 14);
-    keyValue(c, "Son hesap kesimi", close.format(DATE), MUTED);
+    keyValue(c, "Hesap Kesim Tarihi", close.format(DATE), MUTED);
     keyValue(
         c,
         "Son ödeme tarihi",
@@ -1149,6 +1185,9 @@ public class MainActivity extends Activity {
     label(f, "Ekstre borcu · kalan / TL");
     EditText statement = field("0,00", Finance.editable(card.statement), true);
     add(f, statement);
+    label(f, "Bu ekstre için ödenen tutar · TL");
+    EditText statementPaid = field("0,00", Finance.editable(card.statementPaid), true);
+    add(f, statementPaid);
     label(f, "Dönem içi borç · ekstreye girmeyen / TL");
     EditText current = field("0,00", Finance.editable(card.current), true);
     add(f, current);
@@ -1158,7 +1197,9 @@ public class MainActivity extends Activity {
     hint(
         f,
         "Bankada görünen kalan ekstreyi, kesim sonrası borcu ve bekleyen provizyonu birbirini"
-            + " içermeyen üç tutar olarak gir. Gelir/gider ve net varlık kayıtları değişmez.");
+            + " içermeyen tutarlar olarak gir. Ödenen tutar kalan borca dahil değildir. Yeni"
+            + " ekstrede ödeneni sıfırla. Bu alanlar finansal işlem oluşturmaz; daha önceki ödemeni"
+            + " burada giriyorsan tekrar ödeme olarak kaydetme.");
     TextView problem = text("", 12, RED, false);
     add(f, problem);
     AlertDialog d = dialog(account(card.account) + " · Banka özeti", f, "Güncelle");
@@ -1171,6 +1212,7 @@ public class MainActivity extends Activity {
                         Planning.Card updated =
                             new Planning.Card(card.account, card.closing, card.due);
                         updated.statement = nonnegativeMoney(statement);
+                        updated.statementPaid = nonnegativeMoney(statementPaid);
                         updated.current = nonnegativeMoney(current);
                         updated.pending = nonnegativeMoney(pending);
                         updated.updated = LocalDate.now();
@@ -3350,6 +3392,7 @@ public class MainActivity extends Activity {
                                       () ->
                                           new IllegalArgumentException("Kart artık mevcut değil."));
                           card.statement = saved.statement;
+                          card.statementPaid = saved.statementPaid;
                           card.current = saved.current;
                           card.pending = saved.pending;
                           card.updated = saved.updated;
@@ -3372,16 +3415,32 @@ public class MainActivity extends Activity {
     LinearLayout f = column();
     List<Finance.Account> sources = new ArrayList<>();
     for (Finance.Account a : accounts) if (a.id != card.account) sources.add(a);
-    if (sources.isEmpty()) {
-      toast("Ödeme için ikinci bir hesap oluşturmalısın");
-      return;
-    }
+    CheckBox transfer = new CheckBox(this);
+    transfer.setText(R.string.card_payment_transfer);
+    transfer.setTextColor(WHITE);
+    transfer.setButtonTintList(ColorStateList.valueOf(GREEN));
+    transfer.setChecked(!sources.isEmpty());
+    transfer.setEnabled(!sources.isEmpty());
+    add(f, transfer);
     label(f, "Ödeme yapılan kaynak hesap");
     Spinner source = spinner(sources);
+    source.setEnabled(transfer.isChecked());
+    transfer.setOnCheckedChangeListener((button, checked) -> source.setEnabled(checked));
     add(f, source);
     label(f, "Ödediğin tutar · TL");
-    EditText amount = field("", "", true);
+    EditText amount =
+        field(
+            "",
+            card.updated != null && card.statement > 0 ? Finance.editable(card.statement) : "",
+            true);
     add(f, amount);
+    CheckBox reduceStatement = new CheckBox(this);
+    reduceStatement.setText(R.string.card_payment_statement);
+    reduceStatement.setTextColor(WHITE);
+    reduceStatement.setButtonTintList(ColorStateList.valueOf(GREEN));
+    reduceStatement.setChecked(card.updated != null && card.statement > 0);
+    reduceStatement.setEnabled(card.updated != null && card.statement > 0);
+    add(f, reduceStatement);
     LocalDate[] date = {LocalDate.now()};
     Button dateButton = button(date[0].format(DATE), false, () -> {});
     dateButton.setOnClickListener(
@@ -3395,8 +3454,9 @@ public class MainActivity extends Activity {
     add(f, dateButton);
     hint(
         f,
-        "Ödeme, kaynak hesaptan kart hesabına transfer olur. Gelir veya gider yüzdelerine yeniden"
-            + " eklenmez.");
+        "Transfer seçiliyse kaynak hesaptan kart hesabına aktarılır; yeniden gider sayılmaz."
+            + " Transferi kapatırsan yalnızca ekstre takibi güncellenir. Tutarı kısmi ödeme için"
+            + " değiştirebilirsin. Ekstre takibi seçiliyken kalan azalır, ödenen artar.");
     TextView problem = text("", 12, RED, false);
     add(f, problem);
     AlertDialog d = dialog("Kart borcu ödemesi", f, "Kaydet");
@@ -3408,16 +3468,13 @@ public class MainActivity extends Activity {
                       try {
                         if (date[0].isAfter(LocalDate.now()))
                           throw new IllegalArgumentException("Ödeme tarihi gelecekte olamaz.");
-                        ledger.saveEntry(
-                            new Finance.Entry(
-                                0,
-                                "T",
-                                Finance.parseMoney(amount.getText().toString()),
-                                date[0],
-                                ((Finance.Account) source.getSelectedItem()).id,
-                                card.account,
-                                0,
-                                "Kart borcu ödemesi"));
+                        ledger.payCard(
+                            card,
+                            Finance.parseMoney(amount.getText().toString()),
+                            date[0],
+                            sources.isEmpty() ? 0 : ((Finance.Account) source.getSelectedItem()).id,
+                            transfer.isChecked(),
+                            reduceStatement.isChecked());
                         d.dismiss();
                         refresh();
                       } catch (Exception e) {

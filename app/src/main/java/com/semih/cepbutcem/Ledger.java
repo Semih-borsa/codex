@@ -629,6 +629,62 @@ public final class Ledger extends SQLiteOpenHelper {
     }
   }
 
+  /** Remaining statement and optional account transfer commit atomically. */
+  public void payCard(
+      Planning.Card expected,
+      long amount,
+      LocalDate date,
+      long source,
+      boolean transfer,
+      boolean reduceStatement)
+      throws JSONException {
+    validDate(date.toString());
+    if (date.isAfter(LocalDate.now()) || amount <= 0 || amount > 100_000_000_000L)
+      throw new IllegalArgumentException("Geçerli bir ödeme tutarı ve geçmiş/bugünkü tarih gir.");
+    if (!transfer && !reduceStatement)
+      throw new IllegalArgumentException("Ödeme kaydı veya ekstre takibi seçilmeli.");
+    SQLiteDatabase db = getWritableDatabase();
+    db.beginTransaction();
+    try {
+      Planning p = planning();
+      Planning.Card card =
+          p.cards.stream()
+              .filter(c -> c.account == expected.account)
+              .findFirst()
+              .orElseThrow(() -> new IllegalArgumentException("Kart artık mevcut değil."));
+      if (reduceStatement) {
+        if (card.updated == null
+            || card.statement != expected.statement
+            || card.statementPaid != expected.statementPaid
+            || !card.updated.equals(expected.updated)
+            || card.closing != expected.closing
+            || card.due != expected.due)
+          throw new IllegalArgumentException("Banka özeti değişti; ekranı yenileyip tekrar dene.");
+        if (amount > card.statement)
+          throw new IllegalArgumentException("Ödeme kalan ekstre borcunu aşamaz.");
+        LocalDate nextClose =
+            Finance.cycleStart(
+                java.time.YearMonth.from(card.statementClosing()).plusMonths(1), card.closing);
+        if (date.isBefore(card.updated) || !date.isBefore(nextClose))
+          throw new IllegalArgumentException(
+              "Bu tarih için bankadaki güncel ekstreyi önce gir. Ödeme, son güncellemeden önce veya"
+                  + " yeni kesim döneminde olamaz.");
+        card.statement -= amount;
+        card.statementPaid = Math.addExact(card.statementPaid, amount);
+      }
+      if (transfer) {
+        if (source == card.account)
+          throw new IllegalArgumentException("Kaynak hesap kartın kendisi olamaz.");
+        saveEntry(
+            new Finance.Entry(0, "T", amount, date, source, card.account, 0, "Kart borcu ödemesi"));
+      }
+      savePlanning(p);
+      db.setTransactionSuccessful();
+    } finally {
+      db.endTransaction();
+    }
+  }
+
   public void removeCard(long account) throws JSONException {
     Planning p = planning();
     p.cards.removeIf(c -> c.account == account);
@@ -786,7 +842,7 @@ public final class Ledger extends SQLiteOpenHelper {
     try {
       JSONObject result = new JSONObject();
       result.put("format", "cepbutcem");
-      result.put("version", 4);
+      result.put("version", 5);
       result.put("planning", planning().json());
       result.put("created", LocalDateTime.now().toString());
       for (String name : Arrays.asList("accounts", "categories", "recurring", "entries", "budgets"))
@@ -838,7 +894,7 @@ public final class Ledger extends SQLiteOpenHelper {
   public void restore(String input) throws JSONException {
     JSONObject root = new JSONObject(input);
     if (!"cepbutcem".equals(root.getString("format"))
-        || (integer(root, "version") < 1 || integer(root, "version") > 4))
+        || (integer(root, "version") < 1 || integer(root, "version") > 5))
       throw new JSONException("Uyumlu Cep Bütçem yedeği değil.");
     Map<String, JSONArray> tables = new LinkedHashMap<>();
     for (String name : Arrays.asList("accounts", "categories", "recurring", "entries", "budgets")) {

@@ -1,4 +1,4 @@
-# Cep Bütçem v1.5 — indirme, kurulum ve ilk ayarlar
+# Cep Bütçem v1.6 — indirme, kurulum ve ilk ayarlar
 
 ## Bilgisayara indirmenin kolay yolu
 
@@ -27,7 +27,7 @@ Tam paketi indirdiysen ayıklandığında kökte **CepButcem.apk**, yanında **C
 5. Android izin isterse dosyayı açan uygulama için **Bu kaynaktan yüklemeye izin ver** seçeneğini aç, geri dön ve **Yükle / Güncelle** seç.
 6. **Aç** düğmesine bas. Android 8.0 veya üzeri gerekir. Bilgisayarda APK dosyasını açman gerekmez; Android telefon kurar.
 
-v1.5 hazır APK, önceki yayımlanan v1.0/v1.1/v1.2/v1.3/v1.4 APK ile aynı imzayı kullanır. Güncelleme kurulumu mevcut gelir, gider, hesap ve bütçeleri korur; veritabanı silinmeden yükseltilir. **Uygulamayı kaldırmadan güncelle**. Farklı bilgisayarda farklı imzayla oluşturulmuş bir APK üzerine kurulumda imza uyuşmazlığı olabilir; kayıtlarını önce JSON olarak yedekle.
+v1.6 hazır APK, önceki yayımlanan v1.0/v1.1/v1.2/v1.3/v1.4/v1.5 APK ile aynı imzayı kullanır. Güncelleme kurulumu mevcut gelir, gider, hesap ve bütçeleri korur; veritabanı silinmeden yükseltilir. **Uygulamayı kaldırmadan güncelle**. Farklı bilgisayarda farklı imzayla oluşturulmuş bir APK üzerine kurulumda imza uyuşmazlığı olabilir; kayıtlarını önce JSON olarak yedekle.
 
 ## Android Studio'da aç ve kendi APK'nı üret
 
@@ -89,3 +89,15 @@ Hesap `App.jsx` içindeki `MaasTab` ile aynıdır: aylık enflasyonlar bileşik 
 Analiz → Harcama haritasında seçtiğin günün toplam geliri, gideri ve dengesi takvimin altında görünür. **İşlem detaylarını göster** düğmesiyle ayrıntıyı aç veya gizle; ayrı gün penceresi açılmaz.
 
 Konuya özel yardımda hangi konuyu istediğini seç; alışveriş senaryosu gerçek gelir/gideri değiştirmez. JSON v4 yedek kredi planını da taşır; eski yedekler okunur. Yeni telefonda bildirimleri yeniden etkinleştir.
+
+## v1.6: kalan ekstre ve özet ekranından ödeme
+
+Kartın **Tutarları güncelle** formunda dört ayrı alan var: kalan ekstre, bu ekstre için ödenen tutar, dönem içi borç ve provizyon. Örnek: ekstre 10.000 TL, daha önce 3.000 TL ödenmişse kalan 7.000, ödenen 3.000 gir. Ödenen tutar kalan borca eklenmez. Daha önce bankada yaptığın bir ödemeyi burada girdiysen tekrar ödeme olarak kaydetme. Yeni hesap kesiminde yeni ekstreye ait kalan/ödenen tutarları gir; eski ekstre ödemelerini yeni ekstreye taşıma.
+
+**Özet → Yaklaşan ödemeler → Ödendi olarak işaretle**:
+
+- Fatura: tutar ve gider kaydı onayını gör; onaylayınca bugün ödenir. Geçmiş tarih için ödeme merkezini kullan.
+- Kredi: **Bakiyeden düşülsün mü?** → Evet gider, Hayır yalnızca takip; ardından ödeme tarihini seç.
+- Kart: kalan ekstre tutarı hazır gelir. Kısmi ödeme için değiştir. **Ödemeyi kalan ekstre borcundan düş** seçiliyken kalan azalır, ödenen artar. Transfer seçiliyse banka/nakit→kart aktarımı oluşturulur; gider olarak tekrar sayılmaz. Transfer kapalıysa yalnızca ekstre takibi değişir.
+
+Önümüzdeki 7 gün listesinin dışında kalan ve gecikmiş ödemeler **Ödeme takvimini aç** ile yönetilir. Kartın güncel banka özeti yoksa borç tahmin edilmez. Yeni kesim döneminde ödeme yapmak için önce banka özetini güncelle. Transferi sonradan düzenlemek/silmek bankadan takip edilen ekstre tutarlarını değiştirmez; gerekiyorsa **Tutarları güncelle** ile düzelt. JSON v5 yedeği eski v1–v4 yedekleriyle geri yükleme uyumunu korur; v5 yedeğini uygulamanın v1.6 veya üzeri sürümünde aç.

@@ -2,6 +2,18 @@
 
 Türkçe, çevrimdışı kişisel gelir-gider takibi ve ayrıntılı finans analizi için yerel Android uygulaması. Android Studio'da açılır ve telefona kurulabilen APK üretir. Java 17, Android'in yerel arayüz bileşenleri ve SQLite kullanır; hesap açma, internet bağlantısı veya ücretli bir servis gerekmez.
 
+## v1.6 · Birleşik özet, ekstre ödemeleri ve haftalık ödeme listesi
+
+- Net varlık ve dönem bütçem tek kartta; harcama oranına göre renk ve açılış animasyonu korunur.
+- Kredi kartlarının üstünde toplam **kalan ekstre borcu**, küçük **ödenen tutar**, ayrıca **dönem içi + provizyon** toplamı.
+- Üç kartta 30.000 TL ekstre, 10.000 TL ödeme → **20.000 TL**, altında **10.000 TL ödendi**. Tamamı ödenirse **0 TL / 30.000 TL ödendi**.
+- Karttaki tarih etiketi **Hesap Kesim Tarihi**.
+- Özetin yaklaşan ödemeleri yalnızca bugün–7 gün sonraki aralığı kapsar; **5 gün kaldı** gibi bilgiler ve doğrudan ödeme işaretleme içerir. Fatura, kredi taksidi ve kayıtlı kart ekstresi birlikte listelenir.
+- Kart ödeme formunda tutarı değiştirerek kısmi ödeme yapabilirsin. Transfer seçiliyse hesap aktarımı yapılır; kapatırsan yalnızca ekstre takibi güncellenir. Kredi taksidindeki bakiyeden düşme sorusu korunur.
+- Banka tutarlarını güncelle formunda daha önce ödenen ekstre tutarı ayrıca girilebilir. Yeni ekstre girerken ödenen tutarı o ekstreye göre güncelle/sıfırla. Banka özetleri finansal hesap bakiyelerinden ayrı takiptir.
+
+JSON yedeği v5; eski v1–v4 yedekleri okunur. Güncel ekranlar: [Tasarım](docs/DESIGN.md). Kontroller: [Doğrulama](docs/VALIDATION.md).
+
 ## v1.5 · Modern arayüz
 
 Ana ekran; dekoratif yaylarla işlenen net varlık kartı, gelir/gider karşılaştırması, simgeli gider/gelir/transfer kısayolları ve kompakt dönem bütçesiyle yenilendi. Kartlar, yazı hiyerarşisi, form alanları ve alt gezinme tüm ekranlarda aynı tasarım dilini kullanır. Açık ve koyu tema ayrı paletlerle düzenlendi; bütçe oranının renk eşikleri ve sıfırdan başlayan animasyonu korunur.
@@ -125,7 +137,7 @@ Dönem sonu senaryosu `(gerçekleşmiş gider − ödenmiş takipli faturalar) /
 
 Asistan çevrimdışı hesaplama ve açıklanabilir kurallar kullanır; bir dil modeli veya banka bağlantısı içermez. Yorumlar kayıtlara dayanır; eksik kayıtlar sonuçları değiştirir. v1.1’de takvim uygulama içindeydi; v1.4’te isteğe bağlı yerel ödeme bildirimleri de vardır.
 
-v1.1 güncellemesi SQLite v1 kayıtlarını silmeden v2'ye geçirdi; güncel v1.5, v1/v2'yi v3'e yükseltir. Hazır APK önceki yayımlanan APK ile aynı debug anahtarıyla imzalanır. Kurmadan önce **JSON yedeğini kaydet** ile yedek al; APK'yı güncelleme olarak kur, uygulamayı kaldırma. Android Studio'da farklı imzayla derlenen bir sürümün üzerine kurmak imza uyuşmazlığı oluşturabilir.
+v1.1 güncellemesi SQLite v1 kayıtlarını silmeden v2'ye geçirdi; güncel v1.6, v1/v2'yi v3'e yükseltir. Hazır APK önceki yayımlanan APK ile aynı debug anahtarıyla imzalanır. Kurmadan önce **JSON yedeğini kaydet** ile yedek al; APK'yı güncelleme olarak kur, uygulamayı kaldırma. Android Studio'da farklı imzayla derlenen bir sürümün üzerine kurmak imza uyuşmazlığı oluşturabilir.
 
 ## İlk kullanım
 

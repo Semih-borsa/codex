@@ -27,11 +27,23 @@ public final class Planning {
   public static final class Card {
     public long account;
     public int closing, due;
-    public long statement, current, pending;
+    public long statement, statementPaid, current, pending;
     public LocalDate updated;
 
     public long bankTotal() {
       return Math.addExact(Math.addExact(statement, current), pending);
+    }
+
+    public LocalDate statementClosing() {
+      LocalDate date = updated == null ? LocalDate.now() : updated;
+      LocalDate close = Finance.cycleStart(java.time.YearMonth.from(date), closing);
+      return close.isAfter(date)
+          ? Finance.cycleStart(java.time.YearMonth.from(date).minusMonths(1), closing)
+          : close;
+    }
+
+    public LocalDate statementDue() {
+      return Finance.cardDue(statementClosing(), due);
     }
 
     public Card(long account, int closing, int due) {
@@ -39,6 +51,65 @@ public final class Planning {
       this.closing = closing;
       this.due = due;
     }
+  }
+
+  public static final class CardTotals {
+    public long remaining, paid, current;
+    public int known, unknown;
+  }
+
+  public CardTotals cardTotals() {
+    CardTotals totals = new CardTotals();
+    for (Card card : cards) {
+      if (card.updated == null) {
+        totals.unknown++;
+        continue;
+      }
+      totals.known++;
+      totals.remaining = Math.addExact(totals.remaining, card.statement);
+      totals.paid = Math.addExact(totals.paid, card.statementPaid);
+      totals.current = Math.addExact(totals.current, Math.addExact(card.current, card.pending));
+    }
+    return totals;
+  }
+
+  public static final class Upcoming {
+    public final Bill bill;
+    public final Card card;
+    public final LocalDate date;
+    public final long amount;
+
+    Upcoming(Bill bill) {
+      this.bill = bill;
+      card = null;
+      date = bill.due;
+      amount = bill.amount;
+    }
+
+    Upcoming(Card card) {
+      this.card = card;
+      bill = null;
+      date = card.statementDue();
+      amount = card.statement;
+    }
+  }
+
+  /**
+   * Today's obligations through seven days ahead; old and paid items stay in the payment centre.
+   */
+  public List<Upcoming> upcoming(LocalDate today) {
+    List<Upcoming> result = new ArrayList<>();
+    LocalDate end = today.plusDays(7);
+    for (Bill bill : bills)
+      if (!bill.isPaid() && !bill.due.isBefore(today) && !bill.due.isAfter(end))
+        result.add(new Upcoming(bill));
+    for (Card card : cards)
+      if (card.updated != null && card.statement > 0) {
+        LocalDate due = card.statementDue();
+        if (!due.isBefore(today) && !due.isAfter(end)) result.add(new Upcoming(card));
+      }
+    result.sort(Comparator.comparing(item -> item.date));
+    return result;
   }
 
   public static final class Bill {
@@ -79,6 +150,7 @@ public final class Planning {
           new JSONObject().put("account", c.account).put("closing", c.closing).put("due", c.due);
       if (c.updated != null)
         card.put("statement", c.statement)
+            .put("statementPaid", c.statementPaid)
             .put("current", c.current)
             .put("pending", c.pending)
             .put("updated", c.updated.toString());
@@ -149,8 +221,16 @@ public final class Planning {
         throw new JSONException("Geçersiz kart hesabı.");
       Card card =
           new Card(account, (int) number(c, "closing", 1, 31), (int) number(c, "due", 1, 31));
-      if (c.has("updated") || c.has("statement") || c.has("current") || c.has("pending")) {
+      if (c.has("updated")
+          || c.has("statement")
+          || c.has("current")
+          || c.has("pending")
+          || c.has("statementPaid")) {
         card.statement = number(c, "statement", 0, 100_000_000_000L);
+        card.statementPaid =
+            c.has("statementPaid") ? number(c, "statementPaid", 0, 100_000_000_000L) : 0;
+        if (Math.addExact(card.statement, card.statementPaid) > 100_000_000_000L)
+          throw new JSONException("Toplam ekstre aralık dışında.");
         card.current = number(c, "current", 0, 100_000_000_000L);
         card.pending = number(c, "pending", 0, 100_000_000_000L);
         Object date = c.get("updated");

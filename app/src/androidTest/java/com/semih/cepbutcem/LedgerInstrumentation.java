@@ -332,14 +332,15 @@ public class LedgerInstrumentation extends Instrumentation {
           equal(13499, db.planning().cards.get(0).bankTotal());
           equal(0, db.entries().size());
           String backup = db.backup();
-          equal(4, new JSONObject(backup).getLong("version"));
+          equal(5, new JSONObject(backup).getLong("version"));
           db.restore(backup);
           equal(999, db.planning().cards.get(0).pending);
           truth(db.planning().cards.get(0).updated.equals(LocalDate.of(2026, 10, 10)));
           JSONObject old = new JSONObject(backup);
           old.put("version", 2);
           JSONObject card = old.getJSONObject("planning").getJSONArray("cards").getJSONObject(0);
-          for (String key : Arrays.asList("statement", "current", "pending", "updated"))
+          for (String key :
+              Arrays.asList("statement", "statementPaid", "current", "pending", "updated"))
             card.remove(key);
           db.restore(old.toString());
           truth(db.planning().cards.get(0).updated == null);
@@ -777,6 +778,85 @@ public class LedgerInstrumentation extends Instrumentation {
           root.getJSONObject("planning").remove("salary");
           db.restore(root.toString());
           truth(db.planning().salary.current.isEmpty());
+        });
+    tests.put(
+        "cardPartialPaymentAtomicTransferAndNoDoubleCharge",
+        () -> {
+          Planning.Card c = new Planning.Card(0, 10, 20);
+          c.updated = LocalDate.now();
+          c.statement = 3_000_000;
+          c.current = 20000;
+          c.pending = 10000;
+          db.saveCard(c, "Kart", -3_000_000);
+          long source = db.accounts().get(0).id;
+          db.payCard(c, 1_000_000, LocalDate.now(), source, true, true);
+          Planning.Card saved = db.planning().cards.get(0);
+          equal(2_000_000, saved.statement);
+          equal(1_000_000, saved.statementPaid);
+          equal(2030000, saved.bankTotal());
+          equal(1, db.entries().size());
+          equal(0, Finance.total(db.entries(), "E"));
+          equal(0, Finance.total(db.entries(), "I"));
+          equal(-1_000_000, db.balances(LocalDate.now()).get(source));
+          equal(-2_000_000, db.balances(LocalDate.now()).get(c.account));
+          rejects(() -> db.payCard(c, 1_000_000, LocalDate.now(), source, true, true));
+          equal(1, db.entries().size());
+          equal(2_000_000, db.planning().cards.get(0).statement);
+        });
+    tests.put(
+        "cardFullTrackingPaymentAndBackupRoundTrip",
+        () -> {
+          Planning.Card c = new Planning.Card(0, 10, 20);
+          c.updated = LocalDate.now();
+          c.statement = 2_000_000;
+          c.statementPaid = 1_000_000;
+          db.saveCard(c, "Kart", -3_000_000);
+          db.payCard(c, 2_000_000, LocalDate.now(), 0, false, true);
+          equal(0, db.entries().size());
+          equal(-3_000_000, db.balances(LocalDate.now()).get(c.account));
+          equal(0, db.planning().cardTotals().remaining);
+          equal(3_000_000, db.planning().cardTotals().paid);
+          String backup = db.backup();
+          db.restore(backup);
+          equal(3_000_000, db.planning().cards.get(0).statementPaid);
+          truth(db.planning().upcoming(LocalDate.now()).isEmpty());
+        });
+    tests.put(
+        "invalidCardPaymentRollsBackTransferAndSnapshot",
+        () -> {
+          Planning.Card c = new Planning.Card(0, 10, 20);
+          c.updated = LocalDate.now();
+          c.statement = 10000;
+          db.saveCard(c, "Kart", -10000);
+          rejects(() -> db.payCard(c, 11000, LocalDate.now(), 0, false, true));
+          rejects(() -> db.payCard(c, 10000, LocalDate.now(), c.account, true, true));
+          rejects(() -> db.payCard(c, 10000, LocalDate.now(), Long.MAX_VALUE, true, true));
+          rejects(() -> db.payCard(c, 10000, LocalDate.now().minusDays(1), 0, false, true));
+          rejects(() -> db.payCard(c, 10000, LocalDate.now().plusDays(1), 0, false, true));
+          rejects(() -> db.payCard(c, 0, LocalDate.now(), 0, false, true));
+          equal(0, db.entries().size());
+          equal(10000, db.planning().cards.get(0).statement);
+          equal(0, db.planning().cards.get(0).statementPaid);
+        });
+    tests.put(
+        "cardPaidV4CompatibilityAndInvalidBackupPreservesLedger",
+        () -> {
+          Planning.Card c = new Planning.Card(0, 10, 20);
+          c.updated = LocalDate.now();
+          c.statement = 10000;
+          c.statementPaid = 5000;
+          db.saveCard(c, "Kart", -10000);
+          JSONObject root = new JSONObject(db.backup());
+          JSONObject card = root.getJSONObject("planning").getJSONArray("cards").getJSONObject(0);
+          card.put("statementPaid", -1);
+          String invalid = root.toString();
+          rejects(() -> db.restore(invalid));
+          equal(5000, db.planning().cards.get(0).statementPaid);
+          card.remove("statementPaid");
+          root.put("version", 4);
+          db.restore(root.toString());
+          equal(0, db.planning().cards.get(0).statementPaid);
+          equal(10000, db.planning().cards.get(0).statement);
         });
     StringBuilder summary = new StringBuilder();
     for (Map.Entry<String, Check> test : tests.entrySet()) {
