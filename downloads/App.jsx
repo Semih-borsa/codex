@@ -856,18 +856,20 @@ function HarcamaGauge({ oran, grafikTipi = "halka" }) {
   const doluluk = Math.min(100, gosterOran);
   const veriVar = Number.isFinite(oran);
   if(grafikTipi === "ibre") {
-    const cx=160,cy=142,r=110;
+    // Cep Bütçem Design.BudgetGauge: aynı ölçüler, dilimler, ölçek ve merkez göbeği.
+    const cx=160,cy=145,r=117;
     const point=(angle,radius)=>[cx+radius*Math.cos(angle*Math.PI/180),cy-radius*Math.sin(angle*Math.PI/180)];
     const arc=(from,to)=>{const a=point(from,r),b=point(to,r);return `M ${a[0]} ${a[1]} A ${r} ${r} 0 0 1 ${b[0]} ${b[1]}`;};
     const angle=180-doluluk*1.8;
-    const tip=point(angle,84),left=point(angle+90,5),right=point(angle-90,5);
-    return <svg className="budget-needle" viewBox="0 0 320 218" role="img" aria-label={veriVar?`Kullanılan bütçe oranı yüzde ${Math.round(Math.max(0,oran))}`:'Bütçe oranı için henüz gelir yok'}>
-      {[{from:180,to:90,color:'#10b981'},{from:90,to:36,color:'#f59e0b'},{from:36,to:0,color:'#ef4444'}].map(a=><g key={a.from}><path d={arc(a.from,a.to)} fill="none" stroke="rgba(255,255,255,.8)" strokeWidth="14"/><path d={arc(a.from,a.to)} fill="none" stroke={a.color} strokeWidth="8"/></g>)}
-      {Array.from({length:11},(_,i)=>{const a=point(180-i*18,88),b=point(180-i*18,98);return <line key={i} x1={a[0]} y1={a[1]} x2={b[0]} y2={b[1]} stroke="#fff" opacity=".7"/>;})}
-      <text x="50" y="164" textAnchor="middle" fill="#fff" opacity=".8" fontSize="11">0</text><text x="270" y="164" textAnchor="middle" fill="#fff" opacity=".8" fontSize="11">100</text>
-      {veriVar&&<g data-gauge-angle={angle}><path d={`M ${left[0]} ${left[1]} L ${tip[0]} ${tip[1]} L ${right[0]} ${right[1]} Z`} fill="#fff"/><circle cx={cx} cy={cy} r="7" fill="#fff"/></g>}
-      <text x="160" y="188" textAnchor="middle" fill="#fff" fontSize={Math.min(30,180/(String(Math.round(gosterOran)).length+1)/.65)} fontWeight="750">{veriVar?`%${Math.round(gosterOran)}`:'—'}</text>
-      <text x="160" y="208" textAnchor="middle" fill="#fff" opacity=".8" fontSize="11">Kullanılan bütçe oranı</text>
+    const tip=point(angle,89),left=point(angle+90,5),right=point(angle-90,5);
+    const percentageColor=!veriVar?'var(--text3)':gosterOran<50?'var(--income-text)':gosterOran<80?'var(--gauge-warning)':'var(--expense-text)';
+    return <svg className="budget-needle" viewBox="0 0 320 235" role="img" aria-label={veriVar?`Kullanılan bütçe oranı yüzde ${Math.round(Math.max(0,oran))}`:'Bütçe oranı için henüz gelir yok'}>
+      {Array.from({length:10},(_,i)=><path data-gauge-segment={i} key={i} d={arc(180-i*18-.7,180-(i+1)*18+.7)} fill="none" stroke={i<2?'#059669':i<5?'#10b981':i<8?'#f59e0b':'#ef4444'} strokeWidth="14" strokeLinecap="butt"/>)}
+      {Array.from({length:21},(_,i)=>{const major=i%5===0,a=point(180-i*9,major?94:99),b=point(180-i*9,105);return <line data-gauge-tick={i} key={i} x1={a[0]} y1={a[1]} x2={b[0]} y2={b[1]} stroke="var(--text4)" strokeWidth={major?1.8:1} opacity={major ? .8 : .35}/>;})}
+      <text x="33" y="168" textAnchor="middle" fill="var(--text4)" fontSize="12">0</text><text x="287" y="168" textAnchor="middle" fill="var(--text4)" fontSize="12">100</text>
+      {veriVar&&<g data-gauge-angle={angle}><path d={`M ${left[0]} ${left[1]} L ${tip[0]} ${tip[1]} L ${right[0]} ${right[1]} Z`} fill="currentColor"/><circle cx={cx} cy={cy} r="8" fill="currentColor"/><circle cx={cx} cy={cy} r="3" fill="var(--card2)"/></g>}
+      <text x="160" y="195" textAnchor="middle" fill={percentageColor} fontSize={Math.min(35,180/(String(Math.round(gosterOran)).length+1)/.65)} fontWeight="750">{veriVar?`%${Math.round(gosterOran)}`:'—'}</text>
+      <text x="160" y="218" textAnchor="middle" fill="var(--text3)" fontSize="12">{veriVar?'Kullanılan bütçe oranı':'Oran için gelir gerekli'}</text>
     </svg>;
   }
   return (
@@ -1220,7 +1222,16 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
           <div className="home-balance-heading"><span>Dönem bakiyesi</span><span className="home-balance-badge"><Icon name={durum==='bos'?'wallet':durum==='iyi'?'shield':durum==='orta'?'warning':'alert'} size={14}/>{veriYok?'Henüz veri yok':buAyGelir<=0?'Gelir kaydı yok':durum==='iyi'?'Güvende':durum==='orta'?'Dikkat':'Riskli'}</span></div>
           <div className="home-balance-value"><Money value={Math.abs(gosterilenBakiye)} prefix={gosterilenBakiye<0?'−₺':'₺'} size={34}/></div>
           <p className="hero-caption">{veriYok?'İlk gelirini veya giderini ekleyerek başla.':'Seçili dönemin gelir, harcama ve birikim dengesi'}</p>
-          {!veriYok && <div className={`hero-budget hero-budget--${grafikTipi}`}><HarcamaGauge oran={buAyGelir>0?gosterilenRiskOrani:null} grafikTipi={grafikTipi}/><div className="hero-budget-copy"><h3>Dönem bütçem</h3><p><strong>₺{fmt(paraTopla(toplamGider,buAyBirikim))}</strong><span> / ₺{fmt(buAyGelir)}</span></p><p className="hero-caption">Harcama ve birikim dahil{gosterilenBakiye<0?' · Bütçe aşıldı':''}</p><div className="hero-budget-limit">{buAyGelir>0?`Kalan oran %${Math.round(Math.max(0,100-gosterilenRiskOrani))}`:'Oran için gelir kaydı gerekli'}</div></div></div>}
+          {!veriYok && <div className={`hero-budget hero-budget--${grafikTipi}`}>
+            {grafikTipi==='ibre'&&<h3 className="needle-panel-title">Dönem bütçem</h3>}
+            <HarcamaGauge oran={buAyGelir>0?gosterilenRiskOrani:null} grafikTipi={grafikTipi}/>
+            {grafikTipi==='ibre'?<>
+              <div className="needle-facts"><div><span>Gelir</span><strong style={{color:'var(--income-text)'}}><Money value={buAyGelir} size={17}/></strong></div><div><span>Harcama</span><strong style={{color:'var(--expense-text)'}}><Money value={toplamGider} size={17}/></strong></div></div>
+              <div className="needle-legend"><span><i style={{background:'#10b981'}}/>%0–50</span><span><i style={{background:'#f59e0b'}}/>%50–80</span><span><i style={{background:'#ef4444'}}/>%80 ve üzeri</span></div>
+              <div className="needle-balance"><strong>₺{fmt(gosterilenBakiye)} dönem dengesi</strong><p>Harcama ve birikim dahil{buAyBirikim>0?` · Birikim ₺${fmt(buAyBirikim)}`:''}{gosterilenBakiye<0?' · Bütçe aşıldı':''}</p></div>
+            </>:<div className="hero-budget-copy"><h3>Dönem bütçem</h3><p><strong>₺{fmt(paraTopla(toplamGider,buAyBirikim))}</strong><span> / ₺{fmt(buAyGelir)}</span></p><p className="hero-caption">Harcama ve birikim dahil{gosterilenBakiye<0?' · Bütçe aşıldı':''}</p><div className="hero-budget-limit">{buAyGelir>0?`Kalan oran %${Math.round(Math.max(0,100-gosterilenRiskOrani))}`:'Oran için gelir kaydı gerekli'}</div></div>}
+          </div>}
+
           {veriYok&&<div className="ilk-kullanim"><button onClick={()=>{setHizliForm(f=>({...f,tip:'gelir',kategori:'Maaş'}));setHizliModal(true);}}><Icon name="plus" size={16}/>İlk gelirini ekle</button></div>}
         </section>;
       })()}
@@ -4630,6 +4641,22 @@ export default function App() {
         .hero-budget.hero-budget--ibre { grid-template-columns:minmax(0,1fr); justify-items:center; gap:8px; background:transparent; border:0; border-top:1px solid rgba(255,255,255,.2); padding:12px 0 0; border-radius:0; }
         .budget-needle { width:100%; max-width:260px; height:auto; display:block; color:#fff; background:transparent; }
         .hero-budget--ibre .hero-budget-copy { width:100%; text-align:center; padding:0 3px; }
+        :root { --gauge-warning:#f6bd60; }
+        [data-theme="light"] { --gauge-warning:#9d5700; }
+        .hero-budget.hero-budget--ibre { background:var(--card); color:var(--text); border:1px solid var(--border); border-radius:18px; padding:16px; gap:10px; justify-items:stretch; }
+        .needle-panel-title { color:var(--text); font-size:15px; margin:0 0 2px; text-align:left; }
+        .budget-needle { max-width:350px; margin:0 auto; color:var(--text); background:transparent; }
+        .needle-facts { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+        .needle-facts > div { min-width:0; }
+        .needle-facts span:not(.money-fit) { display:block; font-size:11px; color:var(--text3); margin-bottom:5px; }
+        .needle-facts strong { display:block; font-weight:700; }
+        .needle-legend { display:flex; justify-content:space-between; flex-wrap:wrap; gap:6px; font-size:10px; color:var(--text3); margin-top:2px; }
+        .needle-legend span { display:flex; align-items:center; gap:4px; }
+        .needle-legend i { width:6px; height:6px; border-radius:50%; }
+        .needle-balance { margin-top:3px; color:var(--text); }
+        .needle-balance strong { font-size:12px; overflow-wrap:anywhere; }
+        .needle-balance p { font-size:10px; line-height:1.5; color:var(--text3); margin-top:4px; }
+        @media(max-width:360px) { .hero-budget.hero-budget--ibre { padding:12px; } .needle-legend { font-size:9px; } }
       `}</style>
       <div data-theme={tema} style={{ background: "var(--bg)", minHeight: "100vh", width: "100%" }}>
       <div className="app-shell">
