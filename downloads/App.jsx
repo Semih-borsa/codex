@@ -547,6 +547,7 @@ function yedekVerisiniDogrula(paket) {
     if (key === "ft_schema_version" && typeof value !== "string") throw new Error("Sürüm kaydı geçersiz.");
     if (key === "ft_bakiye_hesap_modu" && typeof value !== "string") throw new Error("Bakiye hesap modu geçersiz.");
     if (key === "ft_tasarruf_hedefi" && !tamSayiGecerli(value,0,100)) throw new Error("Tasarruf hedefi geçersiz.");
+    if (key === "ft_grafik_tipi" && !["halka","ibre"].includes(value)) throw new Error("Bütçe grafiği seçimi geçersiz.");
     if (key === "ft_tema" && !["light", "dark"].includes(value)) throw new Error("Tema geçersiz.");
     if (key === "ft_butceler" && Object.values(value).some(v => v !== "" && !tutarGecerli(v, true))) throw new Error("Bütçe limiti geçersiz.");
     if (["ft_zamlar", "ft_enflasyon"].includes(key) && Object.values(value).some(v => v !== "" && (!Number.isFinite(sayisalOku(v)) || sayisalOku(v) <= -100 || sayisalOku(v) > 10000))) throw new Error("Oran kaydı geçersiz.");
@@ -833,8 +834,8 @@ function donemLabel(yil, ay, basGun) {
   return `${ilk.toLocaleDateString('tr-TR',opts)} – ${son.toLocaleDateString('tr-TR',opts)}`;
 }
 
-// Tek renk halka; eşikler ana kartta, 3500 ms animasyon aynen korunur.
-function HarcamaGauge({ oran }) {
+// Seçilebilir halka/ibre; eşikler ana kartta, 3500 ms animasyon aynen korunur.
+function HarcamaGauge({ oran, grafikTipi = "halka" }) {
   const [animOran, setAnimOran] = useState(0);
   useEffect(() => {
     setAnimOran(0);
@@ -850,10 +851,25 @@ function HarcamaGauge({ oran }) {
     };
     raf = requestAnimationFrame(adim);
     return () => cancelAnimationFrame(raf);
-  }, [oran]);
+  }, [oran, grafikTipi]);
   const gosterOran = Math.max(0, animOran);
   const doluluk = Math.min(100, gosterOran);
   const veriVar = Number.isFinite(oran);
+  if(grafikTipi === "ibre") {
+    const cx=160,cy=142,r=110;
+    const point=(angle,radius)=>[cx+radius*Math.cos(angle*Math.PI/180),cy-radius*Math.sin(angle*Math.PI/180)];
+    const arc=(from,to)=>{const a=point(from,r),b=point(to,r);return `M ${a[0]} ${a[1]} A ${r} ${r} 0 0 1 ${b[0]} ${b[1]}`;};
+    const angle=180-doluluk*1.8;
+    const tip=point(angle,84),left=point(angle+90,5),right=point(angle-90,5);
+    return <svg className="budget-needle" viewBox="0 0 320 218" role="img" aria-label={veriVar?`Kullanılan bütçe oranı yüzde ${Math.round(Math.max(0,oran))}`:'Bütçe oranı için henüz gelir yok'}>
+      {[{from:180,to:90,color:'#10b981'},{from:90,to:36,color:'#f59e0b'},{from:36,to:0,color:'#ef4444'}].map(a=><g key={a.from}><path d={arc(a.from,a.to)} fill="none" stroke="rgba(255,255,255,.8)" strokeWidth="14"/><path d={arc(a.from,a.to)} fill="none" stroke={a.color} strokeWidth="8"/></g>)}
+      {Array.from({length:11},(_,i)=>{const a=point(180-i*18,88),b=point(180-i*18,98);return <line key={i} x1={a[0]} y1={a[1]} x2={b[0]} y2={b[1]} stroke="#fff" opacity=".7"/>;})}
+      <text x="50" y="164" textAnchor="middle" fill="#fff" opacity=".8" fontSize="11">0</text><text x="270" y="164" textAnchor="middle" fill="#fff" opacity=".8" fontSize="11">100</text>
+      {veriVar&&<g data-gauge-angle={angle}><path d={`M ${left[0]} ${left[1]} L ${tip[0]} ${tip[1]} L ${right[0]} ${right[1]} Z`} fill="#fff"/><circle cx={cx} cy={cy} r="7" fill="#fff"/></g>}
+      <text x="160" y="188" textAnchor="middle" fill="#fff" fontSize={Math.min(30,180/(String(Math.round(gosterOran)).length+1)/.65)} fontWeight="750">{veriVar?`%${Math.round(gosterOran)}`:'—'}</text>
+      <text x="160" y="208" textAnchor="middle" fill="#fff" opacity=".8" fontSize="11">Kullanılan bütçe oranı</text>
+    </svg>;
+  }
   return (
     <svg className="budget-ring" viewBox="0 0 128 128" role="img" aria-label={veriVar ? `Kullanılan bütçe oranı yüzde ${Math.round(Math.max(0,oran))}` : "Bütçe oranı için henüz gelir yok"}>
       <circle cx="64" cy="64" r="51" fill="none" stroke="var(--ring-track)" strokeWidth="10" />
@@ -883,7 +899,7 @@ function Money({value, prefix="₺", size=15}) {
 }
 
 // ── ÖZET ──────────────────────────────────────────────────────────────────────
-function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategoriler, odemeler, setOdemeler, hizliModal, setHizliModal, hizliSablonlar, setHizliSablonlar, taksitler, setTaksitler, kartOdemeleri, setKartOdemeleri, bakiyeHesapModu, tasarrufHedefi = 0 }) {
+function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategoriler, odemeler, setOdemeler, hizliModal, setHizliModal, hizliSablonlar, setHizliSablonlar, taksitler, setTaksitler, kartOdemeleri, setKartOdemeleri, bakiyeHesapModu, tasarrufHedefi = 0, grafikTipi = "halka" }) {
   const [donemOffset, setDonemOffset] = useState(0);
   const [kartDuzenle, setKartDuzenle] = useState(null);
   const [kartDuzForm, setKartDuzForm] = useState({ donemIci: "", provizyon: "", ekstre: "", bakiyedenDussun: true });
@@ -1204,7 +1220,7 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
           <div className="home-balance-heading"><span>Dönem bakiyesi</span><span className="home-balance-badge"><Icon name={durum==='bos'?'wallet':durum==='iyi'?'shield':durum==='orta'?'warning':'alert'} size={14}/>{veriYok?'Henüz veri yok':buAyGelir<=0?'Gelir kaydı yok':durum==='iyi'?'Güvende':durum==='orta'?'Dikkat':'Riskli'}</span></div>
           <div className="home-balance-value"><Money value={Math.abs(gosterilenBakiye)} prefix={gosterilenBakiye<0?'−₺':'₺'} size={34}/></div>
           <p className="hero-caption">{veriYok?'İlk gelirini veya giderini ekleyerek başla.':'Seçili dönemin gelir, harcama ve birikim dengesi'}</p>
-          {!veriYok && <div className="hero-budget"><HarcamaGauge oran={buAyGelir>0?gosterilenRiskOrani:null}/><div className="hero-budget-copy"><h3>Dönem bütçem</h3><p><strong>₺{fmt(paraTopla(toplamGider,buAyBirikim))}</strong><span> / ₺{fmt(buAyGelir)}</span></p><p className="hero-caption">Harcama ve birikim dahil{gosterilenBakiye<0?' · Bütçe aşıldı':''}</p><div className="hero-budget-limit">{buAyGelir>0?`Kalan oran %${Math.round(Math.max(0,100-gosterilenRiskOrani))}`:'Oran için gelir kaydı gerekli'}</div></div></div>}
+          {!veriYok && <div className={`hero-budget hero-budget--${grafikTipi}`}><HarcamaGauge oran={buAyGelir>0?gosterilenRiskOrani:null} grafikTipi={grafikTipi}/><div className="hero-budget-copy"><h3>Dönem bütçem</h3><p><strong>₺{fmt(paraTopla(toplamGider,buAyBirikim))}</strong><span> / ₺{fmt(buAyGelir)}</span></p><p className="hero-caption">Harcama ve birikim dahil{gosterilenBakiye<0?' · Bütçe aşıldı':''}</p><div className="hero-budget-limit">{buAyGelir>0?`Kalan oran %${Math.round(Math.max(0,100-gosterilenRiskOrani))}`:'Oran için gelir kaydı gerekli'}</div></div></div>}
           {veriYok&&<div className="ilk-kullanim"><button onClick={()=>{setHizliForm(f=>({...f,tip:'gelir',kategori:'Maaş'}));setHizliModal(true);}}><Icon name="plus" size={16}/>İlk gelirini ekle</button></div>}
         </section>;
       })()}
@@ -2331,7 +2347,7 @@ function OdemelerTab({ odemeler, setOdemeler, islemler, setIslemler, kategoriler
 // ── BİLDİRİM HELPERs ─────────────────────────────────────────────────────────
 
 // ── AYARLAR ───────────────────────────────────────────────────────────────────
-function AyarlarTab({ donemGun, setDonemGun, kartlar, setKartlar, kategoriler, setKategoriler, tema, setTema, sonBildirimPlanlama, islemler, odemeler = [], tasarrufHedefi, setTasarrufHedefi, bildirimAyarlari, setBildirimAyarlari, bakiyeHesapModu, setBakiyeHesapModu }) {
+function AyarlarTab({ donemGun, setDonemGun, kartlar, setKartlar, kategoriler, setKategoriler, tema, setTema, sonBildirimPlanlama, islemler, odemeler = [], tasarrufHedefi, setTasarrufHedefi, grafikTipi, setGrafikTipi, bildirimAyarlari, setBildirimAyarlari, bakiyeHesapModu, setBakiyeHesapModu }) {
   const [bildirimDurum, setBildirimDurum] = useState("");
   const bildirimTest = async () => {
     setBildirimDurum("Kontrol ediliyor...");
@@ -2541,6 +2557,7 @@ function AyarlarTab({ donemGun, setDonemGun, kartlar, setKartlar, kategoriler, s
         </div>
       </div>
 
+      <section className="tools-card"><h3><Icon name="chart" size={17}/>Bütçe grafiği</h3><p className="tools-note">Genel Bakış ekranında halka veya ibre göstergesini kullan. Seçimin sonraki açılışlarda korunur.</p><div className="gauge-options">{[{id:'halka',label:'Halka',note:'Kompakt dairesel gösterge'},{id:'ibre',label:'İbre',note:'Renkli ölçek ve hareketli ibre'}].map(t=><button type="button" key={t.id} aria-pressed={grafikTipi===t.id} onClick={()=>setGrafikTipi(t.id)}><strong>{t.label}</strong><span>{t.note}</span></button>)}</div></section>
       <TasarrufHedefi hedef={tasarrufHedefi} setHedef={setTasarrufHedefi}/>
       <section className="tools-card"><h3>Excel / CSV aktarımı</h3><p className="tools-note">Tüm işlemlerini Türkçe sütunlar ve kuruş hassasiyetiyle aktar. İşlemler ekranında filtrelenmiş kayıtları da aktarabilirsin. CSV tam yedeğin yerine geçmez.</p><Btn onClick={()=>csvAktar(islemler,odemeler)} disabled={!islemler.length}>Tüm işlemleri CSV aktar</Btn></section>
       {/* Veri yedekleme */}
@@ -3989,6 +4006,7 @@ export default function App() {
   // Hamburger menü
   const [menuAcik, setMenuAcik] = useState(false);
   const [hizliModal, setHizliModal] = useState(false);
+  const [grafikTipi,setGrafikTipi] = useLocalStorage("ft_grafik_tipi", "halka");
   const [tasarrufHedefi,setTasarrufHedefi] = useLocalStorage("ft_tasarruf_hedefi", 0);
   const [tema, setTema] = useLocalStorage("ft_tema", "light");
   const [bildirimAyarlari, setBildirimAyarlari] = useLocalStorage("ft_bildirim_ayarlari", { gunler: [0, 1], saat: "18:00" });
@@ -4604,6 +4622,14 @@ export default function App() {
           .credit-dates > div { font-size:10px; }
         }
 
+        .gauge-options { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px; }
+        .gauge-options button { padding:14px 10px; border:1px solid var(--border); border-radius:12px; background:var(--card2); color:var(--text); cursor:pointer; text-align:left; }
+        .gauge-options button[aria-pressed="true"] { border-color:var(--accent); background:var(--accent-soft); box-shadow:inset 0 0 0 1px var(--accent); }
+        .gauge-options strong { display:block; font-size:13px; margin-bottom:5px; }
+        .gauge-options span { display:block; font-size:11px; line-height:1.5; color:var(--text3); }
+        .hero-budget.hero-budget--ibre { grid-template-columns:minmax(0,1fr); justify-items:center; gap:8px; background:transparent; border:0; border-top:1px solid rgba(255,255,255,.2); padding:12px 0 0; border-radius:0; }
+        .budget-needle { width:100%; max-width:260px; height:auto; display:block; color:#fff; background:transparent; }
+        .hero-budget--ibre .hero-budget-copy { width:100%; text-align:center; padding:0 3px; }
       `}</style>
       <div data-theme={tema} style={{ background: "var(--bg)", minHeight: "100vh", width: "100%" }}>
       <div className="app-shell">
@@ -4662,7 +4688,7 @@ export default function App() {
               sekmeler arasında bağlı tutuyoruz. Görsel içerik gizlenir; modal
               document.body üzerinde açılarak mevcut sekmeyi değiştirmez. */}
           <div style={{ display: aktifTab === "ozet" ? "block" : "none" }}>
-            <Ozet islemler={islemler} setIslemler={setIslemler} kartlar={kartlar} setKartlar={setKartlar} donemGun={parseInt(donemGun)||15} kategoriler={kategoriler} odemeler={odemeler} setOdemeler={setOdemeler} hizliModal={hizliModal} setHizliModal={setHizliModal} hizliSablonlar={hizliSablonlar} setHizliSablonlar={setHizliSablonlar} taksitler={taksitler} setTaksitler={setTaksitler} kartOdemeleri={kartOdemeleri} setKartOdemeleri={setKartOdemeleri} bakiyeHesapModu={bakiyeHesapModu} tasarrufHedefi={tasarrufHedefi} />
+            <Ozet islemler={islemler} setIslemler={setIslemler} kartlar={kartlar} setKartlar={setKartlar} donemGun={parseInt(donemGun)||15} kategoriler={kategoriler} odemeler={odemeler} setOdemeler={setOdemeler} hizliModal={hizliModal} setHizliModal={setHizliModal} hizliSablonlar={hizliSablonlar} setHizliSablonlar={setHizliSablonlar} taksitler={taksitler} setTaksitler={setTaksitler} kartOdemeleri={kartOdemeleri} setKartOdemeleri={setKartOdemeleri} bakiyeHesapModu={bakiyeHesapModu} tasarrufHedefi={tasarrufHedefi} grafikTipi={grafikTipi} />
           </div>
           {aktifTab === "islemler" && <IslemlerTab islemler={islemler} setIslemler={setIslemler} odemeler={odemeler} butceler={butceler} setButceler={setButceler} kategoriler={kategoriler} setKategoriler={setKategoriler} kartlar={kartlar} donemGun={parseInt(donemGun)||15} />}
           {aktifTab === "odemeler" && <OdemelerTab odemeler={odemeler} setOdemeler={setOdemeler} islemler={islemler} setIslemler={setIslemler} kategoriler={kategoriler} donemGun={parseInt(donemGun)||15} />}
@@ -4671,7 +4697,7 @@ export default function App() {
           {aktifTab === "krediler" && <KredilerTab krediler={krediler} setKrediler={setKrediler} />}
           {aktifTab === "taksitler" && <TaksitlerTab taksitler={taksitler} setTaksitler={setTaksitler} />}
           {aktifTab === "maas" && <MaasTab zamlar={zamlar} setZamlar={setZamlar} maasAyarlar={maasAyarlar} setMaasAyarlar={setMaasAyarlar} enflasyon={enflasyon} setEnflasyon={setEnflasyon} />}
-          {aktifTab === "ayarlar" && <AyarlarTab donemGun={donemGun} setDonemGun={setDonemGun} kartlar={kartlar} setKartlar={setKartlar} kategoriler={kategoriler} setKategoriler={setKategoriler} tema={tema} setTema={setTema} sonBildirimPlanlama={sonBildirimPlanlama} islemler={islemler} odemeler={odemeler} tasarrufHedefi={tasarrufHedefi} setTasarrufHedefi={setTasarrufHedefi} bildirimAyarlari={bildirimAyarlari} setBildirimAyarlari={setBildirimAyarlari} bakiyeHesapModu={bakiyeHesapModu} setBakiyeHesapModu={setBakiyeHesapModu} />}
+          {aktifTab === "ayarlar" && <AyarlarTab donemGun={donemGun} setDonemGun={setDonemGun} kartlar={kartlar} setKartlar={setKartlar} kategoriler={kategoriler} setKategoriler={setKategoriler} tema={tema} setTema={setTema} sonBildirimPlanlama={sonBildirimPlanlama} islemler={islemler} odemeler={odemeler} tasarrufHedefi={tasarrufHedefi} setTasarrufHedefi={setTasarrufHedefi} grafikTipi={grafikTipi} setGrafikTipi={setGrafikTipi} bildirimAyarlari={bildirimAyarlari} setBildirimAyarlari={setBildirimAyarlari} bakiyeHesapModu={bakiyeHesapModu} setBakiyeHesapModu={setBakiyeHesapModu} />}
         </main>
 
         {/* ALT NAVİGASYON */}
