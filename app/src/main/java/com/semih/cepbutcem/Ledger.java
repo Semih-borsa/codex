@@ -620,6 +620,25 @@ public final class Ledger extends SQLiteOpenHelper {
     try {
       Planning p = planning();
       if (card.account == 0) card.account = saveAccount(0, newName, opening);
+      boolean capture = true;
+      for (Planning.Card old : p.cards)
+        if (old.account == card.account) {
+          capture =
+              old.history.isEmpty()
+                  || old.historyPayday != p.payday
+                  || !java.util.Objects.equals(old.updated, card.updated)
+                  || old.statement != card.statement
+                  || old.statementPaid != card.statementPaid
+                  || old.current != card.current
+                  || old.pending != card.pending;
+          if (old.updated != null && (old.history.isEmpty() || old.historyPayday != p.payday))
+            old.capture(p.payday, old.updated);
+          card.history.clear();
+          card.history.putAll(old.history);
+          card.historyPayday = old.historyPayday;
+        }
+      p.cardAccounts.add(card.account);
+      if (card.updated != null && capture) card.capture(p.payday, card.updated);
       p.cards.removeIf(c -> c.account == card.account);
       p.cards.add(card);
       savePlanning(p);
@@ -671,6 +690,7 @@ public final class Ledger extends SQLiteOpenHelper {
                   + " yeni kesim döneminde olamaz.");
         card.statement -= amount;
         card.statementPaid = Math.addExact(card.statementPaid, amount);
+        card.capture(p.payday, date);
       }
       if (transfer) {
         if (source == card.account)
@@ -703,6 +723,7 @@ public final class Ledger extends SQLiteOpenHelper {
         throw new IllegalArgumentException("En az bir hesap kalmalı. Önce yeni bir hesap ekle.");
       Planning p = planning();
       p.cards.removeIf(c -> c.account == id);
+      p.cardAccounts.remove(id);
       p.bills.removeIf(b -> b.account == id);
       p.loans.removeIf(l -> l.account == id);
       String value = Long.toString(id);
@@ -842,7 +863,7 @@ public final class Ledger extends SQLiteOpenHelper {
     try {
       JSONObject result = new JSONObject();
       result.put("format", "cepbutcem");
-      result.put("version", 5);
+      result.put("version", 6);
       result.put("planning", planning().json());
       result.put("created", LocalDateTime.now().toString());
       for (String name : Arrays.asList("accounts", "categories", "recurring", "entries", "budgets"))
@@ -894,7 +915,7 @@ public final class Ledger extends SQLiteOpenHelper {
   public void restore(String input) throws JSONException {
     JSONObject root = new JSONObject(input);
     if (!"cepbutcem".equals(root.getString("format"))
-        || (integer(root, "version") < 1 || integer(root, "version") > 5))
+        || (integer(root, "version") < 1 || integer(root, "version") > 6))
       throw new JSONException("Uyumlu Cep Bütçem yedeği değil.");
     Map<String, JSONArray> tables = new LinkedHashMap<>();
     for (String name : Arrays.asList("accounts", "categories", "recurring", "entries", "budgets")) {

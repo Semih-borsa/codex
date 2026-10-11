@@ -28,7 +28,9 @@ public class MainActivity extends Activity {
       MUTED = 0xFF96A6B4,
       GREEN = 0xFF35D6AE,
       RED = 0xFFFF7B8B,
-      BLUE = 0xFF739FFF;
+      BLUE = 0xFF739FFF,
+      ACCENT = 0xFF35D6AE;
+  private final ArrayDeque<Integer> backPages = new ArrayDeque<>();
   private static final int EXPORT_JSON = 41, EXPORT_CSV = 42, IMPORT_JSON = 43;
   private static final DateTimeFormatter
       MONTH = DateTimeFormatter.ofPattern("MMMM yyyy", Finance.TR),
@@ -99,6 +101,8 @@ public class MainActivity extends Activity {
     if (state != null) {
       month = YearMonth.parse(state.getString("month", month.toString()));
       page = state.getInt("page");
+      int[] history = state.getIntArray("backPages");
+      if (history != null) for (int previous : history) backPages.addLast(previous);
       search = state.getString("search", "");
       transactionType = state.getInt("transactionType");
       analysisMode = state.getInt("analysisMode");
@@ -121,9 +125,17 @@ public class MainActivity extends Activity {
 
   private void navigateBack() {
     if (page >= 5) {
-      page = 0;
+      page = backPages.isEmpty() ? (page == 7 || page == 8 ? 4 : 0) : backPages.removeLast();
       render();
     } else finish();
+  }
+
+  private void openPage(int target) {
+    if (target == page) return;
+    if (backPages.size() >= 16) backPages.removeFirst();
+    backPages.addLast(page);
+    page = target;
+    render();
   }
 
   @Override
@@ -143,6 +155,7 @@ public class MainActivity extends Activity {
     super.onSaveInstanceState(state);
     state.putString("month", month.toString());
     state.putInt("page", page);
+    state.putIntArray("backPages", backPages.stream().mapToInt(Integer::intValue).toArray());
     state.putString("search", search);
     state.putInt("transactionType", transactionType);
     state.putInt("analysisMode", analysisMode);
@@ -307,9 +320,9 @@ public class MainActivity extends Activity {
     b.setAllCaps(false);
     b.setMinHeight(dp(48));
     b.setMinimumHeight(dp(48));
-    b.setTextColor(primary ? BG : WHITE);
+    b.setTextColor(primary ? (plan.light ? 0xFFFFFFFF : BG) : WHITE);
     b.setBackgroundTintList(null);
-    GradientDrawable surface = shape(primary ? GREEN : (plan.light ? 0xFFF1F3F7 : 0xFF202A3A), 14);
+    GradientDrawable surface = shape(primary ? ACCENT : (plan.light ? 0xFFF4E8DE : 0xFF202A3A), 14);
     b.setBackground(
         new RippleDrawable(
             ColorStateList.valueOf(plan.light ? 0x22000000 : 0x33FFFFFF), surface, null));
@@ -411,17 +424,22 @@ public class MainActivity extends Activity {
     };
     add(branding, text(names[page], 22, WHITE, true));
     weighted(header, branding);
-    View avatar = icon(page >= 5 ? "back" : "settings", page >= 5 ? WHITE : GREEN, 22);
+    View avatar = icon(page >= 5 ? "back" : "settings", page >= 5 ? WHITE : ACCENT, 22);
     LinearLayout avatarHolder = row();
     avatarHolder.setGravity(Gravity.CENTER);
     avatarHolder.setBackground(shape(CARD, 16));
     avatarHolder.addView(avatar, new LinearLayout.LayoutParams(dp(22), dp(22)));
     header.addView(avatarHolder, new LinearLayout.LayoutParams(dp(44), dp(44)));
-    avatarHolder.setContentDescription(page >= 5 ? "Genel bakışa dön" : "Cep Bütçem; ayarları aç");
+    avatarHolder.setContentDescription(
+        page >= 5 ? "Önceki sayfaya dön" : "Cep Bütçem; ayarları aç");
     avatarHolder.setOnClickListener(
         v -> {
-          page = page >= 5 ? 0 : 4;
-          render();
+          if (page >= 5) navigateBack();
+          else {
+            backPages.clear();
+            page = 4;
+            render();
+          }
         });
     add(root, header);
     if (page != 4 && page != 5 && page != 8) {
@@ -502,17 +520,18 @@ public class MainActivity extends Activity {
       LinearLayout item = column();
       item.setGravity(Gravity.CENTER);
       item.setPadding(0, dp(5), 0, dp(5));
-      View tabIcon = icon(icons[i], i == selectedTab ? GREEN : MUTED, 22);
+      View tabIcon = icon(icons[i], i == selectedTab ? ACCENT : MUTED, 22);
       item.addView(tabIcon, new LinearLayout.LayoutParams(dp(22), dp(22)));
       space(item, 4);
-      TextView label = text(labels[i], 10, i == selectedTab ? GREEN : MUTED, i == selectedTab);
+      TextView label = text(labels[i], 10, i == selectedTab ? ACCENT : MUTED, i == selectedTab);
       label.setGravity(Gravity.CENTER);
       add(item, label);
-      if (i == selectedTab) item.setBackground(shape(plan.light ? 0xFFE2F3EE : 0xFF183B35, 16));
+      if (i == selectedTab) item.setBackground(shape(plan.light ? 0xFFF0DED2 : 0xFF183B35, 16));
       item.setSelected(i == selectedTab);
       item.setContentDescription(labels[i]);
       item.setOnClickListener(
           v -> {
+            backPages.clear();
             page = tab;
             refresh();
           });
@@ -565,6 +584,7 @@ public class MainActivity extends Activity {
     DatePickerDialog d =
         new DatePickerDialog(
             this,
+            plan.light ? R.style.LightDialog : R.style.DarkDialog,
             (view, y, m, day) -> {
               month = YearMonth.of(y, m + 1);
               render();
@@ -588,7 +608,7 @@ public class MainActivity extends Activity {
     for (Finance.Account a : accounts) balance = Math.addExact(balance, balance(a));
     double rate = Finance.spendingRate(income, expense);
     LinearLayout hero = card(body);
-    hero.setBackground(new Design.BalanceSurface(Finance.spendingBand(rate), dp(24)));
+    hero.setBackground(new Design.BalanceSurface(Finance.spendingBand(rate), dp(24), plan.light));
     LinearLayout top = row();
     weighted(top, text("TOPLAM NET VARLIK", 10, 0xFFDCF4EF, true));
     top.addView(chip(spendingStatus(rate), 0xFFFFFFFF, 0x33FFFFFF));
@@ -606,28 +626,36 @@ public class MainActivity extends Activity {
     LinearLayout budget = column();
     budget.setPadding(dp(12), dp(12), dp(12), dp(12));
     budget.setBackground(shape(0x25000000, 16));
-    add(budget, text("Dönem bütçem", 15, 0xFFFFFFFF, true));
-    add(budget, new Design.SpendingMeter(this, rate, plan.light, true));
-    LinearLayout facts = row();
-    LinearLayout remaining = column(), target = column();
-    add(remaining, text("Dönem dengesi", 10, 0xFFDCF4EF, false));
-    add(remaining, text(Finance.money(income - expense), 17, 0xFFFFFFFF, true));
-    add(target, text("Tasarruf hedefi", 10, 0xFFDCF4EF, false));
-    add(target, text("%" + plan.target, 17, 0xFFFFFFFF, true));
-    weighted(facts, remaining);
-    weighted(facts, target);
-    add(budget, facts);
-    space(budget, 8);
+    LinearLayout budgetRow = row();
+    budgetRow.setGravity(Gravity.CENTER_VERTICAL);
+    budgetRow.addView(
+        new Design.BudgetRing(this, rate, plan.light),
+        new LinearLayout.LayoutParams(dp(104), dp(104)));
+    gap(budgetRow, 14);
+    LinearLayout budgetFacts = column();
+    add(budgetFacts, text("Dönem bütçem", 16, 0xFFFFFFFF, true));
+    space(budgetFacts, 8);
     add(
-        budget,
+        budgetFacts,
+        text(Finance.money(expense) + " / " + Finance.money(income), 12, 0xFFF5EDE7, false));
+    space(budgetFacts, 6);
+    add(
+        budgetFacts,
+        text(Finance.money(income - expense) + " dönem dengesi", 12, 0xFFFFFFFF, true));
+    space(budgetFacts, 6);
+    add(
+        budgetFacts,
         text(
             income == 0
-                ? "Harcama oranı için gelir kaydı gerekli."
-                : "Dönem dengesi = gelir − gider",
+                ? "Oran için gelir gerekli"
+                : "Gelirin harcanan kısmı · hedef %" + plan.target,
             10,
-            0xFFDCF4EF,
+            0xFFF5EDE7,
             false));
+    weighted(budgetRow, budgetFacts);
+    add(budget, budgetRow);
     add(hero, budget);
+    heroCardDebts(hero);
     int days = Finance.cycleDays(month, plan.payday, LocalDate.now());
     LocalDate oldStart = periodStart(month.minusMonths(1)),
         oldEnd = oldStart.plusDays(Math.max(0, days - 1));
@@ -659,7 +687,7 @@ public class MainActivity extends Activity {
     wallets.setHorizontalScrollBarEnabled(false);
     LinearLayout walletRow = row();
     for (Finance.Account a : accounts) {
-      if (plan.cards.stream().anyMatch(c -> c.account == a.id)) continue;
+      if (plan.cardAccounts.contains(a.id)) continue;
       long value = balance(a);
       boolean cardAccount = plan.cards.stream().anyMatch(c -> c.account == a.id);
       LinearLayout wallet = column();
@@ -733,8 +761,7 @@ public class MainActivity extends Activity {
             "Asistan yorumlarını incele",
             false,
             () -> {
-              page = 6;
-              render();
+              openPage(6);
             }));
     Map<Long, Long> used = Finance.byCategory(list, "E");
     for (Map.Entry<Long, Long> b : ledger.budgets().entrySet())
@@ -1006,8 +1033,7 @@ public class MainActivity extends Activity {
             "Ödeme takvimini aç",
             false,
             () -> {
-              page = 5;
-              render();
+              openPage(5);
             }));
   }
 
@@ -1036,11 +1062,68 @@ public class MainActivity extends Activity {
             "Kredilerim ve taksitler",
             false,
             () -> {
-              page = 7;
-              render();
+              openPage(7);
             }));
     add(c, button("+ Fatura ekle", false, () -> billDialog(null)));
     obligations(body, true);
+  }
+
+  private String debtChange(long current, Long previous) {
+    if (previous == null) return "Önceki dönem verisi yok";
+    if (previous == 0)
+      return current == 0 ? "Önceki döneme göre değişmedi" : "Önceki dönem borç yoktu";
+    double delta = Finance.change(current, previous);
+    return String.format(
+        Finance.TR,
+        "%s %%%.1f · önceki dönem",
+        delta > 0 ? "↑ Artış" : delta < 0 ? "↓ Azalış" : "Değişim",
+        Math.abs(delta));
+  }
+
+  private void heroCardDebts(LinearLayout hero) {
+    if (plan.cards.isEmpty()) return;
+    Planning.CardTotals totals = plan.cardTotals();
+    long[] previous = plan.previousCardTotals(Finance.cycleMonth(LocalDate.now(), plan.payday));
+    space(hero, 12);
+    LinearLayout debts = row();
+    String[] labels = {"Toplam ekstre borcu", "Dönem içi"};
+    long[] values = {totals.remaining, totals.current};
+    for (int i = 0; i < 2; i++) {
+      if (i > 0) gap(debts, 8);
+      LinearLayout box = column();
+      box.setPadding(dp(12), dp(14), dp(12), dp(14));
+      box.setBackground(shape(0x25000000, 16));
+      add(box, text(labels[i], 11, 0xFFF5EDE7, true));
+      space(box, 7);
+      TextView value =
+          text(totals.known == 0 ? "—" : Finance.money(values[i]), 21, 0xFFFFFFFF, true);
+      value.setMaxLines(1);
+      value.setAutoSizeTextTypeUniformWithConfiguration(
+          12, 21, 1, android.util.TypedValue.COMPLEX_UNIT_SP);
+      add(box, value);
+      space(box, 5);
+      add(
+          box,
+          text(
+              i == 0 ? Finance.money(totals.paid) + " ödendi" : "Provizyon dahil",
+              10,
+              0xFFF5EDE7,
+              false));
+      space(box, 8);
+      add(
+          box,
+          text(
+              debtChange(values[i], previous == null ? null : previous[i]), 10, 0xFFFFFFFF, false));
+      weighted(debts, box);
+    }
+    add(hero, debts);
+    if (totals.unknown > 0) {
+      space(hero, 8);
+      add(
+          hero,
+          text(
+              totals.unknown + " kartın banka özeti eksik; toplam dışında", 10, 0xFFF5EDE7, false));
+    }
   }
 
   private void creditCardOverview() {
@@ -1052,31 +1135,6 @@ public class MainActivity extends Activity {
           c,
           "Kart adına, kesim ve ödeme günlerine göre ayrı bir kart oluştur. Banka tutarlarını"
               + " istediğin zaman güncelle.");
-    }
-    if (!plan.cards.isEmpty()) {
-      Planning.CardTotals totals = plan.cardTotals();
-      LinearLayout summary = card(body);
-      LinearLayout amounts = row();
-      LinearLayout statement =
-          cardAmount("Toplam ekstre borcu", totals.known == 0 ? null : totals.remaining, BLUE);
-      space(statement, 5);
-      add(
-          statement,
-          text(
-              totals.known == 0 ? "Banka özeti gerekli" : Finance.money(totals.paid) + " ödendi",
-              10,
-              MUTED,
-              false));
-      weighted(amounts, statement);
-      gap(amounts, 8);
-      LinearLayout current =
-          cardAmount("Dönem içi", totals.known == 0 ? null : totals.current, GREEN);
-      space(current, 5);
-      add(current, text("Provizyon dahil", 10, MUTED, false));
-      weighted(amounts, current);
-      add(summary, amounts);
-      if (totals.unknown > 0)
-        hint(summary, totals.unknown + " kartın banka özeti girilmedi; toplamın dışında.");
     }
     for (Planning.Card card : plan.cards) creditCardTile(body, card, false);
     add(body, button("+ Kredi kartı ekle", true, () -> cardDialog(null)));
@@ -1997,8 +2055,7 @@ public class MainActivity extends Activity {
             "Kredilerim ve taksitler",
             false,
             () -> {
-              page = 7;
-              render();
+              openPage(7);
             }));
     space(c, 8);
     add(
@@ -2007,8 +2064,7 @@ public class MainActivity extends Activity {
             "Maaş hesaplayıcı",
             false,
             () -> {
-              page = 8;
-              render();
+              openPage(8);
             }));
     space(c, 8);
     add(
@@ -2017,8 +2073,7 @@ public class MainActivity extends Activity {
             "Konuya özel yardım",
             false,
             () -> {
-              page = 6;
-              render();
+              openPage(6);
             }));
   }
 
@@ -2093,8 +2148,7 @@ public class MainActivity extends Activity {
             "Ödeme takvimini aç",
             false,
             () -> {
-              page = 5;
-              render();
+              openPage(5);
             }));
   }
 
@@ -2592,8 +2646,7 @@ public class MainActivity extends Activity {
                     "Ödeme takvimini aç",
                     false,
                     () -> {
-                      page = 5;
-                      render();
+                      openPage(5);
                     }));
           } else {
             Map<Long, Long> sums = Finance.byCategory(current, "E");
@@ -2741,8 +2794,7 @@ public class MainActivity extends Activity {
             "Ödeme takvimini aç",
             false,
             () -> {
-              page = 5;
-              render();
+              openPage(5);
             }));
     space(payments, 8);
     add(payments, button("+ Kredi kartı ekle", true, () -> cardDialog(null)));
@@ -2753,8 +2805,9 @@ public class MainActivity extends Activity {
         privacy,
         "Hesap veya internet bağlantısı gerekmez. Kayıtlar uygulamanın yerel veritabanında tutulur."
             + " Otomatik bulut yedeği kapalıdır; telefonu değiştirirken JSON yedeğini taşı.");
-    section("Hesapların", "Bakiyeler bugüne kadarki gerçekleşmiş işlemleri içerir");
+    section("Banka ve nakit hesapların", "Bakiyeler bugüne kadarki gerçekleşmiş işlemleri içerir");
     for (Finance.Account a : accounts) {
+      if (plan.cardAccounts.contains(a.id)) continue;
       LinearLayout c = card(body);
       LinearLayout r = row();
       weighted(r, text(a.name, 17, WHITE, true));
@@ -2768,6 +2821,33 @@ public class MainActivity extends Activity {
       Button delete = button("Hesabı sil", false, () -> deleteAccountDialog(a, null));
       delete.setTextColor(RED);
       add(c, delete);
+    }
+    if (!plan.cardAccounts.isEmpty()) {
+      section("Kartların", "Banka hesaplarından ayrı · takip ve geçmiş kayıtlar");
+      for (Finance.Account a : accounts)
+        if (plan.cardAccounts.contains(a.id)) {
+          Planning.Card tracked =
+              plan.cards.stream().filter(c -> c.account == a.id).findFirst().orElse(null);
+          LinearLayout c = card(body);
+          cardTitle(c, "card", a.name, BLUE);
+          hint(
+              c,
+              tracked == null
+                  ? "Kart takibi kapalı · geçmiş işlemler korundu"
+                  : "Kredi kartı · banka tutarları kart özetinde");
+          space(c, 8);
+          add(
+              c,
+              button(
+                  tracked == null ? "Kart takibini yeniden aç" : "Kartı yönet",
+                  false,
+                  () -> cardDialog(tracked == null ? new Planning.Card(a.id, 1, 10) : tracked)));
+          space(c, 6);
+          add(
+              c,
+              button(
+                  "Kart hesabını ve kayıtlarını sil", false, () -> deleteAccountDialog(a, null)));
+        }
     }
     add(body, button("+ Hesap ekle", true, () -> accountDialog(null)));
     space(body, 8);
@@ -2873,11 +2953,12 @@ public class MainActivity extends Activity {
   }
 
   private void applyPalette() {
-    BG = plan.light ? 0xFFF4F5F8 : 0xFF0C111B;
+    ACCENT = plan.light ? 0xFFA74E32 : 0xFF35D6AE;
+    BG = plan.light ? 0xFFFCF5EF : 0xFF0C111B;
     CARD = plan.light ? 0xFFFFFFFF : 0xFF171E2B;
-    LINE = plan.light ? 0xFFE6E8EE : 0xFF293243;
-    WHITE = plan.light ? 0xFF172233 : 0xFFF3F6FA;
-    MUTED = plan.light ? 0xFF657286 : 0xFF9AA8BA;
+    LINE = plan.light ? 0xFFEADCD2 : 0xFF293243;
+    WHITE = plan.light ? 0xFF30231E : 0xFFF3F6FA;
+    MUTED = plan.light ? 0xFF79675E : 0xFF9AA8BA;
     GREEN = plan.light ? 0xFF00795D : 0xFF35D6AE;
     RED = plan.light ? 0xFFBF2448 : 0xFFFF7B8B;
     BLUE = plan.light ? 0xFF5261C9 : 0xFF99ABFF;
@@ -3418,7 +3499,7 @@ public class MainActivity extends Activity {
     CheckBox transfer = new CheckBox(this);
     transfer.setText(R.string.card_payment_transfer);
     transfer.setTextColor(WHITE);
-    transfer.setButtonTintList(ColorStateList.valueOf(GREEN));
+    transfer.setButtonTintList(ColorStateList.valueOf(ACCENT));
     transfer.setChecked(!sources.isEmpty());
     transfer.setEnabled(!sources.isEmpty());
     add(f, transfer);
@@ -3437,7 +3518,7 @@ public class MainActivity extends Activity {
     CheckBox reduceStatement = new CheckBox(this);
     reduceStatement.setText(R.string.card_payment_statement);
     reduceStatement.setTextColor(WHITE);
-    reduceStatement.setButtonTintList(ColorStateList.valueOf(GREEN));
+    reduceStatement.setButtonTintList(ColorStateList.valueOf(ACCENT));
     reduceStatement.setChecked(card.updated != null && card.statement > 0);
     reduceStatement.setEnabled(card.updated != null && card.statement > 0);
     add(f, reduceStatement);
@@ -3637,11 +3718,7 @@ public class MainActivity extends Activity {
     ScrollView scroll = new ScrollView(this);
     form.setPadding(dp(20), dp(4), dp(20), dp(12));
     scroll.addView(form);
-    return new AlertDialog.Builder(
-            this,
-            (plan.light
-                ? android.R.style.Theme_Material_Light_Dialog_Alert
-                : android.R.style.Theme_Material_Dialog_Alert))
+    return new AlertDialog.Builder(this, (plan.light ? R.style.LightDialog : R.style.DarkDialog))
         .setTitle(title)
         .setView(scroll)
         .setNegativeButton("Vazgeç", null)
@@ -3657,6 +3734,7 @@ public class MainActivity extends Activity {
     DatePickerDialog d =
         new DatePickerDialog(
             this,
+            plan.light ? R.style.LightDialog : R.style.DarkDialog,
             (v, y, m, day) -> selected.set(LocalDate.of(y, m + 1, day)),
             initial.getYear(),
             initial.getMonthValue() - 1,
@@ -3700,12 +3778,32 @@ public class MainActivity extends Activity {
                   dateButton.setText(d.format(DATE));
                 }));
     add(form, dateButton);
-    label(form, "Hesap / kaynak hesap");
-    Spinner source = spinner(accounts);
+    List<Finance.Account> bankAccounts = new ArrayList<>(), creditAccounts = new ArrayList<>();
+    for (Finance.Account a : accounts)
+      (plan.cardAccounts.contains(a.id) ? creditAccounts : bankAccounts).add(a);
+    Spinner paymentMethod = spinner(Arrays.asList("Banka / nakit", "Kredi kartı"));
+    TextView paymentLabel = text("Ödeme yöntemi", 12, MUTED, true);
+    add(form, paymentLabel);
+    add(form, paymentMethod);
+    TextView cardSourceLabel = text("Ödeme kartı", 12, MUTED, true);
+    add(form, cardSourceLabel);
+    Spinner creditSource = spinner(creditAccounts);
+    add(form, creditSource);
+    TextView sourceLabel = text("Banka / nakit kaynak hesabı", 12, MUTED, true);
+    add(form, sourceLabel);
+    Spinner source = spinner(bankAccounts);
     add(form, source);
     if (existing != null)
       for (int i = 0; i < accounts.size(); i++)
-        if (accounts.get(i).id == existing.accountId) source.setSelection(i);
+        if (accounts.get(i).id == existing.accountId) {
+          if (plan.cardAccounts.contains(existing.accountId)) {
+            paymentMethod.setSelection(1);
+            for (int j = 0; j < creditAccounts.size(); j++)
+              if (creditAccounts.get(j).id == existing.accountId) creditSource.setSelection(j);
+          } else
+            for (int j = 0; j < bankAccounts.size(); j++)
+              if (bankAccounts.get(j).id == existing.accountId) source.setSelection(j);
+        }
     TextView destinationLabel = text("Hedef hesap", 12, MUTED, true);
     space(form, 12);
     add(form, destinationLabel);
@@ -3720,9 +3818,34 @@ public class MainActivity extends Activity {
     add(form, categoryLabel);
     Spinner categorySpinner = spinner(ledger.categories(initialKind.equals("I") ? "I" : "E"));
     add(form, categorySpinner);
+    boolean[] firstSource = {true};
     Runnable updateType =
         () -> {
           boolean transfer = type.getSelectedItemPosition() == 2;
+          boolean cardExpense =
+              type.getSelectedItemPosition() == 0
+                  && paymentMethod.getSelectedItemPosition() == 1
+                  && !creditAccounts.isEmpty();
+          paymentLabel.setVisibility(
+              type.getSelectedItemPosition() == 0 && !creditAccounts.isEmpty()
+                  ? View.VISIBLE
+                  : View.GONE);
+          paymentMethod.setVisibility(paymentLabel.getVisibility());
+          creditSource.setVisibility(cardExpense ? View.VISIBLE : View.GONE);
+          source.setVisibility(cardExpense ? View.GONE : View.VISIBLE);
+          sourceLabel.setVisibility(source.getVisibility());
+          sourceLabel.setText(transfer ? "Kaynak hesap" : "Banka / nakit kaynak hesabı");
+          cardSourceLabel.setVisibility(creditSource.getVisibility());
+          long selectedId =
+              source.getSelectedItem() == null
+                  ? 0
+                  : ((Finance.Account) source.getSelectedItem()).id;
+          if (firstSource[0] && existing != null) selectedId = existing.accountId;
+          firstSource[0] = false;
+          List<Finance.Account> sourceValues = transfer ? accounts : bankAccounts;
+          source.setAdapter(spinner(sourceValues).getAdapter());
+          for (int j = 0; j < sourceValues.size(); j++)
+            if (sourceValues.get(j).id == selectedId) source.setSelection(j);
           destination.setVisibility(transfer ? View.VISIBLE : View.GONE);
           destinationLabel.setVisibility(transfer ? View.VISIBLE : View.GONE);
           categorySpinner.setVisibility(transfer ? View.GONE : View.VISIBLE);
@@ -3735,6 +3858,7 @@ public class MainActivity extends Activity {
             for (int i = 0; i < values.size(); i++)
               if (values.get(i).id == existing.categoryId) categorySpinner.setSelection(i);
         };
+    paymentMethod.setOnItemSelectedListener(selected(pos -> updateType.run()));
     type.setOnItemSelectedListener(selected(pos -> updateType.run()));
     updateType.run();
     label(form, "Not · isteğe bağlı");
@@ -3776,7 +3900,13 @@ public class MainActivity extends Activity {
                                 kind,
                                 Finance.parseMoney(amount.getText().toString()),
                                 date[0],
-                                ((Finance.Account) source.getSelectedItem()).id,
+                                ((Finance.Account)
+                                        (kind.equals("E")
+                                                    && creditSource.getVisibility() == View.VISIBLE
+                                                ? creditSource
+                                                : source)
+                                            .getSelectedItem())
+                                    .id,
                                 kind.equals("T")
                                     ? ((Finance.Account) destination.getSelectedItem()).id
                                     : 0,
@@ -4035,11 +4165,7 @@ public class MainActivity extends Activity {
   }
 
   private void confirm(String title, String content, Runnable action) {
-    new AlertDialog.Builder(
-            this,
-            (plan.light
-                ? android.R.style.Theme_Material_Light_Dialog_Alert
-                : android.R.style.Theme_Material_Dialog_Alert))
+    new AlertDialog.Builder(this, (plan.light ? R.style.LightDialog : R.style.DarkDialog))
         .setTitle(title)
         .setMessage(content)
         .setNegativeButton("Vazgeç", null)
@@ -4067,11 +4193,7 @@ public class MainActivity extends Activity {
 
   private void error(String title, Exception e) {
     if (!isFinishing())
-      new AlertDialog.Builder(
-              this,
-              (plan.light
-                  ? android.R.style.Theme_Material_Light_Dialog_Alert
-                  : android.R.style.Theme_Material_Dialog_Alert))
+      new AlertDialog.Builder(this, (plan.light ? R.style.LightDialog : R.style.DarkDialog))
           .setTitle(title)
           .setMessage(message(e))
           .setPositiveButton("Tamam", null)

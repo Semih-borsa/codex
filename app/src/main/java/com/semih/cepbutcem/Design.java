@@ -47,11 +47,17 @@ public final class Design {
     private LinearGradient gradient;
     private int alpha = 255;
     private final int band;
+    private final boolean light;
     private final float radius;
 
     public BalanceSurface(int band, float radius) {
+      this(band, radius, false);
+    }
+
+    public BalanceSurface(int band, float radius, boolean light) {
       this.band = band;
       this.radius = radius;
+      this.light = light;
     }
 
     @Override
@@ -66,8 +72,12 @@ public final class Design {
               bounds.top,
               bounds.right,
               bounds.bottom,
-              START[index],
-              END[index],
+              light
+                  ? new int[] {0xFF583B2C, 0xFF60432C, 0xFF63332D, 0xFF593B32}[index]
+                  : START[index],
+              light
+                  ? new int[] {0xFFA74E32, 0xFFA16B32, 0xFFAB4240, 0xFF886052}[index]
+                  : END[index],
               Shader.TileMode.CLAMP);
     }
 
@@ -115,6 +125,79 @@ public final class Design {
   }
 
   /** Compact dashboard meter shares the existing reduced-motion-aware animation engine. */
+  public static final class BudgetRing extends View {
+    private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final android.graphics.RectF arc = new android.graphics.RectF();
+    private final double ratio;
+    private final boolean light;
+    private double displayed;
+    private android.animation.ValueAnimator animator;
+
+    public BudgetRing(Context context) {
+      this(context, Double.NaN, false);
+    }
+
+    public BudgetRing(Context context, double ratio, boolean light) {
+      super(context);
+      this.ratio = ratio;
+      this.light = light;
+      displayed = Double.isNaN(ratio) ? Double.NaN : 0;
+      setContentDescription(
+          Double.isNaN(ratio)
+              ? "Bütçe kullanımı: gelir gerekli"
+              : String.format(Finance.TR, "Bütçe kullanımı yüzde %.1f", ratio));
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+      super.onAttachedToWindow();
+      animator =
+          ratioAnimator(
+              ratio,
+              android.animation.ValueAnimator.areAnimatorsEnabled(),
+              v -> {
+                displayed = v;
+                invalidate();
+              });
+      if (animator != null) animator.start();
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+      if (animator != null) animator.cancel();
+      animator = null;
+      super.onDetachedFromWindow();
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+      float size = Math.min(getWidth(), getHeight()), stroke = size * .075f;
+      float left = (getWidth() - size) / 2f + stroke, top = (getHeight() - size) / 2f + stroke;
+      arc.set(left, top, left + size - stroke * 2, top + size - stroke * 2);
+      paint.setStyle(Paint.Style.STROKE);
+      paint.setStrokeWidth(stroke);
+      paint.setStrokeCap(Paint.Cap.ROUND);
+      paint.setColor(0x35FFFFFF);
+      canvas.drawOval(arc, paint);
+      paint.setColor(light ? 0xFFFFD3B6 : 0xFFC9AEFF);
+      if (!Double.isNaN(displayed))
+        canvas.drawArc(
+            arc, -90, (float) Math.min(100, Math.max(0, displayed)) * 3.6f, false, paint);
+      paint.setStyle(Paint.Style.FILL);
+      paint.setColor(Color.WHITE);
+      paint.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
+      paint.setTextSize(size * .25f);
+      String label = Double.isNaN(displayed) ? "—" : String.format(Finance.TR, "%%%.0f", displayed);
+      float width = paint.measureText(label);
+      if (width > size * .72f) paint.setTextSize(paint.getTextSize() * size * .72f / width);
+      canvas.drawText(
+          label,
+          (getWidth() - paint.measureText(label)) / 2,
+          getHeight() / 2f - (paint.ascent() + paint.descent()) / 2,
+          paint);
+    }
+  }
+
   public static final class SpendingMeter extends View {
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final double ratio;

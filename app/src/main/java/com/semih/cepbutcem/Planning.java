@@ -1,6 +1,7 @@
 package com.semih.cepbutcem;
 
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.*;
 import org.json.*;
 
@@ -9,6 +10,7 @@ public final class Planning {
   public int payday = 1, target = 20;
   public boolean light = false;
   public SalarySettings salary = new SalarySettings();
+  public final Set<Long> cardAccounts = new HashSet<>();
   public final List<Card> cards = new ArrayList<>();
   public final List<Bill> bills = new ArrayList<>();
   public final List<Loan> loans = new ArrayList<>();
@@ -29,6 +31,18 @@ public final class Planning {
     public int closing, due;
     public long statement, statementPaid, current, pending;
     public LocalDate updated;
+    public final TreeMap<String, long[]> history = new TreeMap<>();
+    public int historyPayday;
+
+    public void capture(int payday, LocalDate date) {
+      if (updated == null) return;
+      if (historyPayday != payday) history.clear();
+      historyPayday = payday;
+      history.put(
+          Finance.cycleMonth(date, payday).toString(),
+          new long[] {statement, Math.addExact(current, pending)});
+      while (history.size() > 24) history.pollFirstEntry();
+    }
 
     public long bankTotal() {
       return Math.addExact(Math.addExact(statement, current), pending);
@@ -112,6 +126,21 @@ public final class Planning {
     return result;
   }
 
+  public long[] previousCardTotals(YearMonth period) {
+    long statement = 0, current = 0;
+    if (cards.isEmpty()) return null;
+    for (Card card : cards) {
+      long[] old = card.history.get(period.minusMonths(1).toString());
+      if (card.updated == null
+          || card.historyPayday != payday
+          || old == null
+          || !card.history.containsKey(period.toString())) return null;
+      statement = Math.addExact(statement, old[0]);
+      current = Math.addExact(current, old[1]);
+    }
+    return new long[] {statement, current};
+  }
+
   public static final class Bill {
     public long id, amount, account, category, paid, loan;
     public int installment;
@@ -144,6 +173,7 @@ public final class Planning {
     o.put("target", target);
     o.put("light", light);
     o.put("salary", salary.json());
+    o.put("cardAccounts", new JSONArray(new TreeSet<>(cardAccounts)));
     JSONArray cs = new JSONArray(), bs = new JSONArray();
     for (Card c : cards) {
       JSONObject card =
@@ -154,6 +184,14 @@ public final class Planning {
             .put("current", c.current)
             .put("pending", c.pending)
             .put("updated", c.updated.toString());
+      JSONArray history = new JSONArray();
+      for (Map.Entry<String, long[]> e : c.history.entrySet())
+        history.put(
+            new JSONObject()
+                .put("period", e.getKey())
+                .put("statement", e.getValue()[0])
+                .put("current", e.getValue()[1]));
+      card.put("historyPayday", c.historyPayday).put("history", history);
       cs.put(card);
     }
     for (Bill b : bills)
@@ -211,6 +249,18 @@ public final class Planning {
     p.target = (int) number(o, "target", 0, 100);
     p.light = bool(o, "light");
     if (o.has("salary")) p.salary = SalarySettings.parse(o.getJSONObject("salary"));
+    if (o.has("cardAccounts")) {
+      JSONArray ids = o.getJSONArray("cardAccounts");
+      if (ids.length() > accounts.size()) throw new JSONException("Geçersiz kart hesapları.");
+      for (int i = 0; i < ids.length(); i++) {
+        Object id = ids.get(i);
+        if (!(id instanceof Number)
+            || ((Number) id).doubleValue() != ((Number) id).longValue()
+            || !accounts.contains(((Number) id).longValue())
+            || !p.cardAccounts.add(((Number) id).longValue()))
+          throw new JSONException("Geçersiz kart hesabı.");
+      }
+    }
     JSONArray cs = o.getJSONArray("cards"), bs = o.getJSONArray("bills");
     if (cs.length() > 100000 || bs.length() > 100000) throw new JSONException("Plan çok büyük.");
     Set<Long> seen = new HashSet<>(), payments = new HashSet<>();
@@ -241,6 +291,28 @@ public final class Planning {
             || !card.updated.toString().equals(date))
           throw new JSONException("Geçersiz kart güncelleme tarihi.");
       }
+      if (c.has("history")) {
+        card.historyPayday = (int) number(c, "historyPayday", 0, 31);
+        JSONArray history = c.getJSONArray("history");
+        if (history.length() > 24 || (history.length() > 0 && card.historyPayday == 0))
+          throw new JSONException("Geçersiz kart geçmişi.");
+        for (int j = 0; j < history.length(); j++) {
+          JSONObject h = history.getJSONObject(j);
+          String period = h.getString("period");
+          YearMonth m = YearMonth.parse(period);
+          if (m.getYear() < 2000
+              || m.getYear() > 2100
+              || !m.toString().equals(period)
+              || card.history.containsKey(period)) throw new JSONException("Geçersiz kart dönemi.");
+          card.history.put(
+              period,
+              new long[] {
+                number(h, "statement", 0, 100_000_000_000L),
+                number(h, "current", 0, 200_000_000_000L)
+              });
+        }
+      }
+      p.cardAccounts.add(account);
       p.cards.add(card);
     }
     seen.clear();

@@ -1,3 +1,26 @@
+# v1.7 · Bütçe halkası ve sıcak finans tasarımı
+
+## v1.7 · Sıcak palet, bütçe halkası ve ayrı kartlar
+
+- Açık tema: vurgu **#A74E32**, zemin **#FCF5EF**. Ana kart harcama riskine göre sıcak ton değiştirir; gelir/gider renkleri anlamlarını korur.
+- Dönem bütçesi, sıfırdan güncel yüzdeye gelen yuvarlak göstergeyle sunulur. Gelir yoksa “—”; %100 aşılırsa gerçek yüzde yazılır.
+- Toplam kalan ekstre ve dönem içi + provizyon, büyük finans kartının içinde iki ayrı kutudur; ödenen ekstre küçük yazıyla görünür.
+- Her kutu aynı kartların önceki maaş dönemindeki son banka kaydına göre artış/azalış gösterir. Geçmiş yoksa veya bir kartın verisi eksikse oran üretilmez. Sıfır borçtan artışta yüzde yerine açıklama kullanılır.
+- Kart başına son 24 maaş döneminin banka özetleri saklanır. Maaş günü değişince eski aralıklarla oran karşılaştırılmaz. İlk kullanımda önceki dönem verisi son kayıttan alınabilir; uygulama bilinmeyen geçmişi tahmin etmez.
+- Ayarlar → Krediler/Maaş/Ödeme takvimi → geri, Ayarlar’a döner. Bir alt ekran başka bölümden açılmışsa geldiğin yere dönersin.
+- Banka/nakit hesapları ve kartlar ayrı listelenir. İşlem formunda kaynak listesi banka/nakit içerir; giderde **Ödeme yöntemi → Kredi kartı** ayrı kart seçimini açar. Transfer iki tür arasında yapılabilir.
+- Kart takibi silinince geçmiş kayıtlar korunur ve hesap banka listesine karışmaz. Ayarlar’daki Kartların bölümünden takibi yeniden açabilir veya onayla kart hesabını ve bağlı kayıtları kalıcı silebilirsin.
+
+JSON yedek biçimi v6; v1–v5 yedekleri okunur. v6 yedeğini v1.7 ve üzeriyle aç. Kart geçmişi işlem tutarı değildir; banka özeti güncellemek tek başına gelir/gider yaratmaz.
+
+![Açık tema ve kredi kartı toplamları](screenshots/dashboard-light-v17.png)
+
+![Koyu tema ve kredi kartı toplamları](screenshots/dashboard-dark-v17.png)
+
+![Ayrı kredi kartı ödeme yöntemi](screenshots/card-source-v17.png)
+
+## Önceki sürüm
+
 # v1.6 · Birleşik finans kartı ve ödeme özeti
 
 Net varlık ve dönem bütçesi ortak bir yüzeyde birleştirildi. Risk rengi ve durum etiketi tüm kartı kapsar; yüzde, ilerleme çubuğu ve dönem dengesi beyaz kontrastla okunur. Hızlı işlemler bu kartın hemen altında yer alır.

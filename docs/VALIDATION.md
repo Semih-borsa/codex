@@ -1,3 +1,17 @@
+# Doğrulama · v1.7.0 · 11 Ekim 2026
+
+versionCode8/versionName1.7.0; JDK17, SDK35/BuildTools34, Gradle8.9. SQLite v3 korunur; JSON yedek v6, v1–v5 okunur.
+
+- `testDebugUnitTest`, `lintDebug`, `assembleDebug`, `assembleDebugAndroidTest`: başarılı. **34 JVM testi**, hata/başarısız/atlanan yok; **Lint 0 hata/uyarı**.
+- Android11/API30 gerçek SQLite: **42 test, 0 başarısız**; son finans motoru kontrolü 90.216 saniye. Yeni kapsam: kart sınıflandırmasını ve 24 dönemlik geçmişi yedekte koruma, negatif geçmişi atomik reddetme, maaş günü değişince geçmiş aralıklarını yeniden başlatma, kart takibi kapalıyken banka hesabına dönüşmesini önleme, eski v5 yedeğinden sınıflandırmayı çıkarma, maaş sınırında ödemeyi yeni döneme yazıp önceki borcu koruma.
+- JVM: tüm kartların aynı maaş dönemleriyle karşılaştırılması, eksik/yeni kartta oran üretmeme, farklı maaş gününde kıyaslamama, 24 dönem sınırı, sıfır borç ve provizyon dahil toplamlar.
+- Özet UI örneği: 65.000 TL gelir/40.350 TL gider, 24.650 TL net varlık; kalan ekstre20.000 TL/ödenen10.000 TL; önceki30.000 TL'ye göre%33,3 azalış; dönem içi4.500 TL/önceki3.000 TL'ye göre%50 artış. Bunlar sahip olunan emülatörde geçici test verileridir.
+- Açık/koyu tema görüntüleri; Ayarlar'dan açılan kredi, maaş ve ödeme takviminin üst geri düğmesi/Android geri ile Ayarlar'a dönmesi; gelirde banka/nakit seçicisinin kart içermemesi; giderde ayrı kart ödeme yönteminin açılması emülatörde doğrulandı. Kontrollerin ardından önceki emülatör kayıtları geri getirildi.
+- 100.000 kayıt SQL toplamı/sayfalama testleri aynı Android grubunda geçti. Yeni kart geçmişi kart başına24 kayıtla sınırlı; bu sürümde ayrıca performans kıyaslaması yapılmadı.
+- APK imzası önceki sürümle aynı. Paket ZIP bütünlüğü, APK eşleşmesi, kaynak dosyaları ve SHA256SUMS kontrol edildi; yayımlanan main'den tekrar indirilen dosyalar karşılaştırıldı.
+
+---
+
 # Doğrulama · v1.6.0 · 11 Ekim 2026
 
 versionCode7/versionName1.6.0; JDK17, SDK35/BuildTools34, Gradle8.9. SQLite şeması v3 korunur; JSON yedek biçimi v5'tir.

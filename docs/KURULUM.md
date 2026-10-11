@@ -1,4 +1,4 @@
-# Cep Bütçem v1.6 — indirme, kurulum ve ilk ayarlar
+# Cep Bütçem v1.7 — indirme, kurulum ve ilk ayarlar
 
 ## Bilgisayara indirmenin kolay yolu
 
@@ -27,7 +27,7 @@ Tam paketi indirdiysen ayıklandığında kökte **CepButcem.apk**, yanında **C
 5. Android izin isterse dosyayı açan uygulama için **Bu kaynaktan yüklemeye izin ver** seçeneğini aç, geri dön ve **Yükle / Güncelle** seç.
 6. **Aç** düğmesine bas. Android 8.0 veya üzeri gerekir. Bilgisayarda APK dosyasını açman gerekmez; Android telefon kurar.
 
-v1.6 hazır APK, önceki yayımlanan v1.0/v1.1/v1.2/v1.3/v1.4/v1.5 APK ile aynı imzayı kullanır. Güncelleme kurulumu mevcut gelir, gider, hesap ve bütçeleri korur; veritabanı silinmeden yükseltilir. **Uygulamayı kaldırmadan güncelle**. Farklı bilgisayarda farklı imzayla oluşturulmuş bir APK üzerine kurulumda imza uyuşmazlığı olabilir; kayıtlarını önce JSON olarak yedekle.
+v1.7 hazır APK, önceki yayımlanan v1.0/v1.1/v1.2/v1.3/v1.4/v1.5 APK ile aynı imzayı kullanır. Güncelleme kurulumu mevcut gelir, gider, hesap ve bütçeleri korur; veritabanı silinmeden yükseltilir. **Uygulamayı kaldırmadan güncelle**. Farklı bilgisayarda farklı imzayla oluşturulmuş bir APK üzerine kurulumda imza uyuşmazlığı olabilir; kayıtlarını önce JSON olarak yedekle.
 
 ## Android Studio'da aç ve kendi APK'nı üret
 
@@ -101,3 +101,16 @@ Kartın **Tutarları güncelle** formunda dört ayrı alan var: kalan ekstre, bu
 - Kart: kalan ekstre tutarı hazır gelir. Kısmi ödeme için değiştir. **Ödemeyi kalan ekstre borcundan düş** seçiliyken kalan azalır, ödenen artar. Transfer seçiliyse banka/nakit→kart aktarımı oluşturulur; gider olarak tekrar sayılmaz. Transfer kapalıysa yalnızca ekstre takibi değişir.
 
 Önümüzdeki 7 gün listesinin dışında kalan ve gecikmiş ödemeler **Ödeme takvimini aç** ile yönetilir. Kartın güncel banka özeti yoksa borç tahmin edilmez. Yeni kesim döneminde ödeme yapmak için önce banka özetini güncelle. Transferi sonradan düzenlemek/silmek bankadan takip edilen ekstre tutarlarını değiştirmez; gerekiyorsa **Tutarları güncelle** ile düzelt. JSON v5 yedeği eski v1–v4 yedekleriyle geri yükleme uyumunu korur; v5 yedeğini uygulamanın v1.6 veya üzeri sürümünde aç.
+
+## v1.7 · Sıcak palet, bütçe halkası ve ayrı kartlar
+
+- Açık tema: vurgu **#A74E32**, zemin **#FCF5EF**. Ana kart harcama riskine göre sıcak ton değiştirir; gelir/gider renkleri anlamlarını korur.
+- Dönem bütçesi, sıfırdan güncel yüzdeye gelen yuvarlak göstergeyle sunulur. Gelir yoksa “—”; %100 aşılırsa gerçek yüzde yazılır.
+- Toplam kalan ekstre ve dönem içi + provizyon, büyük finans kartının içinde iki ayrı kutudur; ödenen ekstre küçük yazıyla görünür.
+- Her kutu aynı kartların önceki maaş dönemindeki son banka kaydına göre artış/azalış gösterir. Geçmiş yoksa veya bir kartın verisi eksikse oran üretilmez. Sıfır borçtan artışta yüzde yerine açıklama kullanılır.
+- Kart başına son 24 maaş döneminin banka özetleri saklanır. Maaş günü değişince eski aralıklarla oran karşılaştırılmaz. İlk kullanımda önceki dönem verisi son kayıttan alınabilir; uygulama bilinmeyen geçmişi tahmin etmez.
+- Ayarlar → Krediler/Maaş/Ödeme takvimi → geri, Ayarlar’a döner. Bir alt ekran başka bölümden açılmışsa geldiğin yere dönersin.
+- Banka/nakit hesapları ve kartlar ayrı listelenir. İşlem formunda kaynak listesi banka/nakit içerir; giderde **Ödeme yöntemi → Kredi kartı** ayrı kart seçimini açar. Transfer iki tür arasında yapılabilir.
+- Kart takibi silinince geçmiş kayıtlar korunur ve hesap banka listesine karışmaz. Ayarlar’daki Kartların bölümünden takibi yeniden açabilir veya onayla kart hesabını ve bağlı kayıtları kalıcı silebilirsin.
+
+JSON yedek biçimi v6; v1–v5 yedekleri okunur. v6 yedeğini v1.7 ve üzeriyle aç. Kart geçmişi işlem tutarı değildir; banka özeti güncellemek tek başına gelir/gider yaratmaz.

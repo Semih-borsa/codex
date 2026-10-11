@@ -73,4 +73,40 @@ public class PlanningTest {
     assertEquals(LocalDate.of(2026, 2, 28), c.statementClosing());
     assertEquals(LocalDate.of(2026, 3, 5), c.statementDue());
   }
+
+  @Test
+  public void cardHistoryUsesSalaryCyclesAndRequiresCompleteComparableCohort() {
+    Planning p = new Planning();
+    p.payday = 15;
+    Planning.Card c = card(1, 3000000, 0, 40000, 10000);
+    c.updated = LocalDate.of(2026, 9, 20);
+    c.capture(15, c.updated);
+    c.updated = LocalDate.of(2026, 10, 20);
+    c.statement = 2000000;
+    c.current = 60000;
+    c.capture(15, c.updated);
+    p.cards.add(c);
+    assertArrayEquals(
+        new long[] {3000000, 50000}, p.previousCardTotals(java.time.YearMonth.of(2026, 10)));
+    assertNull(p.previousCardTotals(java.time.YearMonth.of(2026, 9)));
+    p.cards.add(new Planning.Card(2, 1, 10));
+    assertNull(p.previousCardTotals(java.time.YearMonth.of(2026, 10)));
+    p.cards.remove(1);
+    p.payday = 1;
+    assertNull(p.previousCardTotals(java.time.YearMonth.of(2026, 10)));
+    c.capture(1, c.updated);
+    assertEquals(1, c.history.size());
+  }
+
+  @Test
+  public void cardHistoryKeepsLatest24PeriodsAndRealZeroDebt() {
+    Planning.Card c = card(1, 0, 30000, 0, 0);
+    for (int i = 0; i < 36; i++) {
+      c.updated = LocalDate.of(2023, 1, 20).plusMonths(i);
+      c.capture(15, c.updated);
+    }
+    assertEquals(24, c.history.size());
+    assertEquals("2024-01", c.history.firstKey());
+    assertArrayEquals(new long[] {0, 0}, c.history.lastEntry().getValue());
+  }
 }

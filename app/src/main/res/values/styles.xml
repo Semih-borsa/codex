@@ -8,4 +8,10 @@
         <item name="android:navigationBarColor">#0B1020</item>
         <item name="android:windowBackground">#0B1020</item>
     </style>
+    <style name="LightDialog" parent="android:style/Theme.Material.Light.Dialog.Alert">
+        <item name="android:colorAccent">#A74E32</item>
+    </style>
+    <style name="DarkDialog" parent="android:style/Theme.Material.Dialog.Alert">
+        <item name="android:colorAccent">#35D6AE</item>
+    </style>
 </resources>

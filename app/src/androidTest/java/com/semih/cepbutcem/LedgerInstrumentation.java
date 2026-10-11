@@ -332,7 +332,7 @@ public class LedgerInstrumentation extends Instrumentation {
           equal(13499, db.planning().cards.get(0).bankTotal());
           equal(0, db.entries().size());
           String backup = db.backup();
-          equal(5, new JSONObject(backup).getLong("version"));
+          equal(6, new JSONObject(backup).getLong("version"));
           db.restore(backup);
           equal(999, db.planning().cards.get(0).pending);
           truth(db.planning().cards.get(0).updated.equals(LocalDate.of(2026, 10, 10)));
@@ -859,6 +859,85 @@ public class LedgerInstrumentation extends Instrumentation {
           equal(10000, db.planning().cards.get(0).statement);
         });
     StringBuilder summary = new StringBuilder();
+    tests.put(
+        "cardHistoryAndClassificationSurviveBackupAndRemoval",
+        () -> {
+          Planning.Card old = new Planning.Card(0, 10, 20);
+          old.updated = LocalDate.of(2026, 9, 20);
+          old.statement = 3000000;
+          old.current = 40000;
+          old.pending = 10000;
+          db.saveCard(old, "Kart geçmişi", -3000000);
+          Planning.Card next = new Planning.Card(old.account, 10, 20);
+          next.updated = LocalDate.of(2026, 10, 20);
+          next.statement = 2000000;
+          next.current = 60000;
+          db.saveCard(next, null, 0);
+          Planning saved = db.planning();
+          equal(2, saved.cards.get(0).history.size());
+          truth(saved.cardAccounts.contains(old.account));
+          db.restore(db.backup());
+          equal(3000000, db.planning().cards.get(0).history.get("2026-09")[0]);
+          JSONObject invalid = new JSONObject(db.backup());
+          invalid
+              .getJSONObject("planning")
+              .getJSONArray("cards")
+              .getJSONObject(0)
+              .getJSONArray("history")
+              .getJSONObject(0)
+              .put("statement", -1);
+          rejects(() -> db.restore(invalid.toString()));
+          equal(2, db.planning().cards.get(0).history.size());
+          Planning changed = db.planning();
+          changed.payday = 25;
+          db.savePlanning(changed);
+          Planning.Card retimed = changed.cards.get(0);
+          db.saveCard(retimed, null, 0);
+          equal(1, db.planning().cards.get(0).history.size());
+          truth(!db.planning().cards.get(0).history.containsKey("2026-10"));
+          db.removeCard(old.account);
+          truth(db.planning().cardAccounts.contains(old.account));
+          db.restore(db.backup());
+          truth(db.planning().cardAccounts.contains(old.account));
+          db.deleteAccount(old.account);
+          truth(!db.planning().cardAccounts.contains(old.account));
+        });
+    tests.put(
+        "paymentAcrossSalaryBoundaryKeepsPriorDebtSnapshot",
+        () -> {
+          LocalDate today = LocalDate.now().withDayOfMonth(1);
+          Planning p = db.planning();
+          p.payday = today.getDayOfMonth();
+          db.savePlanning(p);
+          Planning.Card c = new Planning.Card(0, today.getDayOfMonth() + 1, 1);
+          c.updated = today.minusDays(1);
+          c.statement = 3000000;
+          db.saveCard(c, "Maaş sınırı kartı", 0);
+          db.payCard(c, 1000000, today, db.accounts().get(0).id, false, true);
+          Planning saved = db.planning();
+          java.time.YearMonth currentMonth = Finance.cycleMonth(today, p.payday);
+          equal(3000000, saved.previousCardTotals(currentMonth)[0]);
+          equal(2000000, saved.cards.get(0).history.get(currentMonth.toString())[0]);
+          Planning.Card metadataOnly = saved.cards.get(0);
+          metadataOnly.due = 15;
+          db.saveCard(metadataOnly, null, 0);
+          equal(3000000, db.planning().previousCardTotals(currentMonth)[0]);
+        });
+    tests.put(
+        "legacyCardBackupBackfillsClassification",
+        () -> {
+          Planning.Card c = new Planning.Card(0, 10, 20);
+          db.saveCard(c, "Eski kart", 0);
+          JSONObject root = new JSONObject(db.backup());
+          root.put("version", 5);
+          JSONObject p = root.getJSONObject("planning");
+          p.remove("cardAccounts");
+          p.getJSONArray("cards").getJSONObject(0).remove("history");
+          p.getJSONArray("cards").getJSONObject(0).remove("historyPayday");
+          db.restore(root.toString());
+          truth(db.planning().cardAccounts.contains(c.account));
+          truth(db.planning().cards.get(0).history.isEmpty());
+        });
     for (Map.Entry<String, Check> test : tests.entrySet()) {
       Bundle status = new Bundle();
       status.putString("class", getClass().getName());
