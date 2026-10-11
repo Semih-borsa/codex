@@ -1,3 +1,11 @@
+# Doğrulama · v1.8.3
+
+versionCode12/versionName1.8.3. `testDebugUnitTest`, `lintDebug`, `assembleDebug`: başarılı. 46 JVM testi geçti; Lint 0 hata/uyarı. Bu arayüz değişikliği için önceki sürümde geçen 52 Android finans/veritabanı testi tekrar çalıştırılmadı.
+
+Emülatörde kategori gelir/gider geçişi, asistanı açma/kapama, açık/koyu tema ve aynı ayar sekmesini yenileme kontrol edildi. Farklı bölüme geçiş yeni ekranı üstten açar. 113 kayıtlık listede ikinci sayfada işlem düzenleme ve arka planda süreç sonlandırılıp ekranın yeniden oluşturulması sonrası aynı satırın ekran koordinatı 646 pikselde kaldı. Uzun bütçe listesinin altındaki limit düzenlemede düğmenin konumu 1064 pikselde korundu. Özgün veriler test sonrasında geri yüklenir; güncelleme 2.780 TL örnek net varlığı korur. APK sertifikası önceki sürümle aynıdır; APK/ZIP/kaynak ve sağlama toplamları yayından sonra uzak main kopyasında doğrulanır.
+
+---
+
 # Doğrulama · v1.8.2
 
 versionCode11/versionName1.8.2. `testDebugUnitTest`, `lintDebug`, `assembleDebug`, `assembleDebugAndroidTest`: başarılı. **46 JVM testi**, başarısız/hatalı/atlanan yok; **52 Android testi**, 0 başarısız (89.757 saniye); Lint 0 hata/uyarı.

@@ -176,3 +176,7 @@ Mint cüzdan + altın coin marka simgesi Android adaptive foreground/background 
 Harcama takvimi drilldown'ı modal yerine aynı kart altında gösterilir: seçili tarih → gelir/gider/gün dengesi → varsayılan kapalı detay listesi. Açılır gün seçici Canvas haritasının erişilebilir alternatifidir. İşlem ve gün detayları 50, ödeme kartları 20 kayıtla sınırlıdır. Arka plan sorguları ve gecikmeli arama ekranda gezinmeyi kilitlemez.
 
 Bildirim kartı izin durumunu açık gösterir; aç/kapat, gün öncesi ve saat seçimi ile deneme bildirimi içerir. Kilit ekranında ödeme tutarı yerine genel hatırlatma görünür. Maaş Hesapla/Zam Oranları sekmeleri App.jsx akışını izler; girişler tahmini anında günceller. Kaydet yalnızca maaş ayarlarını ve oranları saklar, finansal kayıt oluşturmaz.
+
+## v1.8.3 · Kaydırma ve liste sürekliliği
+
+Ana ScrollView konumu aynı sayfanın ilk çiziminden önce geri yüklenir; başka sayfaya geçiş sıfırdan başlar. İşlem sorgusunun seçili sayfası kaydedilir; son 50 satır geçici önizleme olarak tutulur. Filtre veya maaş dönemi değişirse liste sayfası sıfırlanır. Ekran yeniden oluşturulurken asenkron sorgu sonuçlanana kadar kaydırılabilir alan korunur. Asistan ayrıntıları düğmenin altına eklenir. Dialogların kendi kaydırması bu korumadan bağımsızdır.

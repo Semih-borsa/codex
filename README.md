@@ -4,6 +4,10 @@
 
 Türkçe, çevrimdışı kişisel gelir-gider takibi ve ayrıntılı finans analizi için yerel Android uygulaması. Android Studio'da açılır ve telefona kurulabilen APK üretir. Java 17, Android'in yerel arayüz bileşenleri ve SQLite kullanır; hesap açma, internet bağlantısı veya ücretli bir servis gerekmez.
 
+## v1.8.3 · Aynı sayfada konum korunur
+
+Kategori, tema ve ayar değişiklikleri, kayıt kaydetme ve aynı sekmeyi yenileme ortak kaydırma korumasını kullanır. İşlem listesinin seçili 50 kayıtlık sayfası yenilemede ve ekran yeniden oluşturulurken korunur. Yeni sonuçlar gelene kadar mevcut liste gösterilir; bütçe asistanının detayları düğmenin altında açılır. Başka bölüme geçince yeni ekran üstten başlar; içerik kısalırsa ulaşılabilen en yakın konum kullanılır.
+
 ## v1.8.2 · Ödeme bildirimi ve sabit analiz konumu
 
 - Son ödeme günü bildirimi zil simgesi ve **🔔 Son ödeme günü** başlığı taşır. Metin: “Bugün Elektrik son ödeme günü lütfen kontrol ediniz!”, iki ödemede “Elektrik ve Su”, üç ödemede “Elektrik, Su ve İnternet”. Fatura, kredi ve kart adları kullanılır. Yalnızca bugün vadesi gelenler bu cümlede birleşir; diğer tarihler ayrıntılarda kalır.

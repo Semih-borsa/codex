@@ -60,6 +60,13 @@ public class MainActivity extends Activity {
   private List<Finance.Account> accounts;
   private List<Finance.Category> categories;
   private LinearLayout root, body, navigation;
+  private ScrollView pageScroll;
+  private int renderedPage = -1, pendingScrollY = -1;
+  private int transactionOffset;
+  private String transactionScopeKey = "", transactionPreviewKey = "";
+  private int transactionPreviewOffset;
+  private Ledger.EntryPage transactionPreview;
+  private boolean transactionContentReady;
   private YearMonth month = YearMonth.now();
   private int page = 0, transactionType = 0, analysisMode = 0;
   private long filterAccount = 0, filterCategory = 0;
@@ -109,6 +116,10 @@ public class MainActivity extends Activity {
     if (state != null) {
       month = YearMonth.parse(state.getString("month", month.toString()));
       page = state.getInt("page");
+      renderedPage = state.getInt("scrollPage", -1);
+      pendingScrollY = state.getInt("scrollY", 0);
+      transactionOffset = state.getInt("transactionOffset", 0);
+      transactionScopeKey = state.getString("transactionScopeKey", "");
       undoUntil = state.getLong("undoUntil");
       undoAdded = state.getBoolean("undoAdded");
       if (state.containsKey("undoSnapshot") && android.os.SystemClock.elapsedRealtime() < undoUntil)
@@ -179,6 +190,10 @@ public class MainActivity extends Activity {
     super.onSaveInstanceState(state);
     state.putString("month", month.toString());
     state.putInt("page", page);
+    state.putInt("scrollPage", renderedPage);
+    state.putInt("scrollY", currentScrollY());
+    state.putInt("transactionOffset", transactionOffset);
+    state.putString("transactionScopeKey", transactionScopeKey);
     if (undoSnapshot != null) {
       state.putString("undoSnapshot", undoSnapshot.json());
       state.putLong("undoUntil", undoUntil);
@@ -431,6 +446,10 @@ public class MainActivity extends Activity {
       refresh();
       return;
     }
+    int offset = renderedPage == page ? currentScrollY() : 0;
+    renderedPage = page;
+    pendingScrollY = offset;
+    transactionContentReady = page != 1;
     root = column();
     root.setBackgroundColor(BG);
     root.setFitsSystemWindows(true);
@@ -511,6 +530,7 @@ public class MainActivity extends Activity {
       root.addView(period, periodParams);
     }
     ScrollView scroll = new ScrollView(this);
+    pageScroll = scroll;
     scroll.setFillViewport(true);
     scroll.setVerticalScrollBarEnabled(false);
     scroll.setClipToPadding(false);
@@ -557,6 +577,8 @@ public class MainActivity extends Activity {
         purchasesPage();
         break;
     }
+    if (page == 1 && !transactionContentReady && offset > 0)
+      body.setMinimumHeight(offset + getResources().getDisplayMetrics().heightPixels);
     undoBanner();
     navigation = row();
     navigation.setPadding(dp(5), dp(5), dp(5), dp(5));
@@ -592,16 +614,14 @@ public class MainActivity extends Activity {
     LinearLayout.LayoutParams navParams = new LinearLayout.LayoutParams(-1, -2);
     navParams.setMargins(dp(14), dp(4), dp(14), dp(10));
     root.addView(navigation, navParams);
+    restoreScrollBeforeDraw(scroll, offset);
   }
 
-  private void renderKeepingScroll() {
-    int offset =
-        body != null && body.getParent() instanceof ScrollView
-            ? ((ScrollView) body.getParent()).getScrollY()
-            : 0;
-    render();
-    if (body == null || !(body.getParent() instanceof ScrollView)) return;
-    ScrollView scroll = (ScrollView) body.getParent();
+  private int currentScrollY() {
+    return pendingScrollY >= 0 ? pendingScrollY : pageScroll == null ? 0 : pageScroll.getScrollY();
+  }
+
+  private void restoreScrollBeforeDraw(ScrollView scroll, int offset) {
     scroll
         .getViewTreeObserver()
         .addOnPreDrawListener(
@@ -609,7 +629,10 @@ public class MainActivity extends Activity {
               @Override
               public boolean onPreDraw() {
                 scroll.getViewTreeObserver().removeOnPreDrawListener(this);
-                scroll.scrollTo(0, offset);
+                if (pageScroll == scroll) {
+                  scroll.scrollTo(0, offset);
+                  if (page != 1 || transactionContentReady || offset == 0) pendingScrollY = -1;
+                }
                 return true;
               }
             });
@@ -1590,6 +1613,20 @@ public class MainActivity extends Activity {
     add(parent, r);
   }
 
+  private String transactionScope() {
+    return month
+        + "/"
+        + plan.payday
+        + "/"
+        + transactionType
+        + "/"
+        + filterAccount
+        + "/"
+        + filterCategory
+        + "/"
+        + search;
+  }
+
   private void transactions() {
     add(body, button("+ Yeni işlem / transfer", true, () -> entryDialog(null, "E")));
     space(body, 12);
@@ -1625,11 +1662,69 @@ public class MainActivity extends Activity {
     space(body, 12);
     LinearLayout results = column();
     add(body, results);
-    final int[] offset = {0}, requests = {0};
+    String scope = transactionScope();
+    if (!scope.equals(transactionScopeKey)) {
+      transactionOffset = 0;
+      transactionScopeKey = scope;
+    }
+    final int[] offset = {transactionOffset}, requests = {0};
     final Runnable[] update = {null};
+    java.util.function.Consumer<Ledger.EntryPage> display =
+        found -> {
+          transactionContentReady = true;
+          body.setMinimumHeight(0);
+          results.removeAllViews();
+          summary.setText(
+              getResources()
+                  .getQuantityString(
+                      R.plurals.transaction_summary,
+                      (int) found.count,
+                      found.count,
+                      Finance.money(found.income),
+                      Finance.money(found.expense)));
+          if (found.rows.isEmpty()) {
+            LinearLayout c = card(results);
+            hint(c, "Eşleşen işlem yok. Dönemi veya filtreleri değiştir.");
+          } else {
+            LinearLayout c = card(results);
+            LocalDate last = null;
+            for (Finance.Entry e : found.rows) {
+              if (last != null) divider(c);
+              if (!e.date.equals(last)) {
+                add(c, text(e.date.format(DATE), 11, MUTED, true));
+                space(c, 10);
+              }
+              entryRow(c, e);
+              last = e.date;
+            }
+          }
+          if (offset[0] > 0)
+            add(
+                results,
+                button(
+                    "Önceki 50 işlem",
+                    false,
+                    () -> {
+                      offset[0] = Math.max(0, offset[0] - 50);
+                      update[0].run();
+                    }));
+          if (found.count > offset[0] + 50)
+            add(
+                results,
+                button(
+                    "Sonraki 50 işlem",
+                    false,
+                    () -> {
+                      offset[0] += 50;
+                      update[0].run();
+                    }));
+        };
     update[0] =
         () -> {
           int token = ++requests[0], position = offset[0];
+          transactionOffset = position;
+          String requestedScope = transactionScope();
+          transactionScopeKey = requestedScope;
           String needle = search;
           String kind =
               transactionType == 1
@@ -1637,7 +1732,7 @@ public class MainActivity extends Activity {
                   : transactionType == 2 ? "I" : transactionType == 3 ? "T" : "";
           long accountId = filterAccount, categoryId = filterCategory;
           LocalDate from = periodStart(month), to = periodEnd(month);
-          summary.setText(R.string.transactions_loading);
+          if (results.getChildCount() == 0) summary.setText(R.string.transactions_loading);
           ui.postDelayed(
               () -> {
                 if (token != requests[0] || isDestroyed()) return;
@@ -1653,51 +1748,18 @@ public class MainActivity extends Activity {
                                   || token != requests[0]
                                   || page != 1
                                   || !results.isAttachedToWindow()) return;
-                              results.removeAllViews();
-                              summary.setText(
-                                  getResources()
-                                      .getQuantityString(
-                                          R.plurals.transaction_summary,
-                                          (int) found.count,
-                                          found.count,
-                                          Finance.money(found.income),
-                                          Finance.money(found.expense)));
-                              if (found.rows.isEmpty()) {
-                                LinearLayout c = card(results);
-                                hint(c, "Eşleşen işlem yok. Dönemi veya filtreleri değiştir.");
-                              } else {
-                                LinearLayout c = card(results);
-                                LocalDate last = null;
-                                for (Finance.Entry e : found.rows) {
-                                  if (last != null) divider(c);
-                                  if (!e.date.equals(last)) {
-                                    add(c, text(e.date.format(DATE), 11, MUTED, true));
-                                    space(c, 10);
-                                  }
-                                  entryRow(c, e);
-                                  last = e.date;
-                                }
+                              if (position > 0 && found.rows.isEmpty() && found.count > 0) {
+                                offset[0] = (int) ((found.count - 1) / 50) * 50;
+                                transactionOffset = offset[0];
+                                update[0].run();
+                                return;
                               }
-                              if (position > 0)
-                                add(
-                                    results,
-                                    button(
-                                        "Önceki 50 işlem",
-                                        false,
-                                        () -> {
-                                          offset[0] = Math.max(0, offset[0] - 50);
-                                          update[0].run();
-                                        }));
-                              if (found.count > position + 50)
-                                add(
-                                    results,
-                                    button(
-                                        "Sonraki 50 işlem",
-                                        false,
-                                        () -> {
-                                          offset[0] += 50;
-                                          update[0].run();
-                                        }));
+                              transactionPreview = found;
+                              transactionPreviewKey = requestedScope;
+                              transactionPreviewOffset = position;
+                              int savedScroll = currentScrollY();
+                              display.accept(found);
+                              restoreScrollBeforeDraw(pageScroll, savedScroll);
                             });
                       } catch (Exception ex) {
                         ui.post(
@@ -1725,24 +1787,38 @@ public class MainActivity extends Activity {
     types.setOnItemSelectedListener(
         selected(
             pos -> {
-              transactionType = pos;
-              offset[0] = 0;
-              update[0].run();
+              if (transactionType != pos) {
+                transactionType = pos;
+                offset[0] = 0;
+                update[0].run();
+              }
             }));
     ac.setOnItemSelectedListener(
         selected(
             pos -> {
-              filterAccount = pos == 0 ? 0 : accounts.get(pos - 1).id;
-              offset[0] = 0;
-              update[0].run();
+              long selectedId = pos == 0 ? 0 : accounts.get(pos - 1).id;
+              if (filterAccount != selectedId) {
+                filterAccount = selectedId;
+                offset[0] = 0;
+                update[0].run();
+              }
             }));
     cats.setOnItemSelectedListener(
         selected(
             pos -> {
-              filterCategory = pos == 0 ? 0 : categories.get(pos - 1).id;
-              offset[0] = 0;
-              update[0].run();
+              long selectedId = pos == 0 ? 0 : categories.get(pos - 1).id;
+              if (filterCategory != selectedId) {
+                filterCategory = selectedId;
+                offset[0] = 0;
+                update[0].run();
+              }
             }));
+    if (transactionPreview != null
+        && scope.equals(transactionPreviewKey)
+        && transactionPreviewOffset == offset[0]) {
+      display.accept(transactionPreview);
+      transactionContentReady = false;
+    }
     update[0].run();
   }
 
@@ -1893,7 +1969,6 @@ public class MainActivity extends Activity {
         });
     add(c, calculationToggle);
     add(c, calculationDetails);
-    if (advisorExpanded) advice(list, from, to, analysisMode == 0);
     add(
         body,
         button(
@@ -1903,6 +1978,7 @@ public class MainActivity extends Activity {
               advisorExpanded = !advisorExpanded;
               render();
             }));
+    if (advisorExpanded) advice(list, from, to, analysisMode == 0);
     if (analysisMode == 0) spendingMap();
     section("Harcama içgörüleri", "Kayıtlarından hesaplanan göstergeler");
     c = card(body);
@@ -1966,7 +2042,7 @@ public class MainActivity extends Activity {
             false,
             () -> {
               categoryIncome = !categoryIncome;
-              renderKeepingScroll();
+              render();
             }));
     space(body, 12);
     String kind = categoryIncome ? "I" : "E";
