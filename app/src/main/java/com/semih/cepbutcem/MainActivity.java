@@ -594,6 +594,27 @@ public class MainActivity extends Activity {
     root.addView(navigation, navParams);
   }
 
+  private void renderKeepingScroll() {
+    int offset =
+        body != null && body.getParent() instanceof ScrollView
+            ? ((ScrollView) body.getParent()).getScrollY()
+            : 0;
+    render();
+    if (body == null || !(body.getParent() instanceof ScrollView)) return;
+    ScrollView scroll = (ScrollView) body.getParent();
+    scroll
+        .getViewTreeObserver()
+        .addOnPreDrawListener(
+            new android.view.ViewTreeObserver.OnPreDrawListener() {
+              @Override
+              public boolean onPreDraw() {
+                scroll.getViewTreeObserver().removeOnPreDrawListener(this);
+                scroll.scrollTo(0, offset);
+                return true;
+              }
+            });
+  }
+
   private void changeMonth(int delta) {
     YearMonth next = month.plusMonths(delta);
     if (next.getYear() >= 2000 && next.getYear() <= 2100) {
@@ -1945,7 +1966,7 @@ public class MainActivity extends Activity {
             false,
             () -> {
               categoryIncome = !categoryIncome;
-              render();
+              renderKeepingScroll();
             }));
     space(body, 12);
     String kind = categoryIncome ? "I" : "E";

@@ -1239,6 +1239,56 @@ public class LedgerInstrumentation extends Instrumentation {
               });
           if (failure[0] != null) throw new AssertionError(failure[0]);
         });
+    tests.put(
+        "groupedDueNotificationHasBellAndFullMessage",
+        () -> {
+          Reminders.channel(context);
+          LocalDate today = LocalDate.now();
+          List<Reminders.Due> payments =
+              Arrays.asList(
+                  new Reminders.Due("Elektrik", today, 100),
+                  new Reminders.Due("Su", today, 200),
+                  new Reminders.Due("İnternet", today, 300),
+                  new Reminders.Due("Yarın", today.plusDays(1), 400));
+          String message = ReminderText.today(payments, today);
+          truth(
+              message.equals(
+                  "Bugün Elektrik, Su ve İnternet son ödeme günü lütfen kontrol ediniz!"));
+          android.app.Notification n =
+              Reminders.notification(
+                  context,
+                  "🔔 Son ödeme günü",
+                  message,
+                  Arrays.asList("Elektrik · bugün", "Su · bugün", "İnternet · bugün"));
+          truth(
+              n.extras
+                  .getCharSequence(android.app.Notification.EXTRA_TEXT)
+                  .toString()
+                  .equals(message));
+          truth(
+              n.extras
+                  .getCharSequence(android.app.Notification.EXTRA_BIG_TEXT)
+                  .toString()
+                  .contains(message));
+          equal(R.drawable.ic_notification, n.getSmallIcon().getResId());
+          android.app.NotificationManager manager =
+              context.getSystemService(android.app.NotificationManager.class);
+          try {
+            manager.notify(702, n);
+            truth(
+                Arrays.stream(manager.getActiveNotifications())
+                    .anyMatch(
+                        item ->
+                            item.getId() == 702
+                                && item.getNotification()
+                                    .extras
+                                    .getCharSequence(android.app.Notification.EXTRA_TITLE)
+                                    .toString()
+                                    .contains("🔔")));
+          } finally {
+            manager.cancel(702);
+          }
+        });
     for (Map.Entry<String, Check> test : tests.entrySet()) {
       Bundle status = new Bundle();
       status.putString("class", getClass().getName());

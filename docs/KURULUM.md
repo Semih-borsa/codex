@@ -1,4 +1,4 @@
-# Cep Bütçem v1.8.1 — indirme, kurulum ve ilk ayarlar
+# Cep Bütçem v1.8.2 — indirme, kurulum ve ilk ayarlar
 
 ## Bilgisayara indirmenin kolay yolu
 
@@ -127,3 +127,9 @@ JSON yedek biçimi v6; v1–v5 yedekleri okunur. v6 yedeğini v1.7 ve üzeriyle 
 - **Ekstreye özel tarihler:** Kartı yönet → Ekstreye özel tarihler. Kesim ve son ödeme, o ekstre için takvim ve bildirimlerde kullanılır; son 24 kayıt saklanır. Önce banka tutarlarının güncel olması gerekir.
 
 Yeni yönetim listeleri 20 kayıtla sayfalanır. Analizler ham işlem listesini yüklemek yerine tarih/kategori bazında SQL toplamlarını kullanır. JSON yedek **v7**; eski v1–v6 dosyalar desteklenir. Yeni yedeği v1.8 veya üzeriyle aç. Mevcut APK'nın üzerine güncelle; önce JSON yedek al ve uygulamayı kaldırma.
+## v1.8.2 · Ödeme bildirimi ve sabit analiz konumu
+
+- Son ödeme günü bildirimi zil simgesi ve **🔔 Son ödeme günü** başlığı taşır. Metin: “Bugün Elektrik son ödeme günü lütfen kontrol ediniz!”, iki ödemede “Elektrik ve Su”, üç ödemede “Elektrik, Su ve İnternet”. Fatura, kredi ve kart adları kullanılır. Yalnızca bugün vadesi gelenler bu cümlede birleşir; diğer tarihler ayrıntılarda kalır.
+- Bildirim genişletilince tam cümle ve ödeme ayrıntıları okunur. Değişmeyen bildirim tekrar gönderilmez; ödeme listesi değişirse aynı bildirim güncellenir. Hatırlatma için **Ayarlar → Ödeme bildirimleri → Ödeme hatırlatmalarını aç** ve Android bildirim izni gerekir.
+- Analiz → Gelir/Gider kategorilerini göster geçişi sayfayı en üste götürmez; kaydırma konumu ilk çizimden önce korunur.
+

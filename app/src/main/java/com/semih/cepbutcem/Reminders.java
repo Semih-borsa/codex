@@ -72,12 +72,17 @@ public final class Reminders {
   }
 
   public static final class Due {
-    public final String name;
+    public final String name, label;
     public final LocalDate date;
     public final long amount;
 
     Due(String n, LocalDate d, long a) {
+      this(n, n, d, a);
+    }
+
+    Due(String n, String shortLabel, LocalDate d, long a) {
       name = n;
+      label = shortLabel;
       date = d;
       amount = a;
     }
@@ -88,7 +93,17 @@ public final class Reminders {
     List<Due> due = new ArrayList<>();
     LocalDate until = today.plusDays(lead);
     for (Planning.Bill b : p.bills)
-      if (!b.isPaid() && !b.due.isAfter(until)) due.add(new Due(b.name, b.due, b.amount));
+      if (!b.isPaid() && !b.due.isAfter(until)) {
+        String label =
+            b.loan == 0
+                ? b.name
+                : p.loans.stream()
+                    .filter(l -> l.id == b.loan)
+                    .map(l -> l.name)
+                    .findFirst()
+                    .orElse(b.name);
+        due.add(new Due(b.name, label, b.due, b.amount));
+      }
     for (Planning.Card card : p.cards)
       if (card.updated != null && card.statement > 0) {
         // The snapshot's statement belongs to its last closed cycle, not a new cycle invented
@@ -101,7 +116,7 @@ public final class Reminders {
                   .map(a -> a.name)
                   .findFirst()
                   .orElse("Kart");
-          due.add(new Due(name + " · ekstre (özeti kontrol et)", date, card.statement));
+          due.add(new Due(name + " · ekstre (özeti kontrol et)", name, date, card.statement));
         }
       }
     due.sort(Comparator.comparing(d -> d.date));
@@ -110,40 +125,43 @@ public final class Reminders {
 
   private static void show(Context c, int id, String title, String content, List<String> lines) {
     if (!allowed(c)) return;
+    manager(c).notify(id, notification(c, title, content, lines));
+  }
+
+  static Notification notification(Context c, String title, String content, List<String> lines) {
     PendingIntent open =
         PendingIntent.getActivity(
             c,
             92,
             new Intent(c, MainActivity.class).putExtra("payments", true),
             PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-    Notification.InboxStyle style = new Notification.InboxStyle();
-    for (String line : lines) style.addLine(line);
+    Notification.BigTextStyle style =
+        new Notification.BigTextStyle()
+            .bigText(content + (lines.isEmpty() ? "" : "\n\n" + String.join("\n", lines)));
     Notification publicVersion =
         new Notification.Builder(c, CHANNEL)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle("Cep Bütçem")
+            .setContentTitle("🔔 Cep Bütçem")
             .setContentText("Ödeme hatırlatman var")
             .build();
-    Notification n =
-        new Notification.Builder(c, CHANNEL)
-            .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle(title)
-            .setContentText(content)
-            .setStyle(style)
-            .setContentIntent(open)
-            .setAutoCancel(true)
-            .setVisibility(Notification.VISIBILITY_PRIVATE)
-            .setPublicVersion(publicVersion)
-            .setOnlyAlertOnce(true)
-            .build();
-    manager(c).notify(id, n);
+    return new Notification.Builder(c, CHANNEL)
+        .setSmallIcon(R.drawable.ic_notification)
+        .setContentTitle(title)
+        .setContentText(content)
+        .setStyle(style)
+        .setContentIntent(open)
+        .setAutoCancel(true)
+        .setVisibility(Notification.VISIBILITY_PRIVATE)
+        .setPublicVersion(publicVersion)
+        .setOnlyAlertOnce(true)
+        .build();
   }
 
   public static void test(Context c) {
     show(
         c,
         701,
-        "Cep Bütçem · Bildirim testi",
+        "🔔 Cep Bütçem · Bildirim testi",
         "Ödeme hatırlatmaların bu şekilde gelecek.",
         Arrays.asList("Test bildirimi · finansal kayıt oluşturulmadı."));
   }
@@ -152,12 +170,12 @@ public final class Reminders {
     if (!prefs(c).getBoolean("enabled", false) || !allowed(c)) return;
     LocalDate today = LocalDate.now();
     String day = today.toString();
-    if (day.equals(prefs(c).getString("lastSent", ""))) return;
     try (Ledger ledger = new Ledger(c)) {
       List<Due> due =
           upcoming(ledger.planning(), ledger.accounts(), today, prefs(c).getInt("lead", 1));
       if (due.isEmpty()) {
         manager(c).cancel(700);
+        prefs(c).edit().remove("lastSent").remove("lastDigest").apply();
         return;
       }
       List<String> lines = new ArrayList<>();
@@ -171,13 +189,15 @@ public final class Reminders {
                 + Finance.money(d.amount)
                 + (d.date.isBefore(today) ? " · Gecikmiş" : ""));
       }
-      show(
-          c,
-          700,
-          due.size() + " ödeme için hatırlatma",
-          "Fatura, taksit ve ekstrelerini kontrol et.",
-          lines);
-      prefs(c).edit().putString("lastSent", day).apply();
+      String todayContent = ReminderText.today(due, today);
+      String title = todayContent == null ? "🔔 Ödeme hatırlatması" : "🔔 Son ödeme günü";
+      String content =
+          todayContent == null ? "Fatura, taksit ve ekstrelerini kontrol et." : todayContent;
+      String digest = day + "|" + content + "|" + String.join("|", lines);
+      if (day.equals(prefs(c).getString("lastSent", ""))
+          && digest.equals(prefs(c).getString("lastDigest", ""))) return;
+      show(c, 700, title, content, lines);
+      prefs(c).edit().putString("lastSent", day).putString("lastDigest", digest).apply();
     } catch (Exception e) {
       android.util.Log.e("CepButcem", "Ödeme hatırlatma kontrolü tamamlanamadı.");
     }

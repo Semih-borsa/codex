@@ -1,3 +1,13 @@
+# v1.8.2 · Ödeme bildirimi ve analiz geçişi
+
+## v1.8.2 · Ödeme bildirimi ve sabit analiz konumu
+
+- Son ödeme günü bildirimi zil simgesi ve **🔔 Son ödeme günü** başlığı taşır. Metin: “Bugün Elektrik son ödeme günü lütfen kontrol ediniz!”, iki ödemede “Elektrik ve Su”, üç ödemede “Elektrik, Su ve İnternet”. Fatura, kredi ve kart adları kullanılır. Yalnızca bugün vadesi gelenler bu cümlede birleşir; diğer tarihler ayrıntılarda kalır.
+- Bildirim genişletilince tam cümle ve ödeme ayrıntıları okunur. Değişmeyen bildirim tekrar gönderilmez; ödeme listesi değişirse aynı bildirim güncellenir. Hatırlatma için **Ayarlar → Ödeme bildirimleri → Ödeme hatırlatmalarını aç** ve Android bildirim izni gerekir.
+- Analiz → Gelir/Gider kategorilerini göster geçişi sayfayı en üste götürmez; kaydırma konumu ilk çizimden önce korunur.
+
+![Kategori geçişinde korunan konum](screenshots/category-scroll-v182.png)
+
 # v1.8.1 · Kartla bütünleşen ibre
 
 ## v1.8.1 · Kartla bütünleşen ibre

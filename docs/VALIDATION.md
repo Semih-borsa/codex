@@ -1,3 +1,13 @@
+# Doğrulama · v1.8.2
+
+versionCode11/versionName1.8.2. `testDebugUnitTest`, `lintDebug`, `assembleDebug`, `assembleDebugAndroidTest`: başarılı. **46 JVM testi**, başarısız/hatalı/atlanan yok; **52 Android testi**, 0 başarısız (89.757 saniye); Lint 0 hata/uyarı.
+
+Yeni kapsam: tek/iki/üç ödemede Türkçe birleştirme, diğer vade günlerini bugünkü cümleden çıkarma, tekrarlı ad ve satır sonlarını temizleme, çok büyük bildirim metnini sınırlama. Gerçek Android bildirimi oluşturulup gönderildi; zil başlığı, küçük simge, kısa ve genişletilmiş metin denetlendi; test bildirimi kaldırıldı. Önceki 100.000 kayıt kontrolü de aynı grupta geçti.
+
+Analizde gelir/gider kategori düğmesinin ekran koordinatları geçiş öncesi/sonrası emülatörde karşılaştırıldı; iki yönde de sayfa konumu korunur. Güncelleme 2.780 TL örnek net varlığı korur. Hatırlatma verileri değiştiğinde mevcut bildirim güncellenir; aynı içerik aynı gün yeniden gönderilmez. APK imzası ve ZIP/kaynak/sağlama toplamları kontrol edilir.
+
+---
+
 # Doğrulama · v1.8.1
 
 Görsel düzenleme: versionCode10/versionName1.8.1; hesaplama ve veri/yedek modeli korunur. `lintDebug`, `assembleDebug`: başarılı, Lint 0 hata/uyarı. İbre görünümü açık/koyu temada emülatörde kontrol edildi; güncelleme 2.780 TL örnek net varlığı korudu. Ayrı panel kaldırıldı; renk dilimlerinin koyu sınırı, beyaz ibre/yüzde ve kart üstündeki metinler kontrol edildi. İbre/halka ve tema tercihleri kontrol sonrasında eski ayarlarına döndürüldü.
