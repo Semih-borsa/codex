@@ -1,0 +1,4380 @@
+import { useState, useMemo, useEffect, useRef, useId, useCallback } from "react";
+import { createPortal } from "react-dom";
+import { LineChart, Line, AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, LabelList } from "recharts";
+// ── dateUtils.js (inline) ──────────────────────────────────────────────────
+function yerelTarihAnahtari(tarih = new Date()) {
+  const yil = tarih.getFullYear();
+  const ay = String(tarih.getMonth() + 1).padStart(2, "0");
+  const gun = String(tarih.getDate()).padStart(2, "0");
+  return `${yil}-${ay}-${gun}`;
+}
+
+function yerelTarihOku(deger) {
+  if (deger instanceof Date) {
+    return new Date(deger.getFullYear(), deger.getMonth(), deger.getDate());
+  }
+  const eslesme = String(deger || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!eslesme) return null;
+  const tarih = new Date(Number(eslesme[1]), Number(eslesme[2]) - 1, Number(eslesme[3]));
+  if (
+    tarih.getFullYear() !== Number(eslesme[1]) ||
+    tarih.getMonth() !== Number(eslesme[2]) - 1 ||
+    tarih.getDate() !== Number(eslesme[3])
+  ) return null;
+  return tarih;
+}
+
+function takvimGunSirasi(deger) {
+  const tarih = yerelTarihOku(deger);
+  if (!tarih) return null;
+  return Math.floor(Date.UTC(tarih.getFullYear(), tarih.getMonth(), tarih.getDate()) / 86400000);
+}
+
+function takvimGunFarki(son, ilk) {
+  const sonGun = takvimGunSirasi(son);
+  const ilkGun = takvimGunSirasi(ilk);
+  return sonGun == null || ilkGun == null ? 0 : sonGun - ilkGun;
+}
+
+function takvimGunuEkle(deger, miktar) {
+  const tarih = yerelTarihOku(deger);
+  if (!tarih) return null;
+  tarih.setDate(tarih.getDate() + miktar);
+  return tarih;
+}
+
+function maasDonemiBul(deger, baslangicGunu = 15) {
+  const tarih = yerelTarihOku(deger);
+  if (!tarih) return null;
+  const gun = Math.min(28, Math.max(1, Number.parseInt(baslangicGunu, 10) || 15));
+  const baslangic = tarih.getDate() >= gun
+    ? new Date(tarih.getFullYear(), tarih.getMonth(), gun)
+    : new Date(tarih.getFullYear(), tarih.getMonth() - 1, gun);
+  const bitis = new Date(baslangic.getFullYear(), baslangic.getMonth() + 1, gun - 1);
+  return {
+    yil: baslangic.getFullYear(),
+    ay: baslangic.getMonth(),
+    gun,
+    key: `${baslangic.getFullYear()}-${baslangic.getMonth()}-${gun}`,
+    baslangic,
+    bitis,
+  };
+}
+
+function donemdekiSabitOdemeTarihi(donemBaslangici, odemeGunu) {
+  const baslangic = yerelTarihOku(donemBaslangici);
+  if (!baslangic) return null;
+  const istenenGun = Math.min(31, Math.max(1, Number.parseInt(odemeGunu, 10) || 1));
+  const ayKaymasi = istenenGun >= baslangic.getDate() ? 0 : 1;
+  const hedefYil = new Date(baslangic.getFullYear(), baslangic.getMonth() + ayKaymasi, 1).getFullYear();
+  const hedefAy = new Date(baslangic.getFullYear(), baslangic.getMonth() + ayKaymasi, 1).getMonth();
+  const ayinSonGunu = new Date(hedefYil, hedefAy + 1, 0).getDate();
+  return new Date(hedefYil, hedefAy, Math.min(istenenGun, ayinSonGunu));
+}
+
+
+// Para değerleri kalıcı kayıtlarda TL olarak kalır; aritmetik tam sayı kuruşla yapılır.
+const PARA_UST_SINIR = 1_000_000_000_000;
+function sayisalOku(deger) {
+  if (typeof deger === "number") return Number.isFinite(deger) ? deger : NaN;
+  let metin = String(deger ?? "").trim();
+  if (!metin) return NaN;
+  if (metin.includes(",")) {
+    if (!/^[+-]?(?:\d+|\d{1,3}(?:\.\d{3})+)(?:,\d+)?$/.test(metin)) return NaN;
+    metin = metin.replace(/\./g, "").replace(",", ".");
+  }
+  if (!/^[+-]?\d+(?:\.\d+)?$/.test(metin)) return NaN;
+  const n = Number(metin);
+  return Number.isFinite(n) ? n : NaN;
+}
+function paraKurus(deger) {
+  const n = sayisalOku(deger);
+  if (!Number.isFinite(n) || Math.abs(n) > PARA_UST_SINIR) return NaN;
+  return Math.sign(n) * Math.round((Math.abs(n) + Number.EPSILON) * 100);
+}
+function paraOku(deger) { return paraKurus(deger) / 100; }
+function paraTopla(...degerler) { return degerler.reduce((n, v) => n + (paraKurus(v) || 0), 0) / 100; }
+function tutarGecerli(deger, sifir = false, negatif = false) {
+  const n = sayisalOku(deger);
+  return Number.isFinite(n) && Math.abs(n) <= PARA_UST_SINIR
+    && (negatif || (sifir ? n >= 0 : n > 0))
+    && Math.abs(n * 100 - Math.round(n * 100)) < 0.001;
+}
+function tamSayiGecerli(deger, min, max) {
+  const n = sayisalOku(deger);
+  return Number.isInteger(n) && n >= min && n <= max;
+}
+function formHatasi(mesaj = "Geçerli, pozitif bir tutar ve tarih gir. Tutar en fazla iki ondalık basamak içerebilir.") {
+  toast(mesaj, "hata"); return false;
+}
+function islemFormuGecerli(form, kartMi = false) {
+  if (!yerelTarihOku(form.tarih)) return formHatasi("Geçerli bir işlem tarihi seç.");
+  if (kartMi) {
+    if (!tutarGecerli(form.donemIci || 0, true) || !tutarGecerli(form.provizyon || 0, true)
+        || paraTopla(form.donemIci || 0, form.provizyon || 0) <= 0) return formHatasi();
+  } else if (!tutarGecerli(form.tutar)) return formHatasi();
+  return true;
+}
+function aylikTarih(baslangic, ayKaymasi) {
+  const tarih = yerelTarihOku(baslangic);
+  if (!tarih) return null;
+  const hedef = new Date(tarih.getFullYear(), tarih.getMonth() + ayKaymasi, 1);
+  const sonGun = new Date(hedef.getFullYear(), hedef.getMonth() + 1, 0).getDate();
+  hedef.setDate(Math.min(tarih.getDate(), sonGun));
+  return hedef;
+}
+
+// ── financeUtils.js (inline) ────────────────────────────────────────────────
+const sayi = (deger) => Number.isFinite(Number(deger)) ? Number(deger) : 0;
+
+const tarihMilisaniye = (deger, gunSonu = false) => {
+  if (deger instanceof Date) return deger.getTime();
+  const metin = String(deger || "");
+  const eslesme = metin.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (eslesme) {
+    const tarih = new Date(Number(eslesme[1]), Number(eslesme[2]) - 1, Number(eslesme[3]), gunSonu ? 23 : 0, gunSonu ? 59 : 0, gunSonu ? 59 : 0, gunSonu ? 999 : 0);
+    return tarih.getTime();
+  }
+  const zaman = new Date(metin).getTime();
+  return Number.isFinite(zaman) ? zaman : null;
+};
+
+const tarihAralikta = (deger, baslangic, bitis) => {
+  const zaman = tarihMilisaniye(deger);
+  return zaman != null && zaman >= tarihMilisaniye(baslangic) && zaman <= tarihMilisaniye(bitis, true);
+};
+
+function donemGiderOzeti(islemler, kartlar = [], odenmisKartIdleri = [], hesapModu = "bekleyen", kartOdemeleri = [], aktifDonemKey = "") {
+  const kartMap = new Map((kartlar || []).map(kart => [String(kart.isim || ""), kart]));
+  const odenmisler = new Set((odenmisKartIdleri || []).map(String));
+  let normalGider = 0;
+  let kartGideri = 0;
+  let dahilKartGideri = 0;
+  (islemler || []).filter(i => i.tip === "gider").forEach(islem => {
+    const kart = kartMap.get(String(islem.kategori || ""));
+    const tutar = sayi(islem.tutar);
+    if (!kart) {
+      normalGider = paraTopla(normalGider, tutar);
+      return;
+    }
+    kartGideri = paraTopla(kartGideri, tutar);
+    // Kartın kendi "Güncel bakiyeden düşülsün" ayarı öncelikli; yoksa genel hesap moduna bakılır.
+    const dahilMi = kart.bakiyedenDussun != null ? kart.bakiyedenDussun !== false : (hesapModu === "kartlar_dahil" || odenmisler.has(String(kart.id)));
+    if (dahilMi) dahilKartGideri = paraTopla(dahilKartGideri, tutar);
+  });
+  const kartOdemeGideri = (kartOdemeleri || [])
+    .filter(o => o.odemeDonemKey === aktifDonemKey || (!o.odemeDonemKey && o.tarih && maasDonemKey(o.tarih, 15).key === aktifDonemKey))
+    .reduce((toplam, o) => paraTopla(toplam, sayi(o.tutar)), 0);
+  return {
+    normalGider,
+    kartGideri,
+    dahilKartGideri,
+    kartOdemeGideri,
+    toplamGider: paraTopla(normalGider, dahilKartGideri, kartOdemeGideri),
+  };
+}
+
+function donemHarcamaOrani(gelir, gider, birikim = 0) {
+  const toplamGelir = sayi(gelir);
+  const kullanilan = paraTopla(Math.max(0, sayi(gider)), Math.max(0, sayi(birikim)));
+  if (toplamGelir <= 0) return kullanilan > 0 ? 100 : 0;
+  return Math.max(0, (kullanilan / toplamGelir) * 100);
+}
+
+const turkceAdaGoreSirala = (liste = [], alan = "isim") => [...liste].sort((a, b) =>
+  String(a?.[alan] || "").localeCompare(String(b?.[alan] || ""), "tr", { sensitivity: "base", numeric: true })
+);
+
+const tarihAnahtari = (tarih) => `${tarih.getFullYear()}-${String(tarih.getMonth() + 1).padStart(2, "0")}-${String(tarih.getDate()).padStart(2, "0")}`;
+const ayAnahtari = (tarih) => `${tarih.getFullYear()}-${String(tarih.getMonth() + 1).padStart(2, "0")}`;
+
+const tarihOku = (deger) => {
+  const eslesme = String(deger || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!eslesme) return null;
+  const tarih = new Date(Number(eslesme[1]), Number(eslesme[2]) - 1, Number(eslesme[3]));
+  return tarih.getFullYear() === Number(eslesme[1]) && tarih.getMonth() === Number(eslesme[2]) - 1 && tarih.getDate() === Number(eslesme[3]) ? tarih : null;
+};
+
+function ayinGunu(yil, ay, gun) {
+  const sonGun = new Date(yil, ay + 1, 0).getDate();
+  return new Date(yil, ay, Math.min(sonGun, Math.max(1, parseInt(gun) || 1)));
+}
+
+function kartSiradakiSonOdeme(kart, kartOdemeleri = [], simdi = new Date()) {
+  if (kart?.sonOdemeTarihi) {
+    const tarih = tarihOku(kart.sonOdemeTarihi);
+    if (!tarih) return null;
+    const kesinTarih = tarihAnahtari(tarih);
+    const odendi = (kartOdemeleri || []).some(o =>
+      String(o.kartId) === String(kart.id) && o.sonOdemeTarihi === kesinTarih
+    );
+    return { tarih, tarihAnahtari: kesinTarih, donemKey: ayAnahtari(tarih), odendi, kesinTarih: true };
+  }
+  if (!kart?.sonOdemeGunu) return null;
+  const bugun = new Date(simdi.getFullYear(), simdi.getMonth(), simdi.getDate());
+  const buAy = ayAnahtari(bugun);
+  const buAyOdendi = (kartOdemeleri || []).some(o =>
+    String(o.kartId) === String(kart.id) && o.sonOdemeDonemKey === buAy
+  );
+  const tarih = buAyOdendi
+    ? ayinGunu(bugun.getFullYear(), bugun.getMonth() + 1, kart.sonOdemeGunu)
+    : ayinGunu(bugun.getFullYear(), bugun.getMonth(), kart.sonOdemeGunu);
+  return { tarih, tarihAnahtari: tarihAnahtari(tarih), donemKey: ayAnahtari(tarih) };
+}
+
+function kartHatirlatmalariniOlustur(kartlar, kartOdemeleri = [], simdi = new Date()) {
+  return (kartlar || []).flatMap(kart => {
+    const sonOdeme = kartSiradakiSonOdeme(kart, kartOdemeleri, simdi);
+    if (!sonOdeme || sonOdeme.odendi) return [];
+    return [{
+      id: `kart-${kart.id}-${sonOdeme.donemKey}`,
+      kartId: kart.id,
+      kaynak: "kredi_karti",
+      kategori: kart.isim,
+      aciklama: `${kart.isim} kredi kartı`,
+      tarih: sonOdeme.tarihAnahtari,
+      tutar: 0,
+      odendi: false,
+    }];
+  });
+}
+
+function bildirimPlanlariniOlustur(odemeler, ayarlar, simdi = new Date()) {
+  const gunler = [...new Set((ayarlar?.gunler || [0]).map(Number).filter(g => g >= 0 && g <= 30))].sort((a, b) => b - a);
+  const [saat, dakika] = String(ayarlar?.saat || "18:00").split(":").map(Number);
+  const gruplar = {};
+  const bugunAnahtari = tarihAnahtari(simdi);
+
+  (odemeler || []).filter(o => !o.odendi && o.tarih).forEach(odeme => {
+    const odemeTarihi = tarihOku(odeme.tarih);
+    if (!odemeTarihi) return;
+    gunler.forEach(onceGun => {
+      const bildirimZamani = new Date(
+        odemeTarihi.getFullYear(),
+        odemeTarihi.getMonth(),
+        odemeTarihi.getDate(),
+        Number.isFinite(saat) ? saat : 18,
+        Number.isFinite(dakika) ? dakika : 0,
+        0,
+        0,
+      );
+      bildirimZamani.setDate(bildirimZamani.getDate() - onceGun);
+
+      // Fatura son ödeme gününde uygulama seçilen saatten sonra açılırsa eski
+      // kod bildirimi tamamen atlıyordu. Aynı gün hâlâ devam ediyorsa kısa bir
+      // gecikmeyle telafi bildirimi planla; geçmiş günleri yeniden bildirme.
+      let telafi = false;
+      if (bildirimZamani.getTime() <= simdi.getTime()) {
+        if (onceGun !== 0 || tarihAnahtari(odemeTarihi) !== bugunAnahtari) return;
+        bildirimZamani.setTime(simdi.getTime() + 5000);
+        telafi = true;
+      }
+
+      const anahtar = `${tarihAnahtari(odemeTarihi)}-${onceGun}${telafi ? "-telafi" : ""}`;
+      if (!gruplar[anahtar]) gruplar[anahtar] = { anahtar, at: bildirimZamani, onceGun, telafi, odemeler: [] };
+      gruplar[anahtar].odemeler.push(odeme);
+    });
+  });
+
+  return Object.values(gruplar).sort((a, b) => a.at - b.at);
+}
+
+function bildirimKimligi(anahtar) {
+  let hash = 17;
+  for (let i = 0; i < anahtar.length; i += 1) hash = ((hash * 31) + anahtar.charCodeAt(i)) >>> 0;
+  return (hash % 2000000000) + 1;
+}
+
+// ── CONSTANTS ────────────────────────────────────────────────────────────────
+const VARSAYILAN_KATEGORILER = {
+  gelir: ["Maaş", "Freelance", "Kira Geliri", "Birikim", "Diğer"],
+  gider: ["Market", "Fatura", "Ulaşım", "Sağlık", "Eğlence", "Giyim", "Restoran", "Diğer"],
+};
+const KATEGORI_RENKLER = {
+  Maaş: "#f59e0b", Freelance: "#fbbf24", "Kira Geliri": "#d97706",
+  Market: "#ef4444", Fatura: "#f97316", Ulaşım: "#8b5cf6", Sağlık: "#06b6d4",
+  Eğlence: "#ec4899", Giyim: "#6366f1", Restoran: "#14b8a6", Diğer: "#78716c",
+};
+const KATEGORI_IKON = {
+  Maaş: "💼", Freelance: "💻", "Kira Geliri": "🏠", Birikim: "🏦",
+  Market: "🛒", Fatura: "📄", Ulaşım: "🚗", Sağlık: "🏥",
+  Eğlence: "🎬", Giyim: "👕", Restoran: "🍽️", Kira: "🏠", Diğer: "📌",
+};
+const katIkon = (kat, tip) => KATEGORI_IKON[kat] || (tip === "gelir" ? "💰" : "💳");
+
+// Alışkanlık analizi (en pahalı gün / haftalık dağılım / genel alışkanlık) için bir işlemin sayılacak tutarı.
+// Sabit giderler tamamen hariç. Kredi kartında İLK kez girilen toplam (geçmiş birikmiş tutar) hariç,
+// ama SONRAKİ güncellemelerdeki fark (o gün gerçekten eklenen harcama) dahil edilir. Ödemeler zaten normal işlemdir, dahil.
+const habitHareketleri = (i) => {
+  if (!i || i.sabitId) return []; // sabit gider — tarihi kullanıcı alışkanlığını yansıtmaz
+  if (!i.kartHarcama) return i.tutar > 0 && i.tarih ? [{ tarih: i.tarih, tutar: i.tutar }] : [];
+
+  // Yeni sürümde kartın gün gün farkları kaydın içinde korunur. Böylece kart toplamı
+  // güncellenirken eski haftaların harcaması kaybolmaz.
+  if (i.kartGunlukHareketler && typeof i.kartGunlukHareketler === "object") {
+    return Object.entries(i.kartGunlukHareketler)
+      .filter(([tarih, tutar]) => yerelTarihOku(tarih) && Number(tutar) > 0)
+      .map(([tarih, tutar]) => ({ tarih, tutar: Number(tutar) }));
+  }
+
+  // Eski sürümden kalan son günlük farkı da kaybetme. İlk kart toplamı ise günlük
+  // harcama olmadığı için analiz dışı kalır.
+  const baslangicVar = i.kartGunBaslangicToplam != null && i.kartGunBaslangicToplam > 0;
+  const delta = Number(i.kartGunlukDelta) || 0;
+  return baslangicVar && delta > 0 && i.tarih ? [{ tarih: i.tarih, tutar: delta }] : [];
+};
+
+// Taksit adına göre akıllı ikon seçimi (anahtar kelime eşleştirme)
+const TAKSIT_IKON_KURAL = [
+  { k: ["mtv", "vergi", "trafik ceza", "harç"], i: "🧾" },
+  { k: ["sigorta", "kasko", "dask", "ray sompo", "sompo", "poliçe"], i: "🛡️" },
+  { k: ["hepsiburada", "trendyol", "n11", "amazon", "gittigidiyor", "e-ticaret", "eticaret", "online alışveriş"], i: "📦" },
+  { k: ["nakit avans", "avans", "kredi kartı", "kart borcu", "ekstre"], i: "💳" },
+  { k: ["gözlük", "atasun", "optik", "lens", "numaralı"], i: "👓" },
+  { k: ["lcw", "lc waikiki", "waikiki", "penti", "koton", "mavi", "defacto", "giyim", "kıyafet", "elbise", "mont", "ceket", "pantolon", "gömlek", "iç giyim"], i: "👕" },
+  { k: ["superstep", "flo", "ayakkabı", "spor ayakkabı", "sneaker", "bot"], i: "👟" },
+  { k: ["telefon", "iphone", "samsung", "xiaomi", "cep"], i: "📱" },
+  { k: ["laptop", "bilgisayar", "pc", "macbook", "notebook"], i: "💻" },
+  { k: ["tablet", "ipad"], i: "📱" },
+  { k: ["tv", "televizyon", "ekran", "monitör"], i: "📺" },
+  { k: ["saat", "watch", "kol saat"], i: "⌚" },
+  { k: ["kulaklık", "airpod", "headphone"], i: "🎧" },
+  { k: ["kamera", "fotoğraf", "objektif"], i: "📷" },
+  { k: ["oyun", "playstation", "ps5", "xbox", "konsol"], i: "🎮" },
+  { k: ["koltuk", "kanepe", "mobilya", "masa", "dolap", "yatak", "mutfak"], i: "🛋️" },
+  { k: ["buzdolabı", "çamaşır", "bulaşık", "fırın", "beyaz eşya", "kombi", "klima", "elektrikli süpürge", "süpürge"], i: "🔌" },
+  { k: ["araba", "araç", "oto", "lastik", "araç kredisi"], i: "🚗" },
+  { k: ["motor", "motosiklet", "scooter"], i: "🏍️" },
+  { k: ["bisiklet"], i: "🚲" },
+  { k: ["ev", "daire", "konut", "tapu"], i: "🏠" },
+  { k: ["tatil", "seyahat", "uçak", "otel", "gezi"], i: "✈️" },
+  { k: ["mücevher", "altın", "yüzük", "kolye", "takı"], i: "💍" },
+  { k: ["market", "gıda", "alışveriş"], i: "🛒" },
+  { k: ["kitap", "eğitim", "kurs", "ders"], i: "📚" },
+  { k: ["sağlık", "diş", "hastane", "gözlük", "tedavi"], i: "🏥" },
+  { k: ["spor", "fitness", "gym", "bisiklet aleti"], i: "🏋️" },
+  { k: ["mobilya", "halı", "perde", "ev eşya"], i: "🪑" },
+];
+const taksitIkon = (ad) => {
+  const s = (ad || "").toLowerCase();
+  for (const kural of TAKSIT_IKON_KURAL) {
+    if (kural.k.some(kelime => s.includes(kelime))) return kural.i;
+  }
+  return "🧾";
+};
+
+// ── TOAST ─────────────────────────────────────────────────────────────────────
+let _toastYayin = null;
+let _kayitHatasi = null;
+const _okunamayanAnahtarlar = new Set();
+let _kayitGrubu = null;
+let _buIslemKayitHatali = false;
+function kayitHatasiBildir(mesaj) {
+  _kayitHatasi = mesaj;
+  _buIslemKayitHatali = true;
+  Promise.resolve().then(() => { _buIslemKayitHatali = false; });
+  if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("finora-kayit-hatasi", { detail: mesaj }));
+  if (_toastYayin) _toastYayin(mesaj, "hata");
+}
+function toast(mesaj, tip = "ok", geriAl = null) {
+  if (_buIslemKayitHatali && tip !== "hata") return;
+  if (_toastYayin) _toastYayin(mesaj, tip, geriAl);
+}
+function KayitDurumu() {
+  const [hata, setHata] = useState(_kayitHatasi);
+  useEffect(() => {
+    const dinle = e => setHata(e.detail);
+    window.addEventListener("finora-kayit-hatasi", dinle);
+    return () => window.removeEventListener("finora-kayit-hatasi", dinle);
+  }, []);
+  return hata ? <div role="alert" className="kayit-hatasi"><strong>Veri kaydedilemedi</strong><p>{hata}</p><p>Son değişikliğin kalıcı olduğunu varsayma. Mevcut verilerini Ayarlar → Yedek Al ile dışa aktar.</p></div> : null;
+}
+
+function ToastKutusu() {
+  const [veri, setVeri] = useState(null);
+  useEffect(() => {
+    _toastYayin = (mesaj, tip, geriAl) => {
+      const id = Date.now();
+      setVeri({ mesaj, tip, geriAl, id });
+      setTimeout(() => setVeri(mevcut => mevcut?.id === id ? null : mevcut), geriAl ? 5200 : 2800);
+    };
+    return () => { _toastYayin = null; };
+  }, []);
+  if (!veri) return null;
+  const renk = veri.tip === "hata" ? "#ef4444" : veri.tip === "uyari" ? "#f59e0b" : "#10b981";
+  const ikon = veri.tip === "hata" ? "✕" : veri.tip === "uyari" ? "!" : "✓";
+  return (
+    <div key={veri.id} style={{ position: "fixed", top: "calc(14px + env(safe-area-inset-top))", left: "50%", transform: "translateX(-50%)", zIndex: 300, background: renk, color: "#fff", borderRadius: 16, padding: "10px 12px", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, display: "flex", alignItems: "center", gap: 9, boxShadow: "0 12px 32px rgba(0,0,0,0.3)", animation: "toastIn 0.28s ease", width: "min(92%, 430px)" }}>
+      <span style={{ width: 20, height: 20, borderRadius: 99, background: "rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, flexShrink: 0 }}>{ikon}</span>
+      <span style={{ flex: 1 }}>{veri.mesaj}</span>
+      {veri.geriAl && <button onClick={() => { veri.geriAl(); setVeri(null); }} style={{ border: "1px solid rgba(255,255,255,.45)", background: "rgba(255,255,255,.18)", color: "#fff", borderRadius: 9, padding: "5px 9px", fontSize: 11, fontWeight: 800, cursor: "pointer" }}>Geri Al</button>}
+    </div>
+  );
+}
+
+const AYLAR = ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"];
+const AYLAR_TAM = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+
+
+// Kredi kartı marka renkleri
+const krediKartiMarkaRengi = (isim = "") => {
+  const ad = String(isim).toLocaleLowerCase("tr-TR").trim();
+  // Koyu modda da marka rengi ve yazı net kalsın diye koyu zemin + parlak vurgu kullanılır.
+  if (ad.includes("bonus")) return { ana: "#4ade80", soft: "rgba(22,163,74,.22)", border: "rgba(74,222,128,.65)" };
+  if (ad.includes("maximum")) return { ana: "#93c5fd", soft: "rgba(30,58,138,.48)", border: "rgba(96,165,250,.72)" };
+  if (ad.includes("world")) return { ana: "#facc15", soft: "rgba(161,98,7,.34)", border: "rgba(250,204,21,.72)" };
+  return { ana: "#a5b4fc", soft: "rgba(99,102,241,.20)", border: "rgba(165,180,252,.58)" };
+};
+
+// ── LOCALSTORAGE HOOK ─────────────────────────────────────────────────────────
+function useLocalStorage(key, defaultValue) {
+  const [value, setValue] = useState(() => {
+    try {
+      const item = window.localStorage.getItem(key);
+      if (item == null) return defaultValue;
+      const parsed = JSON.parse(item);
+      if ((Array.isArray(defaultValue) && !Array.isArray(parsed))
+        || (defaultValue && typeof defaultValue === "object" && !Array.isArray(defaultValue)
+          && (!parsed || typeof parsed !== "object" || Array.isArray(parsed)))) {
+        _okunamayanAnahtarlar.add(key);
+        _kayitHatasi = "Kayıt biçimi okunamadı. Eski kayıt korunuyor; yedeğini alıp geçerli bir yedek yükle.";
+        return defaultValue;
+      }
+      return parsed;
+    } catch {
+      _okunamayanAnahtarlar.add(key);
+      _kayitHatasi = "Yerel kayıt okunamadı. Depolama iznini kontrol et; mevcut kayıtların üzerine yazma.";
+      return defaultValue;
+    }
+  });
+  const current = useRef(value);
+  const setItem = useCallback(newValue => {
+    if (_buIslemKayitHatali) return false;
+    if (_okunamayanAnahtarlar.has(key)) {
+      kayitHatasiBildir("Bu kayıt okunamadığı için üzerine yazılmadı. Geçerli bir yedeği yükleyerek kurtar.");
+      return false;
+    }
+    // Aynı kullanıcı işleminin ardışık yazmaları birlikte geri alınır.
+    // Örn. ödeme kaydı yazılamazsa ona bağlı gider kaydı da bırakılmaz.
+    if (!_kayitGrubu) {
+      _kayitGrubu = { oncekiler: new Map() };
+      const grup = _kayitGrubu;
+      Promise.resolve().then(() => { if (_kayitGrubu === grup) _kayitGrubu = null; });
+    }
+    const grup = _kayitGrubu;
+    const val = typeof newValue === "function" ? newValue(current.current) : newValue;
+    try {
+      const oncekiHam = window.localStorage.getItem(key);
+      const oncekiDeger = current.current;
+      window.localStorage.setItem(key, JSON.stringify(val));
+      if (!grup.oncekiler.has(key)) grup.oncekiler.set(key, {
+        ham: oncekiHam,
+        geriAl: () => { current.current = oncekiDeger; setValue(oncekiDeger); },
+      });
+    } catch {
+      let geriAlindi = true;
+      for (const [alan, onceki] of [...grup.oncekiler.entries()].reverse()) {
+        try {
+          if (onceki.ham === null) window.localStorage.removeItem(alan);
+          else window.localStorage.setItem(alan, onceki.ham);
+          onceki.geriAl();
+        } catch { geriAlindi = false; }
+      }
+      kayitHatasiBildir(geriAlindi
+        ? "Depolama alanı dolu veya yazma izni kapalı. Bu işlem kaydedilmedi; önceki kayıtlar korundu."
+        : "Depolama kullanılamıyor; bu işlemin bazı kayıtları geri alınamadı. Uygulamayı yenilemeden mevcut verilerin dosya yedeğini al.");
+      return false;
+    }
+    current.current = val;
+    setValue(val);
+    return true;
+  }, [key]);
+  return [value, setItem];
+}
+
+
+// Yedek tamamen doğrulanır; kayıtlar ancak bundan sonra değiştirilir.
+function yedekVerisiniDogrula(paket) {
+  const nesneMi = v => v !== null && typeof v === "object" && !Array.isArray(v);
+  if (!nesneMi(paket) || !["finora-v2", "finora-v1", "butce-takip-v1"].includes(paket.format) || !nesneMi(paket.data)) throw new Error("Yedek biçimi geçersiz.");
+  const diziAnahtarlari = ["ft_islemler", "ft_odemeler", "ft_kartlar", "ft_kart_odemeleri", "ft_hizli_sablonlar", "ft_tekrarlayan", "ft_krediler", "ft_taksitler"];
+  const nesneAnahtarlari = ["ft_butceler", "ft_kategoriler", "ft_sabit_log", "ft_zamlar", "ft_enflasyon", "ft_maas_ayarlar", "ft_bildirim_ayarlari"];
+  const temiz = {};
+  function guvenliJson(v, derinlik = 0) {
+    if (derinlik > 30) throw new Error("Yedek çok fazla iç içe kayıt içeriyor.");
+    if (typeof v === "number" && !Number.isFinite(v)) throw new Error("Geçersiz sayı.");
+    if (v && typeof v === "object") Object.entries(v).forEach(([k, val]) => {
+      if (["__proto__", "prototype", "constructor"].includes(k)) throw new Error("Geçersiz kayıt alanı.");
+      guvenliJson(val, derinlik + 1);
+    });
+  }
+  guvenliJson(paket.data);
+  for (const [key, value] of Object.entries(paket.data)) {
+    if (!key.startsWith("ft_") || key.startsWith("ft_manual_backup") || key.startsWith("ft_auto_backup")) continue;
+    if (diziAnahtarlari.includes(key)) {
+      if (!Array.isArray(value)) throw new Error(`${key}: liste bekleniyor.`);
+      const ids = new Set();
+      value.forEach(kayit => {
+        if (!nesneMi(kayit) || kayit.id == null || !["string", "number"].includes(typeof kayit.id) || String(kayit.id) === "") throw new Error(`${key}: kayıt kimliği eksik.`);
+        if (ids.has(String(kayit.id))) throw new Error(`${key}: yinelenen kayıt kimliği.`);
+        ids.add(String(kayit.id));
+        if (["ft_islemler", "ft_odemeler", "ft_kart_odemeleri", "ft_hizli_sablonlar", "ft_tekrarlayan"].includes(key) && !tutarGecerli(kayit.tutar, true)) throw new Error(`${key}: geçersiz tutar.`);
+        if (["ft_islemler", "ft_odemeler", "ft_kart_odemeleri"].includes(key) && !yerelTarihOku(kayit.tarih)) throw new Error(`${key}: geçersiz tarih.`);
+        if (key === "ft_islemler" && !["gelir", "gider"].includes(kayit.tip)) throw new Error("İşlem türü geçersiz.");
+        if (key === "ft_odemeler" && kayit.odendi != null && typeof kayit.odendi !== "boolean") throw new Error("Ödeme durumu geçersiz.");
+        if (key === "ft_kartlar" && typeof kayit.isim !== "string") throw new Error("Kart adı geçersiz.");
+        if (key === "ft_hizli_sablonlar" && typeof kayit.kategori !== "string") throw new Error("Şablon kategorisi geçersiz.");
+        if (key === "ft_tekrarlayan" && (!tamSayiGecerli(kayit.gun, 1, 31) || typeof kayit.aktif !== "boolean")) throw new Error("Sabit gider günü/durumu geçersiz.");
+        if (key === "ft_taksitler" && (!tutarGecerli(kayit.aylikTutar) || !tamSayiGecerli(kayit.vade, 1, 1200) || !tamSayiGecerli(kayit.odenen ?? 0, 0, Number(kayit.vade)))) throw new Error("Taksit kaydı geçersiz.");
+        if (key === "ft_krediler") {
+          if (!Array.isArray(kayit.taksitler) || !tamSayiGecerli(kayit.vade, 1, 1200) || kayit.taksitler.length !== Number(kayit.vade)) throw new Error("Kredi planı geçersiz.");
+          kayit.taksitler.forEach(t => { if (!nesneMi(t) || !tutarGecerli(t.tutar) || !yerelTarihOku(t.tarih) || typeof t.odendi !== "boolean" || !tamSayiGecerli(t.no, 1, Number(kayit.vade))) throw new Error("Kredi taksiti geçersiz."); });
+        }
+        for (const alan of ["isim", "ad", "aciklama", "kategori", "kart", "kartAdi", "baslangic", "bitis", "sonOdemeTarihi", "hesapKesimTarihi"]) {
+          if (kayit[alan] != null && typeof kayit[alan] !== "string") throw new Error(`${key}: ${alan} metin olmalı.`);
+        }
+        if (["ft_islemler", "ft_odemeler", "ft_tekrarlayan"].includes(key) && typeof kayit.kategori !== "string") throw new Error("Kategori eksik.");
+        for (const alan of ["baslangic", "bitis", "sonOdemeTarihi", "hesapKesimTarihi"]) {
+          if (kayit[alan] && !yerelTarihOku(kayit[alan])) throw new Error(`${key}: ${alan} tarihi geçersiz.`);
+        }
+        if (kayit.kartGunlukHareketler != null && (!nesneMi(kayit.kartGunlukHareketler) || Object.entries(kayit.kartGunlukHareketler).some(([gun, tutar]) => !yerelTarihOku(gun) || !tutarGecerli(tutar, true, true)))) throw new Error("Günlük kart hareketleri geçersiz.");
+        for (const alan of ["donemIci", "provizyon", "ekstre", "aylikTutar", "toplamTutar"]) {
+          if (kayit[alan] != null && !tutarGecerli(kayit[alan], true)) throw new Error(`${key}: ${alan} geçersiz.`);
+        }
+      });
+    }
+    if (nesneAnahtarlari.includes(key) && !nesneMi(value)) throw new Error(`${key}: nesne bekleniyor.`);
+    if (key === "ft_kategoriler" && (!["gelir", "gider"].every(t => Array.isArray(value[t]) && value[t].every(k => typeof k === "string")))) throw new Error("Kategori listeleri geçersiz.");
+    if (key === "ft_donem_gun" && !tamSayiGecerli(value, 1, 28)) throw new Error("Maaş dönemi günü geçersiz.");
+    if (key === "ft_schema_version" && typeof value !== "string") throw new Error("Sürüm kaydı geçersiz.");
+    if (key === "ft_bakiye_hesap_modu" && typeof value !== "string") throw new Error("Bakiye hesap modu geçersiz.");
+    if (key === "ft_tema" && !["light", "dark"].includes(value)) throw new Error("Tema geçersiz.");
+    if (key === "ft_butceler" && Object.values(value).some(v => v !== "" && !tutarGecerli(v, true))) throw new Error("Bütçe limiti geçersiz.");
+    if (["ft_zamlar", "ft_enflasyon"].includes(key) && Object.values(value).some(v => v !== "" && (!Number.isFinite(sayisalOku(v)) || sayisalOku(v) <= -100 || sayisalOku(v) > 10000))) throw new Error("Oran kaydı geçersiz.");
+    if (key === "ft_sabit_log" && Object.values(value).some(v => typeof v !== "boolean")) throw new Error("Sabit gider günlüğü geçersiz.");
+    if (key === "ft_son_bildirim_planlama" && value !== null && !nesneMi(value)) throw new Error("Bildirim kaydı geçersiz.");
+    if (key === "ft_bildirim_ayarlari" && (!Array.isArray(value.gunler) || value.gunler.some(g => !tamSayiGecerli(g, 0, 365)) || typeof value.saat !== "string" || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value.saat))) throw new Error("Bildirim ayarları geçersiz.");
+    if (key === "ft_maas_ayarlar") {
+      if (value.mevcutMaas && !tutarGecerli(value.mevcutMaas)) throw new Error("Maaş tutarı geçersiz.");
+      if (value.hesapDonem && !["ocak", "temmuz"].includes(value.hesapDonem)) throw new Error("Maaş hesap dönemi geçersiz.");
+    }
+    // Eski yedeklerde sayısal metinleri destekle; uygulamaya standart TL sayıları ver.
+    temiz[key] = Array.isArray(value) && diziAnahtarlari.includes(key) ? value.map(kayit => {
+      const kopya = { ...kayit };
+      for (const alan of ["tutar", "donemIci", "provizyon", "ekstre", "aylikTutar", "toplamTutar", "kartGunlukDelta", "kartGunBaslangicToplam"]) {
+        if (kopya[alan] != null) {
+          if (!tutarGecerli(kopya[alan], true, true)) throw new Error(`${key}: ${alan} para değeri geçersiz.`);
+          kopya[alan] = paraOku(kopya[alan]);
+        }
+      }
+      if (Array.isArray(kopya.taksitler)) kopya.taksitler = kopya.taksitler.map(t => ({ ...t, tutar: paraOku(t.tutar) }));
+      return kopya;
+    }) : value;
+  }
+  if (!diziAnahtarlari.some(key => Object.prototype.hasOwnProperty.call(temiz, key))) throw new Error("Yedekte uygulama kayıtları bulunamadı.");
+  return temiz;
+}
+function yedegiGuvenleYaz(data, storage = window.localStorage) {
+  const onceki = Object.fromEntries(Object.keys(storage).filter(k => k.startsWith("ft_")).map(k => [k, storage.getItem(k)]));
+  const yeni = Object.fromEntries(Object.entries(data).map(([k, v]) => [k, JSON.stringify(v)]));
+  try {
+    // Eski kayıtları peşinen silme. Yeni kayıtlar başarıyla yazıldıktan sonra artık kullanılmayanları kaldır.
+    Object.entries(yeni).forEach(([k, v]) => storage.setItem(k, v));
+    Object.keys(onceki).filter(k => !Object.prototype.hasOwnProperty.call(yeni, k)).forEach(k => storage.removeItem(k));
+  } catch (hata) {
+    try {
+      Object.keys(yeni).filter(k => !Object.prototype.hasOwnProperty.call(onceki, k)).forEach(k => storage.removeItem(k));
+      Object.entries(onceki).forEach(([k, v]) => storage.setItem(k, v));
+    } catch {
+      const kurtarma = { format: "finora-v2", olusturulma: new Date().toISOString(), data: {} };
+      Object.entries(onceki).forEach(([k, v]) => { try { kurtarma.data[k] = JSON.parse(v); } catch { kurtarma.data[k] = v; } });
+      const url = URL.createObjectURL(new Blob([JSON.stringify(kurtarma)], { type: "application/json" }));
+      const a = document.createElement("a"); a.href = url; a.download = "finora-yukleme-oncesi-kurtarma.json"; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      kayitHatasiBildir("Yedek yüklenemedi ve eski kayıtlar depolamaya tamamen geri yazılamadı. Yükleme öncesi kurtarma dosyası indirilmeye çalışıldı; dosyanın kaydedildiğini kontrol et.");
+      throw new Error("Depolama kullanılamıyor. Kurtarma dosyasını sakla; uygulamayı yenileme.");
+    }
+    throw new Error("Yedek yazılamadı; önceki kayıtlar geri yüklendi. Depolama alanını/iznini kontrol et.");
+  }
+}
+
+// ── INITIAL DATA ─────────────────────────────────────────────────────────────
+const INITIAL_ISLEMLER = [];
+const INITIAL_TEKRARLAYAN = [];
+// ── HELPERS ──────────────────────────────────────────────────────────────────
+const fmt = (n) => new Intl.NumberFormat("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+const kisaTarih = (tarih) => tarih ? `${String(tarih.getDate()).padStart(2, "0")}.${String(tarih.getMonth() + 1).padStart(2, "0")}` : "";
+
+// ── YAHOO FINANCE ─────────────────────────────────────────────────────────────
+// Bigpara altın sembol → API kodu mapping
+
+
+// ── UI ATOMS ─────────────────────────────────────────────────────────────────
+function Modal({ title, onClose, children }) {
+  const panel = useRef(null);
+  const kapat = useRef(onClose);
+  kapat.current = onClose;
+  useEffect(() => {
+    const oncekiOdak = document.activeElement;
+    const oncekiOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const odaklanabilirler = () => [...(panel.current?.querySelectorAll('button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex="0"]') || [])].filter(el => el.getClientRects().length);
+    (panel.current?.querySelector("input:not([disabled]), select:not([disabled]), textarea:not([disabled])") || odaklanabilirler()[0] || panel.current)?.focus();
+    const tus = e => {
+      const paneller = document.querySelectorAll("[data-app-modal]");
+      if (paneller[paneller.length - 1] !== panel.current) return;
+      if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); kapat.current(); }
+      if (e.key === "Tab") {
+        const liste = odaklanabilirler();
+        if (!liste.length) { e.preventDefault(); panel.current?.focus(); return; }
+        const ilk = liste[0], son = liste[liste.length - 1];
+        if (e.shiftKey && (document.activeElement === ilk || !panel.current?.contains(document.activeElement))) { e.preventDefault(); son.focus(); }
+        else if (!e.shiftKey && (document.activeElement === son || !panel.current?.contains(document.activeElement))) { e.preventDefault(); ilk.focus(); }
+      }
+    };
+    const odak = e => {
+      const paneller = document.querySelectorAll("[data-app-modal]");
+      if (paneller[paneller.length - 1] === panel.current && !panel.current?.contains(e.target)) (odaklanabilirler()[0] || panel.current)?.focus();
+    };
+    document.addEventListener("keydown", tus, true);
+    document.addEventListener("focusin", odak);
+    return () => {
+      document.removeEventListener("keydown", tus, true);
+      document.removeEventListener("focusin", odak);
+      document.body.style.overflow = oncekiOverflow;
+      if (oncekiOdak?.isConnected) oncekiOdak.focus();
+    };
+  }, []);
+  const icerik = (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.72)", zIndex: 1000, display: "flex", alignItems: "flex-end", justifyContent: "center", paddingTop: "calc(10px + env(safe-area-inset-top))", animation: "fadeIn 0.22s ease" }} onClick={onClose}>
+      <div ref={panel} data-app-modal role="dialog" aria-modal="true" aria-label={title} tabIndex={-1} className="app-modal-panel" style={{ background: "var(--card)", borderTop: "1px solid var(--border-light)", borderLeft: "1px solid var(--border)", borderRight: "1px solid var(--border)", borderRadius: "26px 26px 0 0", padding: "14px 22px calc(26px + env(safe-area-inset-bottom))", width: "100%", maxWidth: 480, maxHeight: "calc(100dvh - 10px - env(safe-area-inset-top))", overflowY: "auto", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch", boxSizing: "border-box", animation: "sheetUp 0.3s cubic-bezier(0.16,1,0.3,1)", boxShadow: "0 -12px 40px rgba(0,0,0,0.4)" }} onClick={e => e.stopPropagation()}>
+        <div style={{ width: 40, height: 4, background: "var(--border2)", borderRadius: 99, margin: "0 auto 16px" }} />
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+          <span style={{ color: "var(--text)", fontSize: 18, fontFamily: "'Manrope', 'Inter', system-ui, sans-serif", fontWeight: 700 }}>{title}</span>
+          <button aria-label="Pencereyi kapat" onClick={onClose} style={{ background: "var(--card2)", border: "1px solid var(--border)", color: "var(--text3)", borderRadius: 99, width: 32, height: 32, cursor: "pointer", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+  return typeof document !== "undefined" ? createPortal(icerik, document.body) : icerik;
+}
+function Input({ label, ...props }) {
+  const generatedId = useId();
+  const id = props.id || generatedId;
+  return (
+    <div style={{ marginBottom: 14 }}>
+      {label && <label htmlFor={id} style={{ color: "var(--text4)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", display: "block", marginBottom: 6, letterSpacing: "0.06em", textTransform: "uppercase" }}>{label}</label>}
+      <input {...(props.type === "number" ? { step: "any", inputMode: "decimal" } : {})} {...props} id={id} style={{ width: "100%", background: "var(--card2)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 14px", color: "var(--text)", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 14, outline: "none", boxSizing: "border-box", ...props.style }} />
+    </div>
+  );
+}
+function Select({ label, children, ...props }) {
+  const generatedId = useId();
+  const id = props.id || generatedId;
+  return (
+    <div style={{ marginBottom: 14 }}>
+      {label && <label htmlFor={id} style={{ color: "var(--text4)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", display: "block", marginBottom: 6, letterSpacing: "0.06em", textTransform: "uppercase" }}>{label}</label>}
+      <select {...props} id={id} style={{ width: "100%", background: "var(--card2)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 14px", color: "var(--text)", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 14, outline: "none", boxSizing: "border-box" }}>{children}</select>
+    </div>
+  );
+}
+function Btn({ children, onClick, variant = "primary", style = {}, disabled }) {
+  const styles = { primary: { background: disabled ? "var(--text5)" : "linear-gradient(135deg,#f59e0b,#d97706)", color: "#302111" }, secondary: { background: "var(--border)", color: "var(--text)" }, danger: { background: "#ef444422", color: "#ef4444", border: "1px solid #ef444444" } };
+  return <button onClick={onClick} disabled={disabled} style={{ border: "none", borderRadius: 10, padding: "10px 18px", fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, fontSize: 13, cursor: disabled ? "not-allowed" : "pointer", letterSpacing: "0.04em", opacity: disabled ? 0.6 : 1, ...styles[variant], ...style }}>{children}</button>;
+}
+function Badge({ text, color }) {
+  return <span style={{ background: color + "22", color, border: `1px solid ${color}44`, borderRadius: 6, padding: "2px 8px", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 600 }}>{text}</span>;
+}
+
+function Icon({ name, size = 22, strokeWidth = 1.9 }) {
+  const paths = {
+    menu: <><path d="M4 7h16M4 12h16M4 17h16" /></>,
+    home: <><path d="m3 11 9-8 9 8" /><path d="M5 10v10h14V10M9 20v-6h6v6" /></>,
+    card: <><rect x="3" y="5" width="18" height="14" rx="3" /><path d="M3 10h18M7 15h3" /></>,
+    chart: <><path d="M4 19V9M10 19V5M16 19v-7M22 19H2" /></>,
+    settings: <><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.82 2.82-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.04 1.56V21h-4v-.08A1.7 1.7 0 0 0 8.96 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.82-2.82.06-.06A1.7 1.7 0 0 0 4.6 15 1.7 1.7 0 0 0 3.08 14H3v-4h.08A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.82-2.82.06.06A1.7 1.7 0 0 0 8.96 4.6 1.7 1.7 0 0 0 10 3.08V3h4v.08A1.7 1.7 0 0 0 15.04 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.82 2.82-.06.06A1.7 1.7 0 0 0 19.4 9 1.7 1.7 0 0 0 20.92 10H21v4h-.08A1.7 1.7 0 0 0 19.4 15Z" /></>,
+    plus: <><path d="M12 5v14M5 12h14" /></>,
+    calendar: <><rect x="3" y="5" width="18" height="16" rx="3" /><path d="M7 3v4M17 3v4M3 10h18" /></>,
+    shield: <><path d="M12 3 4 6v6c0 4 4 7 8 9 4-2 8-5 8-9V6l-8-3Z" /><path d="m8.5 12 2.5 2.5 4.5-5" /></>,
+    warning: <><path d="m12 3 10 18H2L12 3Z" /><path d="M12 9v5M12 17h.01" /></>,
+    alert: <><circle cx="12" cy="12" r="9" /><path d="M12 7v6M12 17h.01" /></>,
+    moon: <><path d="M20 15.3A8.5 8.5 0 0 1 8.7 4a8.5 8.5 0 1 0 11.3 11.3Z" /></>,
+    sun: <><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42" /></>,
+    wallet: <><path d="M4 7.5V6a2 2 0 0 1 2-2h12v4" /><rect x="3" y="7" width="18" height="13" rx="3" /><path d="M16 12h5v4h-5a2 2 0 0 1 0-4Z" /></>,
+    receipt: <><path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z" /><path d="M9 8h6M9 12h6" /></>,
+    repeat: <><path d="m17 2 4 4-4 4" /><path d="M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4" /><path d="M21 13v2a3 3 0 0 1-3 3H3" /></>,
+    coins: <><ellipse cx="9" cy="7" rx="5" ry="3" /><path d="M4 7v4c0 1.7 2.2 3 5 3 1 0 2-.2 2.8-.5M14 9.2V7" /><ellipse cx="15" cy="15" rx="5" ry="3" /><path d="M10 15v3c0 1.7 2.2 3 5 3s5-1.3 5-3v-3" /></>,
+    chevron: <><path d="m9 18 6-6-6-6" /></>,
+    close: <><path d="M6 6l12 12M18 6 6 18" /></>,
+  };
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ display: "block" }}>
+      {paths[name] || paths.wallet}
+    </svg>
+  );
+}
+
+// Mini sparkline: segmentler yöne göre renkli (düşüş yeşil, yükseliş kırmızı)
+
+// Kategori aylık değişim grafiği — gradyanlı alan grafiği, her noktada değer etiketi, son nokta vurgulu balon
+const fmtK = n => Math.round(n).toLocaleString("tr-TR");
+function KategoriAlanGrafik({ seri, renk, gradId }) {
+  if (!seri || seri.length < 2) return null;
+  const CustomLabel = (props) => {
+    const { x, y, value } = props;
+    if (value == null || x == null || y == null) return null;
+    const metin = "₺" + fmtK(value);
+    if (value === 0) return null;
+    return <text x={x} y={y - 9} textAnchor="middle" fontSize={8.5} fill="var(--text5)" fontFamily="'Inter', system-ui, sans-serif">{metin}</text>;
+  };
+  return (
+    <ResponsiveContainer width="100%" height={110}>
+      <AreaChart data={seri} margin={{ top: 30, right: 10, left: 10, bottom: 0 }}>
+        <defs>
+          <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={renk} stopOpacity={0.5} />
+            <stop offset="100%" stopColor={renk} stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <XAxis dataKey="ay" hide />
+        <YAxis hide domain={[0, "dataMax"]} />
+        <Area type="monotone" dataKey="deger" stroke={renk} strokeWidth={2.5} fill={`url(#${gradId})`} dot={{ r: 3.5, fill: renk, strokeWidth: 0 }} activeDot={{ r: 5 }}>
+          <LabelList dataKey="deger" content={CustomLabel} />
+        </Area>
+      </AreaChart>
+    </ResponsiveContainer>
+  );
+}
+
+// ── PROFİL PANELİ ─────────────────────────────────────────────────────────────
+
+// ── MAAŞ AYI: 15'ten 14'e dönem ─────────────────────────────────────────────
+function maasDonemKey(tarihStr, basGun) {
+  const gun = basGun || ((parseInt((()=>{try{return localStorage.getItem("ft_donem_gun");}catch(e){return null;}})() || "15") || 15) || 15);
+  const donem = maasDonemiBul(tarihStr, gun);
+  if (!donem) return { yil: 0, ay: 0, key: "gecersiz", label: "Geçersiz tarih", baslangic: "" };
+  const { baslangic: bas, bitis: bit, key } = donem;
+  const label = `${bas.getDate()} ${AYLAR_TAM[bas.getMonth()]} – ${bit.getDate()} ${AYLAR_TAM[bit.getMonth()]}`;
+  return { yil: bas.getFullYear(), ay: bas.getMonth(), key, label, baslangic: yerelTarihAnahtari(bas), bitis: yerelTarihAnahtari(bit) };
+}
+// ── BİLDİRİM SİSTEMİ (Capacitor köprüsü üzerinden, import gerektirmez) ───────
+function bildirimEklentisi() {
+  try {
+    const C = window.Capacitor;
+    if (C && C.Plugins && C.Plugins.LocalNotifications) return C.Plugins.LocalNotifications;
+  } catch (e) {}
+  return null;
+}
+const FINORA_BILDIRIM_KANALI = "finora_odemeler_v2";
+async function bildirimKanaliHazirla(LN) {
+  if (!LN || typeof LN.createChannel !== "function") return null;
+  try {
+    await LN.createChannel({
+      id: FINORA_BILDIRIM_KANALI,
+      name: "Ödeme Hatırlatmaları",
+      description: "Fatura ve kredi kartı son ödeme günü hatırlatmaları",
+      importance: 5,
+      visibility: 1,
+      vibration: true,
+      lights: true,
+    });
+    return FINORA_BILDIRIM_KANALI;
+  } catch (e) {
+    return null;
+  }
+}
+async function bildirimIzniAl(LN) {
+  try {
+    const izin = await LN.checkPermissions();
+    if (izin.display === "granted") return true;
+    const sonuc = await LN.requestPermissions();
+    return sonuc.display === "granted";
+  } catch (e) { return false; }
+}
+
+function getDonemGun() {
+  try { return parseInt(localStorage.getItem("ft_donem_gun") || "15") || 15; } catch (e) { return 15; }
+}
+function buAnkiDonem() {
+  const gun = getDonemGun();
+  const b = new Date();
+  if (b.getDate() >= gun) return `${b.getFullYear()}-${b.getMonth()}-${gun}`;
+  const bas = new Date(b.getFullYear(), b.getMonth() - 1, gun);
+  return `${bas.getFullYear()}-${bas.getMonth()}-${gun}`;
+}
+function donemLabel(yil, ay, basGun) {
+  const gun = basGun || getDonemGun();
+  const bitGun = gun - 1;
+  const bitisAy = ay === 11 ? AYLAR[0] : AYLAR[ay + 1];
+  return `${gun} ${AYLAR[ay]}-${bitGun} ${bitisAy}`;
+}
+
+
+// Harcama ibresi (TradingView tarzı yarım daire gauge)
+function HarcamaGauge({ oran }) {
+  const [animOran, setAnimOran] = useState(0);
+  useEffect(() => {
+    setAnimOran(0);
+    const hedef = Math.max(0, Number.isFinite(oran) ? oran : 0);
+    let baslangic = null;
+    const sure = 3500;
+    let raf;
+    const adim = (zaman) => {
+      if (baslangic === null) baslangic = zaman;
+      const gecen = zaman - baslangic;
+      const t = Math.min(1, gecen / sure);
+      // easeOutCubic
+      const e = 1 - Math.pow(1 - t, 3);
+      setAnimOran(hedef * e);
+      if (t < 1) raf = requestAnimationFrame(adim);
+    };
+    raf = requestAnimationFrame(adim);
+    return () => cancelAnimationFrame(raf);
+  }, [oran]);
+  const gosterOran = animOran;
+  const cx = 160, cy = 145, r = 117;
+  const rad = angle => angle * Math.PI / 180;
+  const point = (angle, radius) => [cx + radius * Math.cos(rad(angle)), cy - radius * Math.sin(rad(angle))];
+  const arc = (from, to) => {
+    const [x1, y1] = point(from, r), [x2, y2] = point(to, r);
+    return `M ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2}`;
+  };
+  const oranRenk = gosterOran < 50 ? "#10b981" : gosterOran < 80 ? "#f59e0b" : "#ef4444";
+  const angle = 180 - Math.min(100, gosterOran) * 1.8;
+  const [tipX, tipY] = point(angle, 89);
+  const [leftX, leftY] = point(angle + 90, 5);
+  const [rightX, rightY] = point(angle - 90, 5);
+  return (
+    <svg className="home-gauge-svg" viewBox="0 0 320 235" role="img" aria-label={`Kullanılan bütçe oranı yüzde ${Math.round(Math.max(0, oran || 0))}`} style={{ display: "block", width: "100%", maxWidth: 350, margin: "0 auto" }}>
+      {Array.from({ length: 10 }, (_, index) => {
+        // Yalnızca çizim dilimleri; risk ve bakiye eşikleri aynen korunur.
+        const from = 180 - index * 18 - 0.7;
+        const to = 180 - (index + 1) * 18 + 0.7;
+        const color = index < 2 ? "#059669" : index < 5 ? "#10b981" : index < 8 ? "#f59e0b" : "#ef4444";
+        return <path key={`segment-${index}`} d={arc(from, to)} fill="none" stroke={color} strokeWidth="14" strokeLinecap="butt" />;
+      })}
+      {Array.from({ length: 21 }, (_, n) => {
+        const [x1, y1] = point(180 - n * 9, n % 5 === 0 ? 94 : 99);
+        const [x2, y2] = point(180 - n * 9, 105);
+        return <line key={n} x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--text4)" strokeWidth={n % 5 === 0 ? 1.8 : 1} opacity={n % 5 === 0 ? 0.8 : 0.35} />;
+      })}
+      <text x="33" y="168" textAnchor="middle" fill="var(--text4)" fontSize="12">0</text>
+      <text x="287" y="168" textAnchor="middle" fill="var(--text4)" fontSize="12">100</text>
+      <path d={`M ${leftX} ${leftY} L ${tipX} ${tipY} L ${rightX} ${rightY} Z`} fill="var(--text)" />
+      <circle cx={cx} cy={cy} r="8" fill="var(--text)" />
+      <circle cx={cx} cy={cy} r="3" fill="var(--card2)" />
+      <text x={cx} y="195" textAnchor="middle" fontFamily="'Inter', system-ui, sans-serif" fontSize="35" fontWeight="700" fill={oranRenk}>%{Math.round(gosterOran)}</text>
+      <text x={cx} y="218" textAnchor="middle" fontFamily="'Inter', system-ui, sans-serif" fontSize="12" fill="var(--text3)">Kullanılan bütçe oranı</text>
+    </svg>
+  );
+}
+
+// ── ÖZET ──────────────────────────────────────────────────────────────────────
+function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategoriler, odemeler, setOdemeler, hizliModal, setHizliModal, hizliSablonlar, setHizliSablonlar, taksitler, setTaksitler, kartOdemeleri, setKartOdemeleri, bakiyeHesapModu }) {
+  const [donemOffset, setDonemOffset] = useState(0);
+  const [kartDuzenle, setKartDuzenle] = useState(null);
+  const [kartDuzForm, setKartDuzForm] = useState({ donemIci: "", provizyon: "", ekstre: "", bakiyedenDussun: true });
+  const [kartOdemeModal, setKartOdemeModal] = useState(null);
+  const [kartOdemeTarih, setKartOdemeTarih] = useState(yerelTarihAnahtari());
+  const [hizliForm, setHizliForm] = useState({ tip: "gider", kategori: "Market", tutar: "", aciklama: "", tarih: yerelTarihAnahtari(), donemeDahil: true, donemIci: "", provizyon: "", taksitAd: "", taksitAylik: "", taksitVade: "", taksitOdenen: "", taksitKart: "" });
+  const hizliKartMi = (kartlar || []).some(k => k.isim === hizliForm.kategori) && hizliForm.tip === "gider";
+  const sablondanGiderEkle = (sablon) => {
+    const tutar = Number(sablon?.tutar) || 0;
+    if (tutar <= 0) { toast("Şablon tutarı geçersiz", "uyari"); return; }
+    const giderKategorileri = kategoriler?.gider || VARSAYILAN_KATEGORILER.gider;
+    const kartIsimleri = (kartlar || []).map(k => k.isim);
+    const kategori = giderKategorileri.includes(sablon.kategori) && !kartIsimleri.includes(sablon.kategori)
+      ? sablon.kategori
+      : "Diğer";
+    setIslemler(p => [...p, {
+      id: Date.now(), tip: "gider", kategori, tutar,
+      aciklama: sablon.aciklama || sablon.ad || kategori,
+      tarih: yerelTarihAnahtari(), donemeDahil: true,
+      kaynak: "hizli_sablon", sablonId: sablon.id,
+    }]);
+    setHizliModal(false);
+    toast(`${sablon.ad || kategori} gideri eklendi`);
+  };
+  const hizliSablonSil = (id) => {
+    setHizliSablonlar(p => p.filter(s => s.id !== id));
+    toast("Şablon silindi", "uyari");
+  };
+  const hizliEkle = () => {
+    if (hizliForm.tip === "taksit") {
+      if (!hizliForm.taksitAd.trim() || !tutarGecerli(hizliForm.taksitAylik)
+        || !tamSayiGecerli(hizliForm.taksitVade, 1, 1200)
+        || !tamSayiGecerli(hizliForm.taksitOdenen || 0, 0, Number(hizliForm.taksitVade))) return formHatasi("Taksit adı, pozitif tutar ve geçerli vade/ödenen taksit sayısı gir.");
+    } else if (!islemFormuGecerli(hizliForm, hizliKartMi)) return;
+    if (hizliForm.tip === "taksit") {
+      if (!hizliForm.taksitAd.trim() || !hizliForm.taksitAylik || !hizliForm.taksitVade) return;
+      setTaksitler(p => [...p, {
+        id: Date.now(),
+        ad: hizliForm.taksitAd.trim(),
+        aylikTutar: paraOku(hizliForm.taksitAylik),
+        vade: parseInt(hizliForm.taksitVade),
+        odenen: parseInt(hizliForm.taksitOdenen) || 0,
+        kart: hizliForm.taksitKart.trim(),
+      }]);
+      setHizliModal(false);
+      setHizliForm({ tip: "gider", kategori: "Market", tutar: "", aciklama: "", tarih: yerelTarihAnahtari(), donemeDahil: true, donemIci: "", provizyon: "", taksitAd: "", taksitAylik: "", taksitVade: "", taksitOdenen: "", taksitKart: "" });
+      toast("Taksitli harcama eklendi");
+      return;
+    }
+    if (hizliKartMi) {
+      const di = paraOku(hizliForm.donemIci) || 0;
+      const pr = paraOku(hizliForm.provizyon) || 0;
+      if (di === 0 && pr === 0) return;
+      setIslemler(p => [...p, { id: Date.now(), tip: "gider", kategori: hizliForm.kategori, tutar: paraTopla(di, pr), donemIci: di, provizyon: pr, kartHarcama: true, aciklama: hizliForm.aciklama, tarih: hizliForm.tarih, kartGunBaslangicToplam: paraTopla(di, pr), kartGunBaslangicTarih: hizliForm.tarih, kartGunlukDelta: 0, kartGunlukHareketler: {} }]);
+    } else {
+      if (!hizliForm.tutar) return;
+      setIslemler(p => [...p, { ...hizliForm, id: Date.now(), tutar: paraOku(hizliForm.tutar), donemIci: undefined, provizyon: undefined }]);
+    }
+    setHizliModal(false);
+    setHizliForm({ tip: "gider", kategori: "Market", tutar: "", aciklama: "", tarih: yerelTarihAnahtari(), donemeDahil: true, donemIci: "", provizyon: "" });
+    toast("İşlem eklendi");
+  }; // 0=bu dönem, -1=önceki, vb.
+  // Offset'e göre dönem hesapla
+  const secilenDonem = useMemo(() => {
+    const gun = donemGun || 15;
+    const b = new Date();
+    let yil, ay;
+    if (b.getDate() >= gun) { yil = b.getFullYear(); ay = b.getMonth(); }
+    else { const bas = new Date(b.getFullYear(), b.getMonth() - 1, gun); yil = bas.getFullYear(); ay = bas.getMonth(); }
+    ay += donemOffset;
+    while (ay < 0) { ay += 12; yil--; }
+    while (ay > 11) { ay -= 12; yil++; }
+    const baslangic = new Date(yil, ay, gun);
+    const bitis = new Date(yil, ay + 1, gun - 1, 23, 59, 59, 999);
+    return { yil, ay, key: `${yil}-${ay}-${gun}`, etiket: donemLabel(yil, ay, gun), baslangic, bitis };
+  }, [donemOffset, donemGun]);
+  const aktifDonem = secilenDonem.key;
+  const donemEtiketi = secilenDonem.etiket;
+  const kartOdemeKaydiBul = (kart) => {
+    const kayitlar = (kartOdemeleri || []).filter(o => String(o.kartId) === String(kart.id));
+    const kayit = kayitlar.find(o => o.odemeDonemKey === aktifDonem) || kayitlar.find(o => o.donemKey === aktifDonem);
+    if (!kayit || !kayit.tarih) return kayit;
+    if (donemOffset === 0) return kayit;
+    return new Date(kayit.tarih) <= secilenDonem.bitis ? kayit : null;
+  };
+  const kartEkstreAnahtari = (kart) => kart?.ekstreDonemKey || aktifDonem;
+  const kartEkstreOdemeToplami = (kart) => (kartOdemeleri || [])
+    .filter(o => String(o.kartId) === String(kart.id) && (o.ekstreDonemKey || o.donemKey) === kartEkstreAnahtari(kart))
+    .reduce((s, o) => paraTopla(s, (Number(o.tutar) || 0)), 0);
+  const kartOdemeEkle = () => {
+    if (!kartOdemeModal || !kartOdemeTarih) return;
+    const kart = kartOdemeModal;
+    const tutar = Math.min(Math.max(0, Number(kart.ekstre) || 0), Math.max(0, (Number(kart.ekstre) || 0) - kartEkstreOdemeToplami(kart)));
+    if (tutar <= 0) { toast("Bu ekstrenin ödenecek tutarı kalmadı", "uyari"); return; }
+    const odemeDonemKey = maasDonemKey(kartOdemeTarih, donemGun).key;
+    const ekstreDonemKey = kartEkstreAnahtari(kart);
+    setKartOdemeleri(p => [
+      ...p.filter(o => !(String(o.kartId) === String(kart.id) && (o.ekstreDonemKey || o.donemKey) === ekstreDonemKey)),
+      { id: Date.now(), kartId: kart.id, kartAdi: kart.isim, tutar, tarih: kartOdemeTarih, odemeDonemKey, ekstreDonemKey, sonOdemeTarihi: kart.sonOdemeTarihi || "" }
+    ]);
+    setKartOdemeModal(null);
+    toast(`${kart.isim} ekstresi ödendi`);
+  };
+  const kartDonemTarihleriniBul = (kart) => {
+    const arsiv = kart?.donemTarihleri?.[aktifDonem];
+    const odemeKaydi = kartOdemeKaydiBul(kart);
+    const tumOdemeKaydi = (kartOdemeleri || []).find(o =>
+      String(o.kartId) === String(kart.id) && o.donemKey === aktifDonem
+    );
+    const seciliAralikta = (deger) => {
+      const tarih = yerelTarihOku(deger);
+      return tarih && tarih >= secilenDonem.baslangic && tarih <= secilenDonem.bitis;
+    };
+    const sonOdemeTarihi = (donemOffset === 0 ? kart?.sonOdemeTarihi : "")
+      || arsiv?.sonOdemeTarihi
+      || (seciliAralikta(kart?.sonOdemeTarihi) ? kart.sonOdemeTarihi : "")
+      || tumOdemeKaydi?.sonOdemeTarihi
+      || "";
+    const hesapKesimTarihi = (donemOffset === 0 ? kart?.hesapKesimTarihi : "")
+      || arsiv?.hesapKesimTarihi
+      || (seciliAralikta(kart?.hesapKesimTarihi) ? kart.hesapKesimTarihi : "");
+    if (!sonOdemeTarihi) return { hesapKesimTarihi, sonOdemeTarihi: "", sonOdeme: null };
+    const tarih = yerelTarihOku(sonOdemeTarihi);
+    return {
+      hesapKesimTarihi,
+      sonOdemeTarihi,
+      sonOdeme: tarih ? {
+        tarih,
+        tarihAnahtari: sonOdemeTarihi,
+        donemKey: `${tarih.getFullYear()}-${String(tarih.getMonth() + 1).padStart(2, "0")}`,
+        odendi: !!odemeKaydi,
+        kesinTarih: true,
+      } : null,
+    };
+  };
+  const aylikVeriler = useMemo(() => {
+    const buSira = secilenDonem.yil * 100 + secilenDonem.ay;
+    const map = {};
+    islemler.forEach(i => {
+      const { yil, ay, key } = maasDonemKey(i.tarih, donemGun);
+      if (!map[key]) map[key] = { ay: donemLabel(yil, ay, donemGun), gelir: 0, gider: 0, sira: yil * 100 + ay };
+      if (i.tip === "gelir") map[key].gelir += i.tutar; else map[key].gider += i.tutar;
+    });
+    return Object.values(map).filter(d => d.sira <= buSira).map(d => ({ ...d, net: d.gelir - d.gider })).sort((a, b) => a.sira - b.sira).slice(-6);
+  }, [islemler, donemGun, secilenDonem]);
+  const buDonemIslemler = islemler.filter(i => maasDonemKey(i.tarih, donemGun).key === aktifDonem);
+  const buAyBirikim = buDonemIslemler.filter(i => i.tip === "gelir" && i.kategori === "Birikim").reduce((s, i) => paraTopla(s, i.tutar), 0);
+  const buAyGelir = buDonemIslemler.filter(i => i.tip === "gelir" && i.kategori !== "Birikim" && !(i.kategori === "Kira Geliri" && i.donemeDahil === false)).reduce((s, i) => paraTopla(s, i.tutar), 0);
+  const odenmisKartIdleri = (kartlar || []).filter(kart => !!kartOdemeKaydiBul(kart)).map(kart => kart.id);
+  const giderOzeti = donemGiderOzeti(buDonemIslemler, kartlar, odenmisKartIdleri, bakiyeHesapModu, kartOdemeleri, aktifDonem);
+  const buAyGider = giderOzeti.toplamGider;
+  const sabitGider = 0;
+  const toplamGider = buAyGider;
+
+  // Harcama ibresi: gelirin yüzde kaçı harcandı (max 100)
+  const kalanBakiye = paraTopla(buAyGelir, -toplamGider, -buAyBirikim);
+  // Kalan bakiyene göre "ne kadarı elden çıktı" oranı (harcama + birikim). Dolu = riskli, boş = güvenli mantığı korunuyor.
+  const harcamaOrani = donemHarcamaOrani(buAyGelir, toplamGider, buAyBirikim);
+  const guncelDonemMi = donemOffset === 0;
+  const gosterilenBakiye = kalanBakiye;
+  const gosterilenRiskOrani = harcamaOrani;
+  const donemOdemeleri = useMemo(() => (odemeler || [])
+    .filter(o => maasDonemKey(o.tarih, donemGun).key === aktifDonem)
+    .sort((a, b) => yerelTarihOku(a.tarih) - yerelTarihOku(b.tarih)), [odemeler, donemGun, aktifDonem]);
+  const odemeDurumu = useMemo(() => {
+    const bugun = yerelTarihOku(yerelTarihAnahtari());
+    const yediGunSonra = takvimGunuEkle(bugun, 7);
+    const bekleyen = donemOdemeleri.filter(o => !o.odendi && o.tarih);
+    const gecikenler = bekleyen.filter(o => yerelTarihOku(o.tarih) < bugun);
+    const yaklasanlar = bekleyen.filter(o => {
+      const tarih = yerelTarihOku(o.tarih);
+      return tarih >= bugun && tarih <= yediGunSonra;
+    });
+    return {
+      gecikenAdet: gecikenler.length,
+      gecikenToplam: gecikenler.reduce((s, o) => paraTopla(s, (Number(o.tutar) || 0)), 0),
+      yaklasanAdet: yaklasanlar.length,
+      yaklasanToplam: yaklasanlar.reduce((s, o) => paraTopla(s, (Number(o.tutar) || 0)), 0),
+    };
+  }, [donemOdemeleri]);
+
+  // Ay sonu tahmini gider (sadece içinde bulunulan dönem için)
+  const tahminiAySonu = useMemo(() => {
+    if (donemOffset !== 0) return null;
+    const gun = donemGun || 15;
+    const bugun = new Date();
+    // Dönem başlangıç tarihi
+    let basYil = secilenDonem.yil, basAy = secilenDonem.ay;
+    const donemBas = new Date(basYil, basAy, gun);
+    // Dönem bitiş: bir sonraki ayın (gun-1)'i
+    const donemBit = new Date(basYil, basAy + 1, gun - 1);
+    const toplamGun = takvimGunFarki(donemBit, donemBas) + 1;
+    const gecenGun = Math.min(toplamGun, Math.max(1, takvimGunFarki(bugun, donemBas) + 1));
+    // Projeksiyon tabanı: kredi kartında dönem başında (ör. ayın 15'inde) İLK kez girilen toplam tutar hariç
+    // (o, geçmiş birikmiş bir tutardır, günlük harcama hızını yansıtmaz). 15'ten sonraki güncelleme farkları dahil.
+    const projeksiyonGideri = buDonemIslemler.filter(i => i.tip === "gider").reduce((s, i) => {
+      if (i.kartHarcama) {
+        const baslangicVar = i.kartGunBaslangicToplam != null && i.kartGunBaslangicToplam > 0;
+        if (!baslangicVar) return s; // ilk giriş — hariç
+        return paraTopla(s, Math.max(0, i.kartGunlukDelta || 0));
+      }
+      return paraTopla(s, i.tutar);
+    }, 0);
+    if (projeksiyonGideri === 0 || gecenGun < 1) return null;
+    const gunlukOrt = projeksiyonGideri / gecenGun;
+    const tahmin = gunlukOrt * toplamGun;
+    return { gunlukOrt, tahmin, gecenGun, toplamGun };
+  }, [donemOffset, donemGun, secilenDonem, buDonemIslemler]);
+
+  // Günlük harcama limiti: ödeme kayıtları ilk eklendiği anda Kalan Bakiye'ye
+  // gider olarak zaten yansır. Bu nedenle yaklaşan ödemeleri ikinci kez düşme.
+  const gunlukHarcamaLimiti = useMemo(() => {
+    if (donemOffset !== 0) return null;
+    const gun = donemGun || 15;
+    const bugun = new Date(); bugun.setHours(0, 0, 0, 0);
+    let basYil = secilenDonem.yil, basAy = secilenDonem.ay;
+    const donemBas = new Date(basYil, basAy, gun);
+    const donemBit = new Date(basYil, basAy + 1, gun - 1);
+    const toplamGun = takvimGunFarki(donemBit, donemBas) + 1;
+    const gecenGun = Math.min(toplamGun, Math.max(1, takvimGunFarki(bugun, donemBas) + 1));
+    const kalanGun = Math.max(1, toplamGun - gecenGun + 1);
+    const yaklasanToplam = (odemeler || []).filter(o => !o.odendi && o.tarih).reduce((s, o) => {
+      const t = yerelTarihOku(o.tarih);
+      return (t >= bugun && t <= donemBit) ? paraTopla(s, o.tutar) : s;
+    }, 0);
+    const kullanilabilir = Math.max(0, kalanBakiye);
+    return { limit: kullanilabilir / kalanGun, kalanGun, yaklasanToplam, kullanilabilir };
+  }, [donemOffset, donemGun, secilenDonem, odemeler, kalanBakiye]);
+
+  // Önceki döneme göre kıyas (Gelir / Harcama / Birikim)
+  const oncekiDonemKarsilastirma = useMemo(() => {
+    const gun = donemGun || 15;
+    let oYil = secilenDonem.yil, oAy = secilenDonem.ay - 1;
+    while (oAy < 0) { oAy += 12; oYil--; }
+    const oKey = `${oYil}-${oAy}-${gun}`;
+    const oIslem = islemler.filter(i => maasDonemKey(i.tarih, gun).key === oKey);
+    const oGelir = oIslem.filter(i => i.tip === "gelir" && i.kategori !== "Birikim" && !(i.kategori === "Kira Geliri" && i.donemeDahil === false)).reduce((s, i) => paraTopla(s, i.tutar), 0);
+    const oGider = oIslem.filter(i => i.tip === "gider").reduce((s, i) => paraTopla(s, i.tutar), 0);
+    const oBirikim = oIslem.filter(i => i.tip === "gelir" && i.kategori === "Birikim").reduce((s, i) => paraTopla(s, i.tutar), 0);
+    const yuzde = (yeni, eski) => eski > 0 ? ((yeni - eski) / eski) * 100 : (yeni > 0 ? 100 : 0);
+    return {
+      gelir: { deger: buAyGelir, yuzde: yuzde(buAyGelir, oGelir), varMi: oGelir > 0 || oGider > 0 || oBirikim > 0 },
+      gider: { deger: toplamGider, yuzde: yuzde(toplamGider, oGider), varMi: oGelir > 0 || oGider > 0 || oBirikim > 0 },
+      birikim: { deger: buAyBirikim, yuzde: yuzde(buAyBirikim, oBirikim), varMi: oGelir > 0 || oGider > 0 || oBirikim > 0 },
+    };
+  }, [islemler, secilenDonem, donemGun, buAyGelir, toplamGider, buAyBirikim]);
+
+  // Bugün harcanan: normal işlemler tam tutarıyla, kredi kartı güncellemeleri sadece bugün eklenen fark (delta) ile sayılır
+  const ozettenOdendiYap = (odeme) => {
+    const mevcut = (islemler || []).find(i =>
+      (odeme.islemId != null && String(i.id) === String(odeme.islemId)) ||
+      (i.odemeId != null && String(i.odemeId) === String(odeme.id))
+    );
+    const islemId = mevcut?.id ?? odeme.islemId ?? (Date.now() + 1);
+    setOdemeler(p => p.map(x => x.id === odeme.id ? { ...x, odendi: true, odendiTarih: new Date().toISOString(), islemId } : x));
+    setIslemler(p => p.some(i => String(i.id) === String(islemId))
+      ? p.map(i => String(i.id) === String(islemId) ? { ...i, kaynak: "odeme", odemeId: odeme.id } : i)
+      : [...p, { id: islemId, tip: "gider", kategori: odeme.kategori || "Fatura", tutar: Number(odeme.tutar) || 0, aciklama: odeme.aciklama || odeme.kategori || "Fatura", tarih: odeme.tarih, kaynak: "odeme", odemeId: odeme.id }]
+    );
+    toast("Ödendi olarak işaretlendi");
+  };
+  const katDagilim = useMemo(() => {
+    const map = {};
+    islemler
+      .filter(i => i.tip === "gider" && maasDonemKey(i.tarih, donemGun).key === aktifDonem)
+      .forEach(i => { map[i.kategori] = paraTopla(map[i.kategori] || 0, i.tutar); });
+    return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 6);
+  }, [islemler, donemGun, aktifDonem]);
+
+  // En çok harcanan 6 kategori için aylık (dönem) trend
+  const kategoriTrendVeri = useMemo(() => {
+    const buSira = secilenDonem.yil * 100 + secilenDonem.ay;
+    const top6 = katDagilim.map(([kat]) => kat);
+    const donemMap = {};
+    islemler.filter(i => i.tip === "gider" && top6.includes(i.kategori)).forEach(i => {
+      const { yil, ay, key } = maasDonemKey(i.tarih, donemGun);
+      if (!donemMap[key]) donemMap[key] = { ay: donemLabel(yil, ay, donemGun), sira: yil * 100 + ay };
+      donemMap[key][i.kategori] = paraTopla(donemMap[key][i.kategori] || 0, i.tutar);
+    });
+    const sirali = Object.values(donemMap).filter(d => d.sira <= buSira).sort((a, b) => a.sira - b.sira).slice(-6);
+    // eksik kategorileri 0 yap
+    sirali.forEach(d => top6.forEach(k => { if (d[k] === undefined) d[k] = 0; }));
+    return { veri: sirali, kategoriler: top6 };
+  }, [islemler, katDagilim, donemGun, secilenDonem]);
+  const tt = ({ active, payload, label }) => {
+    if (!active || !payload?.length) return null;
+    return <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 14px" }}><div style={{ color: "var(--text3)", fontSize: 12, marginBottom: 6, fontFamily: "'Inter', system-ui, sans-serif" }}>{label}</div>{payload.map(p => <div key={p.name} style={{ color: p.color, fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif" }}>{p.name}: ₺{fmt(p.value)}</div>)}</div>;
+  };
+  return (
+    <div className="home-overview">
+      {/* Takvim simgeli kompakt dönem seçici; önceki/sonraki gezinme korunur. */}
+      <div className="home-period-wrap">
+        <div className="home-period home-period-pill">
+          <button aria-label="Önceki dönem" onClick={() => setDonemOffset(o => o - 1)}>‹</button>
+          <label className="home-period-label">
+            <Icon name="calendar" size={17} />
+            <span className="home-period-text">{donemEtiketi}</span>
+            <span className="home-period-chevron" aria-hidden="true">⌄</span>
+            <select className="home-period-select" aria-label="Maaş dönemini seç" value={donemOffset} onChange={e => setDonemOffset(Number(e.target.value))}>
+              {Array.from({ length: Math.max(13, Math.abs(donemOffset) + 1) }, (_, n) => {
+                const tarih = new Date(secilenDonem.yil, secilenDonem.ay - donemOffset - n, 1);
+                return <option key={n} value={-n}>{donemLabel(tarih.getFullYear(), tarih.getMonth(), donemGun)} · {tarih.getFullYear()}{n === 0 ? " · Güncel" : ""}</option>;
+              })}
+            </select>
+          </label>
+          <button aria-label="Sonraki dönem" disabled={donemOffset === 0} onClick={() => setDonemOffset(o => Math.min(o + 1, 0))}>›</button>
+        </div>
+        {donemOffset !== 0 && <div className="home-period-history"><span>🔒 Tamamlanan dönem · dönem sonu görünümü</span><button onClick={() => setDonemOffset(0)}>Bugüne dön</button></div>}
+      </div>
+
+      {/* KALAN BAKİYE KARTI */}
+      {(() => {
+        // Durum: gauge ile aynı eşikler (0-50 güvende, 50-80 dikkat, 80+ riskli)
+        const veriYok = islemler.length === 0 && odemeler.length === 0 && kartlar.length === 0;
+        const durum = veriYok ? "bos" : gosterilenBakiye < 0 ? "kotu" : gosterilenRiskOrani < 50 ? "iyi" : gosterilenRiskOrani < 80 ? "orta" : "kotu";
+        const kartBg = durum === "bos" ? "linear-gradient(135deg,#65594f,#877365)" : durum === "iyi"
+          ? "linear-gradient(135deg,#047857 0%,#10b981 55%,#0d9488 100%)"
+          : durum === "orta"
+          ? "linear-gradient(135deg,#b45309 0%,#f59e0b 55%,#d97706 100%)"
+          : "linear-gradient(135deg,#991b1b 0%,#ef4444 55%,#b91c1c 100%)";
+        const kartGolge = durum === "bos" ? "0 10px 28px rgba(90,72,58,.2)" : durum === "iyi"
+          ? "0 10px 28px rgba(4,120,87,0.42)"
+          : durum === "orta"
+          ? "0 10px 28px rgba(180,83,9,0.42)"
+          : "0 10px 28px rgba(153,27,27,0.42)";
+        return (
+          <div className="home-balance" style={{ background: kartBg, borderRadius: 24, padding: "20px 22px", marginBottom: 12, position: "relative", overflow: "hidden", boxShadow: kartGolge, border: "1px solid rgba(255,255,255,0.14)", transition: "background 0.5s ease" }}>
+            <div className="home-balance-wave" aria-hidden="true" />
+            <div className="home-balance-heading">
+              <span>Kalan Bakiye</span>
+              <span className="home-balance-badge"><Icon name={veriYok ? "wallet" : durum === "iyi" ? "shield" : durum === "orta" ? "warning" : "alert"} size={16} />{veriYok ? "Henüz veri yok" : durum === "iyi" ? "Güvende" : durum === "orta" ? "Dikkat" : "Riskli"}</span>
+            </div>
+            <div className="home-balance-value">{gosterilenBakiye < 0 ? "−" : ""}₺{fmt(Math.abs(gosterilenBakiye))}</div>
+            <div className="home-balance-caption">{veriYok ? "İlk gelirini veya giderini ekleyerek başla." : "Dönem Bütçesi · Harcanabilir Tutar"}</div>
+            {veriYok && <div className="ilk-kullanim"><button onClick={() => { setHizliForm(f => ({ ...f, tip: "gelir", kategori: "Maaş" })); setHizliModal(true); }}>İlk gelirini ekle</button></div>}
+            {gosterilenBakiye < 0 && (
+              <div style={{ color: "rgba(255,255,255,0.82)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 2 }}>Dönem bütçesi aşıldı</div>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* GELİR / HARCAMA / BİRİKİM — önceki döneme göre kıyas */}
+      <div className="home-summary" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
+        {[
+          { etiket: "Gelir", ikon: "wallet", renk: "var(--income-text)", veri: oncekiDonemKarsilastirma.gelir, tersRenk: false },
+          { etiket: "Harcama", ikon: "card", renk: "var(--expense-text)", veri: oncekiDonemKarsilastirma.gider, tersRenk: true },
+          { etiket: "Birikim", ikon: "coins", renk: "var(--saving-text)", veri: oncekiDonemKarsilastirma.birikim, tersRenk: false },
+        ].map(k => {
+          const artti = k.veri.yuzde >= 0;
+          // Harcama'da artış kötü (kırmızı ok), diğerlerinde artış iyi (yeşil ok)
+          const okIyi = k.tersRenk ? !artti : artti;
+          const okRenk = okIyi ? "#10b981" : "#ef4444";
+          return (
+            <div className="home-summary-card" key={k.etiket} style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 16, boxShadow: "var(--card-shadow)", padding: "12px 10px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                <span style={{ color: k.renk, fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>{k.etiket}</span>
+                <span style={{ width: 22, height: 22, borderRadius: 7, background: "var(--card2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, flexShrink: 0 }}><Icon name={k.ikon} size={15} /></span>
+              </div>
+              <div className="home-summary-value" style={{ color: "var(--text)", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, marginBottom: 5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>₺{fmt(k.veri.deger)}</div>
+              {k.veri.varMi ? (
+                <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                  <span style={{ color: okRenk, fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>{artti ? "↗" : "↘"} %{Math.abs(k.veri.yuzde).toFixed(1)}</span>
+                </div>
+              ) : (
+                <span style={{ color: "var(--text5)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif" }}>—</span>
+              )}
+              <div className="home-summary-caption" style={{ color: "var(--text5)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 2 }}>geçen döneme göre</div>
+            </div>
+          );
+        })}
+      </div>
+      {/* Sabit gider uyarısı */}
+      {sabitGider > 0 && (
+        <div style={{ background:"#ef444411", border:"1px solid #ef444433", borderRadius:10, padding:"8px 14px", marginBottom:10, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+          <span style={{ color:"#ef4444", fontSize:11, fontFamily:"'Inter', system-ui, sans-serif" }}>🔄 Sabit Giderler (Aktif)</span>
+          <span style={{ color:"#ef4444", fontFamily:"'Inter', system-ui, sans-serif", fontWeight:700, fontSize:13 }}>₺{fmt(sabitGider)}</span>
+        </div>
+      )}
+
+      {donemOffset === 0 && (odemeDurumu.gecikenAdet > 0 || odemeDurumu.yaklasanAdet > 0) && (
+        <div style={{ background: "linear-gradient(135deg,var(--card),var(--card2))", border: "1px solid var(--border)", borderRadius: 18, padding: "13px 14px", marginBottom: 12, display: "flex", alignItems: "center", gap: 12, boxShadow: "var(--card-shadow)" }}>
+          <div style={{ width: 40, height: 40, borderRadius: 13, display: "grid", placeItems: "center", background: odemeDurumu.gecikenAdet > 0 ? "#ef444422" : "var(--accent-soft)", color: odemeDurumu.gecikenAdet > 0 ? "#ef4444" : "var(--accent)", flexShrink: 0 }}><Icon name={odemeDurumu.gecikenAdet > 0 ? "receipt" : "chart"} size={19} /></div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ color: "var(--text)", fontSize: 12, fontWeight: 800, marginBottom: 3 }}>Bütçe Özeti</div>
+            <div style={{ color: "var(--text4)", fontSize: 12, lineHeight: 1.45 }}>
+              {odemeDurumu.gecikenAdet > 0
+                ? `${odemeDurumu.gecikenAdet} gecikmiş ödeme bulunuyor: ₺${fmt(odemeDurumu.gecikenToplam)}.`
+                : `Önümüzdeki 7 günde ${odemeDurumu.yaklasanAdet} ödeme var: ₺${fmt(odemeDurumu.yaklasanToplam)}.`}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* HARCAMA İBRESİ — hesaplama ve durum eşikleri değişmez */}
+      {(buAyGelir > 0 || toplamGider > 0) && (
+        <div className="home-panel home-gauge-panel">
+          <div className="home-panel-heading"><span>Bütçe Kullanımı</span><Icon name="chart" size={19} /></div>
+          <HarcamaGauge oran={gosterilenRiskOrani} />
+          <div className="home-gauge-split">
+            <div><span className="home-detail-label">Kullanılan</span><strong className="home-percent-value"><i className="home-percent-dot" style={{ background: gosterilenRiskOrani < 50 ? "#10b981" : gosterilenRiskOrani < 80 ? "#f59e0b" : "#ef4444" }} aria-hidden="true" />%{Math.round(gosterilenRiskOrani)}</strong></div>
+            <div><span className="home-detail-label">Kalan</span><strong className="home-percent-value"><i className="home-percent-dot" style={{ background: "#8490a7" }} aria-hidden="true" />%{Math.round(Math.max(0, 100 - gosterilenRiskOrani))}</strong></div>
+          </div>
+          <div className="home-gauge-note">Kullanılan oran harcama ve birikimi içerir.</div>
+          <div className="home-gauge-legend">
+            <span><i style={{ background: "#10b981" }} />%0–50</span>
+            <span><i style={{ background: "#f59e0b" }} />%50–80</span>
+            <span><i style={{ background: "#ef4444" }} />%80 ve üzeri</span>
+          </div>
+        </div>
+      )}
+
+      {/* AY SONU TAHMİNİ — ayrı kart */}
+      {tahminiAySonu && (() => {
+        const tahminOran = buAyGelir > 0 ? (tahminiAySonu.tahmin / buAyGelir) * 100 : 100;
+        const rozetDurum = tahminOran < 50 ? "iyi" : tahminOran < 80 ? "orta" : "kotu";
+        const rozetMetin = rozetDurum === "iyi" ? "Güvende" : rozetDurum === "orta" ? "Dikkat" : "Riskli";
+        const rozetRenk = rozetDurum === "iyi" ? "#10b981" : rozetDurum === "orta" ? "#f59e0b" : "#ef4444";
+        return (
+          <div className="home-panel home-forecast" style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "14px 16px", marginBottom: 12, display: "flex", alignItems: "center", gap: 13 }}>
+            <div style={{ width: 42, height: 42, borderRadius: 12, background: rozetRenk + "22", border: `1px solid ${rozetRenk}44`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, flexShrink: 0 }}><Icon name="chart" size={20} /></div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ color: "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 3 }}>Ay Sonu Tahmini Gider</div>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                <span style={{ color: "var(--text)", fontSize: 17, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>₺{fmt(tahminiAySonu.tahmin)}</span>
+              </div>
+              <div style={{ color: "var(--text5)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 3 }}>{tahminiAySonu.gecenGun}/{tahminiAySonu.toplamGun} Gün · Günlük Ort. ₺{fmt(tahminiAySonu.gunlukOrt)}</div>
+            </div>
+            <span style={{ background: rozetRenk + "22", border: `1px solid ${rozetRenk}55`, color: rozetRenk, borderRadius: 99, padding: "5px 11px", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, flexShrink: 0 }}>{rozetMetin}</span>
+          </div>
+        );
+      })()}
+
+      {/* GÜNLÜK HARCAMA LİMİTİ */}
+      {gunlukHarcamaLimiti && kalanBakiye > 0 && (
+        <div className="home-panel home-daily-limit" style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "14px 16px", marginBottom: 12, display: "flex", alignItems: "center", gap: 13 }}>
+          <div style={{ width: 42, height: 42, borderRadius: 12, background: "#f59e0b22", border: "1px solid #f59e0b44", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, flexShrink: 0 }}><Icon name="wallet" size={20} /></div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ color: "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 3 }}>Günlük Harcama Limiti</div>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
+              <span style={{ color: "var(--text)", fontSize: 17, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>₺{fmt(gunlukHarcamaLimiti.limit)}</span>
+              <span style={{ color: "var(--text5)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif" }}>/ gün</span>
+            </div>
+            <div style={{ color: "var(--text5)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 3 }}>
+              {gunlukHarcamaLimiti.kalanGun} gün kaldı{gunlukHarcamaLimiti.yaklasanToplam > 0 ? ` · ₺${fmt(gunlukHarcamaLimiti.yaklasanToplam)} yaklaşan ödeme bakiyeye dahil` : ""}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* YAKLAŞAN ÖDEMELER */}
+      {(() => {
+        const bugun = new Date(); bugun.setHours(0, 0, 0, 0);
+        const gosterilecek = donemOffset === 0
+          ? donemOdemeleri.filter(o => !o.odendi && o.tarih && yerelTarihOku(o.tarih) >= bugun && takvimGunFarki(o.tarih, bugun) <= 3).slice(0, 5)
+          : donemOdemeleri.slice(0, 8);
+        if (gosterilecek.length === 0) return null;
+        const gunFark = (t) => takvimGunFarki(t, bugun);
+        return (
+          <div className="home-panel home-payments" style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "14px 16px", marginBottom: 12 }}>
+            <div style={{ color: "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>{donemOffset === 0 ? "🔔 Yaklaşan Ödemeler" : "🔒 Dönem Ödemeleri"}</div>
+            {gosterilecek.map(o => {
+              const gf = gunFark(o.tarih);
+              const acil = donemOffset === 0 && gf <= 3;
+              return (
+                <div key={o.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, padding: "9px 0", borderBottom: "1px solid var(--divider)" }}>
+                  <div style={{ width: 38, height: 38, borderRadius: 12, background: (acil ? "#ef4444" : "#f59e0b") + "1c", border: `1px solid ${(acil ? "#ef4444" : "#f59e0b")}3a`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, flexShrink: 0 }}>{katIkon(o.kategori, "gider")}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ color: "var(--text)", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{o.aciklama || o.kategori}</div>
+                    <div style={{ color: acil ? "#ef4444" : "var(--text4)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif" }}>{donemOffset === 0 ? (gf === 0 ? "Bugün" : gf === 1 ? "Yarın" : `${gf} gün sonra`) : (o.odendi ? "Ödendi" : "Ödenmedi")} · {o.tarih.split("-").reverse().join(".")}</div>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ color: "#ef4444", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>₺{fmt(o.tutar)}</span>
+                    {donemOffset === 0 && <button onClick={() => ozettenOdendiYap(o)} style={{ background: "#10b98122", border: "1px solid #10b98155", borderRadius: 8, padding: "4px 8px", color: "#10b981", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", cursor: "pointer" }}>✓ Ödendi</button>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
+
+      {/* Birikim mini kartı */}
+      {buAyBirikim > 0 && (
+        <div style={{ background: "var(--card)", border: "1px solid #10b98144", borderRadius: 14, padding: "12px 18px", marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ fontSize: 18 }}>🏦</span>
+            <span style={{ color: "var(--text4)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif" }}>Dönem Birikimi (net'e dahil değil)</span>
+          </div>
+          <span style={{ color: "#10b981", fontSize: 15, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>₺{fmt(buAyBirikim)}</span>
+        </div>
+      )}
+      {/* Kredi Kartı Özeti */}
+      {kartlar && kartlar.length > 0 && (() => {
+        const kartOzetleri = turkceAdaGoreSirala(kartlar).map(k => {
+          const kartIslemleri = buDonemIslemler.filter(i => i.tip === "gider" && i.kategori === k.isim);
+          const prov = kartIslemleri.reduce((s, i) => paraTopla(s, (Number(i.provizyon) || 0)), 0);
+          const donem = kartIslemleri.reduce((s, i) => paraTopla(s, (Number(i.donemIci) || 0)), 0);
+          const ekstre = Math.max(0, (Number(k.ekstre) || 0) - kartEkstreOdemeToplami(k));
+          const guncelBorc = donem + prov;
+          const sonEkstreOdeme = (kartOdemeleri || []).filter(o => String(o.kartId) === String(k.id) && (o.ekstreDonemKey || o.donemKey) === kartEkstreAnahtari(k)).sort((a,b) => String(b.tarih).localeCompare(String(a.tarih)))[0] || null;
+          return { ...k, ...kartDonemTarihleriniBul(k), ekstre, prov, donem, guncelBorc, sonEkstreOdeme, islemler: kartIslemleri };
+        });
+        const toplamEkstre = kartOzetleri.reduce((s, k) => paraTopla(s, k.ekstre), 0);
+        const toplamGuncelBorc = kartOzetleri.reduce((s, k) => paraTopla(s, k.guncelBorc), 0);
+
+        return (
+          <div className="kredi-karti-alani home-credit-panel" style={{ background: "var(--card)", border: "1px solid #6366f133", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "14px 16px", marginBottom: 12 }}>
+            <div style={{ color: "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>💳 Kredi Kartları</div>
+
+            {/* Tüm kartların toplu özeti */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8, marginBottom: 12 }}>
+              <div style={{ padding: "11px 12px", borderRadius: 12, background: "var(--card2)", border: "1px solid var(--border)" }}>
+                <div style={{ color: "var(--text5)", fontSize: 12, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>Ekstre Toplamı</div>
+                <div style={{ color: toplamEkstre > 0 ? "#ef4444" : "var(--text4)", fontSize: 16, fontWeight: 800 }}>₺{fmt(toplamEkstre)}</div>
+                <div style={{ color: "var(--text5)", fontSize: 12, marginTop: 2 }}>Tüm kartların kesilmiş ekstreleri</div>
+              </div>
+              <div style={{ padding: "11px 12px", borderRadius: 12, background: "var(--card2)", border: "1px solid var(--border)" }}>
+                <div style={{ color: "var(--text5)", fontSize: 12, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>Güncel Borç Toplamı</div>
+                <div style={{ color: toplamGuncelBorc > 0 ? "#f59e0b" : "var(--text4)", fontSize: 16, fontWeight: 800 }}>₺{fmt(toplamGuncelBorc)}</div>
+                <div style={{ color: "var(--text5)", fontSize: 12, marginTop: 2 }}>Dönem içi + provizyon</div>
+              </div>
+            </div>
+
+            <div style={{ color: "var(--text5)", fontSize: 12, lineHeight: 1.45, marginBottom: 10 }}>
+              Ekstre, kesilmiş dönem borcudur. Güncel borç ise dönem içi + provizyon toplamıdır. Kalan bakiye hesabını yalnızca kart bazındaki seçim etkiler.
+            </div>
+
+            {kartOzetleri.map(k => {
+              const odemeKaydi = kartOdemeKaydiBul(k);
+              const sonOdeme = k.sonOdeme;
+              const marka = krediKartiMarkaRengi(k.isim);
+              return (
+                <div className="home-credit-card" key={k.id} style={{ marginBottom: 10, padding: "10px 12px", background: krediKartiMarkaRengi(k.isim).soft, borderRadius: 10, border: `1px solid ${odemeKaydi ? "#10b98155" : krediKartiMarkaRengi(k.isim).border}`, boxShadow: `inset 3px 0 0 ${krediKartiMarkaRengi(k.isim).ana}` }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 7 }}>
+                    <div style={{ minWidth: 0 }}>
+                      <span style={{ color: marka.ana, fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 800 }}>{k.isim}</span>
+                      {k.hesapKesimTarihi && <span style={{ color: "var(--text5)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", marginLeft: 7 }}>Kesim: {k.hesapKesimTarihi.split("-").reverse().join(".")}</span>}
+                    </div>
+                    {donemOffset === 0 && (
+                      <button onClick={() => {
+                        setKartDuzenle(k);
+                        setKartDuzForm({
+                          donemIci: k.donem > 0 ? String(k.donem) : "",
+                          provizyon: k.prov > 0 ? String(k.prov) : "",
+                          ekstre: k.ekstre > 0 ? String(k.ekstre) : "",
+                          bakiyedenDussun: k.bakiyedenDussun !== false
+                        });
+                      }} style={{ border: "none", color: marka.ana, cursor: "pointer", fontSize: 13, padding: 0, background: marka.soft, borderRadius: 7 }}>✏️</button>
+                    )}
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
+                    <div style={{ padding: "7px 8px", borderRadius: 8, background: marka.soft, border: `1px solid ${marka.border}` }}>
+                      <div style={{ color: marka.ana, fontSize: 12, fontWeight: 800 }}>EKSTRE</div>
+                      <div style={{ color: marka.ana, fontSize: 11, fontWeight: 800, marginTop: 2 }}>₺{fmt(k.ekstre)}</div>
+                    </div>
+                    <div style={{ padding: "7px 8px", borderRadius: 8, background: marka.soft, border: `1px solid ${marka.border}` }}>
+                      <div style={{ color: marka.ana, fontSize: 12, fontWeight: 800 }}>DÖNEM İÇİ</div>
+                      <div style={{ color: marka.ana, fontSize: 11, fontWeight: 800, marginTop: 2 }}>₺{fmt(k.donem)}</div>
+                    </div>
+                    <div style={{ padding: "7px 8px", borderRadius: 8, background: marka.soft, border: `1px solid ${marka.border}` }}>
+                      <div style={{ color: marka.ana, fontSize: 12, fontWeight: 800 }}>PROVİZYON</div>
+                      <div style={{ color: marka.ana, fontSize: 11, fontWeight: 800, marginTop: 2 }}>₺{fmt(k.prov)}</div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8, paddingTop: 8, borderTop: "1px solid var(--divider)" }}>
+                    <div>
+                      <div style={{ color: "var(--text5)", fontSize: 12, fontWeight: 800, textTransform: "uppercase" }}>Güncel Borç</div>
+                      <div style={{ color: "var(--text2)", fontSize: 13, fontWeight: 800 }}>₺{fmt(k.guncelBorc)}</div>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      {sonOdeme && <div style={{ color: "#f59e0b", fontSize: 12, fontWeight: 700 }}>Son ödeme: {sonOdeme.tarihAnahtari.split("-").reverse().join(".")}</div>}
+                      {k.sonEkstreOdeme && <div style={{ color: marka.ana, fontSize: 12, fontWeight: 700, marginTop: 2 }}>✓ Ekstre ödendi: {k.sonEkstreOdeme.tarih.split("-").reverse().join(".")}</div>}
+                      <button onClick={() => { setKartOdemeModal(k); setKartOdemeTarih(k.sonEkstreOdeme?.tarih || k.sonOdeme?.tarihAnahtari || yerelTarihAnahtari()); }} style={{ marginTop: 4, background: marka.soft, border: `1px solid ${marka.border}`, borderRadius: 7, padding: "5px 8px", color: marka.ana, fontSize: 12, fontWeight: 800, cursor: "pointer" }}>{k.sonEkstreOdeme ? "Ödeme tarihini düzenle" : "✓ Ekstreyi Ödendi İşaretle"}</button>
+                      <div style={{ color: k.bakiyedenDussun === false ? "var(--text5)" : "#10b981", fontSize: 12, fontWeight: 700, marginTop: 2 }}>
+                        {k.bakiyedenDussun === false ? "Dönem içi + provizyon bakiyeden düşmüyor" : "Dönem içi + provizyon bakiyeden düşüyor"}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
+      {kartOdemeModal && (
+        <Modal title={`${kartOdemeModal.isim} Ekstre Ödemesi`} onClose={() => setKartOdemeModal(null)}>
+          <div style={{ color: "var(--text4)", fontSize: 11, lineHeight: 1.5, marginBottom: 12 }}>Ekstreyi ödendi olarak işaretle. Seçtiğin ödeme tarihi, ödemenin düşeceği maaş dönemini belirler.</div>
+          <div style={{ padding: "10px 12px", background: "var(--card2)", borderRadius: 10, marginBottom: 12 }}>
+            <div style={{ color: "var(--text5)", fontSize: 12, fontWeight: 800 }}>ÖDENECEK EKSTRE</div>
+            <div style={{ color: "#ef4444", fontSize: 17, fontWeight: 800, marginTop: 3 }}>₺{fmt(Math.min(Number(kartOdemeModal.ekstre) || 0, Math.max(0, (Number(kartOdemeModal.ekstre) || 0) - kartEkstreOdemeToplami(kartOdemeModal))))}</div>
+          </div>
+          <Input label="Ödeme Tarihi" type="date" value={kartOdemeTarih} onChange={e => setKartOdemeTarih(e.target.value)} />
+          <div style={{ color: "var(--text5)", fontSize: 12, marginTop: -5, marginBottom: 8 }}>Bu tarih hangi maaş dönemine aitse ekstre ödemesi o dönemin giderine eklenir.</div>
+          <Btn onClick={kartOdemeEkle} style={{ width: "100%", padding: 12 }}>Ödendi Olarak İşaretle</Btn>
+        </Modal>
+      )}
+
+      <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "18px 16px", marginBottom: 16 }}>
+        <div style={{ color: "var(--text3)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 14 }}>📈 Harcama Trendin</div>
+        {aylikVeriler.length === 0 ? (
+          <div style={{ textAlign: "center", color: "var(--text5)", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", padding: "20px 0" }}>Henüz veri yok</div>
+        ) : (
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart data={aylikVeriler} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+              <XAxis dataKey="ay" tick={{ fill: "var(--text4)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif" }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: "var(--text4)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif" }} axisLine={false} tickLine={false} tickFormatter={v => `${(v / 1000).toFixed(0)}K`} width={36} />
+              <Tooltip content={tt} />
+              <Line type="monotone" dataKey="gider" name="Gider" stroke="#ef4444" strokeWidth={2.5} dot={{ r: 3, fill: "#ef4444" }} activeDot={{ r: 5 }} />
+              <Line type="monotone" dataKey="gelir" name="Gelir" stroke="#10b981" strokeWidth={2.5} dot={{ r: 3, fill: "#10b981" }} activeDot={{ r: 5 }} />
+            </LineChart>
+          </ResponsiveContainer>
+        )}
+        <div style={{ display: "flex", justifyContent: "center", gap: 20, marginTop: 8 }}>
+          <span style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif" }}><span style={{ width: 10, height: 3, background: "#10b981", borderRadius: 2 }} />Gelir</span>
+          <span style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif" }}><span style={{ width: 10, height: 3, background: "#ef4444", borderRadius: 2 }} />Gider</span>
+        </div>
+      </div>
+      <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: 20 }}>
+        <div style={{ color: "var(--text3)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 14 }}>Gider Kategorileri</div>
+        {katDagilim.map(([kat, tutar], ki) => {
+          const total = katDagilim.reduce((s, [, t]) => paraTopla(s, t), 0), pct = (tutar / total * 100).toFixed(0);
+          const seri = kategoriTrendVeri.veri.map(d => ({ ay: d.ay, deger: d[kat] || 0 }));
+          const grafikVar = seri.length > 1 && seri.some(s => s.deger > 0);
+          return (
+            <div key={kat} style={{ marginBottom: 12, paddingBottom: 14, borderBottom: ki < katDagilim.length - 1 ? "1px solid var(--border)" : "none" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                <span style={{ color: "var(--text)", fontSize: 14, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>{kat}</span>
+                <span style={{ color: "var(--text)", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>₺{fmt(tutar)} <span style={{ color: "var(--text5)", fontWeight: 700 }}>%{pct}</span></span>
+              </div>
+              {grafikVar && (
+                <>
+                  <KategoriAlanGrafik seri={seri} renk="#7c3aed" gradId={`gradKat${ki}`} />
+                  <div style={{ display: "flex", justifyContent: "space-between", marginTop: 1 }}>
+                    {seri.map((s, i) => (
+                      <span key={i} style={{ color: "var(--text5)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", flex: 1, textAlign: "center" }}>{s.ay.split("-")[0]}</span>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* KART TUTAR DÜZENLE MODAL */}
+      {kartDuzenle && (
+        <Modal title={`${kartDuzenle.isim} - Tutarları Düzenle`} onClose={() => setKartDuzenle(null)}>
+          <Input label="Ekstre (₺) — kesilmiş son dönem borcu" type="number" value={kartDuzForm.ekstre} onChange={e => setKartDuzForm(f => ({ ...f, ekstre: e.target.value }))} placeholder="0.00" />
+          <Input label="Dönem İçi (₺)" type="number" value={kartDuzForm.donemIci} onChange={e => setKartDuzForm(f => ({ ...f, donemIci: e.target.value }))} placeholder="0.00" />
+          <Input label="Provizyon (₺)" type="number" value={kartDuzForm.provizyon} onChange={e => setKartDuzForm(f => ({ ...f, provizyon: e.target.value }))} placeholder="0.00" />
+          <button type="button" onClick={() => setKartDuzForm(f => ({ ...f, bakiyedenDussun: !f.bakiyedenDussun }))} style={{ width: "100%", display: "flex", alignItems: "center", gap: 11, padding: "11px 12px", marginBottom: 10, borderRadius: 12, border: kartDuzForm.bakiyedenDussun ? "1px solid #6366f166" : "1px solid var(--border)", background: kartDuzForm.bakiyedenDussun ? "var(--accent-soft)" : "var(--card2)", color: "var(--text)", cursor: "pointer", textAlign: "left" }}>
+            <span style={{ width: 22, height: 22, borderRadius: 7, border: kartDuzForm.bakiyedenDussun ? "none" : "2px solid var(--border2)", background: kartDuzForm.bakiyedenDussun ? "var(--accent)" : "var(--card)", color: "#fff", display: "grid", placeItems: "center", fontSize: 13, flexShrink: 0 }}>{kartDuzForm.bakiyedenDussun ? "✓" : ""}</span>
+            <span>
+              <span style={{ display: "block", fontSize: 12, fontWeight: 800 }}>Dönem içi ve provizyon güncel bakiyeden düşülsün</span>
+              <span style={{ display: "block", color: "var(--text5)", fontSize: 12, lineHeight: 1.45, marginTop: 2 }}>{kartDuzForm.bakiyedenDussun ? "Kalan bakiyeden düşer" : "Kalan bakiyeye dokunmaz; kartta Ekstre ve Güncel Borç olarak görünür"}</span>
+            </span>
+          </button>
+          <div style={{ color: "var(--text5)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 10 }}>Bu dönem bu karta ait kayıtlar tek kayıtta birleştirilerek güncellenir.</div>
+          <Btn onClick={() => {
+            if (![kartDuzForm.donemIci, kartDuzForm.provizyon, kartDuzForm.ekstre].every(v => tutarGecerli(v || 0, true))) return formHatasi();
+            const di = paraOku(kartDuzForm.donemIci) || 0;
+            const pr = paraOku(kartDuzForm.provizyon) || 0;
+            const yeniToplam = paraTopla(di, pr);
+            const eskiToplam = kartDuzenle.toplam || 0;
+            const hedefIds = (kartDuzenle.islemler || []).map(i => i.id);
+            const ilk = (kartDuzenle.islemler || [])[0];
+            const bugun = yerelTarihAnahtari();
+            if (di === 0 && pr === 0) {
+              // ikisi de sıfırsa tüm kayıtları sil
+              setIslemler(p => p.filter(i => !hedefIds.includes(i.id)));
+            } else if (ilk) {
+              // Eski günlerin farkları bir harita içinde korunur. Aynı gün tekrar düzenlenirse
+              // yalnızca o günün farkı güncellenir; önceki hafta verileri silinmez.
+              const hareketler = {};
+              (kartDuzenle.islemler || []).forEach(kayit => {
+                if (kayit.kartGunlukHareketler && typeof kayit.kartGunlukHareketler === "object") {
+                  Object.entries(kayit.kartGunlukHareketler).forEach(([tarih, tutar]) => {
+                    hareketler[tarih] = paraTopla(hareketler[tarih] || 0, (Number(tutar) || 0));
+                  });
+                } else if (kayit.kartGunBaslangicToplam > 0 && kayit.kartGunlukDelta > 0 && kayit.tarih) {
+                  hareketler[kayit.tarih] = paraTopla(hareketler[kayit.tarih] || 0, Number(kayit.kartGunlukDelta));
+                }
+              });
+              // Günlük harcamaya yalnızca önceki toplam ile yeni toplam arasındaki fark eklenir.
+              // Böylece 4.000 -> 4.100 güncellemesi 100 TL, ardından 4.100 -> 4.200
+              // güncellemesi de 100 TL ekler; bugün toplam harcama 200 TL olur.
+              const toplamFarki = yeniToplam - eskiToplam;
+              const oncekiBugunHareketi = Number(hareketler[bugun]) || 0;
+              const delta = oncekiBugunHareketi + toplamFarki;
+              hareketler[bugun] = delta;
+              const gunBaslangic = ilk.kartGunBaslangicToplam != null
+                ? Number(ilk.kartGunBaslangicToplam)
+                : eskiToplam;
+              setIslemler(p => p.filter(i => !hedefIds.includes(i.id) || i.id === ilk.id).map(i => i.id === ilk.id ? { ...i, tip: "gider", kategori: kartDuzenle.isim, tutar: yeniToplam, donemIci: di, provizyon: pr, kartHarcama: true, tarih: bugun, kartGunlukDelta: delta, kartGunBaslangicToplam: gunBaslangic, kartGunBaslangicTarih: ilk.kartGunBaslangicTarih || bugun, kartGunlukHareketler: hareketler } : i));
+            } else {
+              // İlk girilen kart toplamı geçmiş günlerden birikmiş olabilir; günlük harcama
+              // sayılmaz. Bundan sonraki değişiklikler gün gün kaydedilir.
+              setIslemler(p => [...p, { id: Date.now(), tip: "gider", kategori: kartDuzenle.isim, tutar: yeniToplam, donemIci: di, provizyon: pr, kartHarcama: true, aciklama: kartDuzenle.isim, tarih: bugun, kartGunlukDelta: 0, kartGunBaslangicToplam: yeniToplam, kartGunBaslangicTarih: bugun, kartGunlukHareketler: {} }]);
+            }
+            const ekstreTutar = paraOku(kartDuzForm.ekstre) || 0;
+            setKartlar(p => p.map(x => x.id === kartDuzenle.id ? { ...x, ekstre: ekstreTutar, ekstreDonemKey: aktifDonem, bakiyedenDussun: kartDuzForm.bakiyedenDussun } : x));
+            setKartDuzenle(null);
+            toast("Kart tutarları güncellendi");
+          }} style={{ width: "100%", padding: 12, marginTop: 8 }}>Kaydet</Btn>
+        </Modal>
+      )}
+
+      {/* HIZLI İŞLEM EKLE MODAL */}
+      {hizliModal && (
+        <Modal title="Yeni İşlem" onClose={() => setHizliModal(false)}>
+          <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
+            {[
+              { id: "gider", label: "📉 Gider", renk: "#ef4444" },
+              { id: "gelir", label: "📈 Gelir", renk: "#10b981" },
+              { id: "taksit", label: "🧾 Taksit", renk: "#8b5cf6" },
+            ].map(t => (
+              <button key={t.id} onClick={() => setHizliForm(f => ({ ...f, tip: t.id, kategori: t.id === "taksit" ? f.kategori : (kategoriler?.[t.id] || VARSAYILAN_KATEGORILER[t.id])[0] }))} style={{ flex: 1, padding: "10px 4px", borderRadius: 10, border: "none", cursor: "pointer", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12, fontWeight: 700, background: hizliForm.tip === t.id ? t.renk : "var(--border)", color: hizliForm.tip === t.id ? "#fff" : "var(--text3)" }}>
+                {t.label}
+              </button>
+            ))}
+          </div>
+          {(hizliSablonlar || []).length > 0 && (
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 7 }}>
+                <span style={{ color: "var(--text4)", fontSize: 12, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase" }}>⚡ Hızlı giderler</span>
+                <span style={{ color: "var(--text5)", fontSize: 12 }}>Dokununca hemen eklenir</span>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 7 }}>
+                {(hizliSablonlar || []).map(s => {
+                  return (
+                    <div key={s.id} onClick={() => sablondanGiderEkle(s)} role="button" tabIndex={0} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") sablondanGiderEkle(s); }} style={{ position: "relative", minWidth: 0, padding: "10px 30px 10px 10px", background: "var(--card2)", border: "1px solid var(--border)", borderRadius: 12, cursor: "pointer" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 7, minWidth: 0 }}>
+                        <span style={{ width: 27, height: 27, flexShrink: 0, display: "grid", placeItems: "center", borderRadius: 9, background: "#ef444417", fontSize: 13 }}>{katIkon(s.kategori, "gider")}</span>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ color: "var(--text2)", fontSize: 11, fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.ad || s.kategori}</div>
+                          <div style={{ color: "#ef4444", fontSize: 12, fontWeight: 800, marginTop: 2 }}>₺{fmt(Number(s.tutar) || 0)}</div>
+                        </div>
+                      </div>
+                      <button aria-label="Şablonu sil" onClick={e => { e.stopPropagation(); hizliSablonSil(s.id); }} style={{ position: "absolute", top: 6, right: 6, width: 22, height: 22, border: "none", borderRadius: 7, background: "transparent", color: "var(--text5)", cursor: "pointer", fontSize: 14 }}>×</button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          {hizliForm.tip === "taksit" ? (
+            <>
+              <div style={{ background: "#8b5cf611", border: "1px solid #8b5cf633", borderRadius: 10, padding: "9px 12px", marginBottom: 12, color: "#8b5cf6", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.5 }}>
+                Taksitli harcamalar giderinden düşmez, sadece takip amaçlıdır. Özet ekranında ilerlemesini görürsün.
+              </div>
+              <Input label="Ürün / Harcama Adı" value={hizliForm.taksitAd} onChange={e => setHizliForm(f => ({ ...f, taksitAd: e.target.value }))} placeholder="Örn: Telefon" />
+              <Input label="Aylık Taksit Tutarı (₺)" type="number" value={hizliForm.taksitAylik} onChange={e => setHizliForm(f => ({ ...f, taksitAylik: e.target.value }))} placeholder="0.00" />
+              <Input label="Toplam Taksit Sayısı (vade)" type="number" value={hizliForm.taksitVade} onChange={e => setHizliForm(f => ({ ...f, taksitVade: e.target.value }))} placeholder="12" />
+              <Input label="Şimdiye Kadar Ödenen Taksit" type="number" value={hizliForm.taksitOdenen} onChange={e => setHizliForm(f => ({ ...f, taksitOdenen: e.target.value }))} placeholder="0" />
+              <Input label="Kart / Kaynak (isteğe bağlı)" value={hizliForm.taksitKart} onChange={e => setHizliForm(f => ({ ...f, taksitKart: e.target.value }))} placeholder="Örn: Bonus Kart" />
+            </>
+          ) : (
+          <>
+          <Select label="Kategori" value={hizliForm.kategori} onChange={e => setHizliForm(f => ({ ...f, kategori: e.target.value }))}>{(kategoriler?.[hizliForm.tip] || VARSAYILAN_KATEGORILER[hizliForm.tip]).map(k => <option key={k}>{k}</option>)}</Select>
+          {hizliKartMi ? (
+            <>
+              <Input label="Dönem İçi (₺)" type="number" value={hizliForm.donemIci} onChange={e => setHizliForm(f => ({ ...f, donemIci: e.target.value }))} placeholder="0.00" />
+              <Input label="Provizyon (₺)" type="number" value={hizliForm.provizyon} onChange={e => setHizliForm(f => ({ ...f, provizyon: e.target.value }))} placeholder="0.00" />
+            </>
+          ) : (
+            <Input label="Tutar (₺)" type="number" value={hizliForm.tutar} onChange={e => setHizliForm(f => ({ ...f, tutar: e.target.value }))} placeholder="0.00" />
+          )}
+          <Input label="Açıklama (isteğe bağlı)" value={hizliForm.aciklama} onChange={e => setHizliForm(f => ({ ...f, aciklama: e.target.value }))} placeholder="Açıklama" />
+          <Input label="Tarih" type="date" value={hizliForm.tarih} onChange={e => setHizliForm(f => ({ ...f, tarih: e.target.value }))} />
+          </>
+          )}
+          {hizliForm.tip === "gelir" && hizliForm.kategori === "Kira Geliri" && (
+            <label style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: "var(--card2)", borderRadius: 10, marginBottom: 4, cursor: "pointer" }}>
+              <button type="button" onClick={() => setHizliForm(f => ({ ...f, donemeDahil: !f.donemeDahil }))} style={{ width: 22, height: 22, borderRadius: 6, border: `2px solid ${hizliForm.donemeDahil ? "#10b981" : "var(--border2)"}`, background: hizliForm.donemeDahil ? "#10b981" : "transparent", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "var(--bg)" }}>{hizliForm.donemeDahil ? "✓" : ""}</button>
+              <span style={{ color: "var(--text2)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif" }}>Dönem gelirine dahil et</span>
+            </label>
+          )}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1.15fr", gap: 8, marginTop: 8 }}>
+            <Btn variant="secondary" onClick={() => setHizliModal(false)} style={{ width: "100%", padding: 12 }}>Vazgeç</Btn>
+            <Btn onClick={hizliEkle} style={{ width: "100%", padding: 12 }}>
+              {hizliForm.tip === "gider" && !hizliKartMi ? "Gideri Kaydet" : "Kaydet"}
+            </Btn>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ── İŞLEMLER ──────────────────────────────────────────────────────────────────
+function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler, setKategoriler, kartlar, donemGun }) {
+  const [modal, setModal] = useState(false);
+  const [duzenleModal, setDuzenleModal] = useState(false);
+  const [butceModal, setButceModal] = useState(false);
+  const [katModal, setKatModal] = useState(false);
+  const [yeniKat, setYeniKat] = useState({ tip: "gider", isim: "" });
+  const [duzenleHedef, setDuzenleHedef] = useState(null);
+  const [duzenleForm, setDuzenleForm] = useState({ tip: "gider", kategori: "Market", tutar: "", aciklama: "", tarih: "", donemeDahil: true, donemIci: "", provizyon: "" });
+  const [filtre, setFiltre] = useState("hepsi");
+  const [arama, setArama] = useState("");
+  const [form, setForm] = useState({ tip: "gider", kategori: "Market", tutar: "", aciklama: "", tarih: yerelTarihAnahtari(), donemeDahil: true, donemIci: "", provizyon: "" });
+  const [acikDonemler, setAcikDonemler] = useState({});
+  const donemToggle = (key) => setAcikDonemler(p => ({ ...p, [key]: !p[key] }));
+
+  const katEkle = () => {
+    const isim = yeniKat.isim.trim();
+    if (!isim) return;
+    const tip = yeniKat.tip;
+    if (kategoriler[tip].includes(isim)) {
+      toast(`"${isim}" zaten ${tip === "gider" ? "gider" : "gelir"} kategorilerinde var`, "uyari");
+      return;
+    }
+    setKategoriler(k => ({ ...k, [tip]: [...k[tip], isim] }));
+    setYeniKat(y => ({ ...y, isim: "" }));
+    toast(`"${isim}" kategorisi eklendi (${kategoriler[tip].length + 1}. kategori)`);
+  };
+  const katSil = (tip, isim) => {
+    const varsayilan = VARSAYILAN_KATEGORILER[tip];
+    if (varsayilan.includes(isim)) return; // varsayılanları silme
+    setKategoriler(k => ({ ...k, [tip]: k[tip].filter(x => x !== isim) }));
+  };
+  const filtered = islemler
+    .filter(i =>
+      (filtre === "hepsi" || i.tip === filtre) &&
+      (!arama || (i.aciklama || "").toLowerCase().includes(arama.toLowerCase()) || i.kategori.toLowerCase().includes(arama.toLowerCase()))
+    )
+    .sort((a, b) => yerelTarihOku(b.tarih) - yerelTarihOku(a.tarih));
+
+  const donemGruplari = useMemo(() => {
+    const grupMap = {};
+    filtered.forEach(i => {
+      const dk = maasDonemKey(i.tarih, donemGun);
+      const key = dk.key;
+      if (!grupMap[key]) {
+        grupMap[key] = { key, label: dk.label, islemler: [], gelir: 0, gider: 0, baslangic: dk.baslangic };
+      }
+      grupMap[key].islemler.push(i);
+      if (i.tip === "gelir") grupMap[key].gelir += i.tutar;
+      else grupMap[key].gider += i.tutar;
+    });
+    return Object.values(grupMap).sort((a, b) => yerelTarihOku(b.baslangic) - yerelTarihOku(a.baslangic));
+  }, [filtered, donemGun]);
+  const islemDuzenle = () => {
+    if (!duzenleHedef) return;
+    if (!islemFormuGecerli(duzenleForm, duzenleKartMi)) return;
+    const kMi = (kartlar || []).some(k => k.isim === duzenleForm.kategori) && duzenleForm.tip === "gider";
+    if (kMi) {
+      const di = paraOku(duzenleForm.donemIci) || 0;
+      const pr = paraOku(duzenleForm.provizyon) || 0;
+      if (di === 0 && pr === 0) return;
+      setIslemler(p => p.map(x => x.id === duzenleHedef.id ? { ...x, tip: "gider", kategori: duzenleForm.kategori, tutar: paraTopla(di, pr), donemIci: di, provizyon: pr, kartHarcama: true, aciklama: duzenleForm.aciklama, tarih: duzenleForm.tarih } : x));
+    } else {
+      if (!duzenleForm.tutar) return;
+      setIslemler(p => p.map(x => x.id === duzenleHedef.id ? { ...x, ...duzenleForm, tutar: paraOku(duzenleForm.tutar), donemIci: undefined, provizyon: undefined, kartHarcama: undefined } : x));
+    }
+    setDuzenleModal(false);
+    setDuzenleHedef(null);
+    toast("İşlem güncellendi");
+  };
+  const kartMi = (kartlar || []).some(k => k.isim === form.kategori) && form.tip === "gider";
+  const duzenleKartMi = (kartlar || []).some(k => k.isim === duzenleForm.kategori) && duzenleForm.tip === "gider";
+  const ekle = () => {
+    if (!islemFormuGecerli(form, kartMi)) return;
+    if (kartMi) {
+      const di = paraOku(form.donemIci) || 0;
+      const pr = paraOku(form.provizyon) || 0;
+      if (di === 0 && pr === 0) return;
+      setIslemler(p => [...p, { id: Date.now(), tip: "gider", kategori: form.kategori, tutar: paraTopla(di, pr), donemIci: di, provizyon: pr, kartHarcama: true, aciklama: form.aciklama, tarih: form.tarih, kartGunBaslangicToplam: paraTopla(di, pr), kartGunBaslangicTarih: form.tarih, kartGunlukDelta: 0, kartGunlukHareketler: {} }]);
+    } else {
+      if (!form.tutar) return;
+      setIslemler(p => [...p, { ...form, id: Date.now(), tutar: paraOku(form.tutar), donemIci: undefined, provizyon: undefined }]);
+    }
+    setModal(false);
+    setForm({ tip: "gider", kategori: "Market", tutar: "", aciklama: "", tarih: yerelTarihAnahtari(), donemeDahil: true, donemIci: "", provizyon: "" });
+    toast("İşlem eklendi");
+  };
+  const islemSil = (hedef) => {
+    setIslemler(p => p.filter(x => x.id !== hedef.id));
+    toast("İşlem silindi", "uyari", () => {
+      setIslemler(p => p.some(x => x.id === hedef.id) ? p : [...p, hedef]);
+      toast("İşlem geri yüklendi");
+    });
+  };
+  return (
+    <div>
+      {/* Arama kutusu */}
+      <div style={{ position: "relative", marginBottom: 10 }}>
+        <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text5)", fontSize: 14 }}>🔍</span>
+        <input value={arama} onChange={e => setArama(e.target.value)} placeholder="İşlem ara..." style={{ width: "100%", background: "var(--card2)", border: "1px solid var(--border)", borderRadius: 10, padding: "9px 12px 9px 36px", color: "var(--text)", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+        {arama && <button onClick={() => setArama("")} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "var(--text4)", cursor: "pointer", fontSize: 14 }}>×</button>}
+      </div>
+      <div style={{ display: "flex", gap: 8, marginBottom: 16, justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 6 }}>
+          {["hepsi", "gelir", "gider"].map(f => <button key={f} onClick={() => setFiltre(f)} style={{ padding: "6px 14px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12, fontWeight: 600, background: filtre === f ? "#f59e0b" : "var(--border)", color: filtre === f ? "var(--bg)" : "var(--text3)" }}>{f.charAt(0).toUpperCase() + f.slice(1)}</button>)}
+        </div>
+        <div style={{ display: "flex", gap: 6 }}>
+          <button onClick={() => setKatModal(true)} style={{ background: "var(--border)", border: "none", borderRadius: 10, padding: "8px 10px", color: "var(--text3)", cursor: "pointer", fontSize: 13 }} title="Kategoriler">🏷️</button>
+          <button onClick={() => setButceModal(true)} style={{ background: "var(--border)", border: "none", borderRadius: 10, padding: "8px 10px", color: "var(--text3)", cursor: "pointer", fontSize: 13 }} title="Bütçe Hedefleri">🎯</button>
+          <Btn onClick={() => setModal(true)}>+ Ekle</Btn>
+        </div>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {donemGruplari.length === 0 && (
+          <div style={{ textAlign: "center", color: "var(--text5)", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, padding: "32px 0" }}>İşlem bulunamadı</div>
+        )}
+        {donemGruplari.map(grup => {
+          const acik = acikDonemler[grup.key] === true;
+          const net = grup.gelir - grup.gider;
+          return (
+            <div key={grup.key}>
+              {/* Dönem başlığı */}
+              <button onClick={() => donemToggle(grup.key)} style={{ width: "100%", background: "var(--card2)", border: "1px solid var(--border)", borderRadius: acik ? "12px 12px 0 0" : 12, padding: "10px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ color: acik ? "#f59e0b" : "var(--text4)", fontSize: 13, transition: "transform 0.2s", display: "inline-block", transform: acik ? "rotate(0deg)" : "rotate(-90deg)" }}>▼</span>
+                  <div style={{ textAlign: "left" }}>
+                    <div style={{ color: "var(--text)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>{grup.label}</div>
+                    <div style={{ color: "var(--text5)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 1 }}>{grup.islemler.length} işlem</div>
+                  </div>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ color: net >= 0 ? "#10b981" : "#ef4444", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>{net >= 0 ? "+" : ""}₺{fmt(net)}</div>
+                  <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 1 }}>
+                    <span style={{ color: "#10b981", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif" }}>+₺{fmt(grup.gelir)}</span>
+                    <span style={{ color: "#ef4444", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif" }}>-₺{fmt(grup.gider)}</span>
+                  </div>
+                </div>
+              </button>
+              {/* Dönem işlemleri */}
+              {acik && (
+                <div style={{ border: "1px solid var(--border)", borderTop: "none", borderRadius: "0 0 12px 12px", overflow: "hidden" }}>
+                  {grup.islemler.map((i, idx) => {
+                    const renk = i.tip === "gelir" ? "#10b981" : "#ef4444";
+                    const katRenk = KATEGORI_RENKLER[i.kategori] || "#78716c";
+                    return (
+                      <div key={i.id} style={{ background: "var(--card)", borderTop: idx > 0 ? "1px solid var(--divider)" : "none", padding: "12px 14px", display: "flex", alignItems: "center", gap: 11 }}>
+                        <div style={{ width: 42, height: 42, borderRadius: 13, background: katRenk + "1c", border: `1px solid ${katRenk}3a`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, flexShrink: 0 }}>{katIkon(i.kategori, i.tip)}</div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ color: "var(--text)", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{i.aciklama || i.kategori}</div>
+                          <div style={{ display: "flex", gap: 6, marginTop: 3, alignItems: "center", flexWrap: "wrap" }}>
+                            <span style={{ color: katRenk, fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 600 }}>{i.kategori}</span>
+                            <span style={{ color: "var(--text5)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif" }}>· {i.tarih.split("-").reverse().join(".")}</span>
+                            {i.kartHarcama && (i.donemIci > 0 || i.provizyon > 0) && (
+                              <span style={{ color: "var(--text4)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif" }}>
+                                {i.donemIci > 0 ? `Dönem İçi: ₺${fmt(i.donemIci)}` : ""}{i.donemIci > 0 && i.provizyon > 0 ? " · " : ""}{i.provizyon > 0 ? `Provizyon: ₺${fmt(i.provizyon)}` : ""}
+                              </span>
+                            )}
+                            {(() => {
+                              if (i.tip !== "gider" || !butceler[i.kategori]) return null;
+                              const ayHarcama = islemler.filter(x => x.tip === "gider" && x.kategori === i.kategori && maasDonemKey(x.tarih, donemGun).key === maasDonemKey(i.tarih, donemGun).key).reduce((s, x) => paraTopla(s, x.tutar), 0);
+                              const limit = paraOku(butceler[i.kategori]);
+                              if (ayHarcama > limit) return <span style={{ background: "#ef444422", color: "#ef4444", border: "1px solid #ef444444", borderRadius: 6, padding: "1px 6px", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif" }}>Bütçe Aşıldı!</span>;
+                              if (ayHarcama / limit > 0.8) return <span style={{ background: "#f59e0b22", color: "#f59e0b", border: "1px solid #f59e0b44", borderRadius: 6, padding: "1px 6px", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif" }}>%{Math.round(ayHarcama / limit * 100)} kullanıldı</span>;
+                              return null;
+                            })()}
+                          </div>
+                        </div>
+                        <div style={{ textAlign: "right", flexShrink: 0 }}>
+                          <div style={{ color: renk, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, fontSize: 14 }}>{i.tip === "gelir" ? "+" : "-"}₺{fmt(i.tutar)}</div>
+                          <div style={{ display: "flex", gap: 4, marginTop: 2, justifyContent: "flex-end" }}>
+                            <button onClick={() => { setDuzenleHedef(i); setDuzenleForm({ tip: i.tip, kategori: i.kategori, tutar: String(i.tutar), aciklama: i.aciklama || "", tarih: i.tarih || yerelTarihAnahtari(), donemeDahil: i.donemeDahil !== false, donemIci: i.donemIci != null ? String(i.donemIci) : "", provizyon: i.provizyon != null ? String(i.provizyon) : "" }); setDuzenleModal(true); }} style={{ background: "none", border: "none", color: "var(--text4)", cursor: "pointer", fontSize: 13 }}>✏️</button>
+                            <button onClick={() => islemSil(i)} style={{ background: "none", border: "none", color: "var(--text5)", cursor: "pointer", fontSize: 13 }}>🗑</button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {katModal && (
+        <Modal title="🏷️ Kategorileri Yönet" onClose={() => setKatModal(false)}>
+          {["gelir", "gider"].map(tip => (
+            <div key={tip} style={{ marginBottom: 20 }}>
+              <div style={{ color: tip === "gelir" ? "#10b981" : "#ef4444", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>
+                {tip === "gelir" ? "📈 Gelir Kategorileri" : "📉 Gider Kategorileri"}
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
+                {(kategoriler[tip] || []).map(kat => {
+                  const varsayilan = VARSAYILAN_KATEGORILER[tip].includes(kat);
+                  return (
+                    <div key={kat} style={{ display: "flex", alignItems: "center", gap: 4, background: "var(--card2)", border: "1px solid var(--border)", borderRadius: 8, padding: "5px 10px" }}>
+                      <span style={{ color: "var(--text2)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif" }}>{kat}</span>
+                      {!varsayilan && (
+                        <button onClick={() => katSil(tip, kat)} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 13, lineHeight: 1, padding: 0, marginLeft: 2 }}>×</button>
+                      )}
+                      {varsayilan && <span style={{ color: "var(--text5)", fontSize: 12, marginLeft: 2 }}>●</span>}
+                    </div>
+                  );
+                })}
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <input
+                  value={yeniKat.tip === tip ? yeniKat.isim : ""}
+                  onChange={e => setYeniKat({ tip, isim: e.target.value })}
+                  onKeyDown={e => e.key === "Enter" && katEkle()}
+                  placeholder={`Yeni ${tip} kategorisi...`}
+                  style={{ flex: 1, background: "var(--card2)", border: "1px solid var(--border)", borderRadius: 8, padding: "8px 12px", color: "var(--text)", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, outline: "none" }}
+                />
+                <button onClick={() => { setYeniKat({ tip, isim: yeniKat.tip === tip ? yeniKat.isim : "" }); katEkle(); }} style={{ background: "linear-gradient(135deg,#f59e0b,#d97706)", border: "none", borderRadius: 8, padding: "8px 14px", color: "var(--bg)", fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>+ Ekle</button>
+              </div>
+            </div>
+          ))}
+          <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", textAlign: "center" }}>● işaretli kategoriler varsayılandır, silinemez</div>
+        </Modal>
+      )}
+      {butceModal && (
+        <Modal title="🎯 Bütçe Hedefleri" onClose={() => setButceModal(false)}>
+          <div style={{ color: "var(--text4)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 16 }}>Kategoriye aylık limit koy. Aşınca kırmızı uyarı çıkar.</div>
+          {(kategoriler?.gider || VARSAYILAN_KATEGORILER.gider).map(kat => {
+            const aylikHarcama = islemler.filter(i => i.tip === "gider" && i.kategori === kat && maasDonemKey(i.tarih, donemGun).key === buAnkiDonem()).reduce((s, i) => paraTopla(s, i.tutar), 0);
+            const limit = butceler[kat] || "";
+            const asim = limit && aylikHarcama > paraOku(limit);
+            return (
+              <div key={kat} style={{ marginBottom: 12 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                  <span style={{ color: asim ? "#ef4444" : "var(--text2)", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, fontWeight: 600 }}>{asim ? "🔴 " : ""}{kat}</span>
+                  <span style={{ color: "var(--text4)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif" }}>Harcanan: ₺{fmt(aylikHarcama)}</span>
+                </div>
+                <input
+                  type="number"
+                  placeholder="Limit yok"
+                  value={limit}
+                  aria-label={`${kat} bütçe limiti`} min="0" step="0.01"
+                  onChange={e => {
+                    const deger = e.target.value;
+                    if (deger === "" || tutarGecerli(deger, true)) setButceler(b => ({ ...b, [kat]: deger }));
+                    else formHatasi("Bütçe limiti sıfır veya pozitif olmalı; en fazla iki ondalık basamak kullan.");
+                  }}
+                  style={{ width: "100%", background: asim ? "#ef444411" : "var(--card2)", border: `1px solid ${asim ? "#ef444466" : "var(--border)"}`, borderRadius: 8, padding: "8px 12px", color: "var(--text)", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, outline: "none", boxSizing: "border-box" }}
+                />
+                {limit && (
+                  <div style={{ height: 3, background: "var(--border)", borderRadius: 99, marginTop: 4 }}>
+                    <div style={{ height: "100%", width: `${Math.min(aylikHarcama / paraOku(limit) * 100, 100)}%`, background: asim ? "#ef4444" : aylikHarcama / paraOku(limit) > 0.8 ? "#f59e0b" : "#10b981", borderRadius: 99, transition: "width 0.4s" }} />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </Modal>
+      )}
+      {modal && (
+        <Modal title="İşlem Ekle" onClose={() => setModal(false)}>
+          <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+            {["gider", "gelir"].map(t => <button key={t} onClick={() => setForm(f => ({ ...f, tip: t, kategori: t === "gelir" ? "Maaş" : "Market" }))} style={{ flex: 1, padding: "8px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, fontWeight: 700, background: form.tip === t ? (t === "gelir" ? "#10b981" : "#ef4444") : "var(--border)", color: form.tip === t ? "#fff" : "var(--text3)" }}>{t === "gelir" ? "📈 Gelir" : "📉 Gider"}</button>)}
+          </div>
+          <Select label="Kategori" value={form.kategori} onChange={e => setForm(f => ({ ...f, kategori: e.target.value }))}>{(kategoriler[form.tip] || []).map(k => <option key={k}>{k}</option>)}</Select>
+          {kartMi ? (
+            <>
+              <Input label="Dönem İçi (₺)" type="number" value={form.donemIci} onChange={e => setForm(f => ({ ...f, donemIci: e.target.value }))} placeholder="0.00" />
+              <Input label="Provizyon (₺)" type="number" value={form.provizyon} onChange={e => setForm(f => ({ ...f, provizyon: e.target.value }))} placeholder="0.00" />
+            </>
+          ) : (
+            <Input label="Tutar (₺)" type="number" value={form.tutar} onChange={e => setForm(f => ({ ...f, tutar: e.target.value }))} placeholder="0.00" />
+          )}
+          <Input label="Açıklama" value={form.aciklama} onChange={e => setForm(f => ({ ...f, aciklama: e.target.value }))} placeholder="Örn: Market alışverişi" />
+          <Input label="Tarih" type="date" value={form.tarih} onChange={e => setForm(f => ({ ...f, tarih: e.target.value }))} />
+          {form.tip === "gelir" && form.kategori === "Kira Geliri" && (
+            <label style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: "var(--card2)", borderRadius: 10, marginBottom: 4, cursor: "pointer" }}>
+              <button type="button" onClick={() => setForm(f => ({ ...f, donemeDahil: !f.donemeDahil }))} style={{ width: 22, height: 22, borderRadius: 6, border: `2px solid ${form.donemeDahil ? "#10b981" : "var(--border2)"}`, background: form.donemeDahil ? "#10b981" : "transparent", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "var(--bg)" }}>{form.donemeDahil ? "✓" : ""}</button>
+              <span style={{ color: "var(--text2)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif" }}>Dönem gelirine dahil et</span>
+            </label>
+          )}
+          <Btn onClick={ekle} style={{ width: "100%", padding: 12, marginTop: 8 }}>Kaydet</Btn>
+        </Modal>
+      )}
+      {duzenleModal && duzenleHedef && (
+        <Modal title="İşlemi Düzenle" onClose={() => { setDuzenleModal(false); setDuzenleHedef(null); }}>
+          <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+            {["gider", "gelir"].map(t => <button key={t} onClick={() => setDuzenleForm(f => ({ ...f, tip: t, kategori: t === "gelir" ? "Maaş" : "Market" }))} style={{ flex: 1, padding: "8px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, fontWeight: 700, background: duzenleForm.tip === t ? (t === "gelir" ? "#10b981" : "#ef4444") : "var(--border)", color: duzenleForm.tip === t ? "#fff" : "var(--text3)" }}>{t === "gelir" ? "📈 Gelir" : "📉 Gider"}</button>)}
+          </div>
+          <Select label="Kategori" value={duzenleForm.kategori} onChange={e => setDuzenleForm(f => ({ ...f, kategori: e.target.value }))}>{(kategoriler[duzenleForm.tip] || []).map(k => <option key={k}>{k}</option>)}</Select>
+          {duzenleKartMi ? (
+            <>
+              <Input label="Dönem İçi (₺)" type="number" value={duzenleForm.donemIci} onChange={e => setDuzenleForm(f => ({ ...f, donemIci: e.target.value }))} placeholder="0.00" />
+              <Input label="Provizyon (₺)" type="number" value={duzenleForm.provizyon} onChange={e => setDuzenleForm(f => ({ ...f, provizyon: e.target.value }))} placeholder="0.00" />
+            </>
+          ) : (
+            <Input label="Tutar (₺)" type="number" value={duzenleForm.tutar} onChange={e => setDuzenleForm(f => ({ ...f, tutar: e.target.value }))} />
+          )}
+          <Input label="Açıklama" value={duzenleForm.aciklama} onChange={e => setDuzenleForm(f => ({ ...f, aciklama: e.target.value }))} />
+          <Input label="Tarih" type="date" value={duzenleForm.tarih} onChange={e => setDuzenleForm(f => ({ ...f, tarih: e.target.value }))} />
+          {duzenleForm.tip === "gelir" && duzenleForm.kategori === "Kira Geliri" && (
+            <label style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: "var(--card2)", borderRadius: 10, marginBottom: 4, cursor: "pointer" }}>
+              <button type="button" onClick={() => setDuzenleForm(f => ({ ...f, donemeDahil: !f.donemeDahil }))} style={{ width: 22, height: 22, borderRadius: 6, border: `2px solid ${duzenleForm.donemeDahil ? "#10b981" : "var(--border2)"}`, background: duzenleForm.donemeDahil ? "#10b981" : "transparent", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "var(--bg)" }}>{duzenleForm.donemeDahil ? "✓" : ""}</button>
+              <span style={{ color: "var(--text2)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif" }}>Dönem gelirine dahil et</span>
+            </label>
+          )}
+          <Btn onClick={islemDuzenle} disabled={!duzenleForm.tutar} style={{ width: "100%", padding: 12, marginTop: 8 }}>Güncelle</Btn>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ── ÖDEMELER ──────────────────────────────────────────────────────────────────
+function OdemelerTab({ odemeler, setOdemeler, islemler, setIslemler, kategoriler, donemGun }) {
+  const [modal, setModal] = useState(false);
+  const [acikDonemler, setAcikDonemler] = useState({});
+  const [odemeFiltre, setOdemeFiltre] = useState("bekleyen");
+  const bos = { aciklama: "", tutar: "", tarih: yerelTarihAnahtari(), kategori: "Fatura" };
+  const [form, setForm] = useState(bos);
+  const [duzenleId, setDuzenleId] = useState(null);
+  const fmt = n => n.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  const donemToggle = key => setAcikDonemler(p => ({ ...p, [key]: !p[key] }));
+
+  const kaydet = () => {
+    if (!islemFormuGecerli(form)) return;
+    if (duzenleId) {
+      // Düzenleme: hem ödeme kaydını hem bağlı işlem kaydını güncelle
+      const hedef = odemeler.find(x => x.id === duzenleId);
+      setOdemeler(p => p.map(x => x.id === duzenleId ? { ...x, aciklama: form.aciklama, tutar: paraOku(form.tutar), tarih: form.tarih, kategori: form.kategori } : x));
+      if (hedef) {
+        setIslemler(p => p.map(x => x.id === hedef.islemId ? { ...x, kategori: form.kategori, tutar: paraOku(form.tutar), aciklama: form.aciklama || form.kategori, tarih: form.tarih } : x));
+      }
+      toast("Ödeme güncellendi");
+    } else {
+      const yeniId = Date.now();
+      // İşlemlere de ekle (ödenmedi durumunda bile kaydet, gider olarak)
+      const islemId = yeniId + 1;
+      setIslemler(p => [...p, {
+        id: islemId,
+        tip: "gider",
+        kategori: form.kategori,
+        tutar: paraOku(form.tutar),
+        aciklama: form.aciklama || form.kategori,
+        tarih: form.tarih,
+        kaynak: "odeme",
+        odemeId: yeniId,
+      }]);
+      setOdemeler(p => [...p, {
+        id: yeniId,
+        aciklama: form.aciklama,
+        tutar: paraOku(form.tutar),
+        tarih: form.tarih,
+        kategori: form.kategori,
+        odendi: false,
+        islemId,
+      }]);
+      toast("Ödeme eklendi");
+    }
+    setModal(false);
+    setDuzenleId(null);
+    setForm(bos);
+  };
+
+  const duzenleAc = (o) => {
+    setDuzenleId(o.id);
+    setForm({ aciklama: o.aciklama || "", tutar: String(o.tutar), tarih: o.tarih, kategori: o.kategori });
+    setModal(true);
+  };
+
+  // Eski sürümden gelen ve bağlı işlem kimliği eksik olan ödemeleri de güvenli
+  // biçimde gider kaydına bağlar. Ödeme ilk eklendiğinde Kalan Bakiye zaten bu
+  // giderden düşer; ödendi durumu yalnızca ödeme takibini günceller.
+  const odemeIsleminiBagla = (odeme) => {
+    const mevcut = (islemler || []).find(i =>
+      (odeme.islemId != null && String(i.id) === String(odeme.islemId)) ||
+      (i.odemeId != null && String(i.odemeId) === String(odeme.id))
+    );
+    const islemId = mevcut?.id ?? odeme.islemId ?? (Date.now() + 1);
+    setOdemeler(p => p.map(x => x.id === odeme.id ? { ...x, odendi: true, odendiTarih: new Date().toISOString(), islemId } : x));
+    setIslemler(p => {
+      const bulundu = p.some(i => String(i.id) === String(islemId));
+      if (bulundu) {
+        return p.map(i => String(i.id) === String(islemId) ? {
+          ...i,
+          tip: "gider",
+          kategori: odeme.kategori || i.kategori || "Fatura",
+          tutar: Number(odeme.tutar) || 0,
+          aciklama: odeme.aciklama || odeme.kategori || i.aciklama || "Fatura",
+          tarih: odeme.tarih || i.tarih,
+          kaynak: "odeme",
+          odemeId: odeme.id,
+        } : i);
+      }
+      return [...p, {
+        id: islemId,
+        tip: "gider",
+        kategori: odeme.kategori || "Fatura",
+        tutar: Number(odeme.tutar) || 0,
+        aciklama: odeme.aciklama || odeme.kategori || "Fatura",
+        tarih: odeme.tarih,
+        kaynak: "odeme",
+        odemeId: odeme.id,
+      }];
+    });
+  };
+
+  const toggleOdendi = (odeme) => {
+    if (!odeme.odendi) {
+      odemeIsleminiBagla(odeme);
+      toast("Ödendi olarak işaretlendi");
+    } else {
+      setOdemeler(p => p.map(x => x.id === odeme.id ? { ...x, odendi: false, odendiTarih: undefined } : x));
+      toast("Ödendi işareti geri alındı");
+    }
+  };
+
+  const sil = (odeme) => {
+    const bagliIslem = (islemler || []).find(x =>
+      (odeme.islemId != null && String(x.id) === String(odeme.islemId)) ||
+      (x.odemeId != null && String(x.odemeId) === String(odeme.id))
+    );
+    setOdemeler(p => p.filter(x => x.id !== odeme.id));
+    // İşlemlerdeki ilgili kaydı da sil
+    setIslemler(p => p.filter(x =>
+      !((odeme.islemId != null && String(x.id) === String(odeme.islemId)) ||
+        (x.odemeId != null && String(x.odemeId) === String(odeme.id)))
+    ));
+    toast("Ödeme silindi", "uyari", () => {
+      setOdemeler(p => p.some(x => x.id === odeme.id) ? p : [...p, odeme]);
+      if (bagliIslem) setIslemler(p => p.some(x => x.id === bagliIslem.id) ? p : [...p, bagliIslem]);
+      toast("Ödeme geri yüklendi");
+    });
+  };
+
+  // Dönem gruplama
+  const donemGruplari = useMemo(() => {
+    const map = {};
+    odemeler.filter(o => odemeFiltre === "hepsi" || (odemeFiltre === "odendi" ? o.odendi : !o.odendi)).forEach(o => {
+      const dk = maasDonemKey(o.tarih, donemGun);
+      if (!map[dk.key]) map[dk.key] = { key: dk.key, label: dk.label, baslangic: dk.baslangic, odemeler: [], toplam: 0, odendi: 0 };
+      map[dk.key].odemeler.push(o);
+      map[dk.key].toplam = paraTopla(map[dk.key].toplam, o.tutar);
+      if (o.odendi) map[dk.key].odendi += o.tutar;
+    });
+    return Object.values(map).sort((a, b) => yerelTarihOku(b.baslangic) - yerelTarihOku(a.baslangic));
+  }, [odemeler, donemGun, odemeFiltre]);
+
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+        <div style={{ color: "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+          {odemeler.length} ödeme kaydı
+        </div>
+        <Btn onClick={() => { setForm(bos); setModal(true); }}>+ Ekle</Btn>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 7, marginBottom: 12 }}>
+        {[{ id: "bekleyen", label: "Bekleyen" }, { id: "odendi", label: "Ödendi" }, { id: "hepsi", label: "Tümü" }].map(f => (
+          <button key={f.id} onClick={() => setOdemeFiltre(f.id)} style={{ border: odemeFiltre === f.id ? "1px solid rgba(99,102,241,.45)" : "1px solid var(--border)", background: odemeFiltre === f.id ? "var(--accent-soft)" : "var(--card2)", color: odemeFiltre === f.id ? "var(--accent)" : "var(--text4)", borderRadius: 11, padding: "8px", fontSize: 11, fontWeight: 800, cursor: "pointer" }}>{f.label}</button>
+        ))}
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {donemGruplari.length === 0 && (
+          <div style={{ textAlign: "center", color: "var(--text5)", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, padding: "32px 0" }}>Henüz ödeme kaydı yok</div>
+        )}
+        {donemGruplari.map(grup => {
+          const acik = acikDonemler[grup.key] === true;
+          const bekleyen = grup.toplam - grup.odendi;
+          return (
+            <div key={grup.key}>
+              <button onClick={() => donemToggle(grup.key)} style={{ width: "100%", background: "var(--card2)", border: "1px solid var(--border)", borderRadius: acik ? "12px 12px 0 0" : 12, padding: "10px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ color: acik ? "#f59e0b" : "var(--text4)", fontSize: 13, display: "inline-block", transform: acik ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.2s" }}>▼</span>
+                  <div style={{ textAlign: "left" }}>
+                    <div style={{ color: "var(--text)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>{grup.label}</div>
+                    <div style={{ color: "var(--text5)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 1 }}>
+                      {grup.odemeler.length} ödeme · {grup.odemeler.filter(o => o.odendi).length} ödendi
+                    </div>
+                  </div>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ color: bekleyen > 0 ? "#ef4444" : "#10b981", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>
+                    {bekleyen > 0 ? "-" : "✓"}₺{fmt(bekleyen > 0 ? bekleyen : grup.toplam)}
+                  </div>
+                  <div style={{ color: "var(--text5)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 1 }}>
+                    {bekleyen > 0 ? `₺${fmt(grup.odendi)} ödendi` : "Tümü ödendi"}
+                  </div>
+                </div>
+              </button>
+              {acik && (
+                <div style={{ border: "1px solid var(--border)", borderTop: "none", borderRadius: "0 0 12px 12px", overflow: "hidden" }}>
+                  {grup.odemeler.sort((a, b) => yerelTarihOku(a.tarih) - yerelTarihOku(b.tarih)).map((o, idx) => {
+                    const katRenk = KATEGORI_RENKLER[o.kategori] || "#78716c";
+                    return (
+                      <div key={o.id} style={{ background: o.odendi ? "var(--header)" : "var(--card)", borderTop: idx > 0 ? "1px solid var(--divider)" : "none", padding: "12px 14px", display: "flex", alignItems: "center", gap: 10, opacity: o.odendi ? 0.5 : 1, transition: "opacity 0.2s" }}>
+                        {/* Checkbox */}
+                        <button onClick={() => toggleOdendi(o)} style={{ width: 22, height: 22, borderRadius: 6, border: `2px solid ${o.odendi ? "#10b981" : "var(--border2)"}`, background: o.odendi ? "#10b981" : "transparent", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "var(--bg)", transition: "all 0.2s" }}>
+                          {o.odendi ? "✓" : ""}
+                        </button>
+                        <div style={{ width: 40, height: 40, borderRadius: 12, background: katRenk + "1c", border: `1px solid ${katRenk}3a`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>{katIkon(o.kategori, "gider")}</div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ color: "var(--text)", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textDecoration: o.odendi ? "line-through" : "none" }}>
+                            {o.aciklama || o.kategori}
+                          </div>
+                          <div style={{ display: "flex", gap: 6, marginTop: 3, alignItems: "center" }}>
+                            <span style={{ color: katRenk, fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 600 }}>{o.kategori}</span>
+                            <span style={{ color: "var(--text5)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif" }}>· {o.tarih.split("-").reverse().join(".")}</span>
+                            {o.odendi && <span style={{ color: "#10b981", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif" }}>✓ Ödendi</span>}
+                          </div>
+                        </div>
+                        <div style={{ textAlign: "right", flexShrink: 0 }}>
+                          <div style={{ color: o.odendi ? "var(--text4)" : "#ef4444", fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, fontSize: 14, textDecoration: o.odendi ? "line-through" : "none" }}>
+                            ₺{fmt(o.tutar)}
+                          </div>
+                          <div style={{ display: "flex", gap: 8, marginTop: 3, justifyContent: "flex-end" }}>
+                            <button onClick={() => duzenleAc(o)} style={{ background: "none", border: "none", color: "var(--text4)", cursor: "pointer", fontSize: 13 }}>✏️</button>
+                            <button onClick={() => sil(o)} style={{ background: "none", border: "none", color: "var(--text5)", cursor: "pointer", fontSize: 13 }}>🗑</button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {modal && (
+        <Modal title={duzenleId ? "Ödeme Düzenle" : "Ödeme Ekle"} onClose={() => { setModal(false); setDuzenleId(null); }}>
+          <Input label="Açıklama (isteğe bağlı)" value={form.aciklama} onChange={e => setForm(f => ({ ...f, aciklama: e.target.value }))} placeholder="Örn: Kira, elektrik..." />
+          <Input label="Tutar (₺)" type="number" value={form.tutar} onChange={e => setForm(f => ({ ...f, tutar: e.target.value }))} placeholder="0.00" />
+          <Input label="Ödeme Tarihi" type="date" value={form.tarih} onChange={e => setForm(f => ({ ...f, tarih: e.target.value }))} />
+          <Select label="Kategori" value={form.kategori} onChange={e => setForm(f => ({ ...f, kategori: e.target.value }))}>
+            {(kategoriler?.gider || VARSAYILAN_KATEGORILER.gider).map(k => <option key={k}>{k}</option>)}
+          </Select>
+          <Btn onClick={kaydet} style={{ width: "100%", padding: 12, marginTop: 8 }}>Kaydet</Btn>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+
+// ── TEKRARLAYAN ───────────────────────────────────────────────────────────────
+// ── BİLDİRİM HELPERs ─────────────────────────────────────────────────────────
+
+// ── AYARLAR ───────────────────────────────────────────────────────────────────
+function AyarlarTab({ donemGun, setDonemGun, kartlar, setKartlar, kategoriler, setKategoriler, tema, setTema, sonBildirimPlanlama, islemler, bildirimAyarlari, setBildirimAyarlari, bakiyeHesapModu, setBakiyeHesapModu }) {
+  const [bildirimDurum, setBildirimDurum] = useState("");
+  const bildirimTest = async () => {
+    setBildirimDurum("Kontrol ediliyor...");
+    const LN = bildirimEklentisi();
+    if (!LN) {
+      setBildirimDurum("❌ Eklenti bulunamadı. Bilgisayarda: npm install @capacitor/local-notifications → npx cap sync android → APK yeniden derle.");
+      return;
+    }
+    const izinli = await bildirimIzniAl(LN);
+    if (!izinli) {
+      setBildirimDurum("❌ Bildirim izni verilmemiş. Telefon Ayarları → Uygulamalar → Bütçe Takip → Bildirimler'i aç.");
+      return;
+    }
+    const kanalId = await bildirimKanaliHazirla(LN);
+    try {
+      const t = new Date(Date.now() + 5000);
+      await LN.schedule({ notifications: [{
+        id: 999999,
+        title: "Ödeme Hatırlatması",
+        body: "Test bildirimi — sistem çalışıyor ✓",
+        schedule: { at: t, allowWhileIdle: true },
+        ...(kanalId ? { channelId: kanalId } : {}),
+        foreground: true,
+        isExactNotification: false,
+      }] });
+      // Şu an gerçekten planlı olan (bekleyen) bildirim sayısını göster — gerçek ödeme hatırlatmalarının kurulup kurulmadığının kanıtı
+      let bekleyenMetin = "";
+      try {
+        const bekleyen = await LN.getPending();
+        const sayi = bekleyen && bekleyen.notifications ? bekleyen.notifications.length : 0;
+        bekleyenMetin = ` Şu an sistemde ${sayi} bildirim planlı duruyor (test dahil).`;
+      } catch (e) {}
+      setBildirimDurum(`✅ Eklenti ve bildirim izni tamam. 5 saniye içinde test bildirimi gelecek.${bekleyenMetin}`);
+    } catch (e) {
+      setBildirimDurum("❌ Planlama hatası: " + (e && e.message ? e.message : "bilinmeyen"));
+    }
+  };
+  const [kartIsim, setKartIsim] = useState("");
+  const [kartKesimTarihi, setKartKesimTarihi] = useState("");
+  const [kartSonOdemeTarihi, setKartSonOdemeTarihi] = useState("");
+  const [kartTarihTaslaklari, setKartTarihTaslaklari] = useState({});
+
+  const gunKaydet = (val) => {
+    const parsed = parseInt(val);
+    const g = isNaN(parsed) ? 15 : Math.min(28, Math.max(1, parsed));
+    setDonemGun(String(g));
+  };
+
+  const kartEkle = () => {
+    const isim = kartIsim.trim();
+    if (!isim || !kartKesimTarihi || !kartSonOdemeTarihi) { toast("Kart adı, hesap kesim ve son ödeme tarihini seç", "uyari"); return; }
+    if (kartSonOdemeTarihi < kartKesimTarihi) { toast("Son ödeme tarihi hesap kesim tarihinden önce olamaz", "uyari"); return; }
+    const donemKey = maasDonemKey(kartSonOdemeTarihi, parseInt(donemGun) || 15).key;
+    const yeniKart = {
+      id: Date.now(), isim,
+      hesapKesimTarihi: kartKesimTarihi,
+      sonOdemeTarihi: kartSonOdemeTarihi,
+      donemTarihleri: { [donemKey]: { hesapKesimTarihi: kartKesimTarihi, sonOdemeTarihi: kartSonOdemeTarihi } },
+    };
+    setKartlar(p => [...p, yeniKart]);
+    // Kart adıyla tek kategori oluştur
+    setKategoriler(k => ({ ...k, gider: [...(k.gider || []).filter(x => x !== isim), isim] }));
+    setKartIsim("");
+    setKartKesimTarihi("");
+    setKartSonOdemeTarihi("");
+  };
+
+  const kartSil = (kart) => {
+    setKartlar(p => p.filter(x => x.id !== kart.id));
+    setKategoriler(k => ({ ...k, gider: (k.gider || []).filter(x => x !== kart.isim) }));
+    setKartTarihTaslaklari(p => {
+      const yeni = { ...p };
+      delete yeni[kart.id];
+      return yeni;
+    });
+  };
+
+  const kartTarihTaslagiDegistir = (kart, alan, yeniTarih) => {
+    setKartTarihTaslaklari(p => ({
+      ...p,
+      [kart.id]: {
+        hesapKesimTarihi: p[kart.id]?.hesapKesimTarihi ?? kart.hesapKesimTarihi ?? "",
+        sonOdemeTarihi: p[kart.id]?.sonOdemeTarihi ?? kart.sonOdemeTarihi ?? "",
+        [alan]: yeniTarih,
+      },
+    }));
+  };
+
+  const kartTarihleriniKaydet = (kart) => {
+    const taslak = kartTarihTaslaklari[kart.id] || {
+      hesapKesimTarihi: kart.hesapKesimTarihi || "",
+      sonOdemeTarihi: kart.sonOdemeTarihi || "",
+    };
+    if (!taslak.hesapKesimTarihi || !taslak.sonOdemeTarihi) { toast("Hesap kesim ve son ödeme tarihini seç", "uyari"); return; }
+    if (taslak.sonOdemeTarihi < taslak.hesapKesimTarihi) { toast("Son ödeme tarihi hesap kesim tarihinden önce olamaz", "uyari"); return; }
+    setKartlar(p => p.map(kayit => {
+      if (String(kayit.id) !== String(kart.id)) return kayit;
+      const arsiv = { ...(kayit.donemTarihleri || {}) };
+      const arsivle = (hesapKesimTarihi, sonOdemeTarihi) => {
+        if (!sonOdemeTarihi || !yerelTarihOku(sonOdemeTarihi)) return;
+        const key = maasDonemKey(sonOdemeTarihi, parseInt(donemGun) || 15).key;
+        arsiv[key] = { hesapKesimTarihi: hesapKesimTarihi || "", sonOdemeTarihi };
+      };
+      arsivle(kayit.hesapKesimTarihi, kayit.sonOdemeTarihi);
+      arsivle(taslak.hesapKesimTarihi, taslak.sonOdemeTarihi);
+      return { ...kayit, ...taslak, donemTarihleri: arsiv };
+    }));
+    setKartTarihTaslaklari(p => {
+      const yeni = { ...p };
+      delete yeni[kart.id];
+      return yeni;
+    });
+    toast(`${kart.isim} tarihleri güncellendi`);
+  };
+
+  const bildirimGunuDegistir = (gun) => {
+    const mevcut = bildirimAyarlari?.gunler || [0];
+    const yeni = mevcut.includes(gun) ? mevcut.filter(g => g !== gun) : [...mevcut, gun].sort((a, b) => b - a);
+    if (yeni.length === 0) { toast("En az bir hatırlatma zamanı seçilmeli", "uyari"); return; }
+    setBildirimAyarlari(a => ({ ...(a || {}), gunler: yeni }));
+  };
+
+  const yedekIndir = async () => {
+    try {
+      const data = {};
+      for (let i = 0; i < window.localStorage.length; i++) {
+        const key = window.localStorage.key(i);
+        if (key && key.startsWith("ft_") && !key.startsWith("ft_manual_backup") && !key.startsWith("ft_auto_backup")) {
+          data[key] = JSON.parse(window.localStorage.getItem(key));
+        }
+      }
+      const paket = { format: "finora-v2", surum: "1.6.9", olusturulma: new Date().toISOString(), data };
+      const json = JSON.stringify(paket, null, 2);
+
+      // Önce uygulama içinde güvenli bir kopya tut. Android WebView indirmeyi
+      // desteklemese bile yedek kaybolmasın ve Yedeği Yükle bunu kullanabilsin.
+      let yerelKopyaKaydedildi = true;
+      try {
+        window.localStorage.setItem("ft_manual_backup_latest", JSON.stringify(paket));
+      } catch {
+        yerelKopyaKaydedildi = false;
+      }
+
+      const fileName = `finora-yedek-${yerelTarihAnahtari()}.json`;
+      const blob = new Blob([json], { type: "application/json" });
+
+      // Android/webview destekliyorsa doğrudan paylaş/kaydet ekranını aç.
+      if (navigator.share && typeof File !== "undefined") {
+        try {
+          const file = new File([blob], fileName, { type: "application/json" });
+          if (!navigator.canShare || navigator.canShare({ files: [file] })) {
+            await navigator.share({ title: "Bütçe Takip yedeği", text: "Bütçe Takip veri yedeği", files: [file] });
+            toast(yerelKopyaKaydedildi ? "Yedek oluşturuldu ve paylaş/kaydet ekranı açıldı" : "Dosya paylaşım ekranı açıldı; uygulama içi kopya kaydedilemedi.", yerelKopyaKaydedildi ? "ok" : "uyari");
+            return;
+          }
+        } catch (e) {
+          if (e && e.name === "AbortError") { toast(yerelKopyaKaydedildi ? "Yedek uygulama içinde kaydedildi; paylaşım iptal edildi." : "Paylaşım iptal edildi ve yerel kopya kaydedilemedi. Yedek almayı tekrar dene.", yerelKopyaKaydedildi ? "ok" : "hata"); return; }
+        }
+      }
+
+      // Normal tarayıcı fallback'i: Dosyalar/İndirilenler klasörüne indirme.
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      a.style.display = "none";
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 1000);
+      toast(yerelKopyaKaydedildi ? "Yerel kopya kaydedildi; dosya indirme isteği gönderildi." : "Yerel kopya kaydedilemedi; dosya indirme isteği gönderildi. Dosyanın kaydedildiğini kontrol et.", yerelKopyaKaydedildi ? "ok" : "uyari");
+    } catch (e) {
+      toast("Yedek oluşturulamadı", "hata");
+    }
+  };
+
+  const yedekYukle = async (event) => {
+    const file = event.target.files && event.target.files[0];
+    event.target.value = "";
+    if (!file) return;
+    try {
+      if (file.size > 10 * 1024 * 1024) throw new Error("Yedek dosyası 10 MB sınırını aşıyor.");
+      const paket = JSON.parse(await file.text());
+      const data = yedekVerisiniDogrula(paket);
+      const onay = window.confirm("Yedek doğrulandı. Mevcut kayıtlar bu yedekle değiştirilecek. Devam edilsin mi?");
+      if (!onay) return;
+      yedegiGuvenleYaz(data);
+      toast("Yedek geri yüklendi");
+      setTimeout(() => window.location.reload(), 500);
+    } catch (e) {
+      toast(e instanceof SyntaxError ? "Dosya geçerli JSON değil; mevcut kayıtlar değiştirilmedi." : (e.message || "Yedek yüklenemedi; mevcut kayıtlar değiştirilmedi."), "hata");
+    }
+  };
+
+  return (
+    <div>
+      <div style={{ color: "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 16 }}>Ayarlar</div>
+
+      {/* Tema seçici */}
+      <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "18px 16px", marginBottom: 14 }}>
+        <div style={{ color: "var(--text)", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, marginBottom: 12 }}>🎨 Görünüm</div>
+        <div style={{ display: "flex", gap: 8 }}>
+          {[{id:"dark",label:"🌙 Koyu",bg:"#16161f",fg:"#f1f0ee"},{id:"light",label:"☀️ Açık",bg:"#ffffff",fg:"#16243f"}].map(t => (
+            <button key={t.id} onClick={() => setTema(t.id)} style={{ flex: 1, padding: "14px 8px", borderRadius: 12, cursor: "pointer", border: tema === t.id ? "2px solid #6366f1" : "2px solid var(--border)", background: t.bg, color: t.fg, fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, fontWeight: 700, transition: "all 0.2s" }}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Veri yedekleme */}
+      <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "18px 16px", marginBottom: 14 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 7 }}>
+          <span style={{ width: 36, height: 36, borderRadius: 11, display: "grid", placeItems: "center", background: "var(--accent-soft)", color: "var(--accent)" }}><Icon name="wallet" size={18} /></span>
+          <div>
+            <div style={{ color: "var(--text)", fontSize: 13, fontWeight: 800 }}>Veri Yedekleme</div>
+            <div style={{ color: "var(--text4)", fontSize: 12, marginTop: 2 }}>Telefon değiştirirken verilerinizi koruyun</div>
+          </div>
+        </div>
+        <div style={{ color: "var(--text4)", fontSize: 11, lineHeight: 1.55, marginBottom: 13 }}>
+          Tüm işlemler, kartlar, bütçeler ve ayarlar tek bir dosyada saklanır. Yedek önce uygulama içinde güvenli kopya olarak tutulur; cihaz destekliyorsa ayrıca dosya olarak kaydetme/paylaşma ekranı açılır.
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 7, background: "#10b98114", border: "1px solid #10b98135", color: "#10b981", borderRadius: 10, padding: "8px 10px", fontSize: 12, fontWeight: 700, marginBottom: 11 }}><span>✓</span><span>Veri uyumluluğu ve otomatik güvenlik kopyası etkin</span></div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          <button onClick={yedekIndir} style={{ border: "none", borderRadius: 12, padding: "11px 10px", background: "linear-gradient(135deg,var(--accent),var(--accent-strong))", color: "#fff", fontWeight: 800, fontSize: 12, cursor: "pointer" }}>Yedek Al</button>
+          <label style={{ borderRadius: 12, padding: "10px", background: "var(--card2)", border: "1px solid var(--border)", color: "var(--text2)", fontWeight: 800, fontSize: 12, cursor: "pointer", textAlign: "center" }}>
+            Yedeği Yükle
+            <input type="file" accept="application/json,.json" onChange={yedekYukle} style={{ display: "none" }} />
+          </label>
+        </div>
+      </div>
+
+      {/* Bildirim testi */}
+      <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "18px 16px", marginBottom: 14 }}>
+        <div style={{ color: "var(--text)", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, marginBottom: 6 }}>🔔 Bildirimler</div>
+        <div style={{ color: "var(--text4)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 12 }}>
+          Aynı zamana denk gelen faturalar ve kredi kartı son ödeme tarihleri tek bildirimde birleşir. Hatırlatma zamanlarını seçebilirsin.
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 7, marginBottom: 10 }}>
+          {[{ gun: 3, label: "3 gün önce" }, { gun: 1, label: "1 gün önce" }, { gun: 0, label: "Aynı gün" }].map(secenek => {
+            const aktif = (bildirimAyarlari?.gunler || [0]).includes(secenek.gun);
+            return <button key={secenek.gun} onClick={() => bildirimGunuDegistir(secenek.gun)} style={{ border: aktif ? "1px solid rgba(99,102,241,.5)" : "1px solid var(--border)", background: aktif ? "var(--accent-soft)" : "var(--card2)", color: aktif ? "var(--accent)" : "var(--text4)", borderRadius: 11, padding: "9px 5px", fontSize: 12, fontWeight: 800, cursor: "pointer" }}>{aktif ? "✓ " : ""}{secenek.label}</button>;
+          })}
+        </div>
+        <Input label="Bildirim Saati" type="time" value={bildirimAyarlari?.saat || "18:00"} onChange={e => setBildirimAyarlari(a => ({ ...(a || {}), saat: e.target.value || "18:00" }))} style={{ marginBottom: 0 }} />
+        <Btn onClick={bildirimTest} style={{ width: "100%", padding: 12 }}>🔔 Bildirim Testi Yap</Btn>
+        <div style={{ color: "var(--text5)", fontSize: 12, lineHeight: 1.5, marginTop: 7 }}>
+          Ödeme bildirimleri özel alarm izni istemeden, Android pil tasarrufuyla uyumlu şekilde seçtiğin saate yakın gönderilir.
+        </div>
+        {bildirimDurum && (
+          <div style={{ marginTop: 10, padding: "10px 12px", background: "var(--card2)", borderRadius: 10, color: bildirimDurum.startsWith("✅") ? "#10b981" : bildirimDurum.startsWith("❌") ? "#ef4444" : "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.5 }}>
+            {bildirimDurum}
+          </div>
+        )}
+        {sonBildirimPlanlama && (
+          <div style={{ marginTop: 10, padding: "10px 12px", background: "var(--card2)", borderRadius: 10, border: "1px solid var(--border)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.6 }}>
+            <div style={{ color: "var(--text4)" }}>Son otomatik planlama: {new Date(sonBildirimPlanlama.zaman).toLocaleString("tr-TR")}</div>
+            {sonBildirimPlanlama.hata
+              ? <div style={{ color: "#ef4444" }}>❌ Hata: {sonBildirimPlanlama.hata}</div>
+              : <div style={{ color: sonBildirimPlanlama.sayi > 0 ? "#10b981" : "var(--text3)" }}>
+                  {sonBildirimPlanlama.sayi > 0
+                    ? `✓ Telefonda doğrulanan ${sonBildirimPlanlama.sayi} birleşik bildirim bekliyor`
+                    : "Planlanacak gelecek tarihli veya bugün ödenmemiş bildirim yok"}
+                  {sonBildirimPlanlama.odemeSayisi != null ? ` · ${sonBildirimPlanlama.odemeGunuSayisi || 0} ödeme günü · ${sonBildirimPlanlama.odemeSayisi} ödeme` : ""}
+                  {sonBildirimPlanlama.kartSayisi ? ` · ${sonBildirimPlanlama.kartSayisi} kredi kartı` : ""}
+                </div>}
+            {sonBildirimPlanlama.telafiSayisi > 0 && <div style={{ color: "#f59e0b" }}>↻ Saati geçen {sonBildirimPlanlama.telafiSayisi} aynı-gün bildirimi telafi olarak kuruldu.</div>}
+            {sonBildirimPlanlama.uyari && <div style={{ color: "#f59e0b" }}>⚠️ {sonBildirimPlanlama.uyari}</div>}
+          </div>
+        )}
+      </div>
+
+      {/* Dönem başlangıç günü */}
+      <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "18px 16px", marginBottom: 14 }}>
+        <div style={{ color: "var(--text)", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, marginBottom: 6 }}>📅 Maaş Dönemi Başlangıcı</div>
+        <div style={{ color: "var(--text4)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 14 }}>
+          Dönem her ayın kaçında başlasın? Bitiş bir önceki gün olur.
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <input
+            type="number"
+            min="1"
+            max="28"
+            value={donemGun}
+            onChange={e => gunKaydet(e.target.value)}
+            style={{ width: 70, background: "var(--card2)", border: "1px solid #f59e0b44", borderRadius: 10, padding: "10px 12px", color: "#f59e0b", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 18, fontWeight: 700, outline: "none", textAlign: "center" }}
+          />
+          <div>
+            <div style={{ color: "var(--text2)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif" }}>
+              Her ayın <span style={{ color: "#f59e0b", fontWeight: 700 }}>{donemGun}. günü</span> başlar
+            </div>
+            <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 3 }}>
+              Bitiş: ayın {(parseInt(donemGun) || 15) - 1}. günü
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Kredi Kartları */}
+      <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "18px 16px", marginBottom: 14 }}>
+        <div style={{ color: "var(--text)", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, marginBottom: 6 }}>💳 Kredi Kartları</div>
+        <div style={{ color: "var(--text4)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 14 }}>
+          Hesap kesim ve son ödeme tarihini takvimden gün–ay–yıl olarak seç. Tarihler ait oldukları maaş döneminde saklanır ve bildirim son ödeme tarihine göre gönderilir.
+        </div>
+        {turkceAdaGoreSirala(kartlar || []).map(k => {
+          const taslak = kartTarihTaslaklari[k.id] || {
+            hesapKesimTarihi: k.hesapKesimTarihi || "",
+            sonOdemeTarihi: k.sonOdemeTarihi || "",
+          };
+          const degisti = taslak.hesapKesimTarihi !== (k.hesapKesimTarihi || "") || taslak.sonOdemeTarihi !== (k.sonOdemeTarihi || "");
+          return (
+          <div key={k.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, background: "var(--card2)", borderRadius: 10, padding: "10px 12px", marginBottom: 8, border: "1px solid var(--border)" }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ color: "var(--text)", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, marginBottom: 4 }}>💳 {k.isim}</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                <label>
+                  <span style={{ display: "block", color: "var(--text4)", fontSize: 12, marginBottom: 4 }}>Hesap kesim tarihi</span>
+                  <input aria-label={`${k.isim} hesap kesim tarihi`} type="date" value={taslak.hesapKesimTarihi} onChange={e => kartTarihTaslagiDegistir(k, "hesapKesimTarihi", e.target.value)} style={{ width: "100%", minWidth: 0, boxSizing: "border-box", background: "var(--card)", border: "1px solid #f59e0b44", borderRadius: 7, padding: "6px", color: "#f59e0b", fontSize: 12, fontWeight: 700, outline: "none" }} />
+                </label>
+                <label>
+                  <span style={{ display: "block", color: "var(--text4)", fontSize: 12, marginBottom: 4 }}>Son ödeme tarihi</span>
+                  <input aria-label={`${k.isim} son ödeme tarihi`} type="date" value={taslak.sonOdemeTarihi} onChange={e => kartTarihTaslagiDegistir(k, "sonOdemeTarihi", e.target.value)} style={{ width: "100%", minWidth: 0, boxSizing: "border-box", background: "var(--card)", border: "1px solid #10b98144", borderRadius: 7, padding: "6px", color: "#10b981", fontSize: 12, fontWeight: 700, outline: "none" }} />
+                </label>
+              </div>
+              <button onClick={() => kartTarihleriniKaydet(k)} disabled={!degisti} style={{ width: "100%", marginTop: 8, border: degisti ? "1px solid #6366f155" : "1px solid var(--border)", borderRadius: 8, padding: "7px 10px", background: degisti ? "linear-gradient(135deg,#6366f1,#4f46e5)" : "var(--card)", color: degisti ? "#fff" : "var(--text5)", fontSize: 12, fontWeight: 800, cursor: degisti ? "pointer" : "default", opacity: degisti ? 1 : 0.7 }}>Kaydet</button>
+            </div>
+            <button onClick={() => kartSil(k)} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 16, marginLeft: 8 }}>🗑</button>
+          </div>
+          );
+        })}
+        {(kartlar || []).length === 0 && (
+          <div style={{ color: "var(--text5)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", textAlign: "center", padding: "8px 0 12px" }}>Henüz kart eklenmedi</div>
+        )}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 8, marginTop: 4 }}>
+          <input
+            value={kartIsim}
+            onChange={e => setKartIsim(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && kartEkle()}
+            placeholder="Kart adı (Bonus, Axess...)"
+            style={{ minWidth: 0, background: "var(--card2)", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", color: "var(--text)", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12, outline: "none" }}
+          />
+          <input
+            aria-label="Yeni kart hesap kesim tarihi"
+            type="date"
+            value={kartKesimTarihi}
+            onChange={e => setKartKesimTarihi(e.target.value)}
+            style={{ minWidth: 0, background: "var(--card2)", border: "1px solid #f59e0b44", borderRadius: 8, padding: "9px", color: "#f59e0b", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 11, outline: "none" }}
+          />
+          <input
+            aria-label="Yeni kart son ödeme tarihi"
+            type="date"
+            value={kartSonOdemeTarihi}
+            onChange={e => setKartSonOdemeTarihi(e.target.value)}
+            style={{ minWidth: 0, background: "var(--card2)", border: "1px solid #10b98144", borderRadius: 8, padding: "9px", color: "#10b981", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 11, outline: "none" }}
+          />
+        </div>
+        <div style={{ color: "var(--text5)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 4, marginBottom: 10 }}>Kart adı · Hesap kesim tarihi · Son ödeme tarihi</div>
+        <button onClick={kartEkle} style={{ width: "100%", background: "linear-gradient(135deg,#6366f1,#4f46e5)", border: "none", borderRadius: 10, padding: "10px", color: "#fff", fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>+ Kart Ekle</button>
+      </div>
+
+      <div style={{ textAlign: "center", color: "var(--border)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 24 }}>
+        Bütçe Takip v1.6.9
+      </div>
+    </div>
+  );
+}
+
+
+// ── ANALİZ ────────────────────────────────────────────────────────────────────
+function AnalizTab({ islemler, kategoriler, donemGun, kartlar, odemeler = [] }) {
+  const [secilenYil, setSecilenYil] = useState(new Date().getFullYear());
+  const [gorunum, setGorunum] = useState("gider");
+  const [analizSekme, setAnalizSekme] = useState("yorum");
+  const [yorumDonemOffset, setYorumDonemOffset] = useState(0);
+  const [trendSecimleri, setTrendSecimleri] = useState({});
+
+  const yorumDonemi = useMemo(() => {
+    const gun = donemGun || 15;
+    const bugunkuDonem = maasDonemiBul(yerelTarihAnahtari(), gun);
+    const baslangic = new Date(bugunkuDonem.yil, bugunkuDonem.ay + yorumDonemOffset, gun);
+    const bitis = new Date(baslangic.getFullYear(), baslangic.getMonth() + 1, gun - 1);
+    return {
+      yil: baslangic.getFullYear(),
+      ay: baslangic.getMonth(),
+      key: `${baslangic.getFullYear()}-${baslangic.getMonth()}-${gun}`,
+      baslangic,
+      bitis,
+      label: `${kisaTarih(baslangic)} – ${kisaTarih(bitis)}`,
+    };
+  }, [donemGun, yorumDonemOffset]);
+
+  // Raporlar kendi hesaplarını kullanır; işlem ve ödeme kayıtları değiştirilmez.
+  const bugunKey = yerelTarihAnahtari();
+  const raporIslemleri = useMemo(() => islemler.filter(i =>
+    yerelTarihOku(i.tarih) && Number.isFinite(Number(i.tutar))
+  ).map(i => ({ ...i, tutar: Number(i.tutar) })), [islemler]);
+  const gelirDahil = i => i.tip === "gelir" && i.kategori !== "Birikim"
+    && !(i.kategori === "Kira Geliri" && i.donemeDahil === false);
+  const habitRaporHareketleri = useMemo(() => raporIslemleri
+    .filter(i => i.tip === "gider")
+    .flatMap(i => {
+      if (i.kaynak !== "odeme") return habitHareketleri(i);
+      const odeme = odemeler.find(o => String(o.id) === String(i.odemeId)
+        || (o.islemId != null && String(o.islemId) === String(i.id)));
+      if (!odeme?.odendi) return [];
+      const gercekTarih = odeme.odendiTarih ? new Date(odeme.odendiTarih) : yerelTarihOku(odeme.tarih);
+      if (!gercekTarih || !Number.isFinite(gercekTarih.getTime())) return [];
+      return habitHareketleri({ ...i, tarih: yerelTarihAnahtari(gercekTarih) });
+    })
+    .filter(i => yerelTarihOku(i.tarih) && i.tarih <= bugunKey && i.tutar > 0),
+    [raporIslemleri, odemeler, bugunKey]);
+
+  const yilIslemleri = useMemo(
+    () => raporIslemleri.filter(i => yerelTarihOku(i.tarih)?.getFullYear() === secilenYil && i.tip === gorunum),
+    [raporIslemleri, secilenYil, gorunum]
+  );
+  const toplamTutar = yilIslemleri.reduce((s, i) => paraTopla(s, i.tutar), 0);
+
+  const kategoriVerisi = useMemo(() => {
+    const map = {};
+    yilIslemleri.forEach(i => { map[i.kategori] = paraTopla(map[i.kategori] || 0, i.tutar); });
+    return Object.entries(map)
+      .map(([name, value]) => ({ name, value, pct: toplamTutar > 0 ? (value / toplamTutar * 100).toFixed(1) : 0 }))
+      .sort((a, b) => b.value - a.value);
+  }, [yilIslemleri, toplamTutar]);
+
+  const aylikVerisi = useMemo(() => {
+    const gun = donemGun || 15;
+    const donemler = [];
+    for (let m = 0; m < 12; m++) donemler.push({ yil: secilenYil, ay: m, ay_kisa: AYLAR[m].slice(0, 3), gelir: 0, gider: 0 });
+    const bugunDonem = maasDonemKey(yerelTarihAnahtari(), gun);
+    const buSira = bugunDonem.yil * 100 + bugunDonem.ay;
+    raporIslemleri.forEach(i => {
+      if (i.tip === "gelir" && i.kategori === "Birikim") return;
+      const dk = maasDonemKey(i.tarih, gun);
+      if (dk.yil !== secilenYil) return;
+      const bucket = donemler[dk.ay];
+      if (bucket) bucket[i.tip] = paraTopla(bucket[i.tip], i.tutar);
+    });
+    // Gelecek dönemleri (bugünün dönemi sonrasını) gösterme
+    return donemler.filter(d => (d.yil * 100 + d.ay) <= buSira).map(d => ({ ay: d.ay_kisa, gelir: d.gelir, gider: d.gider }));
+  }, [raporIslemleri, secilenYil, donemGun]);
+
+  const kategoriTrend = useMemo(() => {
+    const gun = donemGun || 15;
+    const bugunDonem = maasDonemKey(yerelTarihAnahtari(), gun);
+    const buSira = bugunDonem.yil * 100 + bugunDonem.ay;
+    const sonuc = [];
+    for (let ay = 0; ay < 12; ay++) {
+      if (secilenYil * 100 + ay > buSira) break; // gelecek dönemleri gösterme
+      const label = AYLAR[ay].slice(0, 3);
+      const ayIslem = raporIslemleri.filter(x => {
+        if (x.tip !== "gider") return false;
+        const dk = maasDonemKey(x.tarih, gun);
+        return dk.yil === secilenYil && dk.ay === ay;
+      });
+      const toplam = ayIslem.reduce((s, x) => paraTopla(s, x.tutar), 0);
+      const katMap = {};
+      ayIslem.forEach(x => { katMap[x.kategori] = paraTopla(katMap[x.kategori] || 0, x.tutar); });
+      sonuc.push({ label, toplam, katMap });
+    }
+    return sonuc;
+  }, [raporIslemleri, secilenYil, donemGun]);
+
+  const trendKategoriler = useMemo(() => {
+    const set = new Set();
+    kategoriTrend.forEach(d => Object.keys(d.katMap).forEach(k => set.add(k)));
+    return [...set];
+  }, [kategoriTrend]);
+
+  // Son altı tamamlanmış maaş dönemi. Kayıtsız dönemler sıfır harcama sayılmaz.
+  const altiAyOzet = useMemo(() => {
+    const simdiDonemi = maasDonemiBul(bugunKey, donemGun || 15);
+    const aylar = [];
+    for (let n = 6; n >= 1; n--) {
+      const bas = new Date(simdiDonemi.yil, simdiDonemi.ay - n, simdiDonemi.gun);
+      const key = maasDonemKey(yerelTarihAnahtari(bas), simdiDonemi.gun).key;
+      const kayitlar = raporIslemleri.filter(i => maasDonemKey(i.tarih, simdiDonemi.gun).key === key);
+      const gelir = kayitlar.filter(gelirDahil).reduce((s, i) => paraTopla(s, i.tutar), 0);
+      const gider = kayitlar.filter(i => i.tip === "gider").reduce((s, i) => paraTopla(s, i.tutar), 0);
+      aylar.push({ label: donemLabel(bas.getFullYear(), bas.getMonth(), simdiDonemi.gun), gelir, gider, net: gelir - gider, veriVar: kayitlar.length > 0 });
+    }
+    const kayitli = aylar.filter(a => a.veriVar);
+    const toplamGelir = kayitli.reduce((s, a) => paraTopla(s, a.gelir), 0);
+    const toplamGider = kayitli.reduce((s, a) => paraTopla(s, a.gider), 0);
+    const sayi = kayitli.length;
+    return { toplamGelir, toplamGider, net: toplamGelir - toplamGider, aylar, sayi,
+      ortGider: sayi ? toplamGider / sayi : 0, ortGelir: sayi ? toplamGelir / sayi : 0 };
+  }, [raporIslemleri, donemGun, bugunKey]);
+
+  // ── AKILLI YORUM ──
+  const fmtTL = n => "₺" + Math.round(n).toLocaleString("tr-TR");
+
+  const donemYorumlari = useMemo(() => {
+    const gun = donemGun || 15;
+    const { yil, ay, key: buKey } = yorumDonemi;
+    let oYil = yil, oAy = ay - 1; if (oAy < 0) { oAy = 11; oYil--; }
+    const onKey = `${oYil}-${oAy}-${gun}`;
+
+    const donemKayitlari = raporIslemleri.filter(i => maasDonemKey(i.tarih, gun).key === buKey);
+    const buIslem = donemKayitlari.filter(i => yorumDonemOffset !== 0 || i.tarih <= bugunKey);
+    const onDonemKayitlari = raporIslemleri.filter(i => maasDonemKey(i.tarih, gun).key === onKey);
+    const gecenGun = takvimGunFarki(bugunKey, yorumDonemi.baslangic) + 1;
+    const oncekiBas = new Date(oYil, oAy, gun);
+    const onIslem = onDonemKayitlari.filter(i => yorumDonemOffset !== 0
+      || takvimGunFarki(i.tarih, oncekiBas) < gecenGun);
+    const karsilastirma = yorumDonemOffset === 0 ? "geçen dönemin aynı süreli kısmına" : "geçen döneme";
+
+    const buGelir = buIslem.filter(i => i.tip === "gelir" && i.kategori !== "Birikim" && !(i.kategori === "Kira Geliri" && i.donemeDahil === false)).reduce((s, i) => paraTopla(s, i.tutar), 0);
+    const buGider = buIslem.filter(i => i.tip === "gider").reduce((s, i) => paraTopla(s, i.tutar), 0);
+    const onGider = onIslem.filter(i => i.tip === "gider").reduce((s, i) => paraTopla(s, i.tutar), 0);
+
+    const yorumlar = [];
+    if (buIslem.length === 0 && !habitRaporHareketleri.some(h => maasDonemKey(h.tarih, gun).key === buKey)) {
+      yorumlar.push({ tip: "bilgi", metin: "Bu dönem için bugüne kadar tarihli işlem yok. İleri tarihli kayıtlar gerçekleşen harcama yorumuna katılmaz." });
+      return yorumlar;
+    }
+    yorumlar.push({ tip: "bilgi", metin: "Bu bölüm kayıt tarihlerine göre hesaplanır; ödeme kaydı, ödendiğini tek başına göstermez. Kart toplamları dönem borcunu temsil edebilir." });
+    const planliGider = donemKayitlari.filter(i => i.tip === "gider" && i.tarih > bugunKey).reduce((s, i) => paraTopla(s, i.tutar), 0);
+    if (yorumDonemOffset === 0 && planliGider > 0) yorumlar.push({ tip: "bilgi", metin: `Bu dönemde ileri tarihli ${fmtTL(planliGider)} gider kaydı var; bugüne kadarki gider toplamına dahil değil.` });
+    const net = buGelir - buGider;
+    if (buIslem.length === 0) yorumlar.push({ tip: "bilgi", metin: "Bu dönemde yalnızca kart günlük hareket geçmişi var; toplam borç kaydı başka döneme taşınmış olabilir. Gelir-gider özeti için yeterli dönem kaydı yok." });
+    else if (net >= 0) yorumlar.push({ tip: "iyi", metin: `Bu dönem ${fmtTL(net)} artıda görünüyorsun. Gelir ${fmtTL(buGelir)}, gider ${fmtTL(buGider)}.` });
+    else yorumlar.push({ tip: "uyari", metin: `Bu dönem ${fmtTL(Math.abs(net))} açık verdin. Gelir ${fmtTL(buGelir)}, gider ${fmtTL(buGider)}.` });
+
+    if (buGelir > 0) {
+      const oran = Math.round(net / buGelir * 100);
+      if (oran >= 20) yorumlar.push({ tip: "iyi", metin: `Kayıtlara göre kalan gelir oranın %${oran} — gayet iyi, gelirinin önemli kısmını koruyorsun.` });
+      else if (oran >= 0) yorumlar.push({ tip: "notr", metin: `Kayıtlara göre kalan gelir oranın %${oran}. %20 üstü hedeflemek bütçeni güçlendirir.` });
+      else yorumlar.push({ tip: "uyari", metin: `Giderlerin gelirini aşıyor (kalan gelir %${oran}). Harcamaları gözden geçirmek faydalı olabilir.` });
+    }
+    if (onGider > 0) {
+      const fark = Math.round((buGider - onGider) / onGider * 100);
+      if (fark > 10) yorumlar.push({ tip: "uyari", metin: `Toplam giderin ${karsilastirma} göre %${fark} arttı (${fmtTL(onGider)} → ${fmtTL(buGider)}).` });
+      else if (fark < -10) yorumlar.push({ tip: "iyi", metin: `Toplam giderin ${karsilastirma} göre %${Math.abs(fark)} azaldı 👏 (${fmtTL(onGider)} → ${fmtTL(buGider)}).` });
+    }
+    const katMap = {};
+    buIslem.filter(i => i.tip === "gider").forEach(i => { katMap[i.kategori] = paraTopla(katMap[i.kategori] || 0, i.tutar); });
+    const sirali = Object.entries(katMap).sort((a, b) => b[1] - a[1]);
+    if (sirali.length > 0) {
+      const [enKat, enTutar] = sirali[0];
+      const pct = buGider > 0 ? Math.round(enTutar / buGider * 100) : 0;
+      yorumlar.push({ tip: "bilgi", metin: `En çok ${enKat} kategorisinde harcadın: ${fmtTL(enTutar)} (giderinin %${pct}'i).` });
+    }
+    if (sirali.length >= 3) yorumlar.push({ tip: "bilgi", metin: `En büyük 3 gider kalemin: ${sirali.slice(0, 3).map(s => s[0]).join(", ")}.` });
+
+    const onKatMap = {};
+    onIslem.filter(i => i.tip === "gider").forEach(i => { onKatMap[i.kategori] = paraTopla(onKatMap[i.kategori] || 0, i.tutar); });
+    let enCokArtan = null, enArtisYuzde = 0;
+    Object.entries(katMap).forEach(([kat, tutar]) => {
+      const onceki = onKatMap[kat] || 0;
+      if (onceki > 0) {
+        const artis = (tutar - onceki) / onceki * 100;
+        if (artis > enArtisYuzde) { enArtisYuzde = artis; enCokArtan = { kat, artis: Math.round(artis), tutar, onceki }; }
+      }
+    });
+    if (enCokArtan && enCokArtan.artis > 20) yorumlar.push({ tip: "uyari", metin: `${enCokArtan.kat} harcaman ${karsilastirma} göre %${enCokArtan.artis} arttı (${fmtTL(enCokArtan.onceki)} → ${fmtTL(enCokArtan.tutar)}).` });
+
+    const kartIsimleri = (kartlar || []).map(k => k.isim);
+    const kkToplam = buIslem.filter(i => i.tip === "gider" && (i.kartHarcama || kartIsimleri.includes(i.kategori))).reduce((s, i) => paraTopla(s, i.tutar), 0);
+    if (kkToplam > 0 && buGider > 0) {
+      const kkPct = Math.round(kkToplam / buGider * 100);
+      yorumlar.push({ tip: "bilgi", metin: `Kredi kartı harcaman toplam giderinin %${kkPct}'i (${fmtTL(kkToplam)}).` });
+    }
+
+    // ── ANORMAL HARCAMA TESPİTİ (son 6 dönem ortalamasına göre) ──
+    (() => {
+      if (yorumDonemOffset === 0) return; // Tamamlanmamış dönem tam dönem ortalamasıyla kıyaslanmaz.
+      // Geçmiş 6 dönemin kategori ortalamalarını çıkar
+      const gecmisDonemler = [];
+      for (let g = 1; g <= 6; g++) {
+        let gy = yil, ga = ay - g;
+        while (ga < 0) { ga += 12; gy--; }
+        gecmisDonemler.push(`${gy}-${ga}-${gun}`);
+      }
+      const gecmisIslem = raporIslemleri.filter(i => i.tip === "gider" && gecmisDonemler.includes(maasDonemKey(i.tarih, gun).key));
+      if (gecmisIslem.length === 0) return;
+      const gecmisKat = {};
+      gecmisIslem.forEach(i => {
+        if (!gecmisKat[i.kategori]) gecmisKat[i.kategori] = { toplam: 0, donemler: new Set() };
+        gecmisKat[i.kategori].toplam = paraTopla(gecmisKat[i.kategori].toplam, i.tutar);
+        gecmisKat[i.kategori].donemler.add(maasDonemKey(i.tarih, gun).key);
+      });
+      const anormaller = [];
+      Object.entries(katMap).forEach(([kat, tutar]) => {
+        const g = gecmisKat[kat];
+        if (!g || g.donemler.size < 3) return; // en az 2 dönem geçmiş olmalı
+        const ort = g.toplam / g.donemler.size;
+        if (ort <= 0) return;
+        const kat_ = tutar / ort;
+        if (kat_ >= 2) anormaller.push({ kat, kat_, tutar, ort });
+      });
+      anormaller.sort((a, b) => b.kat_ - a.kat_).slice(0, 2).forEach(a => {
+        yorumlar.push({ tip: "uyari", metin: `⚡ Yüksek kategori gideri: ${a.kat} bu dönem kayıtlı geçmiş ortalamanın ${a.kat_.toFixed(1)} katı (${fmtTL(a.tutar)}, ${gecmisKat[a.kat].donemler.size} kayıtlı dönem ortalaması ~${fmtTL(a.ort)}).` });
+      });
+    })();
+
+    // ── DÖNEM SONU TAHMİNİ ──
+    (() => {
+      if (yorumDonemOffset !== 0) return;
+      const toplamGun = takvimGunFarki(yorumDonemi.bitis, yorumDonemi.baslangic) + 1;
+      const gunSayisi = Math.min(toplamGun, Math.max(1, gecenGun));
+      if (gunSayisi >= toplamGun) return;
+      if (gunSayisi < 7) {
+        yorumlar.push({ tip: "bilgi", metin: "Dönem sonu tahmini için en az 7 gün beklenir; ilk günlerdeki giderler yanıltıcı olabilir." });
+        return;
+      }
+      const kartIslemMi = i => i.kartHarcama || kartIsimleri.includes(i.kategori);
+      const degisken = buIslem.filter(i => i.tip === "gider" && !i.sabitId && i.kaynak !== "odeme" && !kartIslemMi(i))
+        .reduce((s, i) => paraTopla(s, Math.max(0, i.tutar)), 0);
+      const kartFarklari = raporIslemleri.filter(i => i.tip === "gider" && kartIslemMi(i))
+        .flatMap(habitHareketleri)
+        .filter(h => h.tarih <= bugunKey && maasDonemKey(h.tarih, gun).key === buKey && h.tutar > 0);
+      const kartGunSayisi = new Set(kartFarklari.map(h => h.tarih)).size;
+      const kartToplamFark = kartFarklari.reduce((s, h) => paraTopla(s, h.tutar), 0);
+      // Kart güncellemesiz günler sıfır harcama kabul edilmez; seyrek kart verisinden tahmin üretilmez.
+      const kartTahmini = kartGunSayisi >= 7 ? (kartToplamFark / gunSayisi) * (toplamGun - gunSayisi) : 0;
+      const gunlukOrt = degisken / gunSayisi;
+      const tahminGider = buGider + planliGider + gunlukOrt * (toplamGun - gunSayisi) + kartTahmini;
+      const tahminGelir = donemKayitlari.filter(gelirDahil).reduce((s, i) => paraTopla(s, i.tutar), 0);
+      const tahminNet = tahminGelir - tahminGider;
+      yorumlar.push({ tip: tahminNet < 0 ? "uyari" : "iyi", metin:
+        `📊 Mevcut kayıtlara göre dönem sonu tahmini: ${fmtTL(Math.abs(tahminNet))} ${tahminNet < 0 ? "açık" : "artı"}. Tahmini gider ${fmtTL(tahminGider)}. Sabit giderler, ödeme kayıtları ve kart toplamları bir kez sayılır; günlük değişken gider ortalaması ${fmtTL(gunlukOrt)}. Kesin sonuç değildir.` });
+      if (kartIsimleri.length > 0 && kartGunSayisi < 7) yorumlar.push({ tip: "bilgi", metin: "Kartlar için en az 7 gün güncelleme verisi olmadığından ek kart harcaması tahmin edilmedi; dönem sonu gideri daha yüksek olabilir." });
+    })();
+
+    // ── BU DÖNEM EN PAHALI GÜN + HAFTALIK DAĞILIM (sabit giderler ve kredi kartı ilk-giriş toplamı hariç; kart güncelleme farkları ve ödemeler dahil) ──
+    (() => {
+      const habitIslem = habitRaporHareketleri
+        .filter(i => maasDonemKey(i.tarih, gun).key === buKey);
+      if (habitIslem.length === 0) return;
+      const gunMap = {};
+      habitIslem.forEach(i => { gunMap[i.tarih] = paraTopla(gunMap[i.tarih] || 0, i.tutar); });
+      const siraliGunler = Object.entries(gunMap).sort((a, b) => b[1] - a[1]);
+      if (siraliGunler.length > 0) {
+        const [enGun, enTutar] = siraliGunler[0];
+        yorumlar.push({ tip: "bilgi", metin: `📅 Bu dönem en fazla harcamayı ${enGun.split("-").reverse().join(".")} tarihinde kayıtlı — ${fmtTL(enTutar)} (sabit giderler ve kredi kartı ilk-giriş toplamı hariç).` });
+      }
+      // Haftalık dağılım (dönem başlangıcından itibaren 7'şer günlük dilimler)
+      const donemBas = yorumDonemi.baslangic;
+      const donemBit = yorumDonemi.bitis;
+      const bugun = yerelTarihOku(yerelTarihAnahtari());
+      const gorunenBit = yorumDonemOffset === 0 && bugun < donemBit ? bugun : donemBit;
+      const haftaSayisi = Math.max(1, Math.ceil((takvimGunFarki(gorunenBit, donemBas) + 1) / 7));
+      const haftaToplam = Array.from({ length: haftaSayisi }, (_, index) => ({
+        no: index + 1,
+        baslangic: takvimGunuEkle(donemBas, index * 7),
+        bitis: takvimGunuEkle(donemBas, Math.min(index * 7 + 6, takvimGunFarki(gorunenBit, donemBas))),
+        tutar: 0,
+      }));
+      habitIslem.forEach(i => {
+        const fark = takvimGunFarki(i.tarih, donemBas);
+        const index = Math.floor(fark / 7);
+        if (fark >= 0 && index < haftaToplam.length) haftaToplam[index].tutar += i.tutar;
+      });
+      const metin = haftaToplam.map((h, index) => {
+        const devam = yorumDonemOffset === 0 && index === haftaToplam.length - 1 && bugun <= donemBit ? " • devam ediyor" : "";
+        return `${h.no}. Hafta (${kisaTarih(h.baslangic)}–${kisaTarih(h.bitis)}) ${fmtTL(h.tutar)}${devam}`;
+      }).join(" · ");
+      yorumlar.push({ tip: "notr", metin: `🗓 Haftalık dağılım: ${metin}` });
+    })();
+
+    return yorumlar;
+  }, [raporIslemleri, donemGun, kartlar, yorumDonemi, yorumDonemOffset, bugunKey, habitRaporHareketleri]);
+
+  const altiAyYorumlari = useMemo(() => {
+    const o = altiAyOzet;
+    if (!o.sayi) return [{ tip: "bilgi", metin: "Son 6 tamamlanmış maaş döneminde kayıt yok." }];
+    const yorumlar = [
+      { tip: o.net >= 0 ? "iyi" : "uyari", metin: `Son 6 tamamlanmış maaş döneminin ${o.sayi} tanesinde kayıt var. Kayıtlı dönemlerde gelir-gider farkın ${fmtTL(o.net)}; dönem başına ortalama ${fmtTL(o.net / o.sayi)}. Bu fark, gerçekleşmiş birikim anlamına gelmez.` },
+      { tip: "bilgi", metin: `Kayıt bulunan dönemlerde ortalama gider ${fmtTL(o.ortGider)}, ortalama gelir ${fmtTL(o.ortGelir)}. Kayıtların eksiksiz olduğu varsayılır; kayıtsız dönemler sıfır sayılmaz.` }
+    ];
+    if (o.sayi === 6) {
+      const ilk3 = o.aylar.slice(0, 3).reduce((s, a) => paraTopla(s, a.gider), 0);
+      const son3 = o.aylar.slice(3).reduce((s, a) => paraTopla(s, a.gider), 0);
+      if (ilk3 > 0) {
+        const fark = Math.round((son3 - ilk3) / ilk3 * 100);
+        yorumlar.push({ tip: fark > 10 ? "uyari" : fark < -10 ? "iyi" : "notr", metin: `Son 3 tamamlanmış dönemin toplam gideri önceki 3 döneme göre %${Math.abs(fark)} ${fark > 0 ? "arttı" : fark < 0 ? "azaldı" : "değişti"}.` });
+      }
+    } else yorumlar.push({ tip: "bilgi", metin: "Altı dönemin tamamında kayıt olmadığı için üçer dönemlik trend karşılaştırması yapılmadı." });
+    const kayitli = o.aylar.filter(a => a.veriVar);
+    if (kayitli.length >= 2) {
+      const sirali = [...kayitli].sort((a, b) => b.net - a.net);
+      if (sirali[0].net !== sirali[sirali.length - 1].net) yorumlar.push({ tip: "bilgi", metin: `Kayıtlı dönemler arasında en yüksek gelir-gider farkı ${sirali[0].label} (${fmtTL(sirali[0].net)}), en düşük fark ${sirali[sirali.length - 1].label} (${fmtTL(sirali[sirali.length - 1].net)}).` });
+    }
+    return yorumlar;
+  }, [altiAyOzet]);
+
+  // ── GENEL ALIŞKANLIK (tüm dönemler; sabit giderler ve kredi kartı ilk-giriş toplamı hariç, güncelleme farkları ve ödemeler dahil) ──
+  // Zamanla birikeceği için tüm geçmiş veriden haftanın hangi günü daha çok harcadığını öğrenir.
+  const genelAliskanlikYorumlari = useMemo(() => {
+    const yorumlar = [];
+    const habitIslem = habitRaporHareketleri;
+    const gunMap = {};
+    habitIslem.forEach(i => { gunMap[i.tarih] = paraTopla(gunMap[i.tarih] || 0, i.tutar); });
+    const gunSayisi = Object.keys(gunMap).length;
+    if (gunSayisi < 15) {
+      yorumlar.push({ tip: "bilgi", metin: "Alışkanlık analizi için henüz yeterli veri yok. Veri biriktikçe (sabit giderler ve kredi kartı ilk-giriş toplamı hariç) bu bölüm otomatik dolacak." });
+      return yorumlar;
+    }
+    const gunAdlari = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
+    const haftaToplam = {};
+    Object.entries(gunMap).forEach(([tarih, tutar]) => {
+      const wd = yerelTarihOku(tarih).getDay();
+      if (!haftaToplam[wd]) haftaToplam[wd] = { toplam: 0, adet: 0 };
+      haftaToplam[wd].toplam = paraTopla(haftaToplam[wd].toplam, tutar);
+      haftaToplam[wd].adet += 1;
+    });
+    const ortalamalar = Object.entries(haftaToplam).filter(([, v]) => v.adet >= 3).map(([wd, v]) => ({ wd: parseInt(wd), ort: v.toplam / v.adet, adet: v.adet }));
+    if (ortalamalar.length >= 4) {
+      ortalamalar.sort((a, b) => b.ort - a.ort);
+      const en = ortalamalar[0];
+      yorumlar.push({ tip: "bilgi", metin: `🧠 Geçmiş tüm dönemlere göre harcama kaydı olan günler içinde en yüksek günlük ortalama ${gunAdlari[en.wd]} — ${fmtTL(en.ort)} (${en.adet} gün verisine dayanarak).` });
+      const az = ortalamalar[ortalamalar.length - 1];
+      yorumlar.push({ tip: "notr", metin: `Harcama kaydı olan günler içinde en düşük günlük ortalama ${gunAdlari[az.wd]} — ${fmtTL(az.ort)}.` });
+    }
+    if (ortalamalar.length < 4) yorumlar.push({ tip: "bilgi", metin: "Gün karşılaştırması için haftanın en az 4 farklı gününde, her biri için 3 ayrı tarihli harcama kaydı gerekir." });
+    yorumlar.push({ tip: "notr", metin: `Bu analiz harcama kaydı olan günleri karşılaştırır; kayıtsız günler sıfır sayılmaz. Ödeme kayıtları yalnızca ödendiğinde, gerçek ödeme tarihinde dahil edilir; eski kayıtta ödeme tarihi yoksa kayıt tarihi kullanılır. Bu analiz sabit giderleri (kira, abonelik vb.) ve kredi kartında ilk kez girilen toplamı hesaba katmaz; kart güncellemelerindeki günlük farkları ve ödemeleri dahil eder.` });
+    return yorumlar;
+  }, [habitRaporHareketleri]);
+
+  const renderYorumKart = (yorumlar, baslik) => (
+    <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "16px 14px", marginBottom: 14 }}>
+      <div style={{ color: "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>{baslik}</div>
+      {yorumlar.map((y, i) => {
+        const renk = y.tip === "iyi" ? "#10b981" : y.tip === "uyari" ? "#ef4444" : y.tip === "notr" ? "#f59e0b" : "#6366f1";
+        const ikon = y.tip === "iyi" ? "✅" : y.tip === "uyari" ? "⚠️" : y.tip === "notr" ? "💡" : "📌";
+        return (
+          <div key={i} style={{ display: "flex", gap: 10, padding: "10px 0", borderBottom: i < yorumlar.length - 1 ? "1px solid var(--divider)" : "none" }}>
+            <span style={{ fontSize: 14, flexShrink: 0 }}>{ikon}</span>
+            <span style={{ color: "var(--text2)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.5, borderLeft: `2px solid ${renk}`, paddingLeft: 10 }}>{y.metin}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  const renderAkilliYorum = () => (
+    <div>
+      <div style={{ background:"var(--card2)", border:"1px solid var(--border)", borderRadius:12, padding:"9px 10px", marginBottom:10, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+        <button onClick={() => setYorumDonemOffset(o => o - 1)} aria-label="Önceki dönem" style={{ background:"none", border:"none", color:"#f59e0b", fontSize:20, cursor:"pointer", padding:"0 8px" }}>‹</button>
+        <div style={{ textAlign:"center" }}>
+          <div style={{ color:"var(--text)", fontSize:12, fontFamily:"'Inter', system-ui, sans-serif", fontWeight:700 }}>{yorumDonemi.label}</div>
+          <div style={{ color:"var(--text5)", fontSize: 12, fontFamily:"'Inter', system-ui, sans-serif", marginTop:2 }}>{yorumDonemOffset === 0 ? "Güncel maaş dönemi" : `${Math.abs(yorumDonemOffset)} dönem önce`}</div>
+        </div>
+        <button onClick={() => setYorumDonemOffset(o => Math.min(0, o + 1))} disabled={yorumDonemOffset === 0} aria-label="Sonraki dönem" style={{ background:"none", border:"none", color:yorumDonemOffset === 0 ? "var(--border2)" : "#f59e0b", fontSize:20, cursor:yorumDonemOffset === 0 ? "default" : "pointer", padding:"0 8px" }}>›</button>
+      </div>
+      {renderYorumKart(donemYorumlari, `🎯 ${yorumDonemi.label}`)}
+      {renderYorumKart(altiAyYorumlari, "📅 Son 6 Tamamlanmış Maaş Dönemi")}
+      {renderYorumKart(genelAliskanlikYorumlari, "🧠 Genel Alışkanlığın")}
+      <div style={{ textAlign: "center", color: "var(--border)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 4 }}>
+        Yorumlar eklediğin verilere göre otomatik güncellenir
+      </div>
+    </div>
+  );
+
+  const yillikGelir = raporIslemleri.filter(i => yerelTarihOku(i.tarih)?.getFullYear() === secilenYil && i.tip === "gelir" && i.kategori !== "Birikim").reduce((s, i) => paraTopla(s, i.tutar), 0);
+  const yillikGider = raporIslemleri.filter(i => yerelTarihOku(i.tarih)?.getFullYear() === secilenYil && i.tip === "gider").reduce((s, i) => paraTopla(s, i.tutar), 0);
+
+  const PASTA_RENKLER = ["#f59e0b","#6366f1","#10b981","#ef4444","#06b6d4","#ec4899","#8b5cf6","#f97316","#84cc16","#14b8a6"];
+  const TREND_RENKLER = { "Market":"#f59e0b","Fatura":"#6366f1","Ulaşım":"#06b6d4","Sağlık":"#10b981","Eğlence":"#ec4899","Giyim":"#8b5cf6","Restoran":"#f97316" };
+  const fmtTam = n => Math.round(n).toLocaleString("tr-TR");
+  const fmtOndalik = n => n.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  const tt = ({ active, payload, label }) => {
+    if (!active || !payload || !payload.length) return null;
+    return (
+      <div style={{ background:"var(--card)", border:"1px solid var(--border)", borderRadius:10, padding:"10px 14px" }}>
+        <div style={{ color:"var(--text3)", fontSize:11, fontFamily:"'Inter', system-ui, sans-serif", marginBottom:6 }}>{label}</div>
+        {payload.map(p => (
+          <div key={p.name} style={{ color:p.color, fontSize:12, fontFamily:"'Inter', system-ui, sans-serif" }}>
+            {p.name}: ₺{fmtTam(p.value)}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  const renderDagilim = () => (
+    <div>
+      <div style={{ display:"flex", gap:8, marginBottom:14 }}>
+        {["gider","gelir"].map(t => (
+          <button key={t} onClick={() => setGorunum(t)} style={{ flex:1, padding:"9px", borderRadius:10, border:"none", cursor:"pointer", fontFamily:"'Inter', system-ui, sans-serif", fontSize:12, fontWeight:700, background: gorunum===t ? (t==="gider" ? "#ef4444" : "#10b981") : "var(--border)", color: gorunum===t ? "#fff" : "var(--text3)" }}>
+            {t === "gider" ? "📉 Gider" : "📈 Gelir"}
+          </button>
+        ))}
+      </div>
+      {kategoriVerisi.length === 0 && (
+        <div style={{ textAlign:"center", color:"var(--text5)", fontFamily:"'Inter', system-ui, sans-serif", fontSize:13, padding:"40px 0" }}>
+          {secilenYil} için {gorunum} kaydı yok
+        </div>
+      )}
+      {kategoriVerisi.length > 0 && (
+        <div style={{ background:"var(--card)", border:"1px solid var(--border)", borderTop:"1px solid var(--border-light)", borderRadius:20, boxShadow:"var(--card-shadow)", padding:"16px 14px", marginBottom:14 }}>
+          <div style={{ color:"var(--text3)", fontSize:11, fontFamily:"'Inter', system-ui, sans-serif", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:14 }}>
+            {gorunum === "gider" ? "Gider" : "Gelir"} Dağılımı — {secilenYil}
+          </div>
+          <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:14 }}>
+            <PieChart width={120} height={120}>
+              <Pie data={kategoriVerisi} cx={55} cy={55} innerRadius={32} outerRadius={56} dataKey="value" strokeWidth={0}>
+                {kategoriVerisi.map((d, i) => (
+                  <Cell key={i} fill={PASTA_RENKLER[i % PASTA_RENKLER.length]} />
+                ))}
+              </Pie>
+            </PieChart>
+            <div style={{ flex:1 }}>
+              {kategoriVerisi.map((d, i) => (
+                <div key={d.name} style={{ display:"flex", alignItems:"center", gap:6, marginBottom:5 }}>
+                  <div style={{ width:8, height:8, borderRadius:"50%", background:PASTA_RENKLER[i % PASTA_RENKLER.length], flexShrink:0 }} />
+                  <span style={{ color:"var(--text2)", fontSize:11, fontFamily:"'Inter', system-ui, sans-serif", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{d.name}</span>
+                  <span style={{ color:PASTA_RENKLER[i % PASTA_RENKLER.length], fontSize:11, fontFamily:"'Inter', system-ui, sans-serif", fontWeight:700 }}>%{d.pct}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{ borderTop:"1px solid var(--border)", paddingTop:12 }}>
+            {kategoriVerisi.map((d, i) => (
+              <div key={d.name} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:7 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                  <div style={{ width:3, height:16, borderRadius:99, background:PASTA_RENKLER[i % PASTA_RENKLER.length] }} />
+                  <span style={{ color:"var(--text3)", fontSize:12, fontFamily:"'Inter', system-ui, sans-serif" }}>{d.name}</span>
+                </div>
+                <span style={{ color:"var(--text)", fontSize:12, fontFamily:"'Inter', system-ui, sans-serif", fontWeight:700 }}>₺{fmtOndalik(d.value)}</span>
+              </div>
+            ))}
+            <div style={{ borderTop:"1px solid var(--border)", paddingTop:8, marginTop:2, display:"flex", justifyContent:"space-between" }}>
+              <span style={{ color:"var(--text4)", fontSize:12, fontFamily:"'Inter', system-ui, sans-serif" }}>Toplam</span>
+              <span style={{ color:"#f59e0b", fontSize:13, fontFamily:"'Inter', system-ui, sans-serif", fontWeight:700 }}>₺{fmtOndalik(toplamTutar)}</span>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderTrend = () => (
+    <div>
+      <div style={{ background:"var(--card)", border:"1px solid var(--border)", borderTop:"1px solid var(--border-light)", borderRadius:20, boxShadow:"var(--card-shadow)", padding:"16px 14px", marginBottom:14 }}>
+        <div style={{ color:"var(--text3)", fontSize:11, fontFamily:"'Inter', system-ui, sans-serif", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:14 }}>Aylık Toplam Gider — {secilenYil}</div>
+        <ResponsiveContainer width="100%" height={200}>
+          <LineChart data={kategoriTrend} margin={{ top:10, right:10, left:0, bottom:0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+            <XAxis dataKey="label" tick={{ fill:"var(--text4)", fontSize: 12, fontFamily:"'Inter', system-ui, sans-serif" }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fill:"var(--text4)", fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={v => (v/1000).toFixed(0) + "K"} width={32} />
+            <Tooltip content={tt} />
+            <Line type="monotone" dataKey="toplam" name="Gider" stroke="#ef4444" strokeWidth={2.5} dot={{ r:3, fill:"#ef4444" }} activeDot={{ r:5 }} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+      <div style={{ background:"var(--card)", border:"1px solid var(--border)", borderTop:"1px solid var(--border-light)", borderRadius:20, boxShadow:"var(--card-shadow)", padding:"16px 14px", marginBottom:14 }}>
+        <div className="category-trend-heading">Kategori Bazlı Trend <span>{secilenYil}</span></div>
+        {trendKategoriler.length === 0 && (
+          <div style={{ color:"var(--text5)", fontSize:13, fontFamily:"'Inter', system-ui, sans-serif", textAlign:"center", padding:"20px 0" }}>Henüz gider kaydı yok</div>
+        )}
+        {trendKategoriler.map((kat, ki) => {
+          const renk = TREND_RENKLER[kat] || PASTA_RENKLER[ki % PASTA_RENKLER.length];
+          const degerler = kategoriTrend.map(d => d.katMap[kat] || 0);
+          const maxVal = Math.max(...degerler, 1);
+          const son = degerler[degerler.length - 1] || 0;
+          const onceki = degerler[degerler.length - 2] || 0;
+          const degisim = onceki > 0 ? Math.round((son - onceki) / onceki * 100) : null;
+          const secimKey = `${secilenYil}-${kat}`;
+          const secimIndex = trendSecimleri[secimKey];
+          const aktifIndex = secimIndex != null && secimIndex < degerler.length ? secimIndex : degerler.length - 1;
+          return (
+            <section className="category-trend-card" key={kat} aria-label={`${kat} dönem trendi`}>
+              <div className="category-trend-top">
+                <div className="category-trend-main">
+                  <div className="category-trend-name"><span className="category-trend-icon" style={{ color: renk, background: renk + "18" }}><Icon name={kat === "Fatura" ? "receipt" : "wallet"} size={18} /></span><span>{kat}</span></div>
+                  <div className="category-trend-amount">₺{fmtTam(son)}</div>
+                  <div className="category-trend-caption">Son dönem{kategoriTrend.length > 0 ? ` · ${kategoriTrend[kategoriTrend.length - 1].label}` : ""}</div>
+                </div>
+                {degisim !== null && onceki > 0 && (
+                  <div className="category-trend-change">
+                    <span className="category-trend-badge" style={{ color: degisim > 0 ? "#10b981" : degisim < 0 ? "#ef4444" : "var(--text)", background: degisim > 0 ? "#10b98118" : degisim < 0 ? "#ef444418" : "var(--card2)" }}>
+                      {degisim > 0 ? "▲" : degisim < 0 ? "▼" : ""}{Math.abs(degisim)}%
+                    </span>
+                    <span className="category-trend-caption">Önceki döneme göre</span>
+                  </div>
+                )}
+              </div>
+              <div className="category-trend-scroll">
+                <div className="category-trend-columns" style={{ gridTemplateColumns: `repeat(${Math.max(1, degerler.length)}, minmax(0, 1fr))`, minWidth: 0 }}>
+                  {degerler.map((v, idx) => {
+                    const mumRenk = idx === 0 ? "#9ca3af" : v < degerler[idx-1] ? "#10b981" : v > degerler[idx-1] ? "#ef4444" : "#9ca3af";
+                    return (
+                      <button type="button" className="category-trend-column" key={idx} aria-pressed={idx === aktifIndex} aria-label={`${kat} · ${kategoriTrend[idx].label}: ₺${fmtTam(v)}`} title={`${kategoriTrend[idx].label}: ₺${fmtTam(v)}`} onClick={() => setTrendSecimleri(p => ({ ...p, [secimKey]: idx }))}>
+                        <span className="category-trend-bar-area"><span className="category-trend-bar" style={{ background: mumRenk, height: v > 0 ? Math.max(v / maxVal * 100, 4) + "%" : "0%", opacity: idx === aktifIndex ? 1 : 0.72 }} /></span>
+                        <span className="category-trend-month">{kategoriTrend[idx].label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              {aktifIndex >= 0 && <div className="category-trend-selected" aria-live="polite">{kategoriTrend[aktifIndex].label} dönemi: <strong>₺{fmtTam(degerler[aktifIndex])}</strong></div>}
+            </section>
+          );
+        })}
+
+      </div>
+    </div>
+  );
+
+  const birikimKayitlari = useMemo(() => {
+    const sonAy = secilenYil === new Date().getFullYear() ? new Date().getMonth() : 11;
+    const ayMap = {};
+    for (let m = 0; m <= sonAy; m++) ayMap[m] = { ay: AYLAR[m].slice(0, 3), tutar: 0, islemler: [] };
+    raporIslemleri.filter(i => yerelTarihOku(i.tarih)?.getFullYear() === secilenYil && i.tip === "gelir" && (i.kategori === "Birikim" || i.kategori === "Kira Geliri")).forEach(i => {
+      const ay = yerelTarihOku(i.tarih).getMonth();
+      if (ayMap[ay]) { ayMap[ay].tutar += i.tutar; ayMap[ay].islemler.push(i); }
+    });
+    return Object.values(ayMap);
+  }, [raporIslemleri, secilenYil]);
+
+  const yillikBirikim = birikimKayitlari.reduce((s, a) => paraTopla(s, a.tutar), 0);
+  const birikimAySayisi = birikimKayitlari.filter(a => a.tutar > 0).length;
+  // Aylık ortalama: Ocak'tan baz alıp geçen ay sayısına böl (içinde bulunulan yıl ise mevcut aya kadar)
+  const gecenAySayisi = secilenYil === new Date().getFullYear() ? (new Date().getMonth() + 1) : 12;
+  const ortBirikim = gecenAySayisi > 0 ? yillikBirikim / gecenAySayisi : 0;
+
+  const renderBirikim = () => (
+    <div>
+      <div style={{ background:"#10b98111", border:"1px solid #10b98133", borderRadius:10, padding:"10px 14px", marginBottom:14, color:"#10b981", fontSize:11, fontFamily:"'Inter', system-ui, sans-serif" }}>
+        💡 Gelir eklerken kategori olarak <strong>Birikim</strong> seç — burada takip edilir.
+      </div>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:14 }}>
+        {[
+          { label:"Yıllık", value:"₺" + fmtTam(yillikBirikim), color:"#10b981", icon:"🏦" },
+          { label:"Aylık Ort.", value: ortBirikim > 0 ? "₺" + fmtTam(ortBirikim) : "—", color:"#f59e0b", icon:"📊" },
+          { label:"Birikim Ayı", value: birikimAySayisi > 0 ? birikimAySayisi + " ay" : "—", color:"#6366f1", icon:"📅" },
+        ].map(c => (
+          <div key={c.label} style={{ background:"linear-gradient(135deg,var(--card),var(--card2))", border:"1px solid var(--border)", borderRadius:14, padding:"12px 8px", textAlign:"center" }}>
+            <div style={{ fontSize:16, marginBottom:4 }}>{c.icon}</div>
+            <div style={{ color:"var(--text4)", fontSize: 12, fontFamily:"'Inter', system-ui, sans-serif", textTransform:"uppercase", marginBottom:4 }}>{c.label}</div>
+            <div style={{ color:c.color, fontSize:13, fontFamily:"'Inter', system-ui, sans-serif", fontWeight:700 }}>{c.value}</div>
+          </div>
+        ))}
+      </div>
+      {yillikBirikim === 0 ? (
+        <div style={{ textAlign:"center", color:"var(--text5)", fontFamily:"'Inter', system-ui, sans-serif", fontSize:13, padding:"40px 0" }}>
+          {secilenYil} için birikim kaydı yok
+        </div>
+      ) : (
+        <div>
+          <div style={{ background:"var(--card)", border:"1px solid var(--border)", borderTop:"1px solid var(--border-light)", borderRadius:20, boxShadow:"var(--card-shadow)", padding:"16px 14px", marginBottom:14 }}>
+            <div style={{ color:"var(--text3)", fontSize:11, fontFamily:"'Inter', system-ui, sans-serif", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:14 }}>Aylık Birikim</div>
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart data={birikimKayitlari} margin={{ top:10, right:10, left:0, bottom:0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                <XAxis dataKey="ay" tick={{ fill:"var(--text4)", fontSize: 12, fontFamily:"'Inter', system-ui, sans-serif" }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill:"var(--text4)", fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={v => (v / 1000).toFixed(0) + "K"} width={32} />
+                <Tooltip contentStyle={{ background:"var(--card)", border:"1px solid var(--border)", borderRadius:10, fontFamily:"'Inter', system-ui, sans-serif", fontSize:12 }} formatter={v => ["₺" + fmtTam(v), "Birikim"]} />
+                <Line type="monotone" dataKey="tutar" name="Birikim" stroke="#10b981" strokeWidth={2.5} dot={{ r:3, fill:"#10b981" }} activeDot={{ r:5 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+          <div style={{ background:"var(--card)", border:"1px solid var(--border)", borderTop:"1px solid var(--border-light)", borderRadius:20, boxShadow:"var(--card-shadow)", padding:"16px 14px" }}>
+            <div style={{ color:"var(--text3)", fontSize:11, fontFamily:"'Inter', system-ui, sans-serif", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:12 }}>Ay ay detay</div>
+            {birikimKayitlari.filter(d => d.tutar > 0).map((d, i) => {
+              const maxT = Math.max(...birikimKayitlari.map(x => x.tutar), 1);
+              return (
+                <div key={i} style={{ marginBottom:10 }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
+                    <span style={{ color:"var(--text3)", fontSize:12, fontFamily:"'Inter', system-ui, sans-serif" }}>{d.ay}</span>
+                    <span style={{ color:"#10b981", fontSize:12, fontFamily:"'Inter', system-ui, sans-serif", fontWeight:700 }}>₺{fmtTam(d.tutar)}</span>
+                  </div>
+                  <div style={{ height:4, background:"var(--border)", borderRadius:99 }}>
+                    <div style={{ height:"100%", width: (d.tutar / maxT * 100) + "%", background:"#10b981", borderRadius:99 }} />
+                  </div>
+                  {d.islemler.map((x, j) => (
+                    <div key={j} style={{ display:"flex", justifyContent:"space-between", padding:"3px 0 0 8px" }}>
+                      <span style={{ color:"var(--text5)", fontSize:11, fontFamily:"'Inter', system-ui, sans-serif" }}>{x.aciklama || x.kategori}</span>
+                      <span style={{ color:"var(--text4)", fontSize:11, fontFamily:"'Inter', system-ui, sans-serif" }}>₺{fmtTam(x.tutar)}</span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <div>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", background:"var(--card2)", border:"1px solid var(--border)", borderRadius:12, padding:"10px 14px", marginBottom:14 }}>
+        <button onClick={() => setSecilenYil(y => y - 1)} style={{ background:"none", border:"none", color:"#f59e0b", fontSize:20, cursor:"pointer", padding:"0 6px" }}>&#8249;</button>
+        <div style={{ textAlign:"center" }}>
+          <div style={{ color:"var(--text3)", fontSize: 12, fontFamily:"'Inter', system-ui, sans-serif", textTransform:"uppercase", letterSpacing:"0.08em" }}>Yıllık Rapor</div>
+          <div style={{ color:"var(--text)", fontSize:20, fontFamily:"'Manrope', 'Inter', system-ui, sans-serif", fontWeight:700 }}>{secilenYil}</div>
+        </div>
+        <button onClick={() => setSecilenYil(y => Math.min(y + 1, new Date().getFullYear()))} style={{ background:"none", border:"none", color: secilenYil >= new Date().getFullYear() ? "var(--border)" : "#f59e0b", fontSize:20, cursor: secilenYil >= new Date().getFullYear() ? "default" : "pointer", padding:"0 6px" }}>&#8250;</button>
+      </div>
+
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:14 }}>
+        {[
+          { label:"Gelir", value:"₺" + fmtOndalik(yillikGelir), color:"#10b981", icon:"📈" },
+          { label:"Gider", value:"₺" + fmtOndalik(yillikGider), color:"#ef4444", icon:"📉" },
+          { label:"Net", value:(yillikGelir >= yillikGider ? "+" : "-") + "₺" + fmtOndalik(Math.abs(yillikGelir - yillikGider)), color: yillikGelir >= yillikGider ? "#10b981" : "#ef4444", icon:"💰" },
+        ].map(c => (
+          <div key={c.label} style={{ background:"linear-gradient(135deg,var(--card),var(--card2))", border:"1px solid var(--border)", borderRadius:14, padding:"14px 10px", textAlign:"center" }}>
+            <div style={{ fontSize:16, marginBottom:4 }}>{c.icon}</div>
+            <div style={{ color:"var(--text4)", fontSize: 12, fontFamily:"'Inter', system-ui, sans-serif", textTransform:"uppercase", marginBottom:4 }}>{c.label}</div>
+            <div style={{ color:c.color, fontSize:11, fontFamily:"'Inter', system-ui, sans-serif", fontWeight:700, wordBreak:"break-all" }}>{c.value}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ background:"var(--card)", border:"1px solid var(--border)", borderTop:"1px solid var(--border-light)", borderRadius:20, boxShadow:"var(--card-shadow)", padding:"16px 14px", marginBottom:14 }}>
+        <div style={{ color:"var(--text3)", fontSize:11, fontFamily:"'Inter', system-ui, sans-serif", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:14 }}>Aylık Gelir / Gider</div>
+        <ResponsiveContainer width="100%" height={200}>
+          <LineChart data={aylikVerisi} margin={{ top:10, right:10, left:0, bottom:0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+            <XAxis dataKey="ay" tick={{ fill:"var(--text4)", fontSize: 12, fontFamily:"'Inter', system-ui, sans-serif" }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fill:"var(--text4)", fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={v => (v / 1000).toFixed(0) + "K"} width={32} />
+            <Tooltip content={tt} />
+            <Line type="monotone" dataKey="gider" name="Gider" stroke="#ef4444" strokeWidth={2.5} dot={{ r:3, fill:"#ef4444" }} activeDot={{ r:5 }} />
+            <Line type="monotone" dataKey="gelir" name="Gelir" stroke="#10b981" strokeWidth={2.5} dot={{ r:3, fill:"#10b981" }} activeDot={{ r:5 }} />
+          </LineChart>
+        </ResponsiveContainer>
+        <div style={{ display:"flex", justifyContent:"center", gap:20, marginTop:8 }}>
+          <span style={{ display:"flex", alignItems:"center", gap:6, color:"var(--text3)", fontSize:11, fontFamily:"'Inter', system-ui, sans-serif" }}><span style={{ width:10, height:3, background:"#10b981", borderRadius:2 }} />Gelir</span>
+          <span style={{ display:"flex", alignItems:"center", gap:6, color:"var(--text3)", fontSize:11, fontFamily:"'Inter', system-ui, sans-serif" }}><span style={{ width:10, height:3, background:"#ef4444", borderRadius:2 }} />Gider</span>
+        </div>
+      </div>
+
+      <div style={{ display:"flex", gap:6, marginBottom:14, background:"var(--card2)", borderRadius:12, padding:4 }}>
+        {[{id:"yorum",label:"💡 Yorum"},{id:"dagilim",label:"📊 Dağılım"},{id:"trend",label:"📈 Trend"},{id:"birikim",label:"💰 Birikim"}].map(s => (
+          <button key={s.id} onClick={() => setAnalizSekme(s.id)} style={{ flex:1, padding:"8px 2px", borderRadius:9, border:"none", cursor:"pointer", fontFamily:"'Inter', system-ui, sans-serif", fontSize: 12, fontWeight:700, background: analizSekme === s.id ? "#f59e0b" : "transparent", color: analizSekme === s.id ? "var(--bg)" : "var(--text4)", transition:"all 0.2s" }}>
+            {s.label}
+          </button>
+        ))}
+      </div>
+
+      {analizSekme === "yorum" && renderAkilliYorum()}
+      {analizSekme === "dagilim" && renderDagilim()}
+      {analizSekme === "trend" && renderTrend()}
+      {analizSekme === "birikim" && renderBirikim()}
+    </div>
+  );
+}
+
+function TekrarlayanTab({ tekrarlayan, setTekrarlayan, kategoriler, setKategoriler }) {
+  const [modal, setModal] = useState(false);
+  const [duzenleId, setDuzenleId] = useState(null);
+  const bugun = yerelTarihAnahtari();
+  const bos = { aciklama: "", tutar: "", gun: "1", kategori: "Fatura", baslangic: bugun, bitis: "" };
+  const [form, setForm] = useState(bos);
+
+  const duzenleAc = (t) => {
+    setForm({ aciklama: t.aciklama || "", tutar: String(t.tutar), gun: String(t.gun), kategori: t.kategori, baslangic: t.baslangic || bugun, bitis: t.bitis || "" });
+    setDuzenleId(t.id);
+    setModal(true);
+  };
+  const kaydet = () => {
+    if (!tutarGecerli(form.tutar) || !tamSayiGecerli(form.gun, 1, 31)
+      || !yerelTarihOku(form.baslangic || bugun) || (form.bitis && (!yerelTarihOku(form.bitis) || form.bitis < (form.baslangic || bugun)))) return formHatasi("Pozitif tutar, 1–31 arasında gün ve sıralı başlangıç/bitiş tarihleri gir.");
+    if (duzenleId) {
+      setTekrarlayan(p => p.map(x => x.id === duzenleId
+        ? { ...x, aciklama: form.aciklama, tutar: paraOku(form.tutar), gun: parseInt(form.gun), kategori: form.kategori, baslangic: form.baslangic || bugun, bitis: form.bitis || null }
+        : x
+      ));
+    } else {
+      setTekrarlayan(p => [...p, { ...form, id: Date.now(), tutar: paraOku(form.tutar), gun: parseInt(form.gun), aktif: true, baslangic: form.baslangic || bugun, bitis: form.bitis || null }]);
+    }
+    setModal(false);
+    setDuzenleId(null);
+    setForm(bos);
+    toast(duzenleId ? "Ödeme güncellendi" : "Ödeme eklendi");
+  };
+  const toplam = tekrarlayan.filter(t => {
+    if (!t.aktif) return false;
+    const bugunDate = yerelTarihOku(yerelTarihAnahtari());
+    if (t.baslangic && yerelTarihOku(t.baslangic) > bugunDate) return false;
+    if (t.bitis && yerelTarihOku(t.bitis) < bugunDate) return false;
+    return true;
+  }).reduce((s, t) => paraTopla(s, t.tutar), 0);
+
+  return (
+    <div>
+      <div style={{ background: "var(--card)", border: "1px solid #f59e0b33", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "16px 20px", marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          <div style={{ color: "var(--text4)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em" }}>Aylık Sabit Gider</div>
+          <div style={{ color: "#f59e0b", fontSize: 24, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, marginTop: 2 }}>₺{fmt(toplam)}</div>
+        </div>
+        <Btn onClick={() => { setDuzenleId(null); setForm(bos); setModal(true); }}>+ Ekle</Btn>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {tekrarlayan.map(t => {
+          const katRenk = KATEGORI_RENKLER[t.kategori] || "#78716c";
+          return (
+            <div key={t.id} style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 14, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, opacity: t.aktif ? 1 : 0.45 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ color: "var(--text)", fontSize: 14, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 600 }}>{t.aciklama}</div>
+                <div style={{ display: "flex", gap: 8, marginTop: 4, alignItems: "center" }}><Badge text={t.kategori} color={katRenk} /><span style={{ color: "var(--text5)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif" }}>Her ayın {t.gun}. günü</span>
+                {t.bitis && <span style={{ color: "#f59e0b", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif" }}>Bitiş: {t.bitis}</span>}
+                {t.baslangic && yerelTarihOku(t.baslangic) > yerelTarihOku(yerelTarihAnahtari()) && <span style={{ color: "#6366f1", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif" }}>Başlangıç: {t.baslangic}</span>}
+                </div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ color: "#ef4444", fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, fontSize: 15 }}>₺{fmt(t.tutar)}</div>
+                <div style={{ display: "flex", gap: 6, marginTop: 4, justifyContent: "flex-end" }}>
+                  <button onClick={() => setTekrarlayan(p => p.map(x => x.id === t.id ? { ...x, aktif: !x.aktif } : x))} style={{ background: t.aktif ? "#10b98122" : "var(--border)", border: "none", borderRadius: 6, color: t.aktif ? "#10b981" : "var(--text4)", padding: "3px 8px", fontSize: 11, cursor: "pointer", fontFamily: "'Inter', system-ui, sans-serif" }}>{t.aktif ? "Aktif" : "Pasif"}</button>
+                  <button onClick={() => duzenleAc(t)} style={{ background: "none", border: "none", color: "#f59e0b", cursor: "pointer", fontSize: 14 }}>✏️</button>
+                  <button onClick={() => setTekrarlayan(p => p.filter(x => x.id !== t.id))} style={{ background: "none", border: "none", color: "var(--text5)", cursor: "pointer", fontSize: 14 }}>🗑</button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {modal && (
+        <Modal title={duzenleId ? "Tekrarlayan Düzenle" : "Tekrarlayan Ekle"} onClose={() => { setModal(false); setDuzenleId(null); setForm(bos); }}>
+          <Input label="Açıklama" value={form.aciklama} onChange={e => setForm(f => ({ ...f, aciklama: e.target.value }))} placeholder="Örn: Netflix" />
+          <Input label="Tutar (₺)" type="number" value={form.tutar} onChange={e => setForm(f => ({ ...f, tutar: e.target.value }))} placeholder="0.00" />
+          <Input label="Her ayın kaçıncı günü?" type="number" min="1" max="31" value={form.gun} onChange={e => setForm(f => ({ ...f, gun: e.target.value }))} />
+          <Select label="Kategori" value={form.kategori} onChange={e => setForm(f => ({ ...f, kategori: e.target.value }))}>{(kategoriler?.gider || VARSAYILAN_KATEGORILER.gider).map(k => <option key={k}>{k}</option>)}</Select>
+          <Input label="Başlangıç Tarihi" type="date" value={form.baslangic} onChange={e => setForm(f => ({ ...f, baslangic: e.target.value }))} />
+          <Input label="Bitiş Tarihi (boş = süresiz)" type="date" value={form.bitis} onChange={e => setForm(f => ({ ...f, bitis: e.target.value }))} />
+          <Btn onClick={kaydet} style={{ width: "100%", padding: 12, marginTop: 8 }}>{duzenleId ? "Güncelle" : "Kaydet"}</Btn>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ── PORTFÖY ───────────────────────────────────────────────────────────────────
+
+// ── MAIN ──────────────────────────────────────────────────────────────────────
+
+
+
+// ── TAKSİTLİ HARCAMALAR ───────────────────────────────────────────────────────
+function TaksitlerTab({ taksitler, setTaksitler }) {
+  const [modal, setModal] = useState(false);
+  const bos = { ad: "", aylikTutar: "", vade: "", odenen: "", kart: "" };
+  const [form, setForm] = useState(bos);
+  const [duzenleId, setDuzenleId] = useState(null);
+  const fmt = n => n.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  const kaydet = () => {
+    if (!form.ad.trim() || !tutarGecerli(form.aylikTutar) || !tamSayiGecerli(form.vade, 1, 1200)
+      || !tamSayiGecerli(form.odenen || 0, 0, Number(form.vade))) return formHatasi("Ad, pozitif tutar ve geçerli vade/ödenen taksit sayısı gir.");
+    const vade = parseInt(form.vade) || 1;
+    const odenen = Math.max(0, Math.min(vade, parseInt(form.odenen) || 0));
+    const veri = { ad: form.ad.trim(), aylikTutar: paraOku(form.aylikTutar), vade, odenen, kart: form.kart.trim() };
+    if (duzenleId) {
+      setTaksitler(p => p.map(x => x.id === duzenleId ? { ...x, ...veri } : x));
+      toast("Taksit güncellendi");
+    } else {
+      setTaksitler(p => [...p, { id: Date.now(), ...veri }]);
+      toast("Taksitli harcama eklendi");
+    }
+    setModal(false); setDuzenleId(null); setForm(bos);
+  };
+  const duzenleAc = (t) => { setDuzenleId(t.id); setForm({ ad: t.ad, aylikTutar: String(t.aylikTutar), vade: String(t.vade), odenen: String(t.odenen || 0), kart: t.kart || "" }); setModal(true); };
+  const sil = (id) => { setTaksitler(p => p.filter(x => x.id !== id)); toast("Taksit silindi", "uyari"); };
+  const taksitOde = (id) => { setTaksitler(p => p.map(x => x.id === id ? { ...x, odenen: Math.min(x.vade, (x.odenen || 0) + 1) } : x)); toast("Taksit ödendi olarak işaretlendi"); };
+
+  // Toplam özet
+  const genelToplam = taksitler.reduce((s, t) => paraTopla(s, t.aylikTutar * t.vade), 0);
+  const genelOdenen = taksitler.reduce((s, t) => paraTopla(s, t.aylikTutar * (t.odenen || 0)), 0);
+  const genelKalan = genelToplam - genelOdenen;
+  const genelYuzde = genelToplam > 0 ? (genelOdenen / genelToplam * 100) : 0;
+  const aktifSayi = taksitler.filter(t => (t.odenen || 0) < t.vade).length;
+  const aylikToplam = taksitler.filter(t => (t.odenen || 0) < t.vade).reduce((s, t) => paraTopla(s, t.aylikTutar), 0);
+
+  // Sıralama: aktif olanlar önce, bitenler sona
+  const sirali = [...taksitler].sort((a, b) => {
+    const aBitti = (a.odenen || 0) >= a.vade, bBitti = (b.odenen || 0) >= b.vade;
+    if (aBitti !== bBitti) return aBitti ? 1 : -1;
+    return 0;
+  });
+
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+        <span style={{ color: "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em" }}>{taksitler.length} TAKSİTLİ HARCAMA</span>
+        <Btn onClick={() => { setDuzenleId(null); setForm(bos); setModal(true); }}>+ Ekle</Btn>
+      </div>
+
+      <div style={{ background: "#8b5cf611", border: "1px solid #8b5cf633", borderRadius: 12, padding: "9px 13px", marginBottom: 14, color: "#a78bfa", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.5 }}>
+        Buradaki taksitler giderinden düşmez, sadece takip amaçlıdır.
+      </div>
+
+      {taksitler.length === 0 && (
+        <div style={{ textAlign: "center", color: "var(--text5)", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", padding: "40px 0" }}>
+          Henüz taksitli harcama eklemedin.<br />Taksitle aldığın ürünleri ekleyip takip edebilirsin.
+        </div>
+      )}
+
+      {/* GENEL TOPLAM ÖZET */}
+      {taksitler.length > 0 && (
+        <div style={{ background: "var(--card)", border: "1px solid #8b5cf644", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "16px 16px", marginBottom: 16 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+            <span style={{ color: "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em" }}>📊 Genel Durum</span>
+            <span style={{ color: "var(--text4)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif" }}>{aktifSayi} Aktif · Aylık ₺{fmt(aylikToplam)}</span>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
+            <div style={{ background: "var(--card2)", borderRadius: 11, padding: "11px 6px", textAlign: "center" }}>
+              <div style={{ color: "var(--text5)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 4 }}>TOPLAM BORÇ</div>
+              <div style={{ color: "var(--text)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>₺{fmt(genelToplam)}</div>
+            </div>
+            <div style={{ background: "var(--card2)", borderRadius: 11, padding: "11px 6px", textAlign: "center" }}>
+              <div style={{ color: "var(--text5)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 4 }}>ÖDENEN</div>
+              <div style={{ color: "#10b981", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>₺{fmt(genelOdenen)}</div>
+            </div>
+            <div style={{ background: "var(--card2)", borderRadius: 11, padding: "11px 6px", textAlign: "center" }}>
+              <div style={{ color: "var(--text5)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 4 }}>KALAN</div>
+              <div style={{ color: "#ef4444", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>₺{fmt(genelKalan)}</div>
+            </div>
+          </div>
+          <div style={{ height: 10, background: "var(--card2)", borderRadius: 99, overflow: "hidden", border: "1px solid var(--border)" }}>
+            <div style={{ height: "100%", width: `${genelYuzde}%`, background: "linear-gradient(90deg,#10b981,#059669)", borderRadius: 99, transition: "width 0.8s ease" }} />
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
+            <span style={{ color: "#10b981", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>Ödenen %{genelYuzde.toFixed(1)}</span>
+            <span style={{ color: "#ef4444", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>Kalan %{(100 - genelYuzde).toFixed(1)}</span>
+          </div>
+        </div>
+      )}
+
+      {/* TAKSİT KARTLARI */}
+      {sirali.map((t, ti) => {
+        const toplamBorc = t.aylikTutar * t.vade;
+        const odenenTutar = t.aylikTutar * (t.odenen || 0);
+        const kalan = toplamBorc - odenenTutar;
+        const yuzde = toplamBorc > 0 ? (odenenTutar / toplamBorc * 100) : 0;
+        const bitti = (t.odenen || 0) >= t.vade;
+        const renk = "#8b5cf6";
+        return (
+          <div key={t.id} style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 18, boxShadow: "var(--card-shadow)", padding: "13px 14px", marginBottom: 11, opacity: bitti ? 0.6 : 1 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 11, marginBottom: 11 }}>
+              <div style={{ width: 42, height: 42, borderRadius: 13, background: renk + "1c", border: `1px solid ${renk}3a`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, flexShrink: 0 }}>{taksitIkon(t.ad)}</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ color: "var(--text)", fontSize: 14, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.ad}{bitti ? " ✓" : ""}</div>
+                <div style={{ color: "var(--text4)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 2 }}>{t.kart ? t.kart + " · " : ""}Kalan: {t.vade - (t.odenen || 0)}/{t.vade} taksit</div>
+              </div>
+              <div style={{ textAlign: "right", flexShrink: 0 }}>
+                <div style={{ color: "var(--text)", fontSize: 14, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>₺{fmt(t.aylikTutar)}<span style={{ color: "var(--text5)", fontSize: 12 }}>/ay</span></div>
+                <div style={{ color: "var(--text5)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 2 }}>Aylık Taksit</div>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, flexShrink: 0, marginLeft: 4 }}>
+                <button onClick={() => duzenleAc(t)} style={{ background: "none", border: "none", color: "var(--text4)", cursor: "pointer", fontSize: 13, padding: 0 }}>✏️</button>
+                <button onClick={() => sil(t.id)} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 13, padding: 0 }}>🗑</button>
+              </div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 7, marginBottom: 10 }}>
+              <div style={{ background: "var(--card2)", borderRadius: 9, padding: "8px 5px", textAlign: "center" }}>
+                <div style={{ color: "var(--text5)", fontSize: 12.5, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 2 }}>TOPLAM</div>
+                <div style={{ color: "var(--text)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>₺{fmt(toplamBorc)}</div>
+              </div>
+              <div style={{ background: "var(--card2)", borderRadius: 9, padding: "8px 5px", textAlign: "center" }}>
+                <div style={{ color: "var(--text5)", fontSize: 12.5, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 2 }}>ÖDENEN</div>
+                <div style={{ color: "#10b981", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>₺{fmt(odenenTutar)}</div>
+              </div>
+              <div style={{ background: "var(--card2)", borderRadius: 9, padding: "8px 5px", textAlign: "center" }}>
+                <div style={{ color: "var(--text5)", fontSize: 12.5, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 2 }}>KALAN</div>
+                <div style={{ color: "#ef4444", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>₺{fmt(kalan)}</div>
+              </div>
+            </div>
+            <div style={{ height: 8, background: "var(--card2)", borderRadius: 99, overflow: "hidden", border: "1px solid var(--border)" }}>
+              <div style={{ height: "100%", width: `${yuzde}%`, background: "linear-gradient(90deg,#10b981,#059669)", borderRadius: 99, transition: "width 0.8s ease" }} />
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6 }}>
+              <span style={{ color: "#10b981", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>Ödenen %{yuzde.toFixed(1)}</span>
+              {!bitti && <button onClick={() => taksitOde(t.id)} style={{ background: "#10b98122", border: "1px solid #10b98155", borderRadius: 8, padding: "3px 9px", color: "#10b981", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", cursor: "pointer", fontWeight: 700 }}>✓ Taksit Öde</button>}
+              <span style={{ color: "#ef4444", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>Kalan %{(100 - yuzde).toFixed(1)}</span>
+            </div>
+          </div>
+        );
+      })}
+
+      {modal && (
+        <Modal title={duzenleId ? "Taksitli Harcamayı Düzenle" : "Taksitli Harcama Ekle"} onClose={() => { setModal(false); setDuzenleId(null); }}>
+          <Input label="Ürün / Harcama Adı" value={form.ad} onChange={e => setForm(f => ({ ...f, ad: e.target.value }))} placeholder="Örn: Telefon" />
+          <Input label="Aylık Taksit Tutarı (₺)" type="number" value={form.aylikTutar} onChange={e => setForm(f => ({ ...f, aylikTutar: e.target.value }))} placeholder="0.00" />
+          <Input label="Toplam Taksit Sayısı (vade)" type="number" value={form.vade} onChange={e => setForm(f => ({ ...f, vade: e.target.value }))} placeholder="12" />
+          <Input label="Şimdiye Kadar Ödenen Taksit" type="number" value={form.odenen} onChange={e => setForm(f => ({ ...f, odenen: e.target.value }))} placeholder="0" />
+          <Input label="Kart / Kaynak (isteğe bağlı)" value={form.kart} onChange={e => setForm(f => ({ ...f, kart: e.target.value }))} placeholder="Örn: Bonus Kart" />
+          <Btn onClick={kaydet} style={{ width: "100%", padding: 12, marginTop: 8 }}>Kaydet</Btn>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+
+// ── KREDİ / BORÇ TAKİBİ ───────────────────────────────────────────────────────
+function KredilerTab({ krediler, setKrediler }) {
+  const [modal, setModal] = useState(false);
+  const [acikKredi, setAcikKredi] = useState({});
+  const bos = { ad: "", toplamTutar: "", vade: "", baslangic: yerelTarihAnahtari(), aylikTaksit: "", ilkFarkli: false, ilkTaksit: "", sonFarkli: false, sonTaksit: "" };
+  const [form, setForm] = useState(bos);
+  const fmt = n => n.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  const taksitleriOlustur = (f) => {
+    const vade = Number(f.vade);
+    const toplam = paraKurus(f.toplamTutar);
+    const ilk = f.ilkFarkli ? paraKurus(f.ilkTaksit) : null;
+    const son = f.sonFarkli ? paraKurus(f.sonTaksit) : null;
+    const ortaAdet = vade - (ilk !== null ? 1 : 0) - (son !== null ? 1 : 0);
+    const kalan = toplam - (ilk || 0) - (son || 0);
+    const otomatik = !f.aylikTaksit;
+    const taban = ortaAdet > 0 ? Math.floor(kalan / ortaAdet) : 0;
+    const ekstraKurus = ortaAdet > 0 ? kalan % ortaAdet : 0;
+    let ortaSira = 0;
+    return Array.from({ length: vade }, (_, i) => {
+      let kurus;
+      if (i === 0 && ilk !== null) kurus = ilk;
+      else if (i === vade - 1 && son !== null) kurus = son;
+      else { kurus = otomatik ? taban + (ortaSira < ekstraKurus ? 1 : 0) : paraKurus(f.aylikTaksit); ortaSira++; }
+      return { no: i + 1, tarih: yerelTarihAnahtari(aylikTarih(f.baslangic, i)), tutar: kurus / 100, odendi: false };
+    });
+  };
+
+  const ekle = () => {
+    if (!form.ad.trim() || !tutarGecerli(form.toplamTutar) || !tamSayiGecerli(form.vade, 1, 1200)
+      || !yerelTarihOku(form.baslangic) || (form.aylikTaksit && !tutarGecerli(form.aylikTaksit))
+      || (form.ilkFarkli && !tutarGecerli(form.ilkTaksit)) || (form.sonFarkli && !tutarGecerli(form.sonTaksit))) return formHatasi("Kredi adı, pozitif tutarlar, geçerli tarih ve 1–1200 arasında vade gir.");
+    if (Number(form.vade) === 1 && form.ilkFarkli && form.sonFarkli) return formHatasi("Tek taksitte ilk ve son tutar için yalnızca birini seç.");
+    const taksitler = taksitleriOlustur(form);
+    if (taksitler.some(t => !tutarGecerli(t.tutar))) return formHatasi("Bu tutarlar pozitif bir taksit planı oluşturmuyor.");
+    if (paraKurus(paraTopla(...taksitler.map(t => t.tutar))) !== paraKurus(form.toplamTutar)) return formHatasi("Taksit toplamı faiz dahil toplam tutarla eşleşmeli.");
+    setKrediler(p => [...p, {
+      id: Date.now(),
+      ad: form.ad.trim(),
+      toplamTutar: paraOku(form.toplamTutar),
+      vade: parseInt(form.vade),
+      baslangic: form.baslangic,
+      taksitler,
+    }]);
+    setModal(false);
+    setForm(bos);
+    toast("Kredi eklendi");
+  };
+
+  const taksitToggle = (krediId, no) => {
+    setKrediler(p => p.map(k => k.id === krediId ? { ...k, taksitler: k.taksitler.map(t => t.no === no ? { ...t, odendi: !t.odendi } : t) } : k));
+  };
+  const krediSil = (id) => setKrediler(p => p.filter(k => k.id !== id));
+
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+        <span style={{ color: "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em" }}>{krediler.length} KREDİ / BORÇ</span>
+        <Btn onClick={() => { setForm(bos); setModal(true); }}>+ Ekle</Btn>
+      </div>
+
+      {krediler.length === 0 && (
+        <div style={{ textAlign: "center", color: "var(--text5)", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", padding: "40px 0" }}>
+          Henüz kredi eklemedin.<br />Çektiğin krediyi ekleyip taksitleri takip edebilirsin.
+        </div>
+      )}
+
+      {krediler.map(k => {
+        const toplamBorc = k.taksitler.reduce((s, t) => paraTopla(s, t.tutar), 0);
+        const odenen = k.taksitler.filter(t => t.odendi).reduce((s, t) => paraTopla(s, t.tutar), 0);
+        const kalan = toplamBorc - odenen;
+        const yuzde = toplamBorc > 0 ? (odenen / toplamBorc * 100) : 0;
+        const odenenAdet = k.taksitler.filter(t => t.odendi).length;
+        // Sıralama: ödenmemişler önce (tarihe göre), ödenenler sona
+        const sirali = [...k.taksitler].sort((a, b) => {
+          if (a.odendi !== b.odendi) return a.odendi ? 1 : -1;
+          return a.no - b.no;
+        });
+        const acik = acikKredi[k.id];
+        return (
+          <div key={k.id} style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "16px 14px", marginBottom: 14 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+              <div>
+                <div style={{ color: "var(--text)", fontSize: 15, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>{k.ad}</div>
+                <div style={{ color: "var(--text5)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 2 }}>{odenenAdet}/{k.vade} taksit ödendi</div>
+              </div>
+              <button onClick={() => krediSil(k.id)} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 15 }}>🗑</button>
+            </div>
+
+            {/* Yatay ilerleme çubuğu */}
+            <div style={{ height: 16, background: "var(--card2)", borderRadius: 99, overflow: "hidden", marginBottom: 6, position: "relative", border: "1px solid var(--border)" }}>
+              <div style={{ height: "100%", width: `${yuzde}%`, background: "linear-gradient(90deg,#10b981,#059669)", borderRadius: 99, transition: "width 0.8s ease" }} />
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 14 }}>
+              <span style={{ color: "#10b981", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>Ödenen %{yuzde.toFixed(1)}</span>
+              <span style={{ color: "#ef4444", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>Kalan %{(100 - yuzde).toFixed(1)}</span>
+            </div>
+
+            {/* Tutar özeti */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
+              <div style={{ background: "var(--card2)", borderRadius: 10, padding: "9px 6px", textAlign: "center" }}>
+                <div style={{ color: "var(--text5)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 3 }}>TOPLAM</div>
+                <div style={{ color: "var(--text)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>₺{fmt(toplamBorc)}</div>
+              </div>
+              <div style={{ background: "var(--card2)", borderRadius: 10, padding: "9px 6px", textAlign: "center" }}>
+                <div style={{ color: "var(--text5)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 3 }}>ÖDENEN</div>
+                <div style={{ color: "#10b981", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>₺{fmt(odenen)}</div>
+              </div>
+              <div style={{ background: "var(--card2)", borderRadius: 10, padding: "9px 6px", textAlign: "center" }}>
+                <div style={{ color: "var(--text5)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 3 }}>KALAN</div>
+                <div style={{ color: "#ef4444", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>₺{fmt(kalan)}</div>
+              </div>
+            </div>
+
+            {/* Taksitler */}
+            <button onClick={() => setAcikKredi(p => ({ ...p, [k.id]: !p[k.id] }))} style={{ width: "100%", background: "var(--card2)", border: "1px solid var(--border)", borderRadius: 10, padding: "9px", color: "var(--text3)", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12, cursor: "pointer" }}>
+              {acik ? "▾ Taksitleri Gizle" : "▸ Taksitleri Göster"}
+            </button>
+
+            {acik && (
+              <div style={{ marginTop: 10 }}>
+                {sirali.map(t => (
+                  <div key={t.no} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 10px", background: t.odendi ? "transparent" : "var(--card2)", borderRadius: 10, marginBottom: 6, opacity: t.odendi ? 0.5 : 1, border: t.odendi ? "1px solid var(--divider)" : "1px solid var(--border)" }}>
+                    <button onClick={() => taksitToggle(k.id, t.no)} style={{ width: 20, height: 20, borderRadius: 6, border: `2px solid ${t.odendi ? "#10b981" : "var(--border2)"}`, background: t.odendi ? "#10b981" : "transparent", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "#fff", padding: 0 }}>{t.odendi ? "✓" : ""}</button>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ color: "var(--text)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", textDecoration: t.odendi ? "line-through" : "none" }}>{t.no}. Taksit</div>
+                      <div style={{ color: "var(--text5)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif" }}>{t.tarih.split("-").reverse().join(".")}</div>
+                    </div>
+                    <span style={{ color: t.odendi ? "var(--text5)" : "#ef4444", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, textDecoration: t.odendi ? "line-through" : "none" }}>₺{fmt(t.tutar)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      {modal && (
+        <Modal title="Kredi / Borç Ekle" onClose={() => setModal(false)}>
+          <Input label="Kredi Adı" value={form.ad} onChange={e => setForm(f => ({ ...f, ad: e.target.value }))} placeholder="Örn: İhtiyaç Kredisi" />
+          <Input label="Toplam Tutar — faiz dahil (₺)" type="number" value={form.toplamTutar} onChange={e => setForm(f => ({ ...f, toplamTutar: e.target.value }))} placeholder="0.00" />
+          <Input label="Vade (kaç ay)" type="number" value={form.vade} onChange={e => setForm(f => ({ ...f, vade: e.target.value }))} placeholder="12" />
+          <Input label="İlk Taksit Tarihi" type="date" value={form.baslangic} onChange={e => setForm(f => ({ ...f, baslangic: e.target.value }))} />
+          <Input label="Aylık Taksit (₺) — boşsa otomatik hesaplanır" type="number" value={form.aylikTaksit} onChange={e => setForm(f => ({ ...f, aylikTaksit: e.target.value }))} placeholder="0.00" />
+
+          <label style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: "var(--card2)", borderRadius: 10, marginBottom: 8, cursor: "pointer" }}>
+            <button type="button" onClick={() => setForm(f => ({ ...f, ilkFarkli: !f.ilkFarkli }))} style={{ width: 22, height: 22, borderRadius: 6, border: `2px solid ${form.ilkFarkli ? "#f59e0b" : "var(--border2)"}`, background: form.ilkFarkli ? "#f59e0b" : "transparent", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "#fff", padding: 0 }}>{form.ilkFarkli ? "✓" : ""}</button>
+            <span style={{ color: "var(--text2)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif" }}>İlk taksit farklı</span>
+          </label>
+          {form.ilkFarkli && <Input label="İlk Taksit Tutarı (₺)" type="number" value={form.ilkTaksit} onChange={e => setForm(f => ({ ...f, ilkTaksit: e.target.value }))} placeholder="0.00" />}
+
+          <label style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: "var(--card2)", borderRadius: 10, marginBottom: 8, cursor: "pointer" }}>
+            <button type="button" onClick={() => setForm(f => ({ ...f, sonFarkli: !f.sonFarkli }))} style={{ width: 22, height: 22, borderRadius: 6, border: `2px solid ${form.sonFarkli ? "#f59e0b" : "var(--border2)"}`, background: form.sonFarkli ? "#f59e0b" : "transparent", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "#fff", padding: 0 }}>{form.sonFarkli ? "✓" : ""}</button>
+            <span style={{ color: "var(--text2)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif" }}>Son taksit farklı</span>
+          </label>
+          {form.sonFarkli && <Input label="Son Taksit Tutarı (₺)" type="number" value={form.sonTaksit} onChange={e => setForm(f => ({ ...f, sonTaksit: e.target.value }))} placeholder="0.00" />}
+
+          <Btn onClick={ekle} style={{ width: "100%", padding: 12, marginTop: 8 }}>Kaydet</Btn>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+
+// ── MAAŞ HESAPLAMA ────────────────────────────────────────────────────────────
+const MAAS_AYLAR = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+
+function MaasTab({ zamlar, setZamlar, maasAyarlar, setMaasAyarlar, enflasyon, setEnflasyon }) {
+  const [altSekme, setAltSekme] = useState("hesapla");
+  const buYil = new Date().getFullYear();
+
+  // Taslak (draft) — kaydedilene kadar kalıcı veriye yazılmaz
+  const [dZamlar, setDZamlar] = useState(zamlar);
+  const [dEnflasyon, setDEnflasyon] = useState(enflasyon);
+  const [dMaas, setDMaas] = useState(maasAyarlar);
+
+  // Kaydedilmemiş değişiklik var mı?
+  const degisti = JSON.stringify(dZamlar) !== JSON.stringify(zamlar) || JSON.stringify(dEnflasyon) !== JSON.stringify(enflasyon) || JSON.stringify(dMaas) !== JSON.stringify(maasAyarlar);
+
+  const kaydet = () => {
+    if (dMaas.mevcutMaas && !tutarGecerli(dMaas.mevcutMaas)) return formHatasi("Geçerli, pozitif bir maaş tutarı gir.");
+    if ([dMaas.zamYil1, dMaas.hesapYil].some(v => v && !tamSayiGecerli(v, 2000, 2100))) return formHatasi("2000–2100 arasında bir yıl gir.");
+    if ([...Object.values(dZamlar), ...Object.values(dEnflasyon)].some(v => v !== "" && (!Number.isFinite(sayisalOku(v)) || sayisalOku(v) <= -100 || sayisalOku(v) > 10000))) return formHatasi("Oranlar geçerli sayı olmalı ve −%100'den büyük olmalı.");
+    setZamlar(dZamlar);
+    setEnflasyon(dEnflasyon);
+    setMaasAyarlar(dMaas);
+    toast("Maaş bilgileri kaydedildi");
+  };
+
+  const yil1 = parseInt(dMaas.zamYil1) || buYil;
+  const yil2 = yil1 + 1;
+
+  const fmtTL = n => "₺" + n.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const fmtPct = n => "%" + n.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  const zamAl = (yil, donem) => {
+    const v = dZamlar[`${yil}-${donem}`];
+    return v !== undefined && v !== "" ? sayisalOku(v) : 0;
+  };
+  const enfAl = (yil, ay) => {
+    const v = dEnflasyon[`${yil}-${ay}`];
+    return v !== undefined && v !== "" ? sayisalOku(v) : 0;
+  };
+
+  // ── HESAP MOTORU ──
+  // Mevcut maaş zaten o dönemin zammını almıştır. Dönem zammı SADECE
+  // enflasyon farkı hesabında kullanılır, maaşa tekrar uygulanmaz.
+  const hesapla = useMemo(() => {
+    const mevcutMaas = paraOku(dMaas.mevcutMaas) || 0;
+    if (mevcutMaas === 0) return null;
+
+    const secYil = parseInt(dMaas.hesapYil) || buYil;
+    const secDonem = dMaas.hesapDonem || "ocak";
+    const aylar = secDonem === "ocak" ? [0,1,2,3,4,5] : [6,7,8,9,10,11];
+    const zamDonem = secDonem === "ocak" ? "ocak" : "temmuz";
+
+    // Bu dönemin başında alınan zam (enflasyon farkı kıyas tabanı)
+    const donemZammi = zamAl(secYil, zamDonem);
+
+    // 6 ayın kümülatif enflasyonu
+    let kumulatif = 1;
+    const ayDetay = [];
+    aylar.forEach(ayIdx => {
+      const enf = enfAl(secYil, ayIdx);
+      kumulatif *= (1 + enf / 100);
+      ayDetay.push({ ay: MAAS_AYLAR[ayIdx], enf, kumulatif: (kumulatif - 1) * 100 });
+    });
+    const kumEnflasyon = (kumulatif - 1) * 100;
+
+    // Enflasyon farkı (bileşik): (1+kümEnf)/(1+dönemZammı) - 1, negatifse 0
+    const enfFarki = Math.max(0, ((1 + kumEnflasyon / 100) / (1 + donemZammi / 100) - 1) * 100);
+
+    // Sonraki dönem zammı
+    let sonrakiYil = secYil, sonrakiDonem;
+    if (secDonem === "ocak") { sonrakiDonem = "temmuz"; }
+    else { sonrakiDonem = "ocak"; sonrakiYil = secYil + 1; }
+    const sonrakiZam = zamAl(sonrakiYil, sonrakiDonem);
+
+    // Tahmini maaş = mevcut × (1 + enfFarkı) × (1 + sonrakiZam)
+    // (Mevcut maaşa dönemin kendi zammı UYGULANMAZ, zaten içinde.)
+    const tahminiMaas = mevcutMaas * (1 + enfFarki / 100) * (1 + sonrakiZam / 100);
+
+    return {
+      mevcutMaas, donemZammi, kumEnflasyon, enfFarki, zamDonem,
+      ayDetay, secYil, secDonem,
+      sonrakiYil, sonrakiDonem, sonrakiZam, tahminiMaas,
+    };
+  }, [dMaas, dZamlar, dEnflasyon]);
+
+  return (
+    <div>
+      {/* Alt sekme */}
+      <div style={{ display: "flex", gap: 6, marginBottom: 14, background: "var(--card2)", borderRadius: 12, padding: 4 }}>
+        {[{id:"hesapla",label:"🧮 Maaş Hesapla"},{id:"zamlar",label:"📋 Zam Oranları"}].map(s => (
+          <button key={s.id} onClick={() => setAltSekme(s.id)} style={{ flex: 1, padding: "9px 4px", borderRadius: 9, border: "none", cursor: "pointer", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12, fontWeight: 700, background: altSekme === s.id ? "#6366f1" : "transparent", color: altSekme === s.id ? "#fff" : "var(--text4)", transition: "all 0.2s" }}>
+            {s.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ZAM ORANLARI */}
+      {altSekme === "zamlar" && (
+        <div>
+          <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "16px 14px", marginBottom: 14 }}>
+            <div style={{ color: "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>Başlangıç Yılı</div>
+            <input aria-label="Başlangıç yılı" type="number" value={dMaas.zamYil1} onChange={e => setDMaas(p => ({ ...p, zamYil1: e.target.value }))} placeholder={String(buYil)} style={{ width: "100%", background: "var(--card2)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 12px", color: "#f59e0b", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 16, fontWeight: 700, outline: "none", boxSizing: "border-box", textAlign: "center" }} />
+            <div style={{ color: "var(--text5)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 6, textAlign: "center" }}>{yil1}-{yil2} için 4 dönem zammı</div>
+          </div>
+
+          {[yil1, yil2].map(yil => (
+            <div key={yil} style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "16px 14px", marginBottom: 14 }}>
+              <div style={{ color: "var(--text)", fontSize: 14, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, marginBottom: 12 }}>{yil} Toplu Sözleşme Zamları</div>
+              {[{id:"ocak",label:"Ocak Zammı"},{id:"temmuz",label:"Temmuz Zammı"}].map(d => (
+                <div key={d.id} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                  <span style={{ color: "var(--text3)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", width: 110 }}>{d.label}</span>
+                  <div style={{ flex: 1, position: "relative" }}>
+                    <input aria-label={`${yil} ${d.label}`} type="number" step="0.01" value={dZamlar[`${yil}-${d.id}`] || ""} onChange={e => setDZamlar(p => ({ ...p, [`${yil}-${d.id}`]: e.target.value }))} placeholder="0.00" style={{ width: "100%", background: "var(--card2)", border: "1px solid var(--border)", borderRadius: 8, padding: "8px 28px 8px 12px", color: "var(--text)", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                    <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text4)", fontSize: 13 }}>%</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* MAAŞ HESAPLA */}
+      {altSekme === "hesapla" && (
+        <div>
+          <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "16px 14px", marginBottom: 14 }}>
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ display: "block", color: "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 5 }}>Mevcut (güncel) maaşın ₺</label>
+              <input aria-label="Mevcut güncel maaş" type="number" step="0.01" value={dMaas.mevcutMaas} onChange={e => setDMaas(p => ({ ...p, mevcutMaas: e.target.value }))} placeholder="0.00" style={{ width: "100%", background: "var(--card2)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 12px", color: "var(--text)", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+            </div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ display: "block", color: "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 5 }}>Yıl</label>
+                <input aria-label="Hesaplama yılı" type="number" value={dMaas.hesapYil} onChange={e => setDMaas(p => ({ ...p, hesapYil: e.target.value }))} placeholder={String(buYil)} style={{ width: "100%", background: "var(--card2)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 12px", color: "var(--text)", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+              </div>
+              <div style={{ flex: 1.4 }}>
+                <label style={{ display: "block", color: "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 5 }}>Dönem</label>
+                <select aria-label="Maaş hesaplama dönemi" value={dMaas.hesapDonem} onChange={e => setDMaas(p => ({ ...p, hesapDonem: e.target.value }))} style={{ width: "100%", background: "var(--card2)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 12px", color: "var(--text)", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, outline: "none", boxSizing: "border-box" }}>
+                  <option value="ocak">Ocak - Haziran</option>
+                  <option value="temmuz">Temmuz - Aralık</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Aylık enflasyon */}
+          <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "16px 14px", marginBottom: 14 }}>
+            <div style={{ color: "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>Aylık Enflasyon (%)</div>
+            <div style={{ color: "var(--text5)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 12 }}>Bilmediğin aylar boş kalabilir</div>
+            {(dMaas.hesapDonem === "ocak" ? [0,1,2,3,4,5] : [6,7,8,9,10,11]).map(ayIdx => {
+              const yil = parseInt(dMaas.hesapYil) || buYil;
+              return (
+                <div key={ayIdx} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                  <span style={{ color: "var(--text3)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", width: 70 }}>{MAAS_AYLAR[ayIdx]}</span>
+                  <div style={{ flex: 1, position: "relative" }}>
+                    <input aria-label={`${yil} ${MAAS_AYLAR[ayIdx]} enflasyon oranı`} type="number" step="0.01" value={dEnflasyon[`${yil}-${ayIdx}`] || ""} onChange={e => setDEnflasyon(p => ({ ...p, [`${yil}-${ayIdx}`]: e.target.value }))} placeholder="boş" style={{ width: "100%", background: "var(--card2)", border: "1px solid var(--border)", borderRadius: 8, padding: "8px 28px 8px 12px", color: "var(--text)", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                    <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text4)", fontSize: 12 }}>%</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* SONUÇ */}
+          {hesapla ? (
+            <div>
+              <div style={{ background: "linear-gradient(135deg,var(--card),var(--card2))", border: "1px solid #6366f133", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "18px 16px", marginBottom: 14 }}>
+                <div style={{ color: "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 14 }}>Hesaplama Detayı</div>
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid var(--divider)" }}>
+                  <span style={{ color: "var(--text3)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif" }}>Mevcut maaş</span>
+                  <span style={{ color: "var(--text)", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>{fmtTL(hesapla.mevcutMaas)}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid var(--divider)" }}>
+                  <span style={{ color: "var(--text3)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif" }}>6 aylık kümülatif enflasyon</span>
+                  <span style={{ color: "#f59e0b", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>{fmtPct(hesapla.kumEnflasyon)}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid var(--divider)" }}>
+                  <span style={{ color: "var(--text3)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif" }}>Enflasyon farkı</span>
+                  <span style={{ color: hesapla.enfFarki > 0 ? "#10b981" : "var(--text4)", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>{hesapla.enfFarki > 0 ? fmtPct(hesapla.enfFarki) : "Yok"}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0" }}>
+                  <span style={{ color: "var(--text3)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif" }}>{hesapla.sonrakiDonem === "ocak" ? `${hesapla.sonrakiYil} Ocak` : "Temmuz"} zammı</span>
+                  <span style={{ color: "#10b981", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>{fmtPct(hesapla.sonrakiZam)}</span>
+                </div>
+              </div>
+
+              <div style={{ background: "var(--card)", border: "1px solid #10b98144", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "18px 16px", textAlign: "center" }}>
+                <div style={{ color: "var(--text4)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>
+                  {hesapla.sonrakiDonem === "ocak" ? `${hesapla.sonrakiYil} Ocak` : `${hesapla.secYil} Temmuz`} Tahmini Maaşın
+                </div>
+                <div style={{ color: "#10b981", fontSize: 26, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>{fmtTL(hesapla.tahminiMaas)}</div>
+                <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 8 }}>
+                  Mevcuttan {fmtPct((hesapla.tahminiMaas / hesapla.mevcutMaas - 1) * 100)} artış
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div style={{ textAlign: "center", color: "var(--text5)", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, padding: "30px 0" }}>
+              Mevcut maaşını gir, hesaplama burada görünsün
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* KAYDET BUTONU */}
+      <button onClick={kaydet} disabled={!degisti} style={{ width: "100%", marginTop: 8, padding: 14, borderRadius: 12, border: "none", cursor: degisti ? "pointer" : "default", background: degisti ? "linear-gradient(135deg,#10b981,#059669)" : "var(--card2)", color: degisti ? "#fff" : "var(--text5)", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 14, fontWeight: 700, transition: "all 0.2s" }}>
+        {degisti ? "💾 Kaydet" : "✓ Kaydedildi"}
+      </button>
+      {degisti && (
+        <div style={{ textAlign: "center", color: "#f59e0b", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 6 }}>
+          Kaydedilmemiş değişiklik var
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+
+export default function App() {
+  const [aktifTab, setAktifTab] = useState("ozet");
+
+  // 💾 TÜM VERİLER LOCALSTORAGE'DA KAYDEDILIYOR
+  const [islemler, setIslemler] = useLocalStorage("ft_islemler", INITIAL_ISLEMLER);
+  const [odemeler, setOdemeler] = useLocalStorage("ft_odemeler", []);
+  const [kartlar, setKartlar] = useLocalStorage("ft_kartlar", []);
+  const [kartOdemeleri, setKartOdemeleri] = useLocalStorage("ft_kart_odemeleri", []);
+  const [bakiyeHesapModu, setBakiyeHesapModu] = useLocalStorage("ft_bakiye_hesap_modu", "kartlar_dahil");
+  const [hizliSablonlar, setHizliSablonlar] = useLocalStorage("ft_hizli_sablonlar", []);
+  const [donemGun, setDonemGun] = useLocalStorage("ft_donem_gun", "15");
+  const [tekrarlayan, setTekrarlayan] = useLocalStorage("ft_tekrarlayan", INITIAL_TEKRARLAYAN);
+  const [butceler, setButceler] = useLocalStorage("ft_butceler", {});
+  const [kategoriler, setKategoriler] = useLocalStorage("ft_kategoriler", VARSAYILAN_KATEGORILER);
+
+  // 💾 Hangi ay/yıl sabit gider eklendi kaydı
+  const [sabitEklemeLog, setSabitEklemeLog] = useLocalStorage("ft_sabit_log", {});
+
+  // Maaş hesaplama verileri
+  const [krediler, setKrediler] = useLocalStorage("ft_krediler", []);
+  const [taksitler, setTaksitler] = useLocalStorage("ft_taksitler", []);
+  const [zamlar, setZamlar] = useLocalStorage("ft_zamlar", {});
+  const [enflasyon, setEnflasyon] = useLocalStorage("ft_enflasyon", {});
+  const [maasAyarlar, setMaasAyarlar] = useLocalStorage("ft_maas_ayarlar", { mevcutMaas: "", zamYil1: "", hesapYil: "", hesapDonem: "ocak" });
+
+  // Hamburger menü
+  const [menuAcik, setMenuAcik] = useState(false);
+  const [hizliModal, setHizliModal] = useState(false);
+  const [tema, setTema] = useLocalStorage("ft_tema", "light");
+  const [bildirimAyarlari, setBildirimAyarlari] = useLocalStorage("ft_bildirim_ayarlari", { gunler: [0, 1], saat: "18:00" });
+  const [sonBildirimPlanlama, setSonBildirimPlanlama] = useLocalStorage("ft_son_bildirim_planlama", null);
+  useEffect(() => {
+    try {
+      const hedefSurum = "1.6.9";
+      const mevcutSurum = JSON.parse(window.localStorage.getItem("ft_schema_version") || "null");
+      if (mevcutSurum === hedefSurum) return;
+      if (!window.localStorage.getItem("ft_auto_backup_v120")) {
+        const data = {};
+        for (let i = 0; i < window.localStorage.length; i += 1) {
+          const key = window.localStorage.key(i);
+          if (key?.startsWith("ft_") && !key.startsWith("ft_auto_backup")) {
+            try { data[key] = JSON.parse(window.localStorage.getItem(key)); } catch (e) {}
+          }
+        }
+        window.localStorage.setItem("ft_auto_backup_v120", JSON.stringify({ olusturulma: new Date().toISOString(), surum: mevcutSurum || "1.2.0", data }));
+      }
+      if (!window.localStorage.getItem("ft_auto_backup_v130")) {
+        const data = {};
+        for (let i = 0; i < window.localStorage.length; i += 1) {
+          const key = window.localStorage.key(i);
+          if (key?.startsWith("ft_") && !key.startsWith("ft_auto_backup")) {
+            try { data[key] = JSON.parse(window.localStorage.getItem(key)); } catch (e) {}
+          }
+        }
+        window.localStorage.setItem("ft_auto_backup_v130", JSON.stringify({ olusturulma: new Date().toISOString(), surum: mevcutSurum || "1.3.0", data }));
+      }
+      if (!window.localStorage.getItem("ft_auto_backup_v140")) {
+        const data = {};
+        for (let i = 0; i < window.localStorage.length; i += 1) {
+          const key = window.localStorage.key(i);
+          if (key?.startsWith("ft_") && !key.startsWith("ft_auto_backup")) {
+            try { data[key] = JSON.parse(window.localStorage.getItem(key)); } catch (e) {}
+          }
+        }
+        window.localStorage.setItem("ft_auto_backup_v140", JSON.stringify({ olusturulma: new Date().toISOString(), surum: mevcutSurum || "1.4.0", data }));
+      }
+      if (!window.localStorage.getItem("ft_auto_backup_v161")) {
+        const data = {};
+        for (let i = 0; i < window.localStorage.length; i += 1) {
+          const key = window.localStorage.key(i);
+          if (key?.startsWith("ft_") && !key.startsWith("ft_auto_backup")) {
+            try { data[key] = JSON.parse(window.localStorage.getItem(key)); } catch (e) {}
+          }
+        }
+        window.localStorage.setItem("ft_auto_backup_v161", JSON.stringify({ olusturulma: new Date().toISOString(), surum: mevcutSurum || "1.6.0", data }));
+      }
+      window.localStorage.setItem("ft_schema_version", JSON.stringify(hedefSurum));
+    } catch { kayitHatasiBildir("Otomatik güvenlik kopyası veya sürüm kaydı yazılamadı. Depolama alanını kontrol edip dosya yedeği al."); }
+  }, []);
+  useEffect(() => {
+    try {
+      document.documentElement.setAttribute("data-theme", tema);
+      document.body.style.background = tema === "light" ? "#FCF5EF" : "#0b1020";
+    } catch (e) {}
+  }, [tema]);
+
+  // 🔔 Seçilen gün/saatlerde ödeme bildirimleri — aynı zamana düşenler tek bildirimde birleşir
+  useEffect(() => {
+    let iptal = false;
+    (async () => {
+      try {
+        const LN = bildirimEklentisi();
+        if (!LN || iptal) { if (!iptal) setSonBildirimPlanlama({ zaman: new Date().toISOString(), sayi: 0, hata: "eklenti bulunamadı" }); return; }
+        const izinli = await bildirimIzniAl(LN);
+        if (!izinli || iptal) { if (!iptal) setSonBildirimPlanlama({ zaman: new Date().toISOString(), sayi: 0, hata: "izin verilmedi" }); return; }
+        const kanalId = await bildirimKanaliHazirla(LN);
+        // Eski planlananları temizle ve güncel faturalarla yeniden kur.
+        try {
+          const bekleyen = await LN.getPending();
+          if (bekleyen && bekleyen.notifications && bekleyen.notifications.length) {
+            await LN.cancel({ notifications: bekleyen.notifications.map(n => ({ id: n.id })) });
+          }
+        } catch (e) {}
+        const kartHatirlatmalari = kartHatirlatmalariniOlustur(kartlar, kartOdemeleri, new Date());
+        const tumHatirlatmalar = [...(odemeler || []), ...kartHatirlatmalari];
+        const planlar = bildirimPlanlariniOlustur(tumHatirlatmalar, bildirimAyarlari, new Date());
+        const bildirimler = planlar.map(plan => ({
+          id: bildirimKimligi(plan.anahtar),
+          title: plan.odemeler.every(o => o.kaynak === "kredi_karti") ? "Kredi Kartı Hatırlatması" : "Ödeme Hatırlatması",
+          body: `${plan.odemeler.map(o => o.aciklama || o.kategori || "Fatura").join(" · ")} — ${plan.onceGun === 0 ? "bugün son ödeme günü" : plan.onceGun === 1 ? "yarın son ödeme günü" : `${plan.onceGun} gün sonra son ödeme günü`}.`,
+          schedule: { at: plan.at, allowWhileIdle: true },
+          ...(kanalId ? { channelId: kanalId } : {}),
+          foreground: true,
+          // Android 14+ yeni kurulumlarda kesin alarm izni kapalı veya sistem
+          // tarafından pasif olabilir. Ödeme hatırlatması dakika hassasiyeti
+          // gerektirmediği için izin istemeyen setAndAllowWhileIdle yolunu kullan.
+          isExactNotification: false,
+          extra: { finoraTip: "odeme_hatirlatma", planAnahtari: plan.anahtar },
+        }));
+        const planlamaSonucu = bildirimler.length ? await LN.schedule({ notifications: bildirimler }) : null;
+        let dogrulananSayi = 0;
+        if (bildirimler.length) {
+          const istenenIdler = new Set(bildirimler.map(b => Number(b.id)));
+          const bekleyen = await LN.getPending();
+          dogrulananSayi = (bekleyen?.notifications || []).filter(n => istenenIdler.has(Number(n.id))).length;
+        }
+        const odemeSayisi = (odemeler || []).filter(o => !o.odendi && o.tarih).length;
+        const odemeGunuSayisi = new Set((odemeler || []).filter(o => !o.odendi && o.tarih).map(o => o.tarih)).size;
+        const eksikSayi = Math.max(0, bildirimler.length - dogrulananSayi);
+        setSonBildirimPlanlama({
+          zaman: new Date().toISOString(),
+          sayi: dogrulananSayi,
+          istenenSayi: bildirimler.length,
+          odemeSayisi,
+          odemeGunuSayisi,
+          kartSayisi: kartHatirlatmalari.length,
+          telafiSayisi: planlar.filter(p => p.telafi).length,
+          uyari: planlamaSonucu?.warning?.message || null,
+          hata: eksikSayi > 0 ? `${eksikSayi} bildirim telefonun bekleyen bildirim listesine eklenemedi` : null,
+        });
+      } catch (e) {
+        setSonBildirimPlanlama({ zaman: new Date().toISOString(), sayi: 0, hata: (e && e.message) ? e.message : "bilinmeyen hata" });
+      }
+    })();
+    return () => { iptal = true; };
+  }, [odemeler, kartlar, kartOdemeleri, bildirimAyarlari]);
+
+  // 🔄 Her açılışta aktif sabit giderleri kontrol et, bu ay eklenmemişse ekle
+  useEffect(() => {
+    const bugunAnahtari = yerelTarihAnahtari();
+    const gun = Math.min(28, Math.max(1, parseInt(donemGun) || 15));
+    const donem = maasDonemiBul(bugunAnahtari, gun);
+    const donemKey = `${donem.yil}-${donem.ay}`;
+
+    const yeniLog = { ...sabitEklemeLog };
+    const eklenecekler = [];
+    let logDegisti = false;
+
+    tekrarlayan.forEach(t => {
+      if (!t.aktif) return;
+      const logKey = `${t.id}-${donemKey}`;
+      const zatenKayitli = islemler.some(i => String(i.sabitId) === String(t.id) && maasDonemKey(i.tarih, gun).key === donem.key);
+      if (yeniLog[logKey] || zatenKayitli) {
+        if (zatenKayitli && !yeniLog[logKey]) { yeniLog[logKey] = true; logDegisti = true; }
+        return;
+      }
+
+      // Ödeme günü dönem başlangıcından küçükse tarih bir sonraki takvim ayındadır.
+      // Örn. 15 Ağustos–14 Eylül dönemindeki ayın 5'i, 5 Eylül olarak yazılır.
+      const odemeDate = donemdekiSabitOdemeTarihi(donem.baslangic, t.gun);
+      const baslangic = t.baslangic ? yerelTarihOku(t.baslangic) : null;
+      const bitis = t.bitis ? yerelTarihOku(t.bitis) : null;
+      if ((baslangic && odemeDate < baslangic) || (bitis && odemeDate > bitis)) return;
+      const odemeTarih = yerelTarihAnahtari(odemeDate);
+
+      eklenecekler.push({
+        id: Date.now() + Math.random(),
+        tip: "gider",
+        kategori: t.kategori,
+        tutar: t.tutar,
+        aciklama: `🔄 ${t.aciklama}`,
+        tarih: odemeTarih,
+        sabitId: t.id, // hangi sabitten geldiği
+      });
+      yeniLog[logKey] = true;
+      logDegisti = true;
+    });
+
+    if (eklenecekler.length > 0) {
+      setIslemler(prev => [...prev, ...eklenecekler]);
+    }
+    if (logDegisti) setSabitEklemeLog(yeniLog);
+  }, [tekrarlayan, donemGun, islemler, sabitEklemeLog]);
+
+
+
+
+  const menuGruplari = [
+    { grup: "Bütçe", items: [
+      { id: "ozet", label: "Genel Bakış", icon: "home" },
+      { id: "islemler", label: "İşlemler", icon: "wallet" },
+      { id: "odemeler", label: "Ödemeler", icon: "card" },
+      { id: "tekrarlayan", label: "Sabit Giderler", icon: "repeat" },
+      { id: "analiz", label: "Raporlar", icon: "chart" },
+      { id: "krediler", label: "Krediler", icon: "receipt" },
+      { id: "taksitler", label: "Taksitli Harcamalar", icon: "receipt" },
+    ]},
+    { grup: "Maaş", items: [
+      { id: "maas", label: "Maaş Hesaplama", icon: "coins" },
+    ]},
+    { grup: "Diğer", items: [
+      { id: "ayarlar", label: "Ayarlar", icon: "settings" },
+    ]},
+  ];
+  const tumSekmeler = menuGruplari.flatMap(g => g.items);
+  const aktifSekmeBilgi = tumSekmeler.find(t => t.id === aktifTab) || tumSekmeler[0];
+
+  return (
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap');
+        :root {
+          --bg:#0b1020; --header:rgba(15,23,42,.92); --card:#121a2e; --card2:#182238;
+          --border:#26334d; --divider:#202c43; --border2:#34435f;
+          --text:#f8fafc; --text2:#dbe3ef; --text3:#9eacc1; --text4:#a4b2c7; --text5:#99a9c2;
+          --border-light:rgba(255,255,255,.07);
+          --card-shadow:0 14px 34px rgba(0,0,0,.22);
+          --balance:linear-gradient(145deg,#4f46e5 0%,#6366f1 48%,#0ea5a4 130%);
+          --balance-shadow:0 18px 38px rgba(79,70,229,.32);
+          --accent:#6d6ff8; --accent-strong:#5657e8; --accent-soft:rgba(99,102,241,.14);
+          --success:#14b88a; --danger:#f05f70; --income-text:#4ade80; --expense-text:#fb7185; --saving-text:#93c5fd;
+        }
+        [data-theme="dark"] .kredi-karti-alani * { color:#fff !important; }
+        [data-theme="light"] .kredi-karti-alani, [data-theme="light"] .kredi-karti-alani * { color:#000 !important; }
+        [data-theme="light"] {
+          --bg:#FCF5EF; --header:rgba(252,245,239,.96); --card:#fffdfa; --card2:#f5eae1;
+          --border:#e6d8cd; --divider:#eee2d8; --border2:#d8c3b3;
+          --income-text:#047857; --expense-text:#b91c1c; --saving-text:#1d4ed8;
+          --text:#302821; --text2:#493e35; --text3:#645447; --text4:#726052; --text5:#786657;
+          --border-light:rgba(255,255,255,.9);
+          --card-shadow:0 12px 30px rgba(37,45,77,.07);
+          --balance:linear-gradient(145deg,#5153e6 0%,#6d6ff8 52%,#24aaa8 135%);
+          --balance-shadow:0 18px 38px rgba(81,83,230,.25);
+        }
+        * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+        html, body, #root { background:var(--bg); min-height:100vh; margin:0; width:100%; overflow-x:hidden; }
+        body { color:var(--text); }
+        .app-modal-panel { background:var(--card) !important; outline:none; }
+        .app-modal-panel button { min-height:44px; }
+        .app-modal-panel button[aria-label="Pencereyi kapat"] { min-width:44px; }
+        input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible { outline:2px solid var(--accent) !important; outline-offset:3px; }
+        .kayit-hatasi { margin:12px 16px; padding:14px; border:1px solid #c24132; border-radius:14px; color:var(--text); background:var(--card); font-size:13px; line-height:1.6; }
+        .ilk-kullanim { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+        .ilk-kullanim button { min-height:44px; padding:10px 14px; border:1px solid rgba(255,255,255,.6); border-radius:12px; background:rgba(0,0,0,.16); color:#fff; font-weight:700; }
+        .nav-dock button, .app-content button { min-height:44px; }
+        .app-content button[style*="width: 22px"], .app-content button[style*="width: 26px"], .app-content button[style*="width: 28px"], .app-content button[style*="width: 30px"], .app-content button[style*="width: 32px"] { min-width:44px; }
+
+
+        button, input, select { font-family:'Inter',system-ui,sans-serif !important; }
+        button { transition:transform .18s ease, background .18s ease, border-color .18s ease, opacity .18s ease; }
+        button:active { transform:scale(.97); }
+        ::-webkit-scrollbar { width:5px; }
+        ::-webkit-scrollbar-track { background:transparent; }
+        ::-webkit-scrollbar-thumb { background:var(--border2); border-radius:99px; }
+        input[type=date]::-webkit-calendar-picker-indicator { filter:invert(0.4); }
+        [data-theme="light"] input[type=date]::-webkit-calendar-picker-indicator { filter:invert(0); }
+        select option { background:var(--card2); }
+        @keyframes slideDown {
+          from { transform:translateX(-50%) translateY(-100%); opacity:0; }
+          to   { transform:translateX(-50%) translateY(0); opacity:1; }
+        }
+        @keyframes menuSlide {
+          from { transform:translateX(-100%); }
+          to   { transform:translateX(0); }
+        }
+        @keyframes sheetUp {
+          from { transform:translateY(100%); }
+          to   { transform:translateY(0); }
+        }
+        @keyframes fadeIn {
+          from { opacity:0; }
+          to   { opacity:1; }
+        }
+        @keyframes toastIn {
+          from { opacity:0; transform:translateX(-50%) translateY(-16px); }
+          to   { opacity:1; transform:translateX(-50%) translateY(0); }
+        }
+        @keyframes pageEnter {
+          from { opacity:0; transform:translateY(8px); }
+          to { opacity:1; transform:translateY(0); }
+        }
+
+
+        .category-trend-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; color:var(--text); font-size:16px; font-weight:700; margin-bottom:16px; }
+        .category-trend-heading > span { color:var(--text3); font-size:12px; font-weight:600; background:var(--card2); border:1px solid var(--border); border-radius:10px; padding:5px 10px; }
+        .category-trend-card { background:var(--card2); border:1px solid var(--border); border-radius:18px; padding:16px; margin-bottom:12px; font-variant-numeric:tabular-nums; }
+        .category-trend-card:last-child { margin-bottom:0; }
+        .category-trend-top { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
+        .category-trend-main { min-width:0; }
+        .category-trend-name { display:flex; align-items:center; gap:9px; color:var(--text2); font-size:14px; font-weight:700; overflow-wrap:anywhere; }
+        .category-trend-icon { width:34px; height:34px; display:grid; place-items:center; border-radius:11px; flex-shrink:0; }
+        .category-trend-amount { color:var(--text); font-size:22px; font-weight:750; letter-spacing:-.025em; margin-top:12px; overflow-wrap:anywhere; }
+        .category-trend-caption { display:block; color:var(--text3); font-size:11px; line-height:1.5; margin-top:4px; }
+        .category-trend-change { text-align:right; flex-shrink:0; }
+        .category-trend-badge { display:inline-block; border-radius:8px; padding:5px 8px; font-size:12px; font-weight:700; }
+        .category-trend-scroll { width:100%; min-width:0; margin-top:17px; padding-bottom:4px; }
+        .category-trend-columns { display:grid; width:100%; min-width:0; gap:2px; align-items:end; }
+        .category-trend-column { display:flex; flex-direction:column; gap:7px; align-items:center; justify-content:flex-end; border:0; border-radius:6px; background:transparent; padding:2px 0 4px; color:var(--text4); min-width:0; width:100%; min-height:104px; cursor:pointer; }
+        .category-trend-column:focus-visible { outline:2px solid var(--accent); outline-offset:-2px; }
+        .category-trend-bar-area { display:flex; align-items:flex-end; justify-content:center; height:72px; width:100%; }
+        .category-trend-bar { display:block; max-width:16px; width:70%; border-radius:5px 5px 2px 2px; transition:height .3s,opacity .15s; }
+        .category-trend-month { font-size:clamp(8px,2.4vw,11px); letter-spacing:-.2px; white-space:nowrap; line-height:1.5; }
+        .category-trend-column[aria-pressed="true"] .category-trend-month { color:var(--text); font-weight:700; }
+        .category-trend-selected { color:var(--text3); border-top:1px solid var(--border); padding-top:10px; margin-top:7px; font-size:12px; }
+        .category-trend-selected strong { color:var(--text2); font-weight:600; }
+        @media(max-width:360px) { .category-trend-card { padding:13px; } .category-trend-top { gap:8px; } .category-trend-amount { font-size:20px; } .category-trend-change { max-width:105px; } }
+
+        /* Ana sayfa: yalnızca sunum; veri ve hesap kuralları korunur. */
+        .home-overview { font-variant-numeric:tabular-nums; }
+        .home-period-wrap { display:flex; flex-direction:column; align-items:flex-end; gap:7px; margin-bottom:14px; }
+        .home-overview .home-period-pill { display:flex; align-items:center; max-width:100%; background:rgba(245,158,11,.09); border:1px solid rgba(245,158,11,.24); border-radius:99px; padding:0 3px; color:#f59e0b; }
+        .home-period-pill > button { width:30px; min-height:40px; border:0; background:none; color:inherit; font-size:21px; cursor:pointer; border-radius:99px; }
+        .home-period-pill > button:disabled { opacity:.3; cursor:default; }
+        .home-period-label { position:relative; display:flex; align-items:center; gap:8px; min-height:40px; min-width:0; padding:0 4px; font-size:12px; font-weight:700; }
+        .home-period-label > svg { flex-shrink:0; }
+        .home-period-text { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .home-period-chevron { font-size:18px; line-height:1; }
+        .home-period-select { position:absolute; inset:0; width:100%; height:100%; min-height:40px; opacity:0; cursor:pointer; }
+        .home-period-label:focus-within { outline:2px solid var(--accent); outline-offset:3px; border-radius:12px; }
+        .home-period-history { display:flex; align-items:center; flex-wrap:wrap; justify-content:flex-end; gap:8px; color:var(--text3); font-size:12px; }
+        .home-period-history button { background:none; border:0; color:#ef4444; font-size:11px; cursor:pointer; min-height:30px; }
+        [data-theme="light"] .home-period-pill { color:#92400e; background:#fffbeb; border-color:#fcd34d; }
+        .home-overview .home-balance { padding:23px 22px !important; margin-bottom:14px !important; }
+        .home-balance-heading { position:relative; z-index:1; display:flex; align-items:center; justify-content:space-between; gap:10px; color:#fff; font-weight:600; font-size:16px; }
+        .home-balance-badge { display:inline-flex; align-items:center; gap:5px; flex-shrink:0; background:rgba(0,0,0,.15); border:1px solid rgba(255,255,255,.16); border-radius:99px; padding:7px 12px; font-size:11px; font-weight:700; }
+        .home-balance-value { position:relative; z-index:1; color:#fff; font-family:'Inter',system-ui,sans-serif; font-size:clamp(30px,9.5vw,46px); font-weight:750; line-height:1.1; letter-spacing:-.025em; margin:5px 0 3px; overflow-wrap:anywhere; }
+        .home-balance-caption { position:relative; z-index:1; color:rgba(255,255,255,.84); font-size:11px; line-height:1.5; }
+        .home-balance-wave { position:absolute; right:-70px; bottom:-115px; width:310px; height:205px; border-radius:48%; background:rgba(255,255,255,.08); transform:rotate(-19deg); pointer-events:none; }
+        .home-overview .home-summary { gap:8px !important; margin-bottom:16px !important; }
+        .home-overview .home-summary-card { padding:14px 10px !important; border-radius:18px !important; min-width:0; box-shadow:0 5px 16px rgba(0,0,0,.06) !important; }
+        .home-overview .home-summary-card > div:first-child > span:last-child { width:27px !important; height:27px !important; border-radius:9px !important; color:inherit; }
+        .home-overview .home-summary-value { font-size:clamp(11px,3.35vw,15px) !important; letter-spacing:-.025em; margin-bottom:8px !important; overflow:visible !important; white-space:normal !important; overflow-wrap:anywhere; }
+        .home-overview .home-summary-caption { font-size:12px !important; line-height:1.45; margin-top:5px !important; }
+        .home-panel, .home-overview .home-credit-panel { background:var(--card); border:1px solid var(--border); border-radius:22px !important; padding:18px !important; margin-bottom:14px !important; box-shadow:var(--card-shadow); }
+        .home-panel-heading { display:flex; justify-content:space-between; align-items:center; gap:12px; color:var(--text); font-size:16px; font-weight:750; }
+        .home-panel-heading > svg { color:var(--text4); }
+        .home-gauge-panel { padding-bottom:16px !important; }
+        .home-gauge-svg { margin-top:12px !important; }
+        .home-gauge-split { display:grid; grid-template-columns:1fr 1fr; border-top:1px solid var(--border); padding-top:14px; margin-top:0; }
+        .home-gauge-split > div { display:flex; flex-direction:column; gap:5px; padding:0 16px; }
+        .home-gauge-split > div + div { border-left:1px solid var(--border); }
+        .home-detail-label { color:var(--text3); font-size:12px; }
+        .home-gauge-split strong { color:var(--text); font-size:21px; font-weight:700; }
+        .home-percent-value { display:flex; align-items:center; gap:7px; }
+        .home-percent-dot { display:inline-block; width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+        .home-gauge-note { color:var(--text4); font-size:12px; text-align:center; line-height:1.5; margin-top:14px; }
+        .home-gauge-legend { display:flex; justify-content:center; flex-wrap:wrap; gap:18px; margin-top:10px; }
+        .home-gauge-legend span { display:flex; align-items:center; gap:6px; color:var(--text3); font-size:12px; }
+        .home-gauge-legend i { width:7px; height:7px; border-radius:50%; }
+        .home-overview .home-forecast, .home-overview .home-daily-limit { gap:12px !important; }
+        .home-overview .home-forecast > div:nth-child(2) > div:first-child, .home-overview .home-daily-limit > div:nth-child(2) > div:first-child { font-size:12px !important; }
+        .home-overview .home-forecast > div:nth-child(2) > div:last-child, .home-overview .home-daily-limit > div:nth-child(2) > div:last-child { font-size:12px !important; line-height:1.6; }
+        .home-overview .home-forecast > div:nth-child(2) span:first-child, .home-overview .home-daily-limit > div:nth-child(2) span:first-child { font-size:19px !important; }
+        .home-overview .home-credit-panel > div:first-child { color:var(--text) !important; font-size:15px !important; font-weight:750; text-transform:none !important; letter-spacing:0 !important; }
+        .home-overview .home-credit-card { border-radius:16px !important; padding:14px !important; margin-bottom:12px !important; }
+        .home-overview .home-credit-card > div:nth-child(2) > div { padding:10px 8px !important; border-radius:10px !important; min-width:0; }
+        .home-overview .home-credit-card > div:nth-child(2) > div > div:first-child { font-size:12px !important; }
+        .home-overview .home-credit-card > div:nth-child(2) > div > div:last-child { font-size:12px !important; overflow-wrap:anywhere; }
+        [data-theme="dark"] .home-overview .home-credit-panel { background:linear-gradient(155deg,#121a2e,#10192a) !important; }
+        @media(max-width:360px) {
+          .home-overview .home-panel, .home-overview .home-credit-panel { padding:14px !important; }
+          .home-overview .home-summary-card { padding:12px 8px !important; }
+          .home-overview .home-forecast { flex-wrap:wrap; }
+          .home-overview .home-credit-card { padding:12px 10px !important; }
+        }
+
+        .app-shell { width:100%; max-width:540px; margin:0 auto; min-height:100vh; padding-bottom:104px; font-family:'Inter',system-ui,sans-serif; }
+        .app-shell:before { content:""; position:fixed; inset:0; z-index:0; pointer-events:none; background:radial-gradient(circle at 10% -10%,rgba(99,102,241,.13),transparent 34%),radial-gradient(circle at 92% 18%,rgba(20,184,166,.08),transparent 30%); }
+        .app-content { padding:14px 16px 0; position:relative; z-index:1; }
+        .app-content > div { animation:pageEnter .28s cubic-bezier(.16,1,.3,1); }
+        .topbar { position:sticky; top:0; z-index:50; padding:calc(14px + env(safe-area-inset-top)) 16px 12px; background:var(--header); border-bottom:1px solid var(--border); backdrop-filter:blur(22px); -webkit-backdrop-filter:blur(22px); box-shadow:0 8px 28px rgba(15,23,42,.06); }
+        .nav-dock { position:fixed; left:50%; bottom:0; transform:translateX(-50%); z-index:90; width:100%; max-width:540px; padding:0 12px calc(10px + env(safe-area-inset-bottom)); }
+        .nav-dock-inner { min-height:70px; padding:8px 8px; display:flex; align-items:center; justify-content:space-between; background:var(--header); border:1px solid var(--border); border-radius:24px; box-shadow:0 18px 42px rgba(15,23,42,.22); backdrop-filter:blur(22px); -webkit-backdrop-filter:blur(22px); }
+        .desktop-brand { display:none; }
+        input, select, textarea { min-height:44px; }
+        @media (prefers-reduced-motion:reduce) { *, *:before, *:after { animation-duration:.01ms !important; transition-duration:.01ms !important; } }
+        @media (min-width:760px) {
+          .app-shell { max-width:760px; padding-bottom:112px; }
+          .nav-dock { max-width:560px; bottom:14px; }
+          .app-content { padding:20px 24px 0; }
+          .topbar { border:1px solid var(--border); border-radius:0 0 24px 24px; padding-left:24px; padding-right:24px; }
+        }
+      `}</style>
+      <div data-theme={tema} style={{ background: "var(--bg)", minHeight: "100vh", width: "100%" }}>
+      <div className="app-shell">
+        {/* HEADER */}
+        <header className="topbar">
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+              <button aria-label="Menüyü aç" onClick={() => setMenuAcik(true)} style={{ width: 42, height: 42, borderRadius: 14, background: "var(--card2)", border: "1px solid var(--border)", color: "var(--text2)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0, margin: 0, boxSizing: "border-box", lineHeight: 0, flexShrink: 0 }}>
+                <Icon name="menu" size={21} />
+              </button>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--text4)", fontSize: 12, fontWeight: 700, letterSpacing: ".13em", textTransform: "uppercase", marginBottom: 2 }}>Bütçe Takip</div>
+                <div style={{ color: "var(--text)", fontSize: 19, lineHeight: 1.15, fontFamily: "'Manrope', 'Inter', system-ui, sans-serif", fontWeight: 800, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{aktifSekmeBilgi.label}</div>
+              </div>
+            </div>
+            <button aria-label={tema === "dark" ? "Açık temaya geç" : "Koyu temaya geç"} onClick={() => setTema(tema === "dark" ? "light" : "dark")} style={{ width: 42, height: 42, borderRadius: 14, background: "var(--card)", border: "1px solid var(--border)", color: tema === "dark" ? "#f6c85f" : "#5961e9", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0, margin: 0, boxSizing: "border-box", lineHeight: 0, boxShadow: "var(--card-shadow)" }}>
+              <Icon name={tema === "dark" ? "sun" : "moon"} size={20} />
+            </button>
+          </div>
+        </header>
+
+        {/* HAMBURGER MENÜ */}
+        {menuAcik && (
+          <>
+            <div onClick={() => setMenuAcik(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 100 }} />
+            <aside style={{ position: "fixed", top: 0, left: 0, bottom: 0, width: 300, maxWidth: "86%", background: "var(--header)", borderRight: "1px solid var(--border)", zIndex: 101, padding: "calc(18px + env(safe-area-inset-top)) 12px 24px", overflowY: "auto", animation: "menuSlide 0.24s cubic-bezier(.16,1,.3,1)", backdropFilter: "blur(24px)", boxShadow: "24px 0 60px rgba(0,0,0,.25)" }}>
+              <div style={{ padding: "4px 8px 20px", borderBottom: "1px solid var(--divider)", marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
+                  <div style={{ width: 42, height: 42, borderRadius: 14, background: "linear-gradient(145deg,#5457e8,#7274fa)", color: "#fff", display: "grid", placeItems: "center", boxShadow: "0 10px 20px rgba(84,87,232,.28)" }}><Icon name="wallet" size={21} /></div>
+                  <div>
+                    <div style={{ fontSize: 17, fontFamily: "'Manrope', 'Inter', system-ui, sans-serif", fontWeight: 800, color: "var(--text)" }}>Bütçe Takip</div>
+                    <div style={{ color: "var(--text4)", fontSize: 12, marginTop: 2 }}>Finans merkeziniz</div>
+                  </div>
+                </div>
+                <button aria-label="Menüyü kapat" onClick={() => setMenuAcik(false)} style={{ width: 34, height: 34, borderRadius: 11, border: "1px solid var(--border)", background: "var(--card2)", color: "var(--text3)", display: "grid", placeItems: "center", cursor: "pointer" }}><Icon name="close" size={17} /></button>
+              </div>
+              {menuGruplari.map(grup => (
+                <div key={grup.grup} style={{ marginBottom: 8 }}>
+                  <div style={{ color: "var(--text5)", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", padding: "10px 12px 6px" }}>{grup.grup}</div>
+                  {grup.items.map(t => (
+                    <button key={t.id} onClick={() => { setAktifTab(t.id); setMenuAcik(false); }} style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "11px 12px", marginBottom: 3, borderRadius: 13, background: aktifTab === t.id ? "var(--accent-soft)" : "transparent", border: aktifTab === t.id ? "1px solid rgba(99,102,241,.2)" : "1px solid transparent", cursor: "pointer", textAlign: "left" }}>
+                      <span style={{ width: 35, height: 35, borderRadius: 11, display: "grid", placeItems: "center", color: aktifTab === t.id ? "var(--accent)" : "var(--text4)", background: aktifTab === t.id ? "rgba(99,102,241,.1)" : "var(--card2)" }}><Icon name={t.icon} size={18} /></span>
+                      <span style={{ color: aktifTab === t.id ? "var(--text)" : "var(--text3)", fontSize: 13, fontWeight: aktifTab === t.id ? 700 : 500, flex: 1 }}>{t.label}</span>
+                      <span style={{ color: "var(--text5)" }}><Icon name="chevron" size={16} /></span>
+                    </button>
+                  ))}
+                </div>
+              ))}
+            </aside>
+          </>
+        )}
+        {/* CONTENT */}
+        <KayitDurumu />
+        <main className="app-content">
+          {/* Hızlı işlem penceresi Ozet içinde portala taşındığı için bileşeni
+              sekmeler arasında bağlı tutuyoruz. Görsel içerik gizlenir; modal
+              document.body üzerinde açılarak mevcut sekmeyi değiştirmez. */}
+          <div style={{ display: aktifTab === "ozet" ? "block" : "none" }}>
+            <Ozet islemler={islemler} setIslemler={setIslemler} kartlar={kartlar} setKartlar={setKartlar} donemGun={parseInt(donemGun)||15} kategoriler={kategoriler} odemeler={odemeler} setOdemeler={setOdemeler} hizliModal={hizliModal} setHizliModal={setHizliModal} hizliSablonlar={hizliSablonlar} setHizliSablonlar={setHizliSablonlar} taksitler={taksitler} setTaksitler={setTaksitler} kartOdemeleri={kartOdemeleri} setKartOdemeleri={setKartOdemeleri} bakiyeHesapModu={bakiyeHesapModu} />
+          </div>
+          {aktifTab === "islemler" && <IslemlerTab islemler={islemler} setIslemler={setIslemler} butceler={butceler} setButceler={setButceler} kategoriler={kategoriler} setKategoriler={setKategoriler} kartlar={kartlar} donemGun={parseInt(donemGun)||15} />}
+          {aktifTab === "odemeler" && <OdemelerTab odemeler={odemeler} setOdemeler={setOdemeler} islemler={islemler} setIslemler={setIslemler} kategoriler={kategoriler} donemGun={parseInt(donemGun)||15} />}
+          {aktifTab === "tekrarlayan" && <TekrarlayanTab tekrarlayan={tekrarlayan} setTekrarlayan={setTekrarlayan} kategoriler={kategoriler} setKategoriler={setKategoriler} />}
+          {aktifTab === "analiz" && <AnalizTab islemler={islemler} kategoriler={kategoriler} donemGun={parseInt(donemGun)||15} kartlar={kartlar} odemeler={odemeler} />}
+          {aktifTab === "krediler" && <KredilerTab krediler={krediler} setKrediler={setKrediler} />}
+          {aktifTab === "taksitler" && <TaksitlerTab taksitler={taksitler} setTaksitler={setTaksitler} />}
+          {aktifTab === "maas" && <MaasTab zamlar={zamlar} setZamlar={setZamlar} maasAyarlar={maasAyarlar} setMaasAyarlar={setMaasAyarlar} enflasyon={enflasyon} setEnflasyon={setEnflasyon} />}
+          {aktifTab === "ayarlar" && <AyarlarTab donemGun={donemGun} setDonemGun={setDonemGun} kartlar={kartlar} setKartlar={setKartlar} kategoriler={kategoriler} setKategoriler={setKategoriler} tema={tema} setTema={setTema} sonBildirimPlanlama={sonBildirimPlanlama} islemler={islemler} bildirimAyarlari={bildirimAyarlari} setBildirimAyarlari={setBildirimAyarlari} bakiyeHesapModu={bakiyeHesapModu} setBakiyeHesapModu={setBakiyeHesapModu} />}
+        </main>
+
+        {/* ALT NAVİGASYON */}
+        <nav className="nav-dock" aria-label="Ana navigasyon">
+          <div className="nav-dock-inner">
+            {[
+              { id: "ozet", label: "Özet", icon: "home" },
+              { id: "islemler", label: "İşlemler", icon: "wallet" },
+              { id: "_ekle", label: "Yeni", icon: "plus" },
+              { id: "analiz", label: "Raporlar", icon: "chart" },
+              { id: "odemeler", label: "Ödemeler", icon: "card" },
+            ].map(t => {
+              if (t.id === "_ekle") {
+                return (
+                  <button aria-label="Yeni işlem ekle" key="_ekle" onClick={() => setHizliModal(true)} style={{ width: 58, height: 58, borderRadius: 19, border: "4px solid var(--header)", cursor: "pointer", background: "linear-gradient(145deg,#6264ef,#7a7cf9)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", padding: 0, margin: 0, marginTop: -27, boxShadow: "0 12px 25px rgba(87,89,232,.42)", flexShrink: 0, boxSizing: "border-box", lineHeight: 0 }}><Icon name="plus" size={27} strokeWidth={2.3} /></button>
+                );
+              }
+              const aktif = aktifTab === t.id;
+              return (
+                <button key={t.id} onClick={() => setAktifTab(t.id)} aria-current={aktif ? "page" : undefined} style={{ background: aktif ? "var(--accent-soft)" : "transparent", border: "1px solid transparent", borderRadius: 15, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "8px 3px 6px", flex: 1, minWidth: 0, margin: "0 1px", color: aktif ? "var(--accent)" : "var(--text4)" }}>
+                  <Icon name={t.icon} size={19} strokeWidth={aktif ? 2.25 : 1.8} />
+                  <span style={{ fontSize: 12, fontWeight: aktif ? 800 : 600, color: "currentColor", whiteSpace: "nowrap" }}>{t.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </nav>
+
+      </div>
+      </div>
+      <ToastKutusu />
+    </>
+  );
+}
