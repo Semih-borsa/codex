@@ -1,0 +1,9 @@
+plugins { id 'com.android.application' }
+android {
+    namespace 'com.semih.ilacim'
+    compileSdk 35
+    defaultConfig { applicationId 'com.semih.ilacim'; minSdk 26; targetSdk 35; versionCode 1; versionName '1.0.0'; testInstrumentationRunner 'com.semih.ilacim.ReadinessInstrumentation' }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+    testOptions { unitTests.returnDefaultValues = true }
+}
+dependencies { implementation 'com.google.zxing:core:3.5.3'; testImplementation 'junit:junit:4.13.2' }

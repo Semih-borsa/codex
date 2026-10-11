@@ -1,5 +1,7 @@
 # Cep Bütçem
 
+**Yeni Android uygulaması: [İlacım — ilaç dolabı ve randevu takibi](ilacim/README.md).** [APK indir](downloads/Ilacim.apk) · [Android Studio proje paketi](downloads/Ilacim-Android-Studio.zip). Dosya sayfasında **Download raw file** ile indir. Barkod/karekod, kutu bazında son kullanma tarihi ve stok, günlük doz planı, randevu ve yerel hatırlatmalar; API sağlayıcısı sonradan ayarlardan bağlanır.
+
 Türkçe, çevrimdışı kişisel gelir-gider takibi ve ayrıntılı finans analizi için yerel Android uygulaması. Android Studio'da açılır ve telefona kurulabilen APK üretir. Java 17, Android'in yerel arayüz bileşenleri ve SQLite kullanır; hesap açma, internet bağlantısı veya ücretli bir servis gerekmez.
 
 ## v1.7 · Sıcak palet, bütçe halkası ve ayrı kartlar
