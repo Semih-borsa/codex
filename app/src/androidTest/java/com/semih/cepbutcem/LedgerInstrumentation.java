@@ -332,7 +332,7 @@ public class LedgerInstrumentation extends Instrumentation {
           equal(13499, db.planning().cards.get(0).bankTotal());
           equal(0, db.entries().size());
           String backup = db.backup();
-          equal(6, new JSONObject(backup).getLong("version"));
+          equal(7, new JSONObject(backup).getLong("version"));
           db.restore(backup);
           equal(999, db.planning().cards.get(0).pending);
           truth(db.planning().cards.get(0).updated.equals(LocalDate.of(2026, 10, 10)));
@@ -937,6 +937,307 @@ public class LedgerInstrumentation extends Instrumentation {
           db.restore(root.toString());
           truth(db.planning().cardAccounts.contains(c.account));
           truth(db.planning().cards.get(0).history.isEmpty());
+        });
+    tests.put(
+        "templatesApplyOnceUndoAndRoundTrip",
+        () -> {
+          FeatureStore f = new FeatureStore(db);
+          Enhancements.Template t = new Enhancements.Template();
+          t.name = "Kahve";
+          t.kind = "E";
+          t.amount = 12000;
+          t.account = db.accounts().get(0).id;
+          t.category = db.categories("E").get(0).id;
+          f.saveTemplate(t);
+          FeatureStore.Snapshot saved = f.applyTemplate(t.id, LocalDate.now());
+          equal(12000, Finance.total(db.entries(), "E"));
+          equal(-12000, db.balances(LocalDate.now()).get(t.account));
+          f.undoAdded(saved);
+          equal(0, db.entries().size());
+          rejects(() -> f.undoAdded(saved));
+          db.restore(db.backup());
+          equal(1, db.planning().extras.templates.size());
+          db.deleteAccount(t.account);
+          equal(0, db.planning().extras.templates.size());
+        });
+    tests.put(
+        "undoRestoresOriginalIdentityBalancesAndRejectsDoubleRestore",
+        () -> {
+          FeatureStore f = new FeatureStore(db);
+          Finance.Entry e = expense(4567, "2026-10-01");
+          db.saveEntry(e);
+          long before = db.balances(LocalDate.of(2026, 10, 1)).get(e.accountId);
+          FeatureStore.Snapshot s = f.deleteWithUndo(e.id);
+          equal(0, db.entries().size());
+          f.restoreDeleted(new FeatureStore.Snapshot(s.json()));
+          equal(e.id, db.entries().get(0).id);
+          equal(before, db.balances(LocalDate.of(2026, 10, 1)).get(e.accountId));
+          rejects(() -> f.restoreDeleted(s));
+          equal(1, db.entries().size());
+          Finance.Entry edited = db.entries().get(0);
+          edited.amount = 100;
+          db.saveEntry(edited);
+          rejects(() -> f.undoAdded(s));
+          equal(100, db.entries().get(0).amount);
+        });
+    tests.put(
+        "goalsAreTransfersWithInsufficientBalanceAndMetadataRollback",
+        () -> {
+          FeatureStore f = new FeatureStore(db);
+          long bank = db.accounts().get(0).id;
+          db.saveAccount(bank, "Banka", 50000);
+          Enhancements.Goal g = new Enhancements.Goal();
+          g.name = "Acil fon";
+          g.target = 100000;
+          f.saveGoal(g);
+          f.moveGoal(g.id, bank, 20000, true);
+          equal(30000, db.balances(LocalDate.now()).get(bank));
+          equal(20000, db.balances(LocalDate.now()).get(g.account));
+          equal(0, Finance.total(db.entries(), "I"));
+          equal(0, Finance.total(db.entries(), "E"));
+          rejects(() -> f.moveGoal(g.id, bank, 40000, true));
+          equal(1, db.entries().size());
+          f.moveGoal(g.id, bank, 5000, false);
+          equal(15000, db.balances(LocalDate.now()).get(g.account));
+          int accounts = db.accounts().size();
+          Enhancements.Goal invalid = new Enhancements.Goal();
+          invalid.name = "Geçersiz";
+          invalid.target = 0;
+          rejects(() -> f.saveGoal(invalid));
+          equal(accounts, db.accounts().size());
+          db.restore(db.backup());
+          equal(1, db.planning().extras.goals.size());
+          f.remove("goal", g.id);
+          equal(15000, db.balances(LocalDate.now()).get(g.account));
+        });
+    tests.put(
+        "shoppingInstallmentsNeverChangeStatementExpenseOrBalance",
+        () -> {
+          FeatureStore f = new FeatureStore(db);
+          Planning.Card card = new Planning.Card(0, 10, 20);
+          card.updated = LocalDate.now();
+          card.statement = 30000;
+          db.saveCard(card, "Kart", -30000);
+          Enhancements.Purchase p = new Enhancements.Purchase();
+          p.name = "Telefon";
+          p.account = card.account;
+          p.amount = 5000;
+          p.count = 6;
+          p.first = LocalDate.now().minusMonths(1);
+          f.savePurchase(p);
+          f.markPurchase(p.id, 0, 1);
+          equal(1, db.planning().extras.purchases.get(0).paid);
+          equal(30000, db.planning().cards.get(0).statement);
+          equal(-30000, db.balances(LocalDate.now()).get(card.account));
+          equal(0, db.entries().size());
+          rejects(() -> f.markPurchase(p.id, 0, 1));
+          f.markPurchase(p.id, 1, -1);
+          equal(0, db.planning().extras.purchases.get(0).paid);
+          db.restore(db.backup());
+          equal(1, db.planning().extras.purchases.size());
+          db.removeCard(card.account);
+          equal(1, db.planning().extras.purchases.size());
+          db.deleteAccount(card.account);
+          equal(0, db.planning().extras.purchases.size());
+        });
+    tests.put(
+        "exactCardDatesBackupPaymentAndValidation",
+        () -> {
+          FeatureStore f = new FeatureStore(db);
+          Planning.Card card = new Planning.Card(0, 10, 20);
+          card.updated = LocalDate.of(2026, 9, 15);
+          card.statement = 30000;
+          db.saveCard(card, "Kesim kartı", 0);
+          LocalDate close = LocalDate.of(2026, 9, 11), due = LocalDate.of(2026, 9, 25);
+          f.saveCardDates(card.account, close, due);
+          Planning.Card saved = db.planning().cards.get(0);
+          truth(saved.statementClosing().equals(close));
+          truth(saved.statementDue().equals(due));
+          rejects(() -> f.saveCardDates(card.account, close, close.minusDays(1)));
+          truth(db.planning().cards.get(0).statementDue().equals(due));
+          db.restore(db.backup());
+          truth(db.planning().cards.get(0).statementDue().equals(due));
+          Planning.Card updated = new Planning.Card(card.account, 10, 20);
+          updated.updated = LocalDate.of(2026, 9, 16);
+          updated.statement = 30000;
+          db.saveCard(updated, null, 0);
+          truth(db.planning().cards.get(0).statementDue().equals(due));
+          Planning datedPlan = db.planning();
+          truth(
+              Reminders.upcoming(datedPlan, db.accounts(), LocalDate.of(2026, 9, 24), 1)
+                  .get(0)
+                  .date
+                  .equals(due));
+          db.payCard(
+              datedPlan.cards.get(0),
+              10000,
+              LocalDate.of(2026, 9, 16),
+              db.accounts().get(0).id,
+              false,
+              true);
+          equal(20000, db.planning().cards.get(0).statement);
+          truth(db.planning().cards.get(0).statementDue().equals(due));
+          equal(0, db.entries().size());
+          f.clearCardDates(card.account);
+          truth(db.planning().cards.get(0).statementDue().equals(LocalDate.of(2026, 9, 20)));
+          Planning.Card early = new Planning.Card(0, 10, 20);
+          early.updated = LocalDate.of(2026, 9, 9);
+          early.statement = 1000;
+          db.saveCard(early, "Erken kesim", 0);
+          f.saveCardDates(early.account, LocalDate.of(2026, 9, 9), LocalDate.of(2026, 9, 22));
+          Planning.Card earlyRefresh = new Planning.Card(early.account, 10, 20);
+          earlyRefresh.updated = LocalDate.of(2026, 9, 12);
+          earlyRefresh.statement = 1000;
+          db.saveCard(earlyRefresh, null, 0);
+          Planning.Card exactEarly =
+              db.planning().cards.stream()
+                  .filter(c -> c.account == early.account)
+                  .findFirst()
+                  .get();
+          truth(exactEarly.statementClosing().equals(LocalDate.of(2026, 9, 9)));
+          truth(exactEarly.statementDue().equals(LocalDate.of(2026, 9, 22)));
+          Planning.Card late = new Planning.Card(0, 30, 10);
+          late.updated = LocalDate.of(2026, 10, 1);
+          late.statement = 1000;
+          db.saveCard(late, "Geciken kesim", 0);
+          f.saveCardDates(late.account, LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 12));
+          Planning.Card exactLate =
+              db.planning().cards.stream().filter(c -> c.account == late.account).findFirst().get();
+          truth(exactLate.nominalClosing().equals(LocalDate.of(2026, 9, 30)));
+          truth(exactLate.statementClosing().equals(LocalDate.of(2026, 10, 1)));
+          truth(exactLate.statementDue().equals(LocalDate.of(2026, 10, 12)));
+        });
+    tests.put(
+        "newPlanningRejectsCorruptBackupAndReadsLegacy",
+        () -> {
+          FeatureStore f = new FeatureStore(db);
+          Enhancements.Template t = new Enhancements.Template();
+          t.name = "Test";
+          t.kind = "E";
+          t.amount = 100;
+          t.account = db.accounts().get(0).id;
+          t.category = db.categories("E").get(0).id;
+          f.saveTemplate(t);
+          JSONObject backup = new JSONObject(db.backup());
+          backup
+              .getJSONObject("planning")
+              .getJSONObject("extras")
+              .getJSONArray("templates")
+              .getJSONObject(0)
+              .put("account", 99999);
+          rejects(() -> db.restore(backup.toString()));
+          equal(1, db.planning().extras.templates.size());
+          JSONObject legacy = new JSONObject(db.backup());
+          legacy.put("version", 6);
+          legacy.getJSONObject("planning").remove("extras");
+          db.restore(legacy.toString());
+          equal(0, db.planning().extras.templates.size());
+        });
+    tests.put(
+        "forecastFixedRecurringAndSavedFutureAreNotDuplicated",
+        () -> {
+          FeatureStore f = new FeatureStore(db);
+          LocalDate today = LocalDate.of(2026, 10, 10);
+          Finance.Entry seed = expense(1000, "2026-10-01");
+          db.addRecurring(seed);
+          db.processRecurring(today);
+          Finance.Entry future = expense(200, "2026-10-12");
+          db.saveEntry(future);
+          Planning p = db.planning();
+          p.payday = 1;
+          Insights.Forecast result =
+              f.forecast(
+                  p,
+                  java.time.YearMonth.of(2026, 10),
+                  today,
+                  db.reportEntries(LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 31)));
+          equal(1000, result.fixedExpense);
+          equal(0, result.variableExpense);
+          equal(200, result.plannedExpense);
+          equal(1000, result.spent);
+        });
+    tests.put(
+        "appGaugeGeometryColorsAndCubicTiming",
+        () -> {
+          Throwable[] failure = {null};
+          runOnMainSync(
+              () -> {
+                try {
+                  double[] value = {-1};
+                  android.animation.ValueAnimator animation =
+                      Design.gaugeAnimator(100, true, v -> value[0] = v);
+                  equal(3500, animation.getDuration());
+                  truth(
+                      Math.abs(animation.getInterpolator().getInterpolation(.5f) - .875f) < .0001);
+                  animation.start();
+                  animation.setCurrentPlayTime(1750);
+                  truth(Math.abs(value[0] - 87.5) < .01);
+                  animation.end();
+                  truth(Math.abs(value[0] - 100) < .01);
+                  truth(Design.gaugeAnimator(120, false, v -> value[0] = v) == null);
+                  truth(value[0] == 120);
+                  Design.BudgetGauge gauge =
+                      new Design.BudgetGauge(context, 100, 0xFF30231E, 0xFF79675E, 0xFFFFFFFF);
+                  gauge.measure(
+                      android.view.View.MeasureSpec.makeMeasureSpec(
+                          320, android.view.View.MeasureSpec.EXACTLY),
+                      android.view.View.MeasureSpec.makeMeasureSpec(
+                          235, android.view.View.MeasureSpec.EXACTLY));
+                  gauge.layout(0, 0, 320, 235);
+                  android.graphics.Bitmap bitmap =
+                      android.graphics.Bitmap.createBitmap(
+                          320, 235, android.graphics.Bitmap.Config.ARGB_8888);
+                  gauge.draw(new android.graphics.Canvas(bitmap));
+                  int[] angles = {171, 117, 63, 9};
+                  int[] colors = {0xFF059669, 0xFF10B981, 0xFFF59E0B, 0xFFEF4444};
+                  for (int i = 0; i < angles.length; i++) {
+                    int x = (int) Math.round(160 + 117 * Math.cos(Math.toRadians(angles[i]))),
+                        y = (int) Math.round(145 - 117 * Math.sin(Math.toRadians(angles[i])));
+                    equal(colors[i], bitmap.getPixel(x, y));
+                  }
+                  bitmap.recycle();
+                  truth(gauge.getContentDescription().toString().contains("100"));
+                } catch (Throwable e) {
+                  failure[0] = e;
+                }
+              });
+          if (failure[0] != null) throw new AssertionError(failure[0]);
+        });
+    tests.put(
+        "currentAppRingColorsAndPreferenceRoundTrip",
+        () -> {
+          Planning p = db.planning();
+          p.budgetNeedle = true;
+          db.savePlanning(p);
+          db.restore(db.backup());
+          truth(db.planning().budgetNeedle);
+          JSONObject legacy = new JSONObject(db.backup());
+          legacy.getJSONObject("planning").remove("budgetNeedle");
+          db.restore(legacy.toString());
+          truth(!db.planning().budgetNeedle);
+          Throwable[] failure = {null};
+          runOnMainSync(
+              () -> {
+                try {
+                  Design.BudgetCircle circle = new Design.BudgetCircle(context, 100, false);
+                  circle.layout(0, 0, 128, 128);
+                  android.graphics.Bitmap bitmap =
+                      android.graphics.Bitmap.createBitmap(
+                          128, 128, android.graphics.Bitmap.Config.ARGB_8888);
+                  circle.draw(new android.graphics.Canvas(bitmap));
+                  int[] angles = {0, 144, 234}, colors = {0xFF10B981, 0xFFF59E0B, 0xFFEF4444};
+                  for (int i = 0; i < 3; i++) {
+                    int x = (int) Math.round(64 + 51 * Math.cos(Math.toRadians(angles[i]))),
+                        y = (int) Math.round(64 + 51 * Math.sin(Math.toRadians(angles[i])));
+                    equal(colors[i], bitmap.getPixel(x, y));
+                  }
+                  bitmap.recycle();
+                  truth(circle.getContentDescription().toString().contains("100"));
+                } catch (Throwable e) {
+                  failure[0] = e;
+                }
+              });
+          if (failure[0] != null) throw new AssertionError(failure[0]);
         });
     for (Map.Entry<String, Check> test : tests.entrySet()) {
       Bundle status = new Bundle();

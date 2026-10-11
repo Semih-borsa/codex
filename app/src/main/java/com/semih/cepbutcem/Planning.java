@@ -8,8 +8,9 @@ import org.json.*;
 /** Local preferences and planned obligations; schema validated before restore. */
 public final class Planning {
   public int payday = 1, target = 20;
-  public boolean light = false;
+  public boolean light = false, budgetNeedle = false;
   public SalarySettings salary = new SalarySettings();
+  public Enhancements extras = new Enhancements();
   public final Set<Long> cardAccounts = new HashSet<>();
   public final List<Card> cards = new ArrayList<>();
   public final List<Bill> bills = new ArrayList<>();
@@ -33,6 +34,7 @@ public final class Planning {
     public LocalDate updated;
     public final TreeMap<String, long[]> history = new TreeMap<>();
     public int historyPayday;
+    public final TreeMap<LocalDate, LocalDate[]> dates = new TreeMap<>();
 
     public void capture(int payday, LocalDate date) {
       if (updated == null) return;
@@ -48,16 +50,26 @@ public final class Planning {
       return Math.addExact(Math.addExact(statement, current), pending);
     }
 
-    public LocalDate statementClosing() {
+    public LocalDate nominalClosing() {
       LocalDate date = updated == null ? LocalDate.now() : updated;
+      for (Map.Entry<LocalDate, LocalDate[]> exact : dates.descendingMap().entrySet()) {
+        LocalDate next = Finance.cycleStart(YearMonth.from(exact.getKey()).plusMonths(1), closing);
+        if (!exact.getValue()[0].isAfter(date) && date.isBefore(next)) return exact.getKey();
+      }
       LocalDate close = Finance.cycleStart(java.time.YearMonth.from(date), closing);
       return close.isAfter(date)
           ? Finance.cycleStart(java.time.YearMonth.from(date).minusMonths(1), closing)
           : close;
     }
 
+    public LocalDate statementClosing() {
+      LocalDate[] exact = dates.get(nominalClosing());
+      return exact == null ? nominalClosing() : exact[0];
+    }
+
     public LocalDate statementDue() {
-      return Finance.cardDue(statementClosing(), due);
+      LocalDate[] exact = dates.get(nominalClosing());
+      return exact == null ? Finance.cardDue(nominalClosing(), due) : exact[1];
     }
 
     public Card(long account, int closing, int due) {
@@ -172,7 +184,9 @@ public final class Planning {
     o.put("payday", payday);
     o.put("target", target);
     o.put("light", light);
+    o.put("budgetNeedle", budgetNeedle);
     o.put("salary", salary.json());
+    o.put("extras", extras.json());
     o.put("cardAccounts", new JSONArray(new TreeSet<>(cardAccounts)));
     JSONArray cs = new JSONArray(), bs = new JSONArray();
     for (Card c : cards) {
@@ -192,6 +206,14 @@ public final class Planning {
                 .put("statement", e.getValue()[0])
                 .put("current", e.getValue()[1]));
       card.put("historyPayday", c.historyPayday).put("history", history);
+      JSONArray ds = new JSONArray();
+      for (Map.Entry<LocalDate, LocalDate[]> d : c.dates.entrySet())
+        ds.put(
+            new JSONObject()
+                .put("period", d.getKey().toString())
+                .put("closing", d.getValue()[0].toString())
+                .put("due", d.getValue()[1].toString()));
+      card.put("dates", ds);
       cs.put(card);
     }
     for (Bill b : bills)
@@ -248,6 +270,7 @@ public final class Planning {
     p.payday = (int) number(o, "payday", 1, 31);
     p.target = (int) number(o, "target", 0, 100);
     p.light = bool(o, "light");
+    if (o.has("budgetNeedle")) p.budgetNeedle = bool(o, "budgetNeedle");
     if (o.has("salary")) p.salary = SalarySettings.parse(o.getJSONObject("salary"));
     if (o.has("cardAccounts")) {
       JSONArray ids = o.getJSONArray("cardAccounts");
@@ -311,6 +334,24 @@ public final class Planning {
                 number(h, "current", 0, 200_000_000_000L)
               });
         }
+      }
+      if (c.has("dates")) {
+        JSONArray ds = c.getJSONArray("dates");
+        if (ds.length() > 24) throw new JSONException("En fazla 24 ekstre tarihi saklanır.");
+        for (int j = 0; j < ds.length(); j++) {
+          JSONObject d = ds.getJSONObject(j);
+          LocalDate key = Enhancements.date(Enhancements.text(d, "period", 10, false)),
+              close = Enhancements.date(Enhancements.text(d, "closing", 10, false)),
+              due = Enhancements.date(Enhancements.text(d, "due", 10, false));
+          if (card.dates.containsKey(key)
+              || due.isBefore(close)
+              || due.isAfter(close.plusDays(62))
+              || Math.abs(java.time.temporal.ChronoUnit.DAYS.between(key, close)) > 31)
+            throw new JSONException("Ekstre tarihleri uyumsuz.");
+          card.dates.put(key, new LocalDate[] {close, due});
+        }
+        if (card.updated != null && card.statementClosing().isAfter(card.updated))
+          throw new JSONException("Hesap kesimi banka güncellemesinden sonra olamaz.");
       }
       p.cardAccounts.add(account);
       p.cards.add(card);
@@ -413,6 +454,8 @@ public final class Planning {
     for (Loan l : p.loans)
       if (loanSlots.getOrDefault(l.id, Collections.emptySet()).size() != l.count)
         throw new JSONException("Eksik kredi taksitleri.");
+    if (o.has("extras"))
+      p.extras = Enhancements.parse(o.getJSONObject("extras"), accounts, kinds, p.cardAccounts);
     return p;
   }
 }

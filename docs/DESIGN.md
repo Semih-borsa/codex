@@ -1,3 +1,40 @@
+# v1.8 · Bütçe göstergeleri ve kişisel planlama
+
+## v1.8 · App.jsx göstergeleri ve kişisel planlama
+
+- **App.jsx bütçe göstergesi:** güncel App.jsx'teki 128×128 üç renkli halka; %0–50 yeşil, %50–80 sarı, %80–100 kırmızı dilimler, aynı çizgi kalınlığı ve 3,5 saniyelik ease-out-cubic animasyon. **Ayarlar → Maaş dönemi ve görünüm → Yarım daire ibreye geç** ile ilk referanstaki 320×235 ibreyi seçebilirsin: 10 renk dilimi, 21 çizgi ve üçgen ibre. İki görünümde de gerçek gider/gelir oranı kullanılır; transferler hariçtir. %100'ün üstünde sayı gerçek oranı gösterir, çizim sınırda kalır. Gelir yoksa “—”; animasyonlar kapalıysa doğrudan son değer.
+- **Hızlı işlem şablonları:** Ayarlar → Finans araçların → İşlem şablonları. Ad, tür, tutar, hesap, kategori ve açıklama saklanır. Özet'te ilk dört şablon tek dokunuşla bugüne eklenir; 10 saniye içinde Geri al kullanılabilir.
+- **Gider tahmini:** yinelenen giderler ve gider olarak ödenmiş faturalar sabit giderdir. Değişken giderlerin günlük ortalaması yalnızca kalan günlere yayılır; gelecekte kayıtlı işlemler ve bekleyen faturalar ayrıca eklenir. En az 7 gün ve 3 harcama günü yoksa istatistiksel tahmin gösterilmez. Bilinen gelecek gelir ayrı sunulur; gerçekleşene kadar harcanabilir kabul edilmez.
+- **Kategori uyarısı:** en az üç kayıtlı geçmiş maaş dönemindeki karşılaştırılabilir gün ortalamasının iki katını aşan gideri belirtir. Eksik dönemler sıfır varsayılmaz. Analiz → Kategori hareketleri çubuğuna dokununca tutar ve tarihler grafiğin altında görünür.
+- **Birikim hedefleri:** her hedef ayrı banka/nakit hesabına bağlıdır. Para ayırmak ve geri almak gerçek transfer oluşturur; gelir/gider değildir. İlerleme hesabın bugünkü bakiyesidir. Son üç tamamlanmış dönemde pozitif net katkı varsa yaklaşık tamamlanma süresi gösterilir.
+- **Kart alışveriş taksitleri:** bankadaki kredi takibinden ayrı; kart, aylık tutar, ilk tarih, toplam/ödenen taksit ve kalan yük. İşaretleme yalnızca takiptir; ekstra gider veya ekstre borcu üretmez. Kart ekranında aylık ve kalan takip yükü görünür.
+- **İşlem silmede geri alma:** normal işlem silindikten sonra 10 saniye boyunca Geri al, aynı kimlik ve bakiye etkisiyle kaydı geri getirir. Bağlı fatura ödemeleri ödeme merkezinden yönetilir.
+- **Ekstreye özel tarihler:** Kartı yönet → Ekstreye özel tarihler. Kesim ve son ödeme, o ekstre için takvim ve bildirimlerde kullanılır; son 24 kayıt saklanır. Önce banka tutarlarının güncel olması gerekir.
+
+Yeni yönetim listeleri 20 kayıtla sayfalanır. Analizler ham işlem listesini yüklemek yerine tarih/kategori bazında SQL toplamlarını kullanır. JSON yedek **v7**; eski v1–v6 dosyalar desteklenir. Yeni yedeği v1.8 veya üzeriyle aç. Mevcut APK'nın üzerine güncelle; önce JSON yedek al ve uygulamayı kaldırma.
+
+![App.jsx ibresi · açık tema](screenshots/dashboard-light-v18.png)
+
+![App.jsx ibresi · koyu tema](screenshots/dashboard-dark-v18.png)
+
+![Hızlı işlem şablonları](screenshots/templates-v18.png)
+
+![Gerçek transferle birikim hedefi](screenshots/goals-v18.png)
+
+![Kategori detayı aynı ekranda](screenshots/category-detail-v18.png)
+
+![Kart alışveriş taksiti takibi](screenshots/purchases-v18.png)
+
+![Ekstreye özel tarihler](screenshots/card-dates-v18.png)
+
+Ekranlar emülatördeki örnek kayıtlardan alınmıştır; kart senaryosunun test verileri kontrollerden sonra kaldırılmıştır.
+
+Referanslar: [güncel halka, 7c3139c App.jsx](https://github.com/Semih-borsa/codex/blob/7c3139c943eda13864521660112e40cd9d241dbd/downloads/App.jsx#L837) · [yarım daire ibre, ilk incelenen 4e23af1 App.jsx](https://github.com/Semih-borsa/codex/blob/4e23af14b5fd2c2881c59fd7d8868eaf0855b1d8/downloads/App.jsx#L815).
+
+![Seçilebilir yarım daire ibre](screenshots/budget-needle-v18.png)
+
+## Önceki sürümler
+
 # v1.7 · Bütçe halkası ve sıcak finans tasarımı
 
 ## v1.7 · Sıcak palet, bütçe halkası ve ayrı kartlar

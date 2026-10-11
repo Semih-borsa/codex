@@ -1,3 +1,18 @@
+# Doğrulama · v1.8.0 · 11 Ekim 2026
+
+versionCode9/versionName1.8.0; JDK17, SDK35/BuildTools34, Gradle8.9. SQLite v3 korunur; JSON yedek v7, v1–v6 dosyaları okunur.
+
+- `testDebugUnitTest`, `lintDebug`, `assembleDebug`, `assembleDebugAndroidTest`: başarılı. **40 JVM testi**, başarısız/hatalı/atlanan yok; **Lint 0 hata/uyarı**.
+- Android11/API30 finans motoru ve çizim kontrolleri: **51 test, 0 başarısız**, 89.284 saniye. Önceki 42 kontrol korunur; şablon uygulama/geri alma/yedek, işlem kimliğiyle silme/geri alma ve ikinci kez geri almayı reddetme, gerçek birikim transferleri/yetersiz bakiye/atomik kayıt reddi, finansal kayıt üretmeyen kart taksitleri, bozuk v7 yedeğinde tam geri alma ve v6 uyumu, sabit-yinelenen giderlerle gelecek kayıtların ayrılması eklendi.
+- Ekstre tarihleri: yedek, banka tutarı güncellemesi, takip ödemesi ve hatırlatma gerçek tarihlerle kontrol edildi. Erken kesimde aylık gün geçildikten sonra tarih korunur; ay sınırını geçen gecikmiş kesim doğru döneme bağlanır.
+- App.jsx ibresi: Canvas piksel kontrolüyle dört renk ailesi, 3500ms animasyon süresi, yarım sürede %87,5 ease-out-cubic ilerlemesi, tam hedef ve azaltılmış harekette doğrudan son değer doğrulandı. Güncel 128×128 halkanın üç renk dilimi piksel kontrolünden geçti; ibre/halka tercihi yedekten ve eski dosyadan okundu. Son APK'da açık/koyu tema ve iki gösterge ekranları alındı; görünüm tercihi yeniden açılışta korundu.
+- JVM hesaplamaları: sabit giderin tekrar projekte edilmemesi, gelecekteki gelirin gerçekleşmiş sayılmaması, az veride projeksiyon vermeme, kısa ay/maaş dönemi, en az 3 kayıtlı dönemle eşit gün kategorisi karşılaştırması, net birikim transferleri ve kısa aylarda taksit tarihi.
+- Arayüz: şablon ekleme → bugüne uygulama → Geri al; hedef oluşturma → 100 TL transfer → toplam net varlığın 2780 TL kalması; kategori çubuğuna dokununca detayın aynı sayfada görünmesi; ekstre tarih ekranı; kart alışveriş taksitinin 1/6 → 2/6 → 1/6 takibiyle borcun 30.000 TL ve net varlığın 2780 TL kalması kontrol edildi. Testlerden sonra özgün emülatör kayıtları geri getirildi.
+- 100.000 kayıt SQL toplamı/sayfalama testi Android grubunda geçti. Yeni yönetim ekranları 20 kayıtla sayfalanır. Eski bir dönem açılırken birikim geçmişi ayrı, son 3 tamamlanmış dönemle sınırlı sorgulanır; eski dönem ile bugün arasındaki tüm kayıtları yüklemez. Bu sürüm için ayrıca cihazlar arası performans kıyaslaması yapılmadı.
+- APK sertifikası SHA-256: `a3c71704fc4e5a498772ad1825325fc493203b962d3b7c3f9f9db5c0dbf273c8`, önceki yayımlanan sürümle aynı. Güncelleme mevcut verileri korur. APK/ZIP bütünlüğü, kaynaklar ve SHA256SUMS karşılaştırılır; yayından sonra main kopyası yeniden doğrulanır.
+
+---
+
 # Doğrulama · v1.7.0 · 11 Ekim 2026
 
 versionCode8/versionName1.7.0; JDK17, SDK35/BuildTools34, Gradle8.9. SQLite v3 korunur; JSON yedek v6, v1–v5 okunur.

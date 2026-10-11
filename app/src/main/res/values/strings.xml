@@ -9,4 +9,5 @@
     <string name="credit_estimate_note">Tahmin: vergi, sigorta ve masraflar dahil değil. Bankanın tutarıyla düzelt.</string>
     <string name="card_payment_transfer">Kaynak hesaptan transfer kaydı oluştur</string>
     <string name="card_payment_statement">Ödemeyi kalan ekstre borcundan düş</string>
+    <string name="goal_deadline">Hedef tarihi belirle</string>
 </resources>

@@ -574,7 +574,7 @@ public final class Ledger extends SQLiteOpenHelper {
     return v;
   }
 
-  private void validateReferences(Finance.Entry e) {
+  void validateReferences(Finance.Entry e) {
     Finance.validate(e);
     boolean source = false, target = false, category = false;
     for (Finance.Account a : accounts()) {
@@ -633,6 +633,7 @@ public final class Ledger extends SQLiteOpenHelper {
                   || old.pending != card.pending;
           if (old.updated != null && (old.history.isEmpty() || old.historyPayday != p.payday))
             old.capture(p.payday, old.updated);
+          card.dates.putAll(old.dates);
           card.history.clear();
           card.history.putAll(old.history);
           card.historyPayday = old.historyPayday;
@@ -683,7 +684,7 @@ public final class Ledger extends SQLiteOpenHelper {
           throw new IllegalArgumentException("Ödeme kalan ekstre borcunu aşamaz.");
         LocalDate nextClose =
             Finance.cycleStart(
-                java.time.YearMonth.from(card.statementClosing()).plusMonths(1), card.closing);
+                java.time.YearMonth.from(card.nominalClosing()).plusMonths(1), card.closing);
         if (date.isBefore(card.updated) || !date.isBefore(nextClose))
           throw new IllegalArgumentException(
               "Bu tarih için bankadaki güncel ekstreyi önce gir. Ödeme, son güncellemeden önce veya"
@@ -724,6 +725,9 @@ public final class Ledger extends SQLiteOpenHelper {
       Planning p = planning();
       p.cards.removeIf(c -> c.account == id);
       p.cardAccounts.remove(id);
+      p.extras.templates.removeIf(t -> t.account == id);
+      p.extras.goals.removeIf(g -> g.account == id);
+      p.extras.purchases.removeIf(t -> t.account == id);
       p.bills.removeIf(b -> b.account == id);
       p.loans.removeIf(l -> l.account == id);
       String value = Long.toString(id);
@@ -863,7 +867,7 @@ public final class Ledger extends SQLiteOpenHelper {
     try {
       JSONObject result = new JSONObject();
       result.put("format", "cepbutcem");
-      result.put("version", 6);
+      result.put("version", 7);
       result.put("planning", planning().json());
       result.put("created", LocalDateTime.now().toString());
       for (String name : Arrays.asList("accounts", "categories", "recurring", "entries", "budgets"))
@@ -915,7 +919,7 @@ public final class Ledger extends SQLiteOpenHelper {
   public void restore(String input) throws JSONException {
     JSONObject root = new JSONObject(input);
     if (!"cepbutcem".equals(root.getString("format"))
-        || (integer(root, "version") < 1 || integer(root, "version") > 6))
+        || (integer(root, "version") < 1 || integer(root, "version") > 7))
       throw new JSONException("Uyumlu Cep Bütçem yedeği değil.");
     Map<String, JSONArray> tables = new LinkedHashMap<>();
     for (String name : Arrays.asList("accounts", "categories", "recurring", "entries", "budgets")) {

@@ -733,3 +733,17 @@ Maaş/annüite hesapları `Calculators` içinde BigDecimal ile yapılır. Maaş 
 UI için tüm kayıtları okuma yerine SQL tarih aralığı/gruplama, 50 kayıtlık işlem/gün sayfaları ve 20 ödeme kartı uygulanır. Özet satırlarında `recordCount` ve `largestAmount` korunur; işlem sayısı ve en büyük tek gider gruplamayla bozulmaz. Bakiye tüm gerçekleşmiş geçmişin `account_daily` günlük toplamlarından SQL ile hesaplanır, görünümün tarih aralığına indirgenmez. SQLite insert/update/delete trigger'ları bu türetilmiş toplamları aynı transaction içinde günceller; JSON restore toplamları kayıtlardan yeniden üretir. Trigger içi ekleme `WHERE NOT EXISTS` kullanır; dış işlemin conflict policy'si iç `OR IGNORE` davranışını değiştiremez. Okumalar tek IO executor'ında, stale yanıtlar generation kontrolüyle reddedilir. SQL araması seçili dönemi tarayabilir ve OFFSET derin sayfalarda maliyetlidir; milyonlarca kayıt için keyset/FTS ve ayrı ölçüm gerekir, sınırsız performans vaadi yoktur.
 
 Yerel bildirim: AlarmManager inexact günlük alarm, boot/saat dilimi/güncelleme sonrası yeniden kurulum, notification channel, Android 13+ runtime permission. Exact alarm yetkisi istenmez. Günlük özet aynı gün tekrarlanmaz; kilit ekranı sürümü tutar içermez. Bildirim tercihi cihazda tutulur. Ağ servisi veya push sağlayıcısı yoktur.
+
+## v1.8 yerel planlama katmanı
+
+`Enhancements`: sınırlı ve doğrulanan planning JSON içindeki şablon, hedef ve alışveriş taksiti kayıtları. Tutarlar kuruş cinsinden tamsayı; hedef hesabı benzersiz ve kart olamaz. JSON v7 eski alanları bulunmayan v1–v6 kayıtlarını boş planlama listeleriyle açar.
+
+`FeatureStore`: SQLite işlemi içinde şablondan kayıt ekleme, tam satır görüntüsüyle silme/geri alma, birikim transferi, takipli taksit işaretleme ve ekstre tarihi komutları. Kimlik çakışması, yetersiz bakiye ve geçersiz referanslar tamamen geri alınır. Hedefi silmek parayı silmez; hesabı silmek bağlı hedef/şablon/taksitleri de kaldırır.
+
+`Insights`: ağ gerektirmeyen açıklanabilir hesaplamalar; sabit/değişken tahmin, eşit süreli kategori karşılaştırmaları ve net transfer temposu. Yeni analizler işlem tutarlarını değiştirmez. Çıktılar mali tavsiye veya kesin öngörü olarak sunulmaz.
+
+`Planning.Card.dates`: nominal ekstre kesim tarihi → gerçek kesim/son ödeme. Aylık günler varsayılan kalır; arşiv 24 kayıtla sınırlıdır. Gerçek tarihler `statementClosing/statementDue` erişiminden tüm ödeme ekranlarına ve hatırlatmalara ulaşır.
+
+`Design.BudgetGauge`: App.jsx SVG'sini 320×235 koordinatlarında çizer. Boyuta ölçeklenir; animasyon UI iş parçacığında ValueAnimator ile çalışır, ayrılınca iptal edilir. Harcanan oran = gerçek dönem gideri / dönem geliri; birikim transferleri bu orana eklenmez.
+
+`Design.BudgetCircle`: güncel 7c3139c App.jsx'teki `HarcamaGauge` halkası, 128×128 koordinat, 51 yarıçap, 10 çizgi genişliği, %50/%80 renk dilimleri ve .22 arka dilim opaklığı. `Planning.budgetNeedle` görünüm tercihi JSON yedeğinde korunur; eski dosyalarda false/güncel halka varsayılır. True, ilk incelenen 4e23af1 sürümün yarım daire ibresini açar. Her ikisi de 3500ms ease-out-cubic ve gider/gelir hesabını paylaşır.

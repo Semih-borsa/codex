@@ -37,6 +37,20 @@ public final class Design {
     return animation;
   }
 
+  /** App.jsx's easeOutCubic, kept separate from the older compact meters. */
+  public static android.animation.ValueAnimator gaugeAnimator(
+      double target, boolean enabled, java.util.function.DoubleConsumer update) {
+    if (!enabled || !Double.isFinite(target)) {
+      update.accept(target);
+      return null;
+    }
+    android.animation.ValueAnimator a = android.animation.ValueAnimator.ofFloat(0, 1);
+    a.setDuration(3500);
+    a.setInterpolator(t -> 1 - (1 - t) * (1 - t) * (1 - t));
+    a.addUpdateListener(v -> update.accept(Math.max(0, target) * (Float) v.getAnimatedValue()));
+    return a;
+  }
+
   /** A decorative card surface; arcs are branding, not a financial chart. */
   public static final class BalanceSurface extends android.graphics.drawable.Drawable {
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -124,35 +138,207 @@ public final class Design {
     }
   }
 
-  /** Compact dashboard meter shares the existing reduced-motion-aware animation engine. */
-  public static final class BudgetRing extends View {
+  /** Direct Canvas port of App.jsx HarcamaGauge's 320 × 235 SVG. */
+  public static final class BudgetGauge extends View {
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final android.graphics.RectF arc = new android.graphics.RectF();
+    private final Path needle = new Path();
+    private final RectF arc = new RectF(43, 28, 277, 262);
+    private final Typeface normal = Typeface.create("sans-serif", Typeface.NORMAL);
+    private final Typeface bold = Typeface.create("sans-serif", Typeface.BOLD);
     private final double ratio;
-    private final boolean light;
+    private final int textColor, mutedColor, surfaceColor, tickColor;
     private double displayed;
     private android.animation.ValueAnimator animator;
 
-    public BudgetRing(Context context) {
-      this(context, Double.NaN, false);
+    public BudgetGauge(Context context) {
+      this(context, Double.NaN, true);
     }
 
-    public BudgetRing(Context context, double ratio, boolean light) {
+    public BudgetGauge(Context context, double ratio, boolean light) {
+      this(
+          context,
+          ratio,
+          light ? 0xFF302821 : 0xFFF8FAFC,
+          light ? 0xFF645447 : 0xFF9EACC1,
+          light ? 0xFFF5EAE1 : 0xFF182238,
+          light ? 0xFF726052 : 0xFFA4B2C7);
+    }
+
+    public BudgetGauge(
+        Context context, double ratio, int textColor, int mutedColor, int surfaceColor) {
+      this(context, ratio, textColor, mutedColor, surfaceColor, mutedColor);
+    }
+
+    private BudgetGauge(
+        Context context,
+        double ratio,
+        int textColor,
+        int mutedColor,
+        int surfaceColor,
+        int tickColor) {
       super(context);
-      this.ratio = ratio;
-      this.light = light;
-      displayed = Double.isNaN(ratio) ? Double.NaN : 0;
+      this.ratio = Double.isFinite(ratio) ? Math.max(0, ratio) : Double.NaN;
+      this.textColor = textColor;
+      this.mutedColor = mutedColor;
+      this.surfaceColor = surfaceColor;
+      this.tickColor = tickColor;
       setContentDescription(
-          Double.isNaN(ratio)
+          Double.isNaN(this.ratio)
               ? "Bütçe kullanımı: gelir gerekli"
-              : String.format(Finance.TR, "Bütçe kullanımı yüzde %.1f", ratio));
+              : String.format(Finance.TR, "Kullanılan bütçe oranı yüzde %.1f", this.ratio));
+      setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_YES);
+    }
+
+    @Override
+    protected void onMeasure(int widthSpec, int heightSpec) {
+      int width =
+          resolveSize(Math.round(350 * getResources().getDisplayMetrics().density), widthSpec);
+      setMeasuredDimension(
+          width,
+          resolveSize(
+              Math.round(
+                  Math.min(width, 350 * getResources().getDisplayMetrics().density) * 235 / 320f),
+              heightSpec));
     }
 
     @Override
     protected void onAttachedToWindow() {
       super.onAttachedToWindow();
+      displayed = 0;
       animator =
-          ratioAnimator(
+          gaugeAnimator(
+              ratio,
+              android.animation.ValueAnimator.areAnimatorsEnabled(),
+              v -> {
+                displayed = v;
+                invalidate();
+              });
+      if (animator != null) animator.start();
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+      if (animator != null) animator.cancel();
+      animator = null;
+      super.onDetachedFromWindow();
+    }
+
+    private float x(double angle, double radius) {
+      return (float) (160 + radius * Math.cos(Math.toRadians(angle)));
+    }
+
+    private float y(double angle, double radius) {
+      return (float) (145 - radius * Math.sin(Math.toRadians(angle)));
+    }
+
+    private void label(
+        Canvas c, String value, float x, float y, float size, int color, boolean strong) {
+      paint.setStyle(Paint.Style.FILL);
+      paint.setColor(color);
+      paint.setTypeface(strong ? bold : normal);
+      paint.setTextSize(size);
+      paint.setTextAlign(Paint.Align.CENTER);
+      c.drawText(value, x, y, paint);
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+      float scale = Math.min(getWidth() / 320f, getHeight() / 235f);
+      canvas.save();
+      canvas.translate((getWidth() - 320 * scale) / 2, (getHeight() - 235 * scale) / 2);
+      canvas.scale(scale, scale);
+      paint.setStyle(Paint.Style.STROKE);
+      paint.setStrokeWidth(14);
+      paint.setStrokeCap(Paint.Cap.BUTT);
+      for (int i = 0; i < 10; i++) {
+        paint.setColor(i < 2 ? 0xFF059669 : i < 5 ? 0xFF10B981 : i < 8 ? 0xFFF59E0B : 0xFFEF4444);
+        canvas.drawArc(arc, 180 + i * 18 + .7f, 16.6f, false, paint);
+      }
+      for (int n = 0; n <= 20; n++) {
+        double angle = 180 - n * 9;
+        boolean major = n % 5 == 0;
+        paint.setColor(tickColor);
+        paint.setAlpha(major ? 204 : 89);
+        paint.setStrokeWidth(major ? 1.8f : 1);
+        canvas.drawLine(
+            x(angle, major ? 94 : 99),
+            y(angle, major ? 94 : 99),
+            x(angle, 105),
+            y(angle, 105),
+            paint);
+      }
+      paint.setAlpha(255);
+      label(canvas, "0", 33, 168, 12, tickColor, false);
+      label(canvas, "100", 287, 168, 12, tickColor, false);
+      double angle = 180 - Math.min(100, Double.isNaN(displayed) ? 0 : displayed) * 1.8;
+      needle.reset();
+      needle.moveTo(x(angle + 90, 5), y(angle + 90, 5));
+      needle.lineTo(x(angle, 89), y(angle, 89));
+      needle.lineTo(x(angle - 90, 5), y(angle - 90, 5));
+      needle.close();
+      paint.setStyle(Paint.Style.FILL);
+      paint.setColor(textColor);
+      canvas.drawPath(needle, paint);
+      canvas.drawCircle(160, 145, 8, paint);
+      paint.setColor(surfaceColor);
+      canvas.drawCircle(160, 145, 3, paint);
+      int color =
+          Double.isNaN(displayed)
+              ? mutedColor
+              : displayed < 50 ? 0xFF10B981 : displayed < 80 ? 0xFFF59E0B : 0xFFEF4444;
+      label(
+          canvas,
+          Double.isNaN(displayed) ? "—" : "%" + Math.round(displayed),
+          160,
+          195,
+          35,
+          color,
+          true);
+      label(
+          canvas,
+          Double.isNaN(displayed) ? "Oran için gelir gerekli" : "Kullanılan bütçe oranı",
+          160,
+          218,
+          12,
+          mutedColor,
+          false);
+      canvas.restore();
+    }
+  }
+
+  /** Current App.jsx's 128 × 128 segmented budget ring. */
+  public static final class BudgetCircle extends View {
+    private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final RectF area = new RectF(13, 13, 115, 115);
+    private final Typeface bold = Typeface.create("sans-serif", Typeface.BOLD),
+        normal = Typeface.create("sans-serif", Typeface.NORMAL);
+    private final double ratio;
+    private final boolean light;
+    private double displayed;
+    private android.animation.ValueAnimator animator;
+
+    public BudgetCircle(Context context) {
+      this(context, Double.NaN, false);
+    }
+
+    public BudgetCircle(Context context, double ratio, boolean light) {
+      super(context);
+      this.ratio = Double.isFinite(ratio) ? Math.max(0, ratio) : Double.NaN;
+      this.light = light;
+      displayed = this.ratio;
+      setContentDescription(
+          Double.isNaN(this.ratio)
+              ? "Bütçe oranı için henüz gelir yok"
+              : String.format(Finance.TR, "Kullanılan bütçe oranı yüzde %.1f", this.ratio));
+      setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_YES);
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+      super.onAttachedToWindow();
+      displayed = 0;
+      animator =
+          gaugeAnimator(
               ratio,
               android.animation.ValueAnimator.areAnimatorsEnabled(),
               v -> {
@@ -171,30 +357,49 @@ public final class Design {
 
     @Override
     protected void onDraw(Canvas canvas) {
-      float size = Math.min(getWidth(), getHeight()), stroke = size * .075f;
-      float left = (getWidth() - size) / 2f + stroke, top = (getHeight() - size) / 2f + stroke;
-      arc.set(left, top, left + size - stroke * 2, top + size - stroke * 2);
+      float scale = Math.min(getWidth(), getHeight()) / 128f;
+      canvas.save();
+      canvas.translate((getWidth() - 128 * scale) / 2, (getHeight() - 128 * scale) / 2);
+      canvas.scale(scale, scale);
       paint.setStyle(Paint.Style.STROKE);
-      paint.setStrokeWidth(stroke);
-      paint.setStrokeCap(Paint.Cap.ROUND);
-      paint.setColor(0x35FFFFFF);
-      canvas.drawOval(arc, paint);
-      paint.setColor(light ? 0xFFFFD3B6 : 0xFFC9AEFF);
-      if (!Double.isNaN(displayed))
-        canvas.drawArc(
-            arc, -90, (float) Math.min(100, Math.max(0, displayed)) * 3.6f, false, paint);
+      paint.setStrokeWidth(10);
+      paint.setStrokeCap(Paint.Cap.BUTT);
+      paint.setColor(light ? 0x29FFFFFF : 0x1FFFFFFF);
+      canvas.drawOval(area, paint);
+      int[] starts = {0, 50, 80},
+          lengths = {50, 30, 20},
+          colors = {0xFF10B981, 0xFFF59E0B, 0xFFEF4444};
+      for (int i = 0; i < 3; i++) {
+        paint.setColor(colors[i]);
+        paint.setAlpha(56);
+        canvas.drawArc(area, -90 + starts[i] * 3.6f, lengths[i] * 3.6f, false, paint);
+        paint.setAlpha(255);
+        if (!Double.isNaN(displayed) && displayed > starts[i])
+          canvas.drawArc(
+              area,
+              -90 + starts[i] * 3.6f,
+              (float) Math.min(lengths[i], Math.max(0, Math.min(100, displayed) - starts[i]))
+                  * 3.6f,
+              false,
+              paint);
+      }
       paint.setStyle(Paint.Style.FILL);
+      paint.setTextAlign(Paint.Align.CENTER);
       paint.setColor(Color.WHITE);
-      paint.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
-      paint.setTextSize(size * .25f);
-      String label = Double.isNaN(displayed) ? "—" : String.format(Finance.TR, "%%%.0f", displayed);
-      float width = paint.measureText(label);
-      if (width > size * .72f) paint.setTextSize(paint.getTextSize() * size * .72f / width);
+      paint.setTypeface(bold);
+      String number = Double.isNaN(displayed) ? "" : Long.toString(Math.round(displayed));
+      paint.setTextSize(Math.min(26, 88f / (number.length() + 1) / .65f));
       canvas.drawText(
-          label,
-          (getWidth() - paint.measureText(label)) / 2,
-          getHeight() / 2f - (paint.ascent() + paint.descent()) / 2,
+          Double.isNaN(displayed) ? "—" : "%" + number,
+          64,
+          66 - (paint.ascent() + paint.descent()) / 2,
           paint);
+      paint.setTypeface(normal);
+      paint.setTextSize(9);
+      paint.setAlpha(191);
+      canvas.drawText("bütçe kullanımı", 64, 86, paint);
+      paint.setAlpha(255);
+      canvas.restore();
     }
   }
 

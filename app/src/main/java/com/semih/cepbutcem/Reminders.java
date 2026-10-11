@@ -93,10 +93,7 @@ public final class Reminders {
       if (card.updated != null && card.statement > 0) {
         // The snapshot's statement belongs to its last closed cycle, not a new cycle invented
         // today.
-        LocalDate close = Finance.cycleStart(YearMonth.from(card.updated), card.closing);
-        if (close.isAfter(card.updated))
-          close = Finance.cycleStart(YearMonth.from(card.updated).minusMonths(1), card.closing);
-        LocalDate date = Finance.cardDue(close, card.due);
+        LocalDate date = card.statementDue();
         if (!date.isAfter(until)) {
           String name =
               accounts.stream()
