@@ -1,5 +1,7 @@
 import { useState, useMemo, useEffect, useRef, useId, useCallback } from "react";
 import { createPortal } from "react-dom";
+import { Capacitor } from "@capacitor/core";
+import { LocalNotifications } from "@capacitor/local-notifications";
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, LabelList } from "recharts";
 // ── dateUtils.js (inline) ──────────────────────────────────────────────────
 function yerelTarihAnahtari(tarih = new Date()) {
@@ -242,44 +244,46 @@ function kartHatirlatmalariniOlustur(kartlar, kartOdemeleri = [], simdi = new Da
   });
 }
 
+function bildirimSaatleriniAl(ayarlar) {
+  const saatler = Array.isArray(ayarlar?.saatler) ? ayarlar.saatler : [ayarlar?.saat || "18:00"];
+  return [...new Set(saatler.filter(s => typeof s === "string" && /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(s)))].sort();
+}
+
 function bildirimPlanlariniOlustur(odemeler, ayarlar, simdi = new Date()) {
-  const gunler = [...new Set((ayarlar?.gunler || [0]).map(Number).filter(g => g >= 0 && g <= 30))].sort((a, b) => b - a);
-  const [saat, dakika] = String(ayarlar?.saat || "18:00").split(":").map(Number);
+  const gunler = [...new Set((ayarlar?.gunler || [0]).map(Number).filter(g => Number.isInteger(g) && g >= 0 && g <= 365))];
+  const saatler = bildirimSaatleriniAl(ayarlar);
   const gruplar = {};
-  const bugunAnahtari = tarihAnahtari(simdi);
-
+  const bugun = tarihAnahtari(simdi);
   (odemeler || []).filter(o => !o.odendi && o.tarih).forEach(odeme => {
-    const odemeTarihi = tarihOku(odeme.tarih);
-    if (!odemeTarihi) return;
-    gunler.forEach(onceGun => {
-      const bildirimZamani = new Date(
-        odemeTarihi.getFullYear(),
-        odemeTarihi.getMonth(),
-        odemeTarihi.getDate(),
-        Number.isFinite(saat) ? saat : 18,
-        Number.isFinite(dakika) ? dakika : 0,
-        0,
-        0,
-      );
-      bildirimZamani.setDate(bildirimZamani.getDate() - onceGun);
-
-      // Fatura son ödeme gününde uygulama seçilen saatten sonra açılırsa eski
-      // kod bildirimi tamamen atlıyordu. Aynı gün hâlâ devam ediyorsa kısa bir
-      // gecikmeyle telafi bildirimi planla; geçmiş günleri yeniden bildirme.
+    const tarih = tarihOku(odeme.tarih);
+    if (!tarih) return;
+    gunler.forEach(onceGun => saatler.forEach(slot => {
+      const [saat, dakika] = slot.split(":").map(Number);
+      const at = new Date(tarih.getFullYear(), tarih.getMonth(), tarih.getDate(), saat, dakika);
+      at.setDate(at.getDate() - onceGun);
       let telafi = false;
-      if (bildirimZamani.getTime() <= simdi.getTime()) {
-        if (onceGun !== 0 || tarihAnahtari(odemeTarihi) !== bugunAnahtari) return;
-        bildirimZamani.setTime(simdi.getTime() + 5000);
+      if (at <= simdi) {
+        if (onceGun !== 0 || tarihAnahtari(tarih) !== bugun) return;
+        at.setTime(simdi.getTime() + 5000);
         telafi = true;
       }
-
-      const anahtar = `${tarihAnahtari(odemeTarihi)}-${onceGun}${telafi ? "-telafi" : ""}`;
-      if (!gruplar[anahtar]) gruplar[anahtar] = { anahtar, at: bildirimZamani, onceGun, telafi, odemeler: [] };
-      gruplar[anahtar].odemeler.push(odeme);
-    });
+      const anahtar = telafi ? `${bugun}-telafi` : `${tarihAnahtari(at)}-${slot}`;
+      if (!gruplar[anahtar]) gruplar[anahtar] = { anahtar, at, onceGun, telafi, odemeler: [] };
+      // Aynı ödemeyi birden fazla geçmiş saat için tekrar sayma.
+      if (!gruplar[anahtar].odemeler.some(o => String(o.id) === String(odeme.id))) {
+        gruplar[anahtar].odemeler.push({ ...odeme, onceGun });
+      }
+    }));
   });
-
   return Object.values(gruplar).sort((a, b) => a.at - b.at);
+}
+
+function krediBildirimleri(krediler = []) {
+  return krediler.flatMap(k => (k.taksitler || []).filter(t => !t.odendi && t.tarih).map(t => ({
+    id: `kredi-${k.id}-${t.no}`, kaynak: "kredi",
+    aciklama: `${k.ad || k.isim || "Kredi"} · ${t.no}. taksit`,
+    tarih: t.tarih, tutar: t.tutar, odendi: false,
+  })));
 }
 
 function bildirimKimligi(anahtar) {
@@ -557,6 +561,7 @@ function yedekVerisiniDogrula(paket) {
     if (["ft_zamlar", "ft_enflasyon"].includes(key) && Object.values(value).some(v => v !== "" && (!Number.isFinite(sayisalOku(v)) || sayisalOku(v) <= -100 || sayisalOku(v) > 10000))) throw new Error("Oran kaydı geçersiz.");
     if (key === "ft_sabit_log" && Object.values(value).some(v => typeof v !== "boolean")) throw new Error("Sabit gider günlüğü geçersiz.");
     if (key === "ft_son_bildirim_planlama" && value !== null && !nesneMi(value)) throw new Error("Bildirim kaydı geçersiz.");
+    if (key === "ft_bildirim_ayarlari" && value.saatler != null && (!Array.isArray(value.saatler) || value.saatler.length < 1 || value.saatler.length > 3 || value.saatler.some(s => typeof s !== "string" || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(s)))) throw new Error("Bildirim saatleri geçersiz.");
     if (key === "ft_bildirim_ayarlari" && (!Array.isArray(value.gunler) || value.gunler.some(g => !tamSayiGecerli(g, 0, 365)) || typeof value.saat !== "string" || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value.saat))) throw new Error("Bildirim ayarları geçersiz.");
     if (key === "ft_maas_ayarlar") {
       if (value.mevcutMaas && !tutarGecerli(value.mevcutMaas)) throw new Error("Maaş tutarı geçersiz.");
@@ -683,9 +688,9 @@ function Select({ label, children, ...props }) {
     </div>
   );
 }
-function Btn({ children, onClick, variant = "primary", style = {}, disabled }) {
+function Btn({ children, onClick, variant = "primary", style = {}, disabled, "aria-label": ariaLabel }) {
   const styles = { primary: { background: disabled ? "var(--text5)" : "var(--accent-strong)", color: "var(--on-accent)" }, secondary: { background: "var(--border)", color: "var(--text)" }, danger: { background: "#ef444422", color: "var(--expense-text)", border: "1px solid #ef444444" } };
-  return <button onClick={onClick} disabled={disabled} style={{ border: "none", borderRadius: 10, padding: "10px 18px", fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, fontSize: 13, cursor: disabled ? "not-allowed" : "pointer", letterSpacing: "0.04em", opacity: disabled ? 0.6 : 1, ...styles[variant], ...style }}>{children}</button>;
+  return <button aria-label={ariaLabel} onClick={onClick} disabled={disabled} style={{ border: "none", borderRadius: 10, padding: "10px 18px", fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, fontSize: 13, cursor: disabled ? "not-allowed" : "pointer", letterSpacing: "0.04em", opacity: disabled ? 0.6 : 1, ...styles[variant], ...style }}>{children}</button>;
 }
 function Badge({ text, color }) {
   return <span style={{ background: color + "22", color, border: `1px solid ${color}44`, borderRadius: 6, padding: "2px 8px", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 600 }}>{text}</span>;
@@ -785,14 +790,11 @@ function maasDonemKey(tarihStr, basGun) {
   const label = `${bas.getDate()} ${AYLAR_TAM[bas.getMonth()]} – ${bit.getDate()} ${AYLAR_TAM[bit.getMonth()]}`;
   return { yil: bas.getFullYear(), ay: bas.getMonth(), key, label, baslangic: yerelTarihAnahtari(bas), bitis: yerelTarihAnahtari(bit) };
 }
-// ── BİLDİRİM SİSTEMİ (Capacitor köprüsü üzerinden, import gerektirmez) ───────
+// Android alarmları uygulamanın JavaScript sürecinden bağımsız çalışır.
 function bildirimEklentisi() {
-  try {
-    const C = window.Capacitor;
-    if (C && C.Plugins && C.Plugins.LocalNotifications) return C.Plugins.LocalNotifications;
-  } catch (e) {}
-  return null;
+  return Capacitor.isNativePlatform() && Capacitor.isPluginAvailable("LocalNotifications") ? LocalNotifications : null;
 }
+let bildirimPlanlamaSirasi = Promise.resolve();
 const FINORA_BILDIRIM_KANALI = "finora_odemeler_v2";
 async function bildirimKanaliHazirla(LN) {
   if (!LN || typeof LN.createChannel !== "function") return null;
@@ -800,7 +802,7 @@ async function bildirimKanaliHazirla(LN) {
     await LN.createChannel({
       id: FINORA_BILDIRIM_KANALI,
       name: "Ödeme Hatırlatmaları",
-      description: "Fatura ve kredi kartı son ödeme günü hatırlatmaları",
+      description: "Fatura, kredi kartı ve taksit hatırlatmaları",
       importance: 5,
       visibility: 1,
       vibration: true,
@@ -808,7 +810,7 @@ async function bildirimKanaliHazirla(LN) {
     });
     return FINORA_BILDIRIM_KANALI;
   } catch (e) {
-    return null;
+    throw new Error("Bildirim kanalı oluşturulamadı: " + (e.message || "Android ayarlarını kontrol et"));
   }
 }
 async function bildirimIzniAl(LN) {
@@ -2420,8 +2422,7 @@ function AyarlarTab({ donemGun, setDonemGun, kartlar, setKartlar, kategoriler, s
         body: "Test bildirimi — sistem çalışıyor ✓",
         schedule: { at: t, allowWhileIdle: true },
         ...(kanalId ? { channelId: kanalId } : {}),
-        foreground: true,
-        isExactNotification: false,
+        extra: { finoraTip: "test" },
       }] });
       // Şu an gerçekten planlı olan (bekleyen) bildirim sayısını göster — gerçek ödeme hatırlatmalarının kurulup kurulmadığının kanıtı
       let bekleyenMetin = "";
@@ -2430,10 +2431,25 @@ function AyarlarTab({ donemGun, setDonemGun, kartlar, setKartlar, kategoriler, s
         const sayi = bekleyen && bekleyen.notifications ? bekleyen.notifications.length : 0;
         bekleyenMetin = ` Şu an sistemde ${sayi} bildirim planlı duruyor (test dahil).`;
       } catch (e) {}
-      setBildirimDurum(`✅ Eklenti ve bildirim izni tamam. 5 saniye içinde test bildirimi gelecek.${bekleyenMetin}`);
+      setBildirimDurum(`✅ Eklenti ve bildirim izni tamam. Test bildirimi 5 saniye sonrasına kaydedildi; alarm izni kapalıysa gecikebilir.${bekleyenMetin}`);
     } catch (e) {
       setBildirimDurum("❌ Planlama hatası: " + (e && e.message ? e.message : "bilinmeyen"));
     }
+  };
+  const bildirimleriEtkinlestir = async () => {
+    const LN = bildirimEklentisi();
+    if (!LN) { setBildirimDurum("❌ Arka plan bildirimleri Android uygulamasında kullanılabilir."); return; }
+    setBildirimDurum("İzinler kontrol ediliyor...");
+    try {
+      if (!await bildirimIzniAl(LN)) { setBildirimDurum("❌ Telefon ayarlarından uygulamanın bildirim iznini aç."); return; }
+      let izin = await LN.checkExactNotificationSetting();
+      if (izin.exact_alarm !== "granted") izin = await LN.changeExactNotificationSetting();
+      await bildirimKanaliHazirla(LN);
+      setBildirimAyarlari(a => ({ ...a }));
+      setBildirimDurum(izin.exact_alarm === "granted"
+        ? "✅ Bildirim ve alarm izinleri açık. Hatırlatmalar uygulama kapalıyken de Android tarafından gönderilir."
+        : "Kesin alarm izni kapalı; Android bildirimleri geciktirebilir. İzin düğmesiyle tekrar açabilirsin.");
+    } catch (e) { setBildirimDurum("❌ " + (e.message || "Bildirim izinleri kontrol edilemedi.")); }
   };
   const [kartIsim, setKartIsim] = useState("");
   const [kartKesimTarihi, setKartKesimTarihi] = useState("");
@@ -2636,7 +2652,7 @@ function AyarlarTab({ donemGun, setDonemGun, kartlar, setKartlar, kategoriler, s
       <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "18px 16px", marginBottom: 14 }}>
         <div style={{ color: "var(--text)", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, marginBottom: 6 }}><span className="inline-icon"><Icon name="bell" size={16}/></span>Bildirimler</div>
         <div style={{ color: "var(--text4)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 12 }}>
-          Aynı zamana denk gelen faturalar ve kredi kartı son ödeme tarihleri tek bildirimde birleşir. Hatırlatma zamanlarını seçebilirsin.
+          Aynı zamana denk gelen faturalar, kredi kartları ve taksitler tek bildirimde birleşir. Hatırlatma zamanlarını seçebilirsin.
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 7, marginBottom: 10 }}>
           {[{ gun: 3, label: "3 gün önce" }, { gun: 1, label: "1 gün önce" }, { gun: 0, label: "Aynı gün" }].map(secenek => {
@@ -2644,10 +2660,23 @@ function AyarlarTab({ donemGun, setDonemGun, kartlar, setKartlar, kategoriler, s
             return <button key={secenek.gun} onClick={() => bildirimGunuDegistir(secenek.gun)} style={{ border: aktif ? "1px solid rgba(167,78,50,.5)" : "1px solid var(--border)", background: aktif ? "var(--accent-soft)" : "var(--card2)", color: aktif ? "var(--accent)" : "var(--text4)", borderRadius: 11, padding: "9px 5px", fontSize: 11, fontWeight: 800, cursor: "pointer" }}>{aktif ? "✓ " : ""}{secenek.label}</button>;
           })}
         </div>
-        <Input label="Bildirim Saati" type="time" value={bildirimAyarlari?.saat || "18:00"} onChange={e => setBildirimAyarlari(a => ({ ...(a || {}), saat: e.target.value || "18:00" }))} style={{ marginBottom: 0 }} />
-        <Btn onClick={bildirimTest} style={{ width: "100%", padding: 12 }}><span className="inline-icon"><Icon name="bell" size={16}/></span>Bildirim Testi Yap</Btn>
-        <div style={{ color: "var(--text5)", fontSize: 11, lineHeight: 1.5, marginTop: 7 }}>
-          Ödeme bildirimleri özel alarm izni istemeden, Android pil tasarrufuyla uyumlu şekilde seçtiğin saate yakın gönderilir.
+        {bildirimSaatleriniAl(bildirimAyarlari).map((saat, i, saatler) => <div key={i} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <div style={{ flex: 1 }}><Input label={`Bildirim Saati ${i + 1}`} type="time" value={saat} onChange={e => {
+            if (!e.target.value) return;
+            const yeni = saatler.map((s, j) => i === j ? e.target.value : s);
+            setBildirimAyarlari(a => ({ ...a, saat: yeni[0], saatler: yeni }));
+          }} /></div>
+          {saatler.length > 1 && <Btn onClick={() => { const yeni = saatler.filter((_, j) => j !== i); setBildirimAyarlari(a => ({ ...a, saat: yeni[0], saatler: yeni })); }} aria-label={`${saat} bildirim saatini kaldır`}>Kaldır</Btn>}
+        </div>)}
+        {bildirimSaatleriniAl(bildirimAyarlari).length < 3 && <Btn onClick={() => {
+          const saatler = bildirimSaatleriniAl(bildirimAyarlari);
+          const yeni = [...saatler, ["09:00", "12:00", "18:00", "21:00"].find(s => !saatler.includes(s))];
+          setBildirimAyarlari(a => ({ ...a, saat: yeni[0], saatler: yeni }));
+        }}>Saat Ekle</Btn>}
+        <Btn onClick={bildirimleriEtkinlestir} style={{ width: "100%", padding: 12, marginTop: 8 }}>Arka Plan Bildirimlerini Etkinleştir</Btn>
+        <Btn onClick={bildirimTest} style={{ width: "100%", padding: 12, marginTop: 8 }}><span className="inline-icon"><Icon name="bell" size={16}/></span>Bildirim Testi Yap</Btn>
+        <div style={{ color: "var(--text4)", fontSize: 11, lineHeight: 1.5, marginTop: 7 }}>
+          Seçilen saat için bildirim ve alarm izinlerini aç. Uygulamayı son uygulamalar ekranından kapatabilirsin; Android ayarlarından zorla durdurmak alarmları engeller. Bazı telefonlarda pil kısıtlamalarını da kaldırmak gerekir.
         </div>
         {bildirimDurum && (
           <div style={{ marginTop: 10, padding: "10px 12px", background: "var(--card2)", borderRadius: 10, color: bildirimDurum.startsWith("✅") ? "#10b981" : bildirimDurum.startsWith("❌") ? "#ef4444" : "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.5 }}>
@@ -4062,6 +4091,7 @@ export default function App() {
   const [tasarrufHedefi,setTasarrufHedefi] = useLocalStorage("ft_tasarruf_hedefi", 0);
   const [tema, setTema] = useLocalStorage("ft_tema", "light");
   const [bildirimAyarlari, setBildirimAyarlari] = useLocalStorage("ft_bildirim_ayarlari", { gunler: [0, 1], saat: "18:00" });
+  const [bildirimYenileme, setBildirimYenileme] = useState(0);
   const [sonBildirimPlanlama, setSonBildirimPlanlama] = useLocalStorage("ft_son_bildirim_planlama", null);
   useEffect(() => {
     try {
@@ -4118,66 +4148,82 @@ export default function App() {
     } catch (e) {}
   }, [tema]);
 
-  // 🔔 Seçilen gün/saatlerde ödeme bildirimleri — aynı zamana düşenler tek bildirimde birleşir
+  useEffect(() => {
+    const yenile = () => { if (document.visibilityState === "visible") setBildirimYenileme(v => v + 1); };
+    window.addEventListener("focus", yenile);
+    document.addEventListener("visibilitychange", yenile);
+    return () => { window.removeEventListener("focus", yenile); document.removeEventListener("visibilitychange", yenile); };
+  }, []);
+
+  // Sıra, StrictMode ve hızlı düzenlemelerde eski planın yenisini silmesini önler.
   useEffect(() => {
     let iptal = false;
-    (async () => {
+    const planla = async () => {
+      if (iptal) return;
+      const LN = bildirimEklentisi();
+      if (!LN) return; // Tarayıcıda Android alarmı varmış gibi gösterme.
       try {
-        const LN = bildirimEklentisi();
-        if (!LN || iptal) { if (!iptal) setSonBildirimPlanlama({ zaman: new Date().toISOString(), sayi: 0, hata: "eklenti bulunamadı" }); return; }
-        const izinli = await bildirimIzniAl(LN);
-        if (!izinli || iptal) { if (!iptal) setSonBildirimPlanlama({ zaman: new Date().toISOString(), sayi: 0, hata: "izin verilmedi" }); return; }
+        const simdi = new Date();
+        const kartHatirlatmalari = kartHatirlatmalariniOlustur(kartlar, kartOdemeleri, simdi);
+        const tumu = [...odemeler, ...kartHatirlatmalari, ...krediBildirimleri(krediler)];
+        const bekleyen = (await LN.getPending()).notifications || [];
+        const sahipli = bekleyen.filter(n => n.extra?.finoraTip === "odeme_hatirlatma");
+        const izin = await LN.checkPermissions();
+        if (izin.display !== "granted") {
+          // Ödenen/silinen kayıtların eski alarmlarını izin kapalıyken de kaldır.
+          if (sahipli.length) await LN.cancel({ notifications: sahipli.map(n => ({ id: n.id })) });
+          if (!iptal) setSonBildirimPlanlama({ zaman: simdi.toISOString(), sayi: 0, hata: "Ayarlardan Arka Plan Bildirimlerini Etkinleştir düğmesiyle bildirim iznini aç." });
+          return;
+        }
+        const kesin = await LN.checkExactNotificationSetting();
         const kanalId = await bildirimKanaliHazirla(LN);
-        // Eski planlananları temizle ve güncel faturalarla yeniden kur.
-        try {
-          const bekleyen = await LN.getPending();
-          if (bekleyen && bekleyen.notifications && bekleyen.notifications.length) {
-            await LN.cancel({ notifications: bekleyen.notifications.map(n => ({ id: n.id })) });
-          }
-        } catch (e) {}
-        const kartHatirlatmalari = kartHatirlatmalariniOlustur(kartlar, kartOdemeleri, new Date());
-        const tumHatirlatmalar = [...(odemeler || []), ...kartHatirlatmalari];
-        const planlar = bildirimPlanlariniOlustur(tumHatirlatmalar, bildirimAyarlari, new Date());
+        let telafiLog = {};
+        try { telafiLog = JSON.parse(localStorage.getItem("ft_bildirim_telafi_log") || "{}"); } catch { /* Bozuk geçmiş planı engellemesin. */ }
+        if (!telafiLog || typeof telafiLog !== "object" || Array.isArray(telafiLog)) telafiLog = {};
+        const planlar = bildirimPlanlariniOlustur(tumu, bildirimAyarlari, simdi).map(plan => {
+          if (!plan.telafi) return plan;
+          const mevcut = sahipli.find(n => n.extra?.planAnahtari === plan.anahtar);
+          // Aynı gün tekrar açılışta gönderilmiş hatırlatmayı çoğaltma.
+          const odemeler = plan.odemeler.filter(o => !telafiLog[`${o.tarih}:${o.id}`] || mevcut?.extra?.odemeAnahtarlari?.includes(`${o.tarih}:${o.id}`));
+          const eskiZaman = mevcut?.schedule?.at ? new Date(mevcut.schedule.at) : null;
+          return { ...plan, odemeler, at: eskiZaman && eskiZaman > simdi ? eskiZaman : plan.at };
+        }).filter(p => p.odemeler.length);
         const bildirimler = planlar.map(plan => ({
           id: bildirimKimligi(plan.anahtar),
-          title: plan.odemeler.every(o => o.kaynak === "kredi_karti") ? "Kredi Kartı Hatırlatması" : "Ödeme Hatırlatması",
-          body: `${plan.odemeler.map(o => o.aciklama || o.kategori || "Fatura").join(" · ")} — ${plan.onceGun === 0 ? "bugün son ödeme günü" : plan.onceGun === 1 ? "yarın son ödeme günü" : `${plan.onceGun} gün sonra son ödeme günü`}.`,
+          title: "Ödeme Hatırlatması",
+          body: plan.odemeler.map(o => `${o.aciklama || o.kategori || "Ödeme"}: ${o.onceGun === 0 ? "bugün" : o.onceGun === 1 ? "yarın" : `${o.onceGun} gün sonra`} son ödeme günü`).join(" · "),
           schedule: { at: plan.at, allowWhileIdle: true },
           ...(kanalId ? { channelId: kanalId } : {}),
-          foreground: true,
-          // Android 14+ yeni kurulumlarda kesin alarm izni kapalı veya sistem
-          // tarafından pasif olabilir. Ödeme hatırlatması dakika hassasiyeti
-          // gerektirmediği için izin istemeyen setAndAllowWhileIdle yolunu kullan.
-          isExactNotification: false,
-          extra: { finoraTip: "odeme_hatirlatma", planAnahtari: plan.anahtar },
+          extra: { finoraTip: "odeme_hatirlatma", planAnahtari: plan.anahtar, odemeAnahtarlari: plan.odemeler.map(o => `${o.tarih}:${o.id}`) },
         }));
-        const planlamaSonucu = bildirimler.length ? await LN.schedule({ notifications: bildirimler }) : null;
-        let dogrulananSayi = 0;
-        if (bildirimler.length) {
-          const istenenIdler = new Set(bildirimler.map(b => Number(b.id)));
-          const bekleyen = await LN.getPending();
-          dogrulananSayi = (bekleyen?.notifications || []).filter(n => istenenIdler.has(Number(n.id))).length;
-        }
-        const odemeSayisi = (odemeler || []).filter(o => !o.odendi && o.tarih).length;
-        const odemeGunuSayisi = new Set((odemeler || []).filter(o => !o.odendi && o.tarih).map(o => o.tarih)).size;
-        const eksikSayi = Math.max(0, bildirimler.length - dogrulananSayi);
-        setSonBildirimPlanlama({
-          zaman: new Date().toISOString(),
-          sayi: dogrulananSayi,
-          istenenSayi: bildirimler.length,
-          odemeSayisi,
-          odemeGunuSayisi,
-          kartSayisi: kartHatirlatmalari.length,
-          telafiSayisi: planlar.filter(p => p.telafi).length,
-          uyari: planlamaSonucu?.warning?.message || null,
-          hata: eksikSayi > 0 ? `${eksikSayi} bildirim telefonun bekleyen bildirim listesine eklenemedi` : null,
+        // Önce yeni alarmları kaydet; başarısız olursa mevcut planı kaybetme.
+        if (bildirimler.length) await LN.schedule({ notifications: bildirimler });
+        const idler = new Set(bildirimler.map(n => n.id));
+        const eski = sahipli.filter(n => !idler.has(Number(n.id)));
+        if (eski.length) await LN.cancel({ notifications: eski.map(n => ({ id: n.id })) });
+        const dogrulanan = (await LN.getPending()).notifications || [];
+        const dogrulananIdler = new Set(dogrulanan.map(n => Number(n.id)));
+        const sayi = bildirimler.filter(n => dogrulananIdler.has(n.id)).length;
+        const bugun = yerelTarihAnahtari(simdi);
+        Object.keys(telafiLog).forEach(k => { if (k.slice(0, 10) < bugun) delete telafiLog[k]; });
+        // Kaydedilmiş aynı-gün alarmı saat geçince ikinci bir telafiye dönüşmesin.
+        planlar.filter(p => dogrulananIdler.has(bildirimKimligi(p.anahtar))).forEach(p => p.odemeler.filter(o => o.onceGun === 0).forEach(o => { telafiLog[`${o.tarih}:${o.id}`] = true; }));
+        localStorage.setItem("ft_bildirim_telafi_log", JSON.stringify(telafiLog));
+        if (!iptal) setSonBildirimPlanlama({
+          zaman: simdi.toISOString(), sayi, istenenSayi: bildirimler.length,
+          odemeSayisi: tumu.filter(o => !o.odendi && o.tarih).length,
+          odemeGunuSayisi: new Set(tumu.filter(o => !o.odendi && o.tarih).map(o => o.tarih)).size,
+          kartSayisi: kartHatirlatmalari.length, telafiSayisi: planlar.filter(p => p.telafi).length,
+          uyari: kesin.exact_alarm === "granted" ? null : "Kesin alarm izni kapalı; Android seçilen saati geciktirebilir. Ayarlardan Arka Plan Bildirimlerini Etkinleştir düğmesini kullan.",
+          hata: sayi < bildirimler.length ? "Bazı hatırlatmalar Android alarm listesine kaydedilemedi." : null,
         });
       } catch (e) {
-        setSonBildirimPlanlama({ zaman: new Date().toISOString(), sayi: 0, hata: (e && e.message) ? e.message : "bilinmeyen hata" });
+        if (!iptal) setSonBildirimPlanlama({ zaman: new Date().toISOString(), sayi: 0, hata: e.message || "Bildirimler planlanamadı." });
       }
-    })();
+    };
+    bildirimPlanlamaSirasi = bildirimPlanlamaSirasi.then(planla, planla);
     return () => { iptal = true; };
-  }, [odemeler, kartlar, kartOdemeleri, bildirimAyarlari]);
+  }, [odemeler, kartlar, kartOdemeleri, krediler, bildirimAyarlari, bildirimYenileme]);
 
   // 🔄 Her açılışta aktif sabit giderleri kontrol et, bu ay eklenmemişse ekle
   useEffect(() => {
