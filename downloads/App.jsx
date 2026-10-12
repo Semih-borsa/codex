@@ -409,10 +409,10 @@ function ToastKutusu() {
   const renk = veri.tip === "hata" ? "#ef4444" : veri.tip === "uyari" ? "#f59e0b" : "#10b981";
   const ikon = veri.tip === "hata" ? "alert" : veri.tip === "uyari" ? "warning" : "check";
   return (
-    <div key={veri.id} style={{ position: "fixed", top: "calc(14px + env(safe-area-inset-top))", left: "50%", transform: "translateX(-50%)", zIndex: 300, background: renk, color: "#fff", borderRadius: 16, padding: "10px 12px", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, display: "flex", alignItems: "center", gap: 9, boxShadow: "0 12px 32px rgba(0,0,0,0.3)", animation: "toastIn 0.28s ease", width: "min(92%, 430px)" }}>
+    <div key={veri.id} style={{ position: "fixed", top: "calc(14px + env(safe-area-inset-top))", left: "50%", transform: "translateX(-50%)", zIndex: 300, background: renk, color: "#fff", borderRadius: 16, padding: "10px 12px", fontSize: 12, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600, display: "flex", alignItems: "center", gap: 9, boxShadow: "0 12px 32px rgba(0,0,0,0.3)", animation: "toastIn 0.28s ease", width: "min(92%, 430px)" }}>
       <span style={{ width: 20, height: 20, borderRadius: 99, background: "rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, flexShrink: 0 }}><Icon name={ikon} size={17}/></span>
       <span style={{ flex: 1 }}>{veri.mesaj}</span>
-      {veri.geriAl && <button onClick={() => { veri.geriAl(); setVeri(null); }} style={{ border: "1px solid rgba(255,255,255,.45)", background: "rgba(255,255,255,.18)", color: "#fff", borderRadius: 9, padding: "5px 9px", fontSize: 11, fontWeight: 800, cursor: "pointer" }}>Geri Al</button>}
+      {veri.geriAl && <button onClick={() => { veri.geriAl(); setVeri(null); }} style={{ border: "1px solid rgba(255,255,255,.45)", background: "rgba(255,255,255,.18)", color: "#fff", borderRadius: 9, padding: "5px 9px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Geri Al</button>}
     </div>
   );
 }
@@ -659,7 +659,7 @@ function Modal({ title, onClose, children }) {
       <div ref={panel} data-app-modal role="dialog" aria-modal="true" aria-label={title} tabIndex={-1} className="app-modal-panel" style={{ background: "var(--card)", borderTop: "1px solid var(--border-light)", borderLeft: "1px solid var(--border)", borderRight: "1px solid var(--border)", borderRadius: "26px 26px 0 0", padding: "14px 22px calc(26px + env(safe-area-inset-bottom))", width: "100%", maxWidth: 480, maxHeight: "calc(100dvh - 10px - env(safe-area-inset-top))", overflowY: "auto", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch", boxSizing: "border-box", animation: "sheetUp 0.3s cubic-bezier(0.16,1,0.3,1)", boxShadow: "0 -12px 40px rgba(0,0,0,0.4)" }} onClick={e => e.stopPropagation()}>
         <div style={{ width: 40, height: 4, background: "var(--border2)", borderRadius: 99, margin: "0 auto 16px" }} />
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-          <span style={{ color: "var(--text)", fontSize: 18, fontFamily: "'Manrope', 'Inter', system-ui, sans-serif", fontWeight: 700 }}>{title}</span>
+          <span style={{ color: "var(--text)", fontSize: 18, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600 }}>{title}</span>
           <button aria-label="Pencereyi kapat" onClick={onClose} style={{ background: "var(--card2)", border: "1px solid var(--border)", color: "var(--text3)", borderRadius: 99, width: 32, height: 32, cursor: "pointer", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
         </div>
         {children}
@@ -673,8 +673,8 @@ function Input({ label, ...props }) {
   const id = props.id || generatedId;
   return (
     <div style={{ marginBottom: 14 }}>
-      {label && <label htmlFor={id} style={{ color: "var(--text4)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", display: "block", marginBottom: 6, letterSpacing: "0.06em", textTransform: "none" }}>{label}</label>}
-      <input {...(props.type === "number" ? { step: "any", inputMode: "decimal" } : {})} {...props} id={id} style={{ width: "100%", background: "var(--card2)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 14px", color: "var(--text)", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 14, outline: "none", boxSizing: "border-box", ...props.style }} />
+      {label && <label htmlFor={id} style={{ color: "var(--text4)", fontSize: 12, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", display: "block", marginBottom: 6, letterSpacing: "0.06em", textTransform: "none" }}>{label}</label>}
+      <input {...(props.type === "number" ? { step: "any", inputMode: "decimal" } : {})} {...props} id={id} style={{ width: "100%", background: "var(--card2)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 14px", color: "var(--text)", fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontSize: 14, outline: "none", boxSizing: "border-box", ...props.style }} />
     </div>
   );
 }
@@ -683,17 +683,17 @@ function Select({ label, children, ...props }) {
   const id = props.id || generatedId;
   return (
     <div style={{ marginBottom: 14 }}>
-      {label && <label htmlFor={id} style={{ color: "var(--text4)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", display: "block", marginBottom: 6, letterSpacing: "0.06em", textTransform: "none" }}>{label}</label>}
-      <select {...props} id={id} style={{ width: "100%", background: "var(--card2)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 14px", color: "var(--text)", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 14, outline: "none", boxSizing: "border-box" }}>{children}</select>
+      {label && <label htmlFor={id} style={{ color: "var(--text4)", fontSize: 12, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", display: "block", marginBottom: 6, letterSpacing: "0.06em", textTransform: "none" }}>{label}</label>}
+      <select {...props} id={id} style={{ width: "100%", background: "var(--card2)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 14px", color: "var(--text)", fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontSize: 14, outline: "none", boxSizing: "border-box" }}>{children}</select>
     </div>
   );
 }
 function Btn({ children, onClick, variant = "primary", style = {}, disabled, "aria-label": ariaLabel }) {
   const styles = { primary: { background: disabled ? "var(--text5)" : "var(--accent-strong)", color: "var(--on-accent)" }, secondary: { background: "var(--border)", color: "var(--text)" }, danger: { background: "#ef444422", color: "var(--expense-text)", border: "1px solid #ef444444" } };
-  return <button aria-label={ariaLabel} onClick={onClick} disabled={disabled} style={{ border: "none", borderRadius: 10, padding: "10px 18px", fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, fontSize: 13, cursor: disabled ? "not-allowed" : "pointer", letterSpacing: "0.04em", opacity: disabled ? 0.6 : 1, ...styles[variant], ...style }}>{children}</button>;
+  return <button aria-label={ariaLabel} onClick={onClick} disabled={disabled} style={{ border: "none", borderRadius: 10, padding: "10px 18px", fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600, fontSize: 13, cursor: disabled ? "not-allowed" : "pointer", letterSpacing: "0.04em", opacity: disabled ? 0.6 : 1, ...styles[variant], ...style }}>{children}</button>;
 }
 function Badge({ text, color }) {
-  return <span style={{ background: color + "22", color, border: `1px solid ${color}44`, borderRadius: 6, padding: "2px 8px", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 600 }}>{text}</span>;
+  return <span style={{ background: color + "22", color, border: `1px solid ${color}44`, borderRadius: 6, padding: "2px 8px", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600 }}>{text}</span>;
 }
 
 function Icon({ name, size = 22, strokeWidth = 1.9 }) {
@@ -758,7 +758,7 @@ function KategoriAlanGrafik({ seri, renk, gradId }) {
     if (value == null || x == null || y == null) return null;
     const metin = "₺" + fmtK(value);
     if (value === 0) return null;
-    return <text x={x} y={y - 9} textAnchor="middle" fontSize={8.5} fill="var(--text5)" fontFamily="'Inter', system-ui, sans-serif">{metin}</text>;
+    return <text x={x} y={y - 9} textAnchor="middle" fontSize={8.5} fill="var(--text5)" fontFamily="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">{metin}</text>;
   };
   return (
     <ResponsiveContainer width="100%" height={110}>
@@ -1212,7 +1212,7 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
   }, [islemler, katDagilim, donemGun, secilenDonem]);
   const tt = ({ active, payload, label }) => {
     if (!active || !payload?.length) return null;
-    return <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 14px" }}><div style={{ color: "var(--text3)", fontSize: 12, marginBottom: 6, fontFamily: "'Inter', system-ui, sans-serif" }}>{label}</div>{payload.map(p => <div key={p.name} style={{ color: p.color, fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif" }}>{p.name}: ₺{fmt(p.value)}</div>)}</div>;
+    return <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 14px" }}><div style={{ color: "var(--text3)", fontSize: 12, marginBottom: 6, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}>{label}</div>{payload.map(p => <div key={p.name} style={{ color: p.color, fontSize: 13, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}>{p.name}: ₺{fmt(p.value)}</div>)}</div>;
   };
   return (
     <div className="home-overview">
@@ -1268,18 +1268,18 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
           return (
             <div className="home-summary-card" key={k.etiket} style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 16, boxShadow: "var(--card-shadow)", padding: "12px 10px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                <span style={{ color: k.renk, fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>{k.etiket}</span>
+                <span style={{ color: k.renk, fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600 }}>{k.etiket}</span>
                 <span style={{ width: 22, height: 22, borderRadius: 7, background: "var(--card2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, flexShrink: 0 }}><Icon name={k.ikon} size={15} /></span>
               </div>
-              <div className="home-summary-value" style={{ color: "var(--text)", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, marginBottom: 5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}><Money value={k.veri.deger} size={15}/></div>
+              <div className="home-summary-value" style={{ color: "var(--text)", fontSize: 13, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600, marginBottom: 5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}><Money value={k.veri.deger} size={15}/></div>
               {k.veri.varMi ? (
                 <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
-                  <span style={{ color: okRenk, fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>{artti ? "↗" : "↘"} %{Math.abs(k.veri.yuzde).toFixed(1)}</span>
+                  <span style={{ color: okRenk, fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600 }}>{artti ? "↗" : "↘"} %{Math.abs(k.veri.yuzde).toFixed(1)}</span>
                 </div>
               ) : (
                 null
               )}
-              <div className="home-summary-caption" style={{ color: "var(--text5)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 2 }}>{k.veri.varMi ? "Önceki dönem" : "Geçmiş yok"}</div>
+              <div className="home-summary-caption" style={{ color: "var(--text5)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", marginTop: 2 }}>{k.veri.varMi ? "Önceki dönem" : "Geçmiş yok"}</div>
             </div>
           );
         })}
@@ -1310,8 +1310,8 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
       {/* Sabit gider uyarısı */}
       {sabitGider > 0 && (
         <div style={{ background:"#ef444411", border:"1px solid #ef444433", borderRadius:10, padding:"8px 14px", marginBottom:10, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-          <span style={{ color: "var(--expense-text)", fontSize:11, fontFamily:"'Inter', system-ui, sans-serif" }}><span className="inline-icon"><Icon name="repeat" size={16}/></span>Sabit Giderler (Aktif)</span>
-          <span style={{ color: "var(--expense-text)", fontFamily:"'Inter', system-ui, sans-serif", fontWeight:700, fontSize:13 }}>₺{fmt(sabitGider)}</span>
+          <span style={{ color: "var(--expense-text)", fontSize:11, fontFamily:"system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}><span className="inline-icon"><Icon name="repeat" size={16}/></span>Sabit Giderler (Aktif)</span>
+          <span style={{ color: "var(--expense-text)", fontFamily:"system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight:600, fontSize:13 }}>₺{fmt(sabitGider)}</span>
         </div>
       )}
 
@@ -1319,7 +1319,7 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
         <div style={{ background: "linear-gradient(135deg,var(--card),var(--card2))", border: "1px solid var(--border)", borderRadius: 18, padding: "13px 14px", marginBottom: 12, display: "flex", alignItems: "center", gap: 12, boxShadow: "var(--card-shadow)" }}>
           <div style={{ width: 40, height: 40, borderRadius: 13, display: "grid", placeItems: "center", background: odemeDurumu.gecikenAdet > 0 ? "#ef444422" : "var(--accent-soft)", color: odemeDurumu.gecikenAdet > 0 ? "#ef4444" : "var(--accent)", flexShrink: 0 }}><Icon name={odemeDurumu.gecikenAdet > 0 ? "receipt" : "chart"} size={19} /></div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ color: "var(--text)", fontSize: 12, fontWeight: 800, marginBottom: 3 }}>Bütçe Özeti</div>
+            <div style={{ color: "var(--text)", fontSize: 12, fontWeight: 700, marginBottom: 3 }}>Bütçe Özeti</div>
             <div style={{ color: "var(--text4)", fontSize: 11, lineHeight: 1.45 }}>
               {odemeDurumu.gecikenAdet > 0
                 ? `${odemeDurumu.gecikenAdet} gecikmiş ödeme bulunuyor: ₺${fmt(odemeDurumu.gecikenToplam)}.`
@@ -1339,13 +1339,13 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
           <div className="home-panel home-forecast" style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "14px 16px", marginBottom: 12, display: "flex", alignItems: "center", gap: 13 }}>
             <div style={{ width: 42, height: 42, borderRadius: 12, background: rozetRenk + "22", border: `1px solid ${rozetRenk}44`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, flexShrink: 0 }}><Icon name="chart" size={20} /></div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ color: "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 3 }}>Ay Sonu Tahmini Gider</div>
+              <div style={{ color: "var(--text3)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", marginBottom: 3 }}>Ay Sonu Tahmini Gider</div>
               <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-                <span style={{ color: "var(--text)", fontSize: 17, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>₺{fmt(tahminiAySonu.tahmin)}</span>
+                <span style={{ color: "var(--text)", fontSize: 17, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600 }}>₺{fmt(tahminiAySonu.tahmin)}</span>
               </div>
-              <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 3 }}>{tahminiAySonu.gecenGun}/{tahminiAySonu.toplamGun} Gün · Günlük Ort. ₺{fmt(tahminiAySonu.gunlukOrt)}</div>
+              <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", marginTop: 3 }}>{tahminiAySonu.gecenGun}/{tahminiAySonu.toplamGun} Gün · Günlük Ort. ₺{fmt(tahminiAySonu.gunlukOrt)}</div>
             </div>
-            <span style={{ background: rozetRenk + "22", border: `1px solid ${rozetRenk}55`, color: rozetRenk, borderRadius: 99, padding: "5px 11px", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, flexShrink: 0 }}>{rozetMetin}</span>
+            <span style={{ background: rozetRenk + "22", border: `1px solid ${rozetRenk}55`, color: rozetRenk, borderRadius: 99, padding: "5px 11px", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600, flexShrink: 0 }}>{rozetMetin}</span>
           </div>
         );
       })()}
@@ -1355,12 +1355,12 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
         <div className="home-panel home-daily-limit" style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "14px 16px", marginBottom: 12, display: "flex", alignItems: "center", gap: 13 }}>
           <div style={{ width: 42, height: 42, borderRadius: 12, background: "#f59e0b22", border: "1px solid #f59e0b44", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, flexShrink: 0 }}><Icon name="wallet" size={20} /></div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ color: "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 3 }}>Tasarruf Sonrası Günlük Pay</div>
+            <div style={{ color: "var(--text3)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", marginBottom: 3 }}>Tasarruf Sonrası Günlük Pay</div>
             <div style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
-              <span style={{ color: "var(--text)", fontSize: 17, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>₺{fmt(gunlukHarcamaLimiti.limit)}</span>
-              <span style={{ color: "var(--text5)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif" }}>/ gün</span>
+              <span style={{ color: "var(--text)", fontSize: 17, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600 }}>₺{fmt(gunlukHarcamaLimiti.limit)}</span>
+              <span style={{ color: "var(--text5)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}>/ gün</span>
             </div>
-            <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 3 }}>
+            <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", marginTop: 3 }}>
               %{tasarrufHedefi} hedef · ₺{fmt(gunlukHarcamaLimiti.hedefTutar)} ayır · {gunlukHarcamaLimiti.kalanGun} gün kaldı{gunlukHarcamaLimiti.pay < 0 ? ` · Hedef için ₺${fmt(-gunlukHarcamaLimiti.pay)} eksik` : ""}{gunlukHarcamaLimiti.yaklasanToplam > 0 ? ` · ₺${fmt(gunlukHarcamaLimiti.yaklasanToplam)} yaklaşan ödeme bakiyeye dahil` : ""}
             </div>
           </div>
@@ -1377,7 +1377,7 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
         const gunFark = (t) => takvimGunFarki(t, bugun);
         return (
           <div className="home-panel home-payments" style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "14px 16px", marginBottom: 12 }}>
-            <div className="upcoming-heading" style={{ color: "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}><Icon name="calendar" size={18}/>{donemOffset === 0 ? "Yaklaşan Ödemeler" : "Dönem Ödemeleri"}</div>
+            <div className="upcoming-heading" style={{ color: "var(--text3)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}><Icon name="calendar" size={18}/>{donemOffset === 0 ? "Yaklaşan Ödemeler" : "Dönem Ödemeleri"}</div>
             <p className="tools-note upcoming-note">{donemOffset===0?'Bugün ve önümüzdeki 7 gün · güncel tarihe göre':'Seçili dönemin ödeme kayıtları'}</p>
             {gosterilecek.map(o => {
               const gf = gunFark(o.tarih);
@@ -1395,9 +1395,9 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
         <div style={{ background: "var(--card)", border: "1px solid #10b98144", borderRadius: 14, padding: "12px 18px", marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <span style={{ fontSize: 18 }}><Icon name="coins" size={18}/></span>
-            <span style={{ color: "var(--text4)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif" }}>Dönem Birikimi (net'e dahil değil)</span>
+            <span style={{ color: "var(--text4)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}>Dönem Birikimi (net'e dahil değil)</span>
           </div>
-          <span style={{ color: "var(--income-text)", fontSize: 15, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>₺{fmt(buAyBirikim)}</span>
+          <span style={{ color: "var(--income-text)", fontSize: 15, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600 }}>₺{fmt(buAyBirikim)}</span>
         </div>
       )}
       {/* Kredi Kartı Özeti */}
@@ -1421,13 +1421,13 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
             {/* Tüm kartların toplu özeti */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8, marginBottom: 12 }}>
               <div style={{ padding: "11px 12px", borderRadius: 12, background: "var(--card2)", border: "1px solid var(--border)" }}>
-                <div style={{ color: "var(--text5)", fontSize: 11, fontWeight: 800, textTransform: "none", letterSpacing: "0.05em", marginBottom: 4 }}>Ekstre toplamı</div>
-                <div style={{ color: "var(--text)", fontSize: 16, fontWeight: 800 }}>₺{fmt(toplamEkstre)}</div>
+                <div style={{ color: "var(--text5)", fontSize: 11, fontWeight: 700, textTransform: "none", letterSpacing: "0.05em", marginBottom: 4 }}>Ekstre toplamı</div>
+                <div style={{ color: "var(--text)", fontSize: 16, fontWeight: 700 }}>₺{fmt(toplamEkstre)}</div>
                 <div style={{ color: "var(--text5)", fontSize: 11, marginTop: 2 }}>Tüm kartların kesilmiş ekstreleri</div>
               </div>
               <div style={{ padding: "11px 12px", borderRadius: 12, background: "var(--card2)", border: "1px solid var(--border)" }}>
-                <div style={{ color: "var(--text5)", fontSize: 11, fontWeight: 800, textTransform: "none", letterSpacing: "0.05em", marginBottom: 4 }}>Dönem içi ve provizyon</div>
-                <div style={{ color: "var(--text)", fontSize: 16, fontWeight: 800 }}>₺{fmt(toplamGuncelBorc)}</div>
+                <div style={{ color: "var(--text5)", fontSize: 11, fontWeight: 700, textTransform: "none", letterSpacing: "0.05em", marginBottom: 4 }}>Dönem içi ve provizyon</div>
+                <div style={{ color: "var(--text)", fontSize: 16, fontWeight: 700 }}>₺{fmt(toplamGuncelBorc)}</div>
                 <div style={{ color: "var(--text5)", fontSize: 11, marginTop: 2 }}>Dönem içi + provizyon</div>
               </div>
             </div>
@@ -1463,8 +1463,8 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
         <Modal title={`${kartOdemeModal.isim} Ekstre Ödemesi`} onClose={() => setKartOdemeModal(null)}>
           <div style={{ color: "var(--text4)", fontSize: 11, lineHeight: 1.5, marginBottom: 12 }}>Ekstreyi ödendi olarak işaretle. Seçtiğin ödeme tarihi, ödemenin düşeceği maaş dönemini belirler.</div>
           <div style={{ padding: "10px 12px", background: "var(--card2)", borderRadius: 10, marginBottom: 12 }}>
-            <div style={{ color: "var(--text5)", fontSize: 11, fontWeight: 800 }}>Ödenecek ekstre</div>
-            <div style={{ color: "var(--expense-text)", fontSize: 17, fontWeight: 800, marginTop: 3 }}>₺{fmt(Math.min(Number(kartOdemeModal.ekstre) || 0, Math.max(0, (Number(kartOdemeModal.ekstre) || 0) - kartEkstreOdemeToplami(kartOdemeModal))))}</div>
+            <div style={{ color: "var(--text5)", fontSize: 11, fontWeight: 700 }}>Ödenecek ekstre</div>
+            <div style={{ color: "var(--expense-text)", fontSize: 17, fontWeight: 700, marginTop: 3 }}>₺{fmt(Math.min(Number(kartOdemeModal.ekstre) || 0, Math.max(0, (Number(kartOdemeModal.ekstre) || 0) - kartEkstreOdemeToplami(kartOdemeModal))))}</div>
           </div>
           <Input label="Ödeme Tarihi" type="date" value={kartOdemeTarih} onChange={e => setKartOdemeTarih(e.target.value)} />
           <div style={{ color: "var(--text5)", fontSize: 11, marginTop: -5, marginBottom: 8 }}>Bu tarih hangi maaş dönemine aitse ekstre ödemesi o dönemin giderine eklenir.</div>
@@ -1473,15 +1473,15 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
       )}
 
       <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "18px 16px", marginBottom: 16 }}>
-        <div style={{ color: "var(--text3)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 14 }}><span className="inline-icon"><Icon name="chart" size={16}/></span>Harcama Trendin</div>
+        <div style={{ color: "var(--text3)", fontSize: 12, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 14 }}><span className="inline-icon"><Icon name="chart" size={16}/></span>Harcama Trendin</div>
         {aylikVeriler.length === 0 ? (
-          <div style={{ textAlign: "center", color: "var(--text5)", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", padding: "20px 0" }}>Henüz veri yok</div>
+          <div style={{ textAlign: "center", color: "var(--text5)", fontSize: 13, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", padding: "20px 0" }}>Henüz veri yok</div>
         ) : (
           <ResponsiveContainer width="100%" height={200}>
             <LineChart data={aylikVeriler} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-              <XAxis dataKey="ay" tick={{ fill: "var(--text4)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif" }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: "var(--text4)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif" }} axisLine={false} tickLine={false} tickFormatter={v => `${(v / 1000).toFixed(0)}K`} width={36} />
+              <XAxis dataKey="ay" tick={{ fill: "var(--text4)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: "var(--text4)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }} axisLine={false} tickLine={false} tickFormatter={v => `${(v / 1000).toFixed(0)}K`} width={36} />
               <Tooltip content={tt} />
               <Line type="monotone" dataKey="gider" name="Gider" stroke="#ef4444" strokeWidth={2.5} dot={{ r: 3, fill: "#ef4444" }} activeDot={{ r: 5 }} />
               <Line type="monotone" dataKey="gelir" name="Gelir" stroke="#10b981" strokeWidth={2.5} dot={{ r: 3, fill: "#10b981" }} activeDot={{ r: 5 }} />
@@ -1489,8 +1489,8 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
           </ResponsiveContainer>
         )}
         <div style={{ display: "flex", justifyContent: "center", gap: 20, marginTop: 8 }}>
-          <span style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif" }}><span style={{ width: 10, height: 3, background: "#10b981", borderRadius: 2 }} />Gelir</span>
-          <span style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif" }}><span style={{ width: 10, height: 3, background: "#ef4444", borderRadius: 2 }} />Gider</span>
+          <span style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--text3)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}><span style={{ width: 10, height: 3, background: "#10b981", borderRadius: 2 }} />Gelir</span>
+          <span style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--text3)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}><span style={{ width: 10, height: 3, background: "#ef4444", borderRadius: 2 }} />Gider</span>
         </div>
       </div>
       {/* KART TUTAR DÜZENLE MODAL */}
@@ -1502,11 +1502,11 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
           <button type="button" onClick={() => setKartDuzForm(f => ({ ...f, bakiyedenDussun: !f.bakiyedenDussun }))} style={{ width: "100%", display: "flex", alignItems: "center", gap: 11, padding: "11px 12px", marginBottom: 10, borderRadius: 12, border: kartDuzForm.bakiyedenDussun ? "1px solid #A74E3266" : "1px solid var(--border)", background: kartDuzForm.bakiyedenDussun ? "var(--accent-soft)" : "var(--card2)", color: "var(--text)", cursor: "pointer", textAlign: "left" }}>
             <span style={{ width: 22, height: 22, borderRadius: 7, border: kartDuzForm.bakiyedenDussun ? "none" : "2px solid var(--border2)", background: kartDuzForm.bakiyedenDussun ? "var(--accent)" : "var(--card)", color: "#fff", display: "grid", placeItems: "center", fontSize: 13, flexShrink: 0 }}>{kartDuzForm.bakiyedenDussun ? "✓" : ""}</span>
             <span>
-              <span style={{ display: "block", fontSize: 12, fontWeight: 800 }}>Dönem içi ve provizyon güncel bakiyeden düşülsün</span>
+              <span style={{ display: "block", fontSize: 12, fontWeight: 700 }}>Dönem içi ve provizyon güncel bakiyeden düşülsün</span>
               <span style={{ display: "block", color: "var(--text5)", fontSize: 11, lineHeight: 1.45, marginTop: 2 }}>{kartDuzForm.bakiyedenDussun ? "Kalan bakiyeden düşer" : "Kalan bakiyeye dokunmaz; kartta Ekstre ve Güncel Borç olarak görünür"}</span>
             </span>
           </button>
-          <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 10 }}>Bu dönem bu karta ait kayıtlar tek kayıtta birleştirilerek güncellenir.</div>
+          <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", marginBottom: 10 }}>Bu dönem bu karta ait kayıtlar tek kayıtta birleştirilerek güncellenir.</div>
           <Btn onClick={() => {
             if (![kartDuzForm.donemIci, kartDuzForm.provizyon, kartDuzForm.ekstre].every(v => tutarGecerli(v || 0, true))) return formHatasi();
             const di = paraOku(kartDuzForm.donemIci) || 0;
@@ -1565,7 +1565,7 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
               { id: "gelir", label: "Gelir", renk: "#10b981" },
               { id: "taksit", label: "Taksit", renk: "#8b5cf6" },
             ].map(t => (
-              <button key={t.id} onClick={() => setHizliForm(f => ({ ...f, tip: t.id, kategori: t.id === "taksit" ? f.kategori : (kategoriler?.[t.id] || VARSAYILAN_KATEGORILER[t.id])[0] }))} style={{ flex: 1, padding: "10px 4px", borderRadius: 10, border: "none", cursor: "pointer", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12, fontWeight: 700, background: hizliForm.tip === t.id ? "var(--accent-strong)" : "var(--card2)", color: hizliForm.tip === t.id ? "#fff" : "var(--text3)" }}>
+              <button key={t.id} onClick={() => setHizliForm(f => ({ ...f, tip: t.id, kategori: t.id === "taksit" ? f.kategori : (kategoriler?.[t.id] || VARSAYILAN_KATEGORILER[t.id])[0] }))} style={{ flex: 1, padding: "10px 4px", borderRadius: 10, border: "none", cursor: "pointer", fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontSize: 12, fontWeight: 600, background: hizliForm.tip === t.id ? "var(--accent-strong)" : "var(--card2)", color: hizliForm.tip === t.id ? "#fff" : "var(--text3)" }}>
                 {t.label}
               </button>
             ))}
@@ -1573,7 +1573,7 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
           {(hizliSablonlar || []).length > 0 && (
             <div style={{ marginBottom: 14 }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 7 }}>
-                <span style={{ color: "var(--text4)", fontSize: 11, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase" }}><span className="inline-icon"><Icon name="plus" size={16}/></span>Hızlı işlemler</span>
+                <span style={{ color: "var(--text4)", fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase" }}><span className="inline-icon"><Icon name="plus" size={16}/></span>Hızlı işlemler</span>
                 <span style={{ color: "var(--text5)", fontSize: 11 }}>Tutar seçerek ekle</span>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 7 }}>
@@ -1583,8 +1583,8 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
                       <div style={{ display: "flex", alignItems: "center", gap: 7, minWidth: 0 }}>
                         <span style={{ width: 27, height: 27, flexShrink: 0, display: "grid", placeItems: "center", borderRadius: 9, background: s.tip==="gelir" ? "#10b98117" : "#ef444417", fontSize: 13 }}>{katIkon(s.kategori, s.tip||"gider")}</span>
                         <div style={{ minWidth: 0 }}>
-                          <div style={{ color: "var(--text2)", fontSize: 11, fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.ad || s.kategori}</div>
-                          <div style={{ color: s.tip==="gelir" ? "var(--income-text)" : "var(--expense-text)", fontSize: 11, fontWeight: 800, marginTop: 2 }}>₺{fmt(Number(s.tutar) || 0)}</div>
+                          <div style={{ color: "var(--text2)", fontSize: 11, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.ad || s.kategori}</div>
+                          <div style={{ color: s.tip==="gelir" ? "var(--income-text)" : "var(--expense-text)", fontSize: 11, fontWeight: 700, marginTop: 2 }}>₺{fmt(Number(s.tutar) || 0)}</div>
                         </div>
                       </div>
                       <button aria-label="Şablonu sil" onClick={e => { e.stopPropagation(); hizliSablonSil(s.id); }} style={{ position: "absolute", top: 6, right: 6, width: 22, height: 22, border: "none", borderRadius: 7, background: "transparent", color: "var(--text5)", cursor: "pointer", fontSize: 14 }}>×</button>
@@ -1596,7 +1596,7 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
           )}
           {hizliForm.tip === "taksit" ? (
             <>
-              <div style={{ background: "var(--accent-soft)", border: "1px solid var(--border)", borderRadius: 10, padding: "9px 12px", marginBottom: 12, color: "var(--accent)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.5 }}>
+              <div style={{ background: "var(--accent-soft)", border: "1px solid var(--border)", borderRadius: 10, padding: "9px 12px", marginBottom: 12, color: "var(--accent)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", lineHeight: 1.5 }}>
                 Taksitli harcamalar giderinden düşmez, sadece takip amaçlıdır. Özet ekranında ilerlemesini görürsün.
               </div>
               <Input label="Ürün / Harcama Adı" value={hizliForm.taksitAd} onChange={e => setHizliForm(f => ({ ...f, taksitAd: e.target.value }))} placeholder="Örn: Telefon" />
@@ -1623,7 +1623,7 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
           {hizliForm.tip === "gelir" && hizliForm.kategori === "Kira Geliri" && (
             <label style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: "var(--card2)", borderRadius: 10, marginBottom: 4, cursor: "pointer" }}>
               <button type="button" onClick={() => setHizliForm(f => ({ ...f, donemeDahil: !f.donemeDahil }))} style={{ width: 22, height: 22, borderRadius: 6, border: `2px solid ${hizliForm.donemeDahil ? "#10b981" : "var(--border2)"}`, background: hizliForm.donemeDahil ? "#10b981" : "transparent", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "var(--bg)" }}>{hizliForm.donemeDahil ? "✓" : ""}</button>
-              <span style={{ color: "var(--text2)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif" }}>Dönem gelirine dahil et</span>
+              <span style={{ color: "var(--text2)", fontSize: 12, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}>Dönem gelirine dahil et</span>
             </label>
           )}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1.15fr", gap: 8, marginTop: 8 }}>
@@ -1748,6 +1748,70 @@ function HarcamaHaritasi({islemler,odemeler,ilk,son}) {
     return <button key={t} className="heat-day" disabled={dis} aria-pressed={secili===t} aria-label={`${t}: ${fmtTL(tutar)}`} onClick={()=>setSecili(t)} style={{background:tutar>0?`rgba(167,78,50,${.12+.65*tutar/max})`:'var(--card2)',color:tutar/max>.6?'#fff':'var(--text)',borderColor:secili===t?'var(--accent)':'var(--border)'}}><span>{i+1}</span><small>{tutar>0?'●':'·'}</small></button>;
   })}</div><p className="tools-note">Koyu renk daha fazla harcama demektir. Boş gün, kayıt olmadığı anlamına gelir. Bekleyen ödemeler ve ilk kart toplamı haritada yer almaz; kartların günlük farkları gösterilir. Gelir toplamında birikim kayıtları hariçtir.</p>{secili&&<div aria-live="polite"><h4>{secili.split('-').reverse().join('.')} · {fmtTL(map[secili]||0)}</h4><div className="day-totals"><div><span>Gelir toplamı</span><strong style={{color:'var(--income-text)'}}>{fmtTL(gunGeliri)}</strong></div><div><span>Gider toplamı</span><strong style={{color:'var(--expense-text)'}}>{fmtTL(map[secili]||0)}</strong></div></div><h4>Harcama Ayrıntıları</h4>{hareketler.filter(i=>i.tarih===secili).map((i,k)=><div className="tools-row" key={`${i.id}-${k}`}><span>{i.aciklama||i.kategori}<small className="tools-note"> · {i.kategori}</small></span><strong>{fmtTL(i.tutar)}</strong></div>)}{!map[secili]&&<p className="tools-note">Bu gün için harcama kaydı yok.</p>}</div>}</section>;
 }
+function yillikKategoriVerisi(islemler, yil, tip, simdi = new Date()) {
+  const aySayisi = yil < simdi.getFullYear() ? 12 : yil === simdi.getFullYear() ? simdi.getMonth() + 1 : 0;
+  return Array.from({ length: aySayisi }, (_, ay) => {
+    const ilk = yerelTarihAnahtari(new Date(yil, ay, 1));
+    const son = yerelTarihAnahtari(new Date(yil, ay + 1, 0));
+    const kayitlar = aralikOzeti(islemler, ilk, son, yerelTarihAnahtari(simdi)).kayitlar;
+    const kategoriler = {};
+    kayitlar.filter(i => i.tip === tip && (tip !== "gelir" || (i.kategori !== "Birikim" && !(i.kategori === "Kira Geliri" && i.donemeDahil === false)))).forEach(i => {
+      kategoriler[i.kategori] = paraTopla(kategoriler[i.kategori] || 0, i.tutar);
+    });
+    return { ay, label: AYLAR[ay].slice(0, 3), kategoriler };
+  });
+}
+
+function YillikKategoriKiyas({ islemler, yil, tip }) {
+  const [secimler, setSecimler] = useState({});
+  const bugun = yerelTarihAnahtari();
+  const aylar = useMemo(() => yillikKategoriVerisi(islemler, yil, tip), [islemler, yil, tip, bugun]);
+  const kategoriler = [...new Set(aylar.flatMap(a => Object.keys(a.kategoriler)))].sort((a, b) => {
+    const toplam = k => aylar.reduce((s, ay) => paraTopla(s, ay.kategoriler[k] || 0), 0);
+    return toplam(b) - toplam(a) || a.localeCompare(b, "tr");
+  });
+  return <section className="tools-card annual-category-chart">
+    <h3><Icon name={tip === "gelir" ? "arrowUp" : "arrowDown"} size={17}/>{tip === "gelir" ? "Gelir" : "Gider"} kategorileri · aylık değişim</h3>
+    <p className="tools-note">{yil} · Yeşil: {tip === "gelir" ? "artış" : "azalış"} · Kırmızı: {tip === "gelir" ? "azalış" : "artış"} · Gri: ilk ay veya değişim yok. Bir aya dokunarak ayrıntısını gör.</p>
+    {!kategoriler.length && <p className="tools-note">Bu yılda henüz {tip} kaydı yok.</p>}
+    {kategoriler.map(kategori => {
+      const degerler = aylar.map(a => a.kategoriler[kategori] || 0);
+      const key = `${yil}:${tip}:${kategori}`;
+      const idx = Math.min(secimler[key] ?? aylar.length - 1, aylar.length - 1);
+      const tutar = degerler[idx];
+      const onceki = idx > 0 ? degerler[idx - 1] : null;
+      const fark = onceki === null ? null : paraTopla(tutar, -onceki);
+      const olumlu = fark !== null && (tip === "gelir" ? fark > 0 : fark < 0);
+      const renk = fark === null || fark === 0 ? "var(--text3)" : olumlu ? "var(--income-text)" : "var(--expense-text)";
+      const oran = onceki > 0 ? (tutar - onceki) / onceki * 100 : null;
+      const max = Math.max(1, ...degerler);
+      const toplam = degerler.reduce((s, v) => paraTopla(s, v), 0);
+      return <section className="category-trend-card" key={key} aria-label={`${kategori} ${tip} yıllık karşılaştırması`}>
+        <div className="category-trend-top"><div className="category-trend-main">
+          <div className="category-trend-name">{kategori}</div>
+          <div className="category-trend-amount">{fmtTL(tutar)}</div>
+          <span className="category-trend-caption">{AYLAR_TAM[idx]} {yil}{yil === new Date().getFullYear() && idx === new Date().getMonth() ? " · devam ediyor" : ""}</span>
+        </div><div className="category-trend-change">
+          <span className="category-trend-badge" style={{ color: renk }}>{onceki === null ? "İlk ay" : oran !== null ? `${oran > 0 ? "+" : oran < 0 ? "-" : ""}%${Math.abs(oran).toFixed(1).replace(".", ",")}` : tutar > 0 ? "Önceki ay 0 TL" : "Değişim yok"}</span>
+          <span className="category-trend-caption">{onceki === null ? "Karşılaştırma yok" : "Önceki aya göre"}</span>
+        </div></div>
+        <div className="category-trend-scroll"><div className="category-trend-columns" style={{ gridTemplateColumns: `repeat(${aylar.length}, minmax(0, 1fr))` }}>
+          {degerler.map((v, i) => {
+            const delta = i ? v - degerler[i - 1] : 0;
+            const iyi = tip === "gelir" ? delta > 0 : delta < 0;
+            const c = !i || delta === 0 ? "var(--text3)" : iyi ? "var(--income-text)" : "var(--expense-text)";
+            return <button type="button" className="category-trend-column" key={i} aria-pressed={idx === i} aria-label={`${kategori} ${AYLAR_TAM[i]} ${yil}: ${fmtTL(v)}`} onClick={() => setSecimler(s => ({ ...s, [key]: i }))}>
+              <span className="category-trend-bar-area"><span className="category-trend-bar" style={{ background: c, color: c, height: v > 0 ? `${Math.max(v / max * 100, 4)}%` : "2px", opacity: idx === i ? 1 : .72 }}/></span>
+              <span className="category-trend-month">{aylar[i].label}</span>
+            </button>;
+          })}
+        </div></div>
+        <div className="category-trend-selected" aria-live="polite">{onceki === null ? "Ocak için önceki ay kıyası yok." : <>Önceki ay: <strong>{fmtTL(onceki)}</strong> · Fark: <strong style={{ color: renk }}>{fark > 0 ? "+" : ""}{fmtTL(fark)}</strong></>}<span className="category-trend-caption">Yıl toplamı: {fmtTL(toplam)}</span></div>
+      </section>;
+    })}
+  </section>;
+}
+
 function EsnekRapor({islemler,odemeler,donemGun,gelismisYorum,birikimRaporu}) {
   const [mod,setMod]=useState('donem');
   const [offset,setOffset]=useState(0);
@@ -1755,6 +1819,7 @@ function EsnekRapor({islemler,odemeler,donemGun,gelismisYorum,birikimRaporu}) {
   const [ilk,setIlk]=useState(yerelTarihAnahtari(maasDonemiBul(yerelTarihAnahtari(),donemGun).baslangic));
   const [son,setSon]=useState(yerelTarihAnahtari());
   const [sekme,setSekme]=useState('ozet');
+  const [kategoriYili,setKategoriYili]=useState(new Date().getFullYear());
   const aralik=esnekRaporAraligi(mod,donemGun,offset,yil,ilk,son);
   const bugun=yerelTarihAnahtari();
   const ozet=useMemo(()=>aralik?aralikOzeti(islemler,aralik.ilk,aralik.son):null,[islemler,aralik?.ilk,aralik?.son]);
@@ -1817,7 +1882,16 @@ function EsnekRapor({islemler,odemeler,donemGun,gelismisYorum,birikimRaporu}) {
         </section>
         {dagilim(giderKategorileri.slice(0,5),ozet.gider,'gider')}
       </>}
-      {sekme==='dagilim'&&<>{dagilim(giderKategorileri,ozet.gider,'gider')}{dagilim(gelirKategorileri,ozet.gelir,'gelir')}</>}
+      {sekme==='dagilim'&&<>
+        <section className="tools-card"><h3><Icon name="chart" size={17}/>Yıllık kategori karşılaştırması</h3>
+          <Input label="Kategori karşılaştırma yılı" type="number" min="2000" max={new Date().getFullYear()} value={kategoriYili} onChange={e=>{if(tamSayiGecerli(e.target.value,2000,new Date().getFullYear()))setKategoriYili(Number(e.target.value));}}/>
+          <p className="tools-note">Grafikler seçili rapor aralığından bağımsızdır; takvim aylarına göre yılbaşından bugünün ayına kadar gösterilir. Geçmiş yıllar 12 ay gösterilir. İçinde bulunduğumuz ay tamamlanmadığı için önceki tam ayla karşılaştırması geçicidir.</p>
+        </section>
+        {dagilim(giderKategorileri,ozet.gider,'gider')}
+        <YillikKategoriKiyas islemler={islemler} yil={kategoriYili} tip="gider"/>
+        {dagilim(gelirKategorileri,ozet.gelir,'gelir')}
+        <YillikKategoriKiyas islemler={islemler} yil={kategoriYili} tip="gelir"/>
+      </>}
       {sekme==='trend'&&<section className="tools-card"><h3><Icon name="chart" size={17}/>Gelir ve gider trendi</h3>
         {grafik.length&&ozet.kayitlar.length?<><div className="report-chart"><ResponsiveContainer width="100%" height={220}><LineChart data={grafik} margin={{top:12,right:8,left:0,bottom:8}}><CartesianGrid stroke="var(--border)" vertical={false} strokeDasharray="3 4"/><XAxis dataKey="label" tick={{fontSize:10,fill:'var(--text3)'}} tickLine={false} axisLine={false} minTickGap={24}/><YAxis width={42} tick={{fontSize:10,fill:'var(--text3)'}} tickLine={false} axisLine={false} tickFormatter={v=>v>=1000?`${Math.round(v/1000)}B`:v}/><Tooltip content={({active,payload,label})=>active&&payload?.length?<div className="chart-tooltip"><strong>{label}</strong>{payload.map(p=><div key={p.dataKey}>{p.name}: {fmtTL(p.value)}</div>)}</div>:null}/><Line type="monotone" dataKey="gelir" name="Gelir" stroke="var(--income-text)" strokeWidth={2.3} dot={false}/><Line type="monotone" dataKey="gider" name="Gider" stroke="var(--expense-text)" strokeWidth={2.3} dot={false}/></LineChart></ResponsiveContainer></div><div className="chart-legend"><span><i style={{background:'var(--income-text)'}}/>Gelir</span><span><i style={{background:'var(--expense-text)'}}/>Gider</span></div><details className="calculation-help"><summary>Tutarları listele</summary><div className="trend-table">{grafik.map(g=><div className="tools-row" key={g.key}><span>{g.label}</span><span>{fmtTL(g.gelir)} / {fmtTL(g.gider)}</span></div>)}</div></details></>:<div className="empty-state"><Icon name="chart" size={26}/><p>Trend için henüz veri yok.</p></div>}
       </section>}
@@ -1944,7 +2018,7 @@ function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler
       {/* Arama kutusu */}
       <div style={{ position: "relative", marginBottom: 10 }}>
         <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text5)", fontSize: 14 }}><Icon name="search" size={17}/></span>
-        <input aria-label="İşlem ara" value={arama} onChange={e => setArama(e.target.value)} placeholder="İşlem ara..." style={{ width: "100%", background: "var(--card2)", border: "1px solid var(--border)", borderRadius: 10, padding: "9px 12px 9px 36px", color: "var(--text)", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+        <input aria-label="İşlem ara" value={arama} onChange={e => setArama(e.target.value)} placeholder="İşlem ara..." style={{ width: "100%", background: "var(--card2)", border: "1px solid var(--border)", borderRadius: 10, padding: "9px 12px 9px 36px", color: "var(--text)", fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontSize: 13, outline: "none", boxSizing: "border-box" }} />
         {arama && <button aria-label="Aramayı temizle" onClick={() => setArama("")} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "var(--text4)", cursor: "pointer", fontSize: 14 }}>×</button>}
       </div>
       <div className="filter-toolbar"><button className="tools-button" aria-expanded={filtreAcik} aria-controls="islem-filtreleri" onClick={()=>setFiltreAcik(p=>!p)}><Icon name="filter" size={16}/>Filtreler{(kategoriFiltre||tarihIlk||tarihSon)&&<span className="filter-count">{[kategoriFiltre,tarihIlk,tarihSon].filter(Boolean).length}</span>}</button><span className="tools-note">{filtered.length} işlem</span><button className="tools-button" disabled={!filtered.length} onClick={()=>csvAktar(filtered,odemeler)}><Icon name="download" size={16}/>CSV</button></div>
@@ -1952,7 +2026,7 @@ function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler
       {filtreAcik && (<section className="tools-card filter-panel" id="islem-filtreleri"><Select label="Kategori filtresi" value={kategoriFiltre} onChange={e=>setKategoriFiltre(e.target.value)}><option value="">Tüm kategoriler</option>{filtreKategorileri.map(k=><option key={k} value={k}>{k}</option>)}</Select><div className="tools-grid"><Input label="Başlangıç tarihi" type="date" value={tarihIlk} onChange={e=>setTarihIlk(e.target.value)}/><Input label="Bitiş tarihi" type="date" value={tarihSon} onChange={e=>setTarihSon(e.target.value)}/></div>{tarihFiltreHatasi&&<p role="alert">Başlangıç tarihi bitişten sonra olamaz.</p>}<div className="tools-row"><button className="tools-button" onClick={()=>{setKategoriFiltre("");setTarihIlk("");setTarihSon("");setArama("");setFiltre("hepsi");}}>Filtreleri temizle</button><button className="tools-button" disabled={!filtered.length} onClick={()=>csvAktar(filtered,odemeler)}>CSV aktar ({filtered.length})</button></div></section>)}
       <div style={{ display: "flex", gap: 8, marginBottom: 16, justifyContent: "space-between", alignItems: "center" }}>
         <div style={{ display: "flex", gap: 6 }}>
-          {["hepsi", "gelir", "gider"].map(f => <button key={f} onClick={() => setFiltre(f)} style={{ padding: "6px 14px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12, fontWeight: 600, background: filtre === f ? "var(--accent-strong)" : "var(--border)", color: filtre === f ? "var(--on-accent)" : "var(--text3)" }}>{f.charAt(0).toUpperCase() + f.slice(1)}</button>)}
+          {["hepsi", "gelir", "gider"].map(f => <button key={f} onClick={() => setFiltre(f)} style={{ padding: "6px 14px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontSize: 12, fontWeight: 600, background: filtre === f ? "var(--accent-strong)" : "var(--border)", color: filtre === f ? "var(--on-accent)" : "var(--text3)" }}>{f.charAt(0).toUpperCase() + f.slice(1)}</button>)}
         </div>
         <div style={{ display: "flex", gap: 6 }}>
           <button onClick={() => setKatModal(true)} style={{ background: "var(--border)", border: "none", borderRadius: 10, padding: "8px 10px", color: "var(--text3)", cursor: "pointer", fontSize: 13 }} title="Kategoriler" aria-label="Kategoriler"><Icon name="tag" size={17}/></button>
@@ -1962,7 +2036,7 @@ function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {donemGruplari.length === 0 && (
-          <div style={{ textAlign: "center", color: "var(--text5)", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, padding: "32px 0" }}>İşlem bulunamadı</div>
+          <div style={{ textAlign: "center", color: "var(--text5)", fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontSize: 13, padding: "32px 0" }}>İşlem bulunamadı</div>
         )}
         {donemGruplari.map(grup => {
           const acik = acikDonemler[grup.key] === true;
@@ -1974,15 +2048,15 @@ function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <span style={{ color: acik ? "#f59e0b" : "var(--text4)", fontSize: 13, transition: "transform 0.2s", display: "inline-block", transform: acik ? "rotate(0deg)" : "rotate(-90deg)" }}>▼</span>
                   <div style={{ textAlign: "left" }}>
-                    <div style={{ color: "var(--text)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>{grup.label}</div>
-                    <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 1 }}>{grup.islemler.length} işlem</div>
+                    <div style={{ color: "var(--text)", fontSize: 12, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600 }}>{grup.label}</div>
+                    <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", marginTop: 1 }}>{grup.islemler.length} işlem</div>
                   </div>
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <div style={{ color: net >= 0 ? "#10b981" : "#ef4444", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>{net >= 0 ? "+" : ""}₺{fmt(net)}</div>
+                  <div style={{ color: net >= 0 ? "#10b981" : "#ef4444", fontSize: 13, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600 }}>{net >= 0 ? "+" : ""}₺{fmt(net)}</div>
                   <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 1 }}>
-                    <span style={{ color: "var(--income-text)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif" }}>+₺{fmt(grup.gelir)}</span>
-                    <span style={{ color: "var(--expense-text)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif" }}>-₺{fmt(grup.gider)}</span>
+                    <span style={{ color: "var(--income-text)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}>+₺{fmt(grup.gelir)}</span>
+                    <span style={{ color: "var(--expense-text)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}>-₺{fmt(grup.gider)}</span>
                   </div>
                 </div>
               </button>
@@ -1996,12 +2070,12 @@ function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler
                       <div className="transaction-row" key={i.id} style={{ background: "var(--card)", borderTop: idx > 0 ? "1px solid var(--divider)" : "none", padding: "12px 14px", display: "flex", alignItems: "center", gap: 11 }}>
                         <div style={{ width: 42, height: 42, borderRadius: 13, background: katRenk + "1c", border: `1px solid ${katRenk}3a`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, flexShrink: 0 }}>{katIkon(i.kategori, i.tip)}</div>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ color: "var(--text)", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{i.aciklama || i.kategori}</div>
+                          <div style={{ color: "var(--text)", fontSize: 13, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{i.aciklama || i.kategori}</div>
                           <div style={{ display: "flex", gap: 6, marginTop: 3, alignItems: "center", flexWrap: "wrap" }}>
-                            <span style={{ color: katRenk, fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 600 }}>{i.kategori}</span>
-                            <span style={{ color: "var(--text5)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif" }}>· {i.tarih.split("-").reverse().join(".")}</span>
+                            <span style={{ color: katRenk, fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600 }}>{i.kategori}</span>
+                            <span style={{ color: "var(--text5)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}>· {i.tarih.split("-").reverse().join(".")}</span>
                             {i.kartHarcama && (i.donemIci > 0 || i.provizyon > 0) && (
-                              <span style={{ color: "var(--text4)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif" }}>
+                              <span style={{ color: "var(--text4)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}>
                                 {i.donemIci > 0 ? `Dönem İçi: ₺${fmt(i.donemIci)}` : ""}{i.donemIci > 0 && i.provizyon > 0 ? " · " : ""}{i.provizyon > 0 ? `Provizyon: ₺${fmt(i.provizyon)}` : ""}
                               </span>
                             )}
@@ -2009,14 +2083,14 @@ function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler
                               if (i.tip !== "gider" || !butceler[i.kategori]) return null;
                               const ayHarcama = islemler.filter(x => x.tip === "gider" && x.kategori === i.kategori && maasDonemKey(x.tarih, donemGun).key === maasDonemKey(i.tarih, donemGun).key).reduce((s, x) => paraTopla(s, x.tutar), 0);
                               const limit = paraOku(butceler[i.kategori]);
-                              if (ayHarcama > limit) return <span style={{ background: "#ef444422", color: "var(--expense-text)", border: "1px solid #ef444444", borderRadius: 6, padding: "1px 6px", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif" }}>Bütçe Aşıldı!</span>;
-                              if (ayHarcama / limit > 0.8) return <span style={{ background: "#f59e0b22", color: "#f59e0b", border: "1px solid #f59e0b44", borderRadius: 6, padding: "1px 6px", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif" }}>%{Math.round(ayHarcama / limit * 100)} kullanıldı</span>;
+                              if (ayHarcama > limit) return <span style={{ background: "#ef444422", color: "var(--expense-text)", border: "1px solid #ef444444", borderRadius: 6, padding: "1px 6px", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}>Bütçe Aşıldı!</span>;
+                              if (ayHarcama / limit > 0.8) return <span style={{ background: "#f59e0b22", color: "#f59e0b", border: "1px solid #f59e0b44", borderRadius: 6, padding: "1px 6px", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}>%{Math.round(ayHarcama / limit * 100)} kullanıldı</span>;
                               return null;
                             })()}
                           </div>
                         </div>
                         <div className="transaction-amount" style={{ textAlign: "right", flexShrink: 0 }}>
-                          <div style={{ color: renk, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, fontSize: 14 }}>{i.tip === "gelir" ? "+" : "-"}₺{fmt(i.tutar)}</div>
+                          <div style={{ color: renk, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600, fontSize: 14 }}>{i.tip === "gelir" ? "+" : "-"}₺{fmt(i.tutar)}</div>
                           <div style={{ display: "flex", gap: 4, marginTop: 2, justifyContent: "flex-end" }}>
                             <button onClick={() => { setDuzenleHedef(i); setDuzenleForm({ tip: i.tip, kategori: i.kategori, tutar: String(i.tutar), aciklama: i.aciklama || "", tarih: i.tarih || yerelTarihAnahtari(), donemeDahil: i.donemeDahil !== false, donemIci: i.donemIci != null ? String(i.donemIci) : "", provizyon: i.provizyon != null ? String(i.provizyon) : "" }); setDuzenleModal(true); }} style={{ background: "none", border: "none", color: "var(--text4)", cursor: "pointer", fontSize: 13 }} aria-label="Düzenle"><Icon name="edit" size={16}/></button>
                             <button onClick={() => islemSil(i)} style={{ background: "none", border: "none", color: "var(--text5)", cursor: "pointer", fontSize: 13 }} aria-label="Sil"><Icon name="trash" size={16}/></button>
@@ -2035,7 +2109,7 @@ function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler
         <Modal title="Kategorileri Yönet" onClose={() => setKatModal(false)}>
           {["gelir", "gider"].map(tip => (
             <div key={tip} style={{ marginBottom: 20 }}>
-              <div style={{ color: tip === "gelir" ? "#10b981" : "#ef4444", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>
+              <div style={{ color: tip === "gelir" ? "#10b981" : "#ef4444", fontSize: 12, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>
                 {tip === "gelir" ? "Gelir Kategorileri" : "Gider Kategorileri"}
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
@@ -2043,7 +2117,7 @@ function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler
                   const varsayilan = VARSAYILAN_KATEGORILER[tip].includes(kat);
                   return (
                     <div key={kat} style={{ display: "flex", alignItems: "center", gap: 4, background: "var(--card2)", border: "1px solid var(--border)", borderRadius: 8, padding: "5px 10px" }}>
-                      <span style={{ color: "var(--text2)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif" }}>{kat}</span>
+                      <span style={{ color: "var(--text2)", fontSize: 12, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}>{kat}</span>
                       {!varsayilan && (
                         <button onClick={() => katSil(tip, kat)} style={{ background: "none", border: "none", color: "var(--expense-text)", cursor: "pointer", fontSize: 13, lineHeight: 1, padding: 0, marginLeft: 2 }}>×</button>
                       )}
@@ -2058,18 +2132,18 @@ function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler
                   onChange={e => setYeniKat({ tip, isim: e.target.value })}
                   onKeyDown={e => e.key === "Enter" && katEkle()}
                   placeholder={`Yeni ${tip} kategorisi...`}
-                  style={{ flex: 1, background: "var(--card2)", border: "1px solid var(--border)", borderRadius: 8, padding: "8px 12px", color: "var(--text)", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, outline: "none" }}
+                  style={{ flex: 1, background: "var(--card2)", border: "1px solid var(--border)", borderRadius: 8, padding: "8px 12px", color: "var(--text)", fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontSize: 13, outline: "none" }}
                 />
-                <button onClick={() => { setYeniKat({ tip, isim: yeniKat.tip === tip ? yeniKat.isim : "" }); katEkle(); }} style={{ background: "var(--accent-strong)", border: "none", borderRadius: 8, padding: "8px 14px", color: "var(--on-accent)", fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>+ Ekle</button>
+                <button onClick={() => { setYeniKat({ tip, isim: yeniKat.tip === tip ? yeniKat.isim : "" }); katEkle(); }} style={{ background: "var(--accent-strong)", border: "none", borderRadius: 8, padding: "8px 14px", color: "var(--on-accent)", fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>+ Ekle</button>
               </div>
             </div>
           ))}
-          <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", textAlign: "center" }}>● işaretli kategoriler varsayılandır, silinemez</div>
+          <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", textAlign: "center" }}>● işaretli kategoriler varsayılandır, silinemez</div>
         </Modal>
       )}
       {butceModal && (
         <Modal title="Bütçe Hedefleri" onClose={() => setButceModal(false)}>
-          <div style={{ color: "var(--text4)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 16 }}>Kategoriye aylık limit koy. Aşınca kırmızı uyarı çıkar.</div>
+          <div style={{ color: "var(--text4)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", marginBottom: 16 }}>Kategoriye aylık limit koy. Aşınca kırmızı uyarı çıkar.</div>
           {(kategoriler?.gider || VARSAYILAN_KATEGORILER.gider).map(kat => {
             const aylikHarcama = islemler.filter(i => i.tip === "gider" && i.kategori === kat && maasDonemKey(i.tarih, donemGun).key === buAnkiDonem()).reduce((s, i) => paraTopla(s, i.tutar), 0);
             const limit = butceler[kat] || "";
@@ -2077,8 +2151,8 @@ function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler
             return (
               <div key={kat} style={{ marginBottom: 12 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                  <span style={{ color: asim ? "#ef4444" : "var(--text2)", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, fontWeight: 600 }}>{asim ? "" : ""}{kat}</span>
-                  <span style={{ color: "var(--text4)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif" }}>Harcanan: ₺{fmt(aylikHarcama)}</span>
+                  <span style={{ color: asim ? "#ef4444" : "var(--text2)", fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontSize: 13, fontWeight: 600 }}>{asim ? "" : ""}{kat}</span>
+                  <span style={{ color: "var(--text4)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}>Harcanan: ₺{fmt(aylikHarcama)}</span>
                 </div>
                 <input
                   type="number"
@@ -2090,7 +2164,7 @@ function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler
                     if (deger === "" || tutarGecerli(deger, true)) setButceler(b => ({ ...b, [kat]: deger }));
                     else formHatasi("Bütçe limiti sıfır veya pozitif olmalı; en fazla iki ondalık basamak kullan.");
                   }}
-                  style={{ width: "100%", background: asim ? "#ef444411" : "var(--card2)", border: `1px solid ${asim ? "#ef444466" : "var(--border)"}`, borderRadius: 8, padding: "8px 12px", color: "var(--text)", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, outline: "none", boxSizing: "border-box" }}
+                  style={{ width: "100%", background: asim ? "#ef444411" : "var(--card2)", border: `1px solid ${asim ? "#ef444466" : "var(--border)"}`, borderRadius: 8, padding: "8px 12px", color: "var(--text)", fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontSize: 13, outline: "none", boxSizing: "border-box" }}
                 />
                 {limit && (
                   <div style={{ height: 3, background: "var(--border)", borderRadius: 99, marginTop: 4 }}>
@@ -2105,7 +2179,7 @@ function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler
       {modal && (
         <Modal title="İşlem Ekle" onClose={() => setModal(false)}>
           <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-            {["gider", "gelir"].map(t => <button key={t} onClick={() => setForm(f => ({ ...f, tip: t, kategori: t === "gelir" ? "Maaş" : "Market" }))} style={{ flex: 1, padding: "8px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, fontWeight: 700, background: form.tip === t ? (t === "gelir" ? "#10b981" : "#ef4444") : "var(--border)", color: form.tip === t ? "#fff" : "var(--text3)" }}>{t === "gelir" ? "Gelir" : "Gider"}</button>)}
+            {["gider", "gelir"].map(t => <button key={t} onClick={() => setForm(f => ({ ...f, tip: t, kategori: t === "gelir" ? "Maaş" : "Market" }))} style={{ flex: 1, padding: "8px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontSize: 13, fontWeight: 600, background: form.tip === t ? (t === "gelir" ? "#10b981" : "#ef4444") : "var(--border)", color: form.tip === t ? "#fff" : "var(--text3)" }}>{t === "gelir" ? "Gelir" : "Gider"}</button>)}
           </div>
           <Select label="Kategori" value={form.kategori} onChange={e => setForm(f => ({ ...f, kategori: e.target.value }))}>{(kategoriler[form.tip] || []).map(k => <option key={k}>{k}</option>)}</Select>
           {kartMi ? (
@@ -2121,7 +2195,7 @@ function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler
           {form.tip === "gelir" && form.kategori === "Kira Geliri" && (
             <label style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: "var(--card2)", borderRadius: 10, marginBottom: 4, cursor: "pointer" }}>
               <button type="button" onClick={() => setForm(f => ({ ...f, donemeDahil: !f.donemeDahil }))} style={{ width: 22, height: 22, borderRadius: 6, border: `2px solid ${form.donemeDahil ? "#10b981" : "var(--border2)"}`, background: form.donemeDahil ? "#10b981" : "transparent", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "var(--bg)" }}>{form.donemeDahil ? "✓" : ""}</button>
-              <span style={{ color: "var(--text2)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif" }}>Dönem gelirine dahil et</span>
+              <span style={{ color: "var(--text2)", fontSize: 12, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}>Dönem gelirine dahil et</span>
             </label>
           )}
           <Btn onClick={ekle} style={{ width: "100%", padding: 12, marginTop: 8 }}>Kaydet</Btn>
@@ -2130,7 +2204,7 @@ function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler
       {duzenleModal && duzenleHedef && (
         <Modal title="İşlemi Düzenle" onClose={() => { setDuzenleModal(false); setDuzenleHedef(null); }}>
           <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-            {["gider", "gelir"].map(t => <button key={t} onClick={() => setDuzenleForm(f => ({ ...f, tip: t, kategori: t === "gelir" ? "Maaş" : "Market" }))} style={{ flex: 1, padding: "8px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, fontWeight: 700, background: duzenleForm.tip === t ? (t === "gelir" ? "#10b981" : "#ef4444") : "var(--border)", color: duzenleForm.tip === t ? "#fff" : "var(--text3)" }}>{t === "gelir" ? "Gelir" : "Gider"}</button>)}
+            {["gider", "gelir"].map(t => <button key={t} onClick={() => setDuzenleForm(f => ({ ...f, tip: t, kategori: t === "gelir" ? "Maaş" : "Market" }))} style={{ flex: 1, padding: "8px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontSize: 13, fontWeight: 600, background: duzenleForm.tip === t ? (t === "gelir" ? "#10b981" : "#ef4444") : "var(--border)", color: duzenleForm.tip === t ? "#fff" : "var(--text3)" }}>{t === "gelir" ? "Gelir" : "Gider"}</button>)}
           </div>
           <Select label="Kategori" value={duzenleForm.kategori} onChange={e => setDuzenleForm(f => ({ ...f, kategori: e.target.value }))}>{(kategoriler[duzenleForm.tip] || []).map(k => <option key={k}>{k}</option>)}</Select>
           {duzenleKartMi ? (
@@ -2146,7 +2220,7 @@ function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler
           {duzenleForm.tip === "gelir" && duzenleForm.kategori === "Kira Geliri" && (
             <label style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: "var(--card2)", borderRadius: 10, marginBottom: 4, cursor: "pointer" }}>
               <button type="button" onClick={() => setDuzenleForm(f => ({ ...f, donemeDahil: !f.donemeDahil }))} style={{ width: 22, height: 22, borderRadius: 6, border: `2px solid ${duzenleForm.donemeDahil ? "#10b981" : "var(--border2)"}`, background: duzenleForm.donemeDahil ? "#10b981" : "transparent", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "var(--bg)" }}>{duzenleForm.donemeDahil ? "✓" : ""}</button>
-              <span style={{ color: "var(--text2)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif" }}>Dönem gelirine dahil et</span>
+              <span style={{ color: "var(--text2)", fontSize: 12, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}>Dönem gelirine dahil et</span>
             </label>
           )}
           <Btn onClick={islemDuzenle} disabled={!duzenleForm.tutar} style={{ width: "100%", padding: 12, marginTop: 8 }}>Güncelle</Btn>
@@ -2300,20 +2374,20 @@ function OdemelerTab({ odemeler, setOdemeler, islemler, setIslemler, kategoriler
   return (
     <div className="payments-page">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-        <div style={{ color: "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+        <div style={{ color: "var(--text3)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em" }}>
           {odemeler.length} ödeme kaydı
         </div>
         <Btn onClick={() => { setForm(bos); setModal(true); }}>+ Ekle</Btn>
       </div>
       <div className="payment-filters">
         {[{ id: "bekleyen", label: "Bekleyen" }, { id: "gecikmis", label: "Gecikmiş" }, { id: "yaklasan", label: "Yaklaşan" }, { id: "odendi", label: "Ödenmiş" }, { id: "hepsi", label: "Tümü" }].map(f => (
-          <button key={f.id} onClick={() => setOdemeFiltre(f.id)} style={{ border: odemeFiltre === f.id ? "1px solid rgba(167,78,50,.45)" : "1px solid var(--border)", background: odemeFiltre === f.id ? "var(--accent-soft)" : "var(--card2)", color: odemeFiltre === f.id ? "var(--accent)" : "var(--text4)", borderRadius: 11, padding: "8px", fontSize: 11, fontWeight: 800, cursor: "pointer" }}>{f.label}</button>
+          <button key={f.id} onClick={() => setOdemeFiltre(f.id)} style={{ border: odemeFiltre === f.id ? "1px solid rgba(167,78,50,.45)" : "1px solid var(--border)", background: odemeFiltre === f.id ? "var(--accent-soft)" : "var(--card2)", color: odemeFiltre === f.id ? "var(--accent)" : "var(--text4)", borderRadius: 11, padding: "8px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>{f.label}</button>
         ))}
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {donemGruplari.length === 0 && (
-          <div style={{ textAlign: "center", color: "var(--text5)", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, padding: "32px 0" }}>{odemeler.length ? "Bu grupta ödeme yok" : "Henüz ödeme kaydı yok"}</div>
+          <div style={{ textAlign: "center", color: "var(--text5)", fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontSize: 13, padding: "32px 0" }}>{odemeler.length ? "Bu grupta ödeme yok" : "Henüz ödeme kaydı yok"}</div>
         )}
         {donemGruplari.map(grup => {
           const acik = acikDonemler[grup.key] === true;
@@ -2324,17 +2398,17 @@ function OdemelerTab({ odemeler, setOdemeler, islemler, setIslemler, kategoriler
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <span style={{ color: acik ? "#f59e0b" : "var(--text4)", fontSize: 13, display: "inline-block", transform: acik ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.2s" }}>▼</span>
                   <div style={{ textAlign: "left" }}>
-                    <div style={{ color: "var(--text)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>{grup.label}</div>
-                    <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 1 }}>
+                    <div style={{ color: "var(--text)", fontSize: 12, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600 }}>{grup.label}</div>
+                    <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", marginTop: 1 }}>
                       {grup.odemeler.length} ödeme · {grup.odemeler.filter(o => o.odendi).length} ödendi
                     </div>
                   </div>
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <div style={{ color: bekleyen > 0 ? "#ef4444" : "#10b981", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>
+                  <div style={{ color: bekleyen > 0 ? "#ef4444" : "#10b981", fontSize: 13, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600 }}>
                     {bekleyen > 0 ? "-" : "✓"}₺{fmt(bekleyen > 0 ? bekleyen : grup.toplam)}
                   </div>
-                  <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 1 }}>
+                  <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", marginTop: 1 }}>
                     {bekleyen > 0 ? `₺${fmt(grup.odendi)} ödendi` : "Tümü ödendi"}
                   </div>
                 </div>
@@ -2351,17 +2425,17 @@ function OdemelerTab({ odemeler, setOdemeler, islemler, setIslemler, kategoriler
                         </button>
 
                         <div className="payment-description" style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ color: "var(--text)", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textDecoration: o.odendi ? "line-through" : "none" }}>
+                          <div style={{ color: "var(--text)", fontSize: 13, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textDecoration: o.odendi ? "line-through" : "none" }}>
                             {o.aciklama || o.kategori}
                           </div>
                           <div style={{ display: "flex", gap: 6, marginTop: 3, alignItems: "center" }}>
-                            <span style={{ color: katRenk, fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 600 }}>{o.kategori}</span>
-                            <span style={{ color: "var(--text5)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif" }}>· {o.tarih.split("-").reverse().join(".")}</span>
+                            <span style={{ color: katRenk, fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600 }}>{o.kategori}</span>
+                            <span style={{ color: "var(--text5)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}>· {o.tarih.split("-").reverse().join(".")}</span>
                             <span className={`payment-status ${o.odendi?'paid':o.tarih<yerelTarihAnahtari()?'late':'pending'}`}>{o.odendi?'Ödenmiş':o.tarih<yerelTarihAnahtari()?'Gecikmiş':o.tarih===yerelTarihAnahtari()?'Bugün':`${takvimGunFarki(o.tarih,yerelTarihAnahtari())} gün kaldı`}</span>
                           </div>
                         </div>
                         <div className="payment-amount" style={{ textAlign: "right", flexShrink: 0 }}>
-                          <div style={{ color: o.odendi ? "var(--text4)" : "#ef4444", fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, fontSize: 14, textDecoration: o.odendi ? "line-through" : "none" }}>
+                          <div style={{ color: o.odendi ? "var(--text4)" : "#ef4444", fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600, fontSize: 14, textDecoration: o.odendi ? "line-through" : "none" }}>
                             ₺{fmt(o.tutar)}
                           </div>
                           <div style={{ display: "flex", gap: 8, marginTop: 3, justifyContent: "flex-end" }}>
@@ -2609,14 +2683,14 @@ function AyarlarTab({ donemGun, setDonemGun, kartlar, setKartlar, kategoriler, s
 
   return (
     <div>
-      <div style={{ color: "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 16 }}>Ayarlar</div>
+      <div style={{ color: "var(--text3)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 16 }}>Ayarlar</div>
 
       {/* Tema seçici */}
       <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "18px 16px", marginBottom: 14 }}>
-        <div style={{ color: "var(--text)", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, marginBottom: 12 }}><span className="inline-icon"><Icon name="sun" size={16}/></span>Görünüm</div>
+        <div style={{ color: "var(--text)", fontSize: 13, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600, marginBottom: 12 }}><span className="inline-icon"><Icon name="sun" size={16}/></span>Görünüm</div>
         <div style={{ display: "flex", gap: 8 }}>
           {[{id:"dark",label:"Koyu",bg:"#16161f",fg:"#f1f0ee"},{id:"light",label:"Açık",bg:"#ffffff",fg:"#16243f"}].map(t => (
-            <button key={t.id} onClick={() => setTema(t.id)} style={{ flex: 1, padding: "14px 8px", borderRadius: 12, cursor: "pointer", border: tema === t.id ? "2px solid #A74E32" : "2px solid var(--border)", background: t.bg, color: t.fg, fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, fontWeight: 700, transition: "all 0.2s" }}>
+            <button key={t.id} onClick={() => setTema(t.id)} style={{ flex: 1, padding: "14px 8px", borderRadius: 12, cursor: "pointer", border: tema === t.id ? "2px solid #A74E32" : "2px solid var(--border)", background: t.bg, color: t.fg, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontSize: 13, fontWeight: 600, transition: "all 0.2s" }}>
               <span className="inline-icon"><Icon name={t.id==='dark'?'moon':'sun'} size={16}/></span>{t.label}
             </button>
           ))}
@@ -2631,17 +2705,17 @@ function AyarlarTab({ donemGun, setDonemGun, kartlar, setKartlar, kategoriler, s
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 7 }}>
           <span style={{ width: 36, height: 36, borderRadius: 11, display: "grid", placeItems: "center", background: "var(--accent-soft)", color: "var(--accent)" }}><Icon name="wallet" size={18} /></span>
           <div>
-            <div style={{ color: "var(--text)", fontSize: 13, fontWeight: 800 }}>Veri Yedekleme</div>
+            <div style={{ color: "var(--text)", fontSize: 13, fontWeight: 700 }}>Veri Yedekleme</div>
             <div style={{ color: "var(--text4)", fontSize: 11, marginTop: 2 }}>Telefon değiştirirken verilerinizi koruyun</div>
           </div>
         </div>
         <div style={{ color: "var(--text4)", fontSize: 11, lineHeight: 1.55, marginBottom: 13 }}>
           Tüm işlemler, kartlar, bütçeler ve ayarlar tek bir dosyada saklanır. Yedek önce uygulama içinde güvenli kopya olarak tutulur; cihaz destekliyorsa ayrıca dosya olarak kaydetme/paylaşma ekranı açılır.
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 7, background: "#10b98114", border: "1px solid #10b98135", color: "var(--income-text)", borderRadius: 10, padding: "8px 10px", fontSize: 11, fontWeight: 700, marginBottom: 11 }}><span>✓</span><span>Veri uyumluluğu ve otomatik güvenlik kopyası etkin</span></div>
+        <div style={{ display: "flex", alignItems: "center", gap: 7, background: "#10b98114", border: "1px solid #10b98135", color: "var(--income-text)", borderRadius: 10, padding: "8px 10px", fontSize: 11, fontWeight: 600, marginBottom: 11 }}><span>✓</span><span>Veri uyumluluğu ve otomatik güvenlik kopyası etkin</span></div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-          <button onClick={yedekIndir} style={{ border: "none", borderRadius: 12, padding: "11px 10px", background: "linear-gradient(135deg,var(--accent),var(--accent-strong))", color: "#fff", fontWeight: 800, fontSize: 12, cursor: "pointer" }}>Yedek Al</button>
-          <label style={{ borderRadius: 12, padding: "10px", background: "var(--card2)", border: "1px solid var(--border)", color: "var(--text2)", fontWeight: 800, fontSize: 12, cursor: "pointer", textAlign: "center" }}>
+          <button onClick={yedekIndir} style={{ border: "none", borderRadius: 12, padding: "11px 10px", background: "linear-gradient(135deg,var(--accent),var(--accent-strong))", color: "#fff", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>Yedek Al</button>
+          <label style={{ borderRadius: 12, padding: "10px", background: "var(--card2)", border: "1px solid var(--border)", color: "var(--text2)", fontWeight: 700, fontSize: 12, cursor: "pointer", textAlign: "center" }}>
             Yedeği Yükle
             <input type="file" accept="application/json,.json" onChange={yedekYukle} style={{ display: "none" }} />
           </label>
@@ -2650,14 +2724,14 @@ function AyarlarTab({ donemGun, setDonemGun, kartlar, setKartlar, kategoriler, s
 
       {/* Bildirim testi */}
       <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "18px 16px", marginBottom: 14 }}>
-        <div style={{ color: "var(--text)", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, marginBottom: 6 }}><span className="inline-icon"><Icon name="bell" size={16}/></span>Bildirimler</div>
-        <div style={{ color: "var(--text4)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 12 }}>
+        <div style={{ color: "var(--text)", fontSize: 13, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600, marginBottom: 6 }}><span className="inline-icon"><Icon name="bell" size={16}/></span>Bildirimler</div>
+        <div style={{ color: "var(--text4)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", marginBottom: 12 }}>
           Aynı zamana denk gelen faturalar, kredi kartları ve taksitler tek bildirimde birleşir. Hatırlatma zamanlarını seçebilirsin.
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 7, marginBottom: 10 }}>
           {[{ gun: 3, label: "3 gün önce" }, { gun: 1, label: "1 gün önce" }, { gun: 0, label: "Aynı gün" }].map(secenek => {
             const aktif = (bildirimAyarlari?.gunler || [0]).includes(secenek.gun);
-            return <button key={secenek.gun} onClick={() => bildirimGunuDegistir(secenek.gun)} style={{ border: aktif ? "1px solid rgba(167,78,50,.5)" : "1px solid var(--border)", background: aktif ? "var(--accent-soft)" : "var(--card2)", color: aktif ? "var(--accent)" : "var(--text4)", borderRadius: 11, padding: "9px 5px", fontSize: 11, fontWeight: 800, cursor: "pointer" }}>{aktif ? "✓ " : ""}{secenek.label}</button>;
+            return <button key={secenek.gun} onClick={() => bildirimGunuDegistir(secenek.gun)} style={{ border: aktif ? "1px solid rgba(167,78,50,.5)" : "1px solid var(--border)", background: aktif ? "var(--accent-soft)" : "var(--card2)", color: aktif ? "var(--accent)" : "var(--text4)", borderRadius: 11, padding: "9px 5px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>{aktif ? "✓ " : ""}{secenek.label}</button>;
           })}
         </div>
         {bildirimSaatleriniAl(bildirimAyarlari).map((saat, i, saatler) => <div key={i} style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -2679,12 +2753,12 @@ function AyarlarTab({ donemGun, setDonemGun, kartlar, setKartlar, kategoriler, s
           Seçilen saat için bildirim ve alarm izinlerini aç. Uygulamayı son uygulamalar ekranından kapatabilirsin; Android ayarlarından zorla durdurmak alarmları engeller. Bazı telefonlarda pil kısıtlamalarını da kaldırmak gerekir.
         </div>
         {bildirimDurum && (
-          <div style={{ marginTop: 10, padding: "10px 12px", background: "var(--card2)", borderRadius: 10, color: bildirimDurum.startsWith("✅") ? "#10b981" : bildirimDurum.startsWith("❌") ? "#ef4444" : "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.5 }}>
+          <div style={{ marginTop: 10, padding: "10px 12px", background: "var(--card2)", borderRadius: 10, color: bildirimDurum.startsWith("✅") ? "#10b981" : bildirimDurum.startsWith("❌") ? "#ef4444" : "var(--text3)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", lineHeight: 1.5 }}>
             <span className="inline-icon"><Icon name={bildirimDurum.startsWith("❌") ? "alert" : "check"} size={16}/></span>{bildirimDurum.replace(/^[❌✅]\s*/, "")}
           </div>
         )}
         {sonBildirimPlanlama && (
-          <div style={{ marginTop: 10, padding: "10px 12px", background: "var(--card2)", borderRadius: 10, border: "1px solid var(--border)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.6 }}>
+          <div style={{ marginTop: 10, padding: "10px 12px", background: "var(--card2)", borderRadius: 10, border: "1px solid var(--border)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", lineHeight: 1.6 }}>
             <div style={{ color: "var(--text4)" }}>Son otomatik planlama: {new Date(sonBildirimPlanlama.zaman).toLocaleString("tr-TR")}</div>
             {sonBildirimPlanlama.hata
               ? <div style={{ color: "var(--expense-text)" }}><span className="inline-icon"><Icon name="alert" size={16}/></span>Hata: {sonBildirimPlanlama.hata}</div>
@@ -2703,8 +2777,8 @@ function AyarlarTab({ donemGun, setDonemGun, kartlar, setKartlar, kategoriler, s
 
       {/* Dönem başlangıç günü */}
       <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "18px 16px", marginBottom: 14 }}>
-        <div style={{ color: "var(--text)", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, marginBottom: 6 }}><span className="inline-icon"><Icon name="calendar" size={16}/></span>Maaş Dönemi Başlangıcı</div>
-        <div style={{ color: "var(--text4)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 14 }}>
+        <div style={{ color: "var(--text)", fontSize: 13, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600, marginBottom: 6 }}><span className="inline-icon"><Icon name="calendar" size={16}/></span>Maaş Dönemi Başlangıcı</div>
+        <div style={{ color: "var(--text4)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", marginBottom: 14 }}>
           Dönem her ayın kaçında başlasın? Bitiş bir önceki gün olur.
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -2714,13 +2788,13 @@ function AyarlarTab({ donemGun, setDonemGun, kartlar, setKartlar, kategoriler, s
             max="28"
             value={donemGun}
             onChange={e => gunKaydet(e.target.value)}
-            style={{ width: 70, background: "var(--card2)", border: "1px solid #f59e0b44", borderRadius: 10, padding: "10px 12px", color: "#f59e0b", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 18, fontWeight: 700, outline: "none", textAlign: "center" }}
+            style={{ width: 70, background: "var(--card2)", border: "1px solid #f59e0b44", borderRadius: 10, padding: "10px 12px", color: "#f59e0b", fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontSize: 18, fontWeight: 600, outline: "none", textAlign: "center" }}
           />
           <div>
-            <div style={{ color: "var(--text2)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif" }}>
-              Her ayın <span style={{ color: "#f59e0b", fontWeight: 700 }}>{donemGun}. günü</span> başlar
+            <div style={{ color: "var(--text2)", fontSize: 12, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}>
+              Her ayın <span style={{ color: "#f59e0b", fontWeight: 600 }}>{donemGun}. günü</span> başlar
             </div>
-            <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 3 }}>
+            <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", marginTop: 3 }}>
               Bitiş: ayın {(parseInt(donemGun) || 15) - 1}. günü
             </div>
           </div>
@@ -2729,8 +2803,8 @@ function AyarlarTab({ donemGun, setDonemGun, kartlar, setKartlar, kategoriler, s
 
       {/* Kredi Kartları */}
       <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "18px 16px", marginBottom: 14 }}>
-        <div style={{ color: "var(--text)", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, marginBottom: 6 }}><span className="inline-icon"><Icon name="card" size={16}/></span>Kredi Kartları</div>
-        <div style={{ color: "var(--text4)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 14 }}>
+        <div style={{ color: "var(--text)", fontSize: 13, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600, marginBottom: 6 }}><span className="inline-icon"><Icon name="card" size={16}/></span>Kredi Kartları</div>
+        <div style={{ color: "var(--text4)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", marginBottom: 14 }}>
           Hesap kesim ve son ödeme tarihini takvimden gün–ay–yıl olarak seç. Tarihler ait oldukları maaş döneminde saklanır ve bildirim son ödeme tarihine göre gönderilir.
         </div>
         {turkceAdaGoreSirala(kartlar || []).map(k => {
@@ -2742,25 +2816,25 @@ function AyarlarTab({ donemGun, setDonemGun, kartlar, setKartlar, kategoriler, s
           return (
           <div key={k.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, background: "var(--card2)", borderRadius: 10, padding: "10px 12px", marginBottom: 8, border: "1px solid var(--border)" }}>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ color: "var(--text)", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, marginBottom: 4 }}><span className="inline-icon"><Icon name="card" size={16}/></span>{k.isim}</div>
+              <div style={{ color: "var(--text)", fontSize: 13, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600, marginBottom: 4 }}><span className="inline-icon"><Icon name="card" size={16}/></span>{k.isim}</div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                 <label>
                   <span style={{ display: "block", color: "var(--text4)", fontSize: 11, marginBottom: 4 }}>Hesap Kesim Tarihi</span>
-                  <input aria-label={`${k.isim} hesap kesim tarihi`} type="date" value={taslak.hesapKesimTarihi} onChange={e => kartTarihTaslagiDegistir(k, "hesapKesimTarihi", e.target.value)} style={{ width: "100%", minWidth: 0, boxSizing: "border-box", background: "var(--card)", border: "1px solid var(--border)", borderRadius: 7, padding: "6px", color: "var(--text)", fontSize: 11, fontWeight: 700, outline: "none" }} />
+                  <input aria-label={`${k.isim} hesap kesim tarihi`} type="date" value={taslak.hesapKesimTarihi} onChange={e => kartTarihTaslagiDegistir(k, "hesapKesimTarihi", e.target.value)} style={{ width: "100%", minWidth: 0, boxSizing: "border-box", background: "var(--card)", border: "1px solid var(--border)", borderRadius: 7, padding: "6px", color: "var(--text)", fontSize: 11, fontWeight: 600, outline: "none" }} />
                 </label>
                 <label>
                   <span style={{ display: "block", color: "var(--text4)", fontSize: 11, marginBottom: 4 }}>Son Ödeme Tarihi</span>
-                  <input aria-label={`${k.isim} son ödeme tarihi`} type="date" value={taslak.sonOdemeTarihi} onChange={e => kartTarihTaslagiDegistir(k, "sonOdemeTarihi", e.target.value)} style={{ width: "100%", minWidth: 0, boxSizing: "border-box", background: "var(--card)", border: "1px solid #10b98144", borderRadius: 7, padding: "6px", color: "var(--income-text)", fontSize: 11, fontWeight: 700, outline: "none" }} />
+                  <input aria-label={`${k.isim} son ödeme tarihi`} type="date" value={taslak.sonOdemeTarihi} onChange={e => kartTarihTaslagiDegistir(k, "sonOdemeTarihi", e.target.value)} style={{ width: "100%", minWidth: 0, boxSizing: "border-box", background: "var(--card)", border: "1px solid #10b98144", borderRadius: 7, padding: "6px", color: "var(--income-text)", fontSize: 11, fontWeight: 600, outline: "none" }} />
                 </label>
               </div>
-              <button onClick={() => kartTarihleriniKaydet(k)} disabled={!degisti} style={{ width: "100%", marginTop: 8, border: degisti ? "1px solid #A74E3255" : "1px solid var(--border)", borderRadius: 8, padding: "7px 10px", background: degisti ? "linear-gradient(135deg,#A74E32,#4f46e5)" : "var(--card)", color: degisti ? "#fff" : "var(--text5)", fontSize: 11, fontWeight: 800, cursor: degisti ? "pointer" : "default", opacity: degisti ? 1 : 0.7 }}>Kaydet</button>
+              <button onClick={() => kartTarihleriniKaydet(k)} disabled={!degisti} style={{ width: "100%", marginTop: 8, border: degisti ? "1px solid #A74E3255" : "1px solid var(--border)", borderRadius: 8, padding: "7px 10px", background: degisti ? "linear-gradient(135deg,#A74E32,#4f46e5)" : "var(--card)", color: degisti ? "#fff" : "var(--text5)", fontSize: 11, fontWeight: 700, cursor: degisti ? "pointer" : "default", opacity: degisti ? 1 : 0.7 }}>Kaydet</button>
             </div>
             <button onClick={() => kartSil(k)} style={{ background: "none", border: "none", color: "var(--expense-text)", cursor: "pointer", fontSize: 16, marginLeft: 8 }} aria-label="Sil"><Icon name="trash" size={16}/></button>
           </div>
           );
         })}
         {(kartlar || []).length === 0 && (
-          <div style={{ color: "var(--text5)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", textAlign: "center", padding: "8px 0 12px" }}>Henüz kart eklenmedi</div>
+          <div style={{ color: "var(--text5)", fontSize: 12, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", textAlign: "center", padding: "8px 0 12px" }}>Henüz kart eklenmedi</div>
         )}
         <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 8, marginTop: 4 }}>
           <input
@@ -2768,28 +2842,28 @@ function AyarlarTab({ donemGun, setDonemGun, kartlar, setKartlar, kategoriler, s
             onChange={e => setKartIsim(e.target.value)}
             onKeyDown={e => e.key === "Enter" && kartEkle()}
             placeholder="Kart adı (Bonus, Axess...)"
-            style={{ minWidth: 0, background: "var(--card2)", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", color: "var(--text)", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12, outline: "none" }}
+            style={{ minWidth: 0, background: "var(--card2)", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", color: "var(--text)", fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontSize: 12, outline: "none" }}
           />
           <input
             aria-label="Yeni kart hesap kesim tarihi"
             type="date"
             value={kartKesimTarihi}
             onChange={e => setKartKesimTarihi(e.target.value)}
-            style={{ minWidth: 0, background: "var(--card2)", border: "1px solid var(--border)", borderRadius: 8, padding: "9px", color: "var(--text)", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 11, outline: "none" }}
+            style={{ minWidth: 0, background: "var(--card2)", border: "1px solid var(--border)", borderRadius: 8, padding: "9px", color: "var(--text)", fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontSize: 11, outline: "none" }}
           />
           <input
             aria-label="Yeni kart son ödeme tarihi"
             type="date"
             value={kartSonOdemeTarihi}
             onChange={e => setKartSonOdemeTarihi(e.target.value)}
-            style={{ minWidth: 0, background: "var(--card2)", border: "1px solid #10b98144", borderRadius: 8, padding: "9px", color: "var(--income-text)", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 11, outline: "none" }}
+            style={{ minWidth: 0, background: "var(--card2)", border: "1px solid #10b98144", borderRadius: 8, padding: "9px", color: "var(--income-text)", fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontSize: 11, outline: "none" }}
           />
         </div>
-        <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 4, marginBottom: 10 }}>Kart adı · Hesap kesim tarihi · Son ödeme tarihi</div>
-        <button onClick={kartEkle} style={{ width: "100%", background: "var(--accent-strong)", border: "none", borderRadius: 10, padding: "10px", color: "#fff", fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>+ Kart Ekle</button>
+        <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", marginTop: 4, marginBottom: 10 }}>Kart adı · Hesap kesim tarihi · Son ödeme tarihi</div>
+        <button onClick={kartEkle} style={{ width: "100%", background: "var(--accent-strong)", border: "none", borderRadius: 10, padding: "10px", color: "#fff", fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>+ Kart Ekle</button>
       </div>
 
-      <div style={{ textAlign: "center", color: "var(--border)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 24 }}>
+      <div style={{ textAlign: "center", color: "var(--border)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", marginTop: 24 }}>
         Bütçe Takip v1.6.9
       </div>
     </div>
@@ -3152,14 +3226,14 @@ function AnalizTab({ islemler, kategoriler, donemGun, kartlar, odemeler = [] }) 
 
   const renderYorumKart = (yorumlar, baslik) => (
     <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "16px 14px", marginBottom: 14 }}>
-      <div style={{ color: "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>{baslik}</div>
+      <div style={{ color: "var(--text3)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>{baslik}</div>
       {yorumlar.map((y, i) => {
         const renk = y.tip === "iyi" ? "#10b981" : y.tip === "uyari" ? "#ef4444" : y.tip === "notr" ? "#f59e0b" : "#A74E32";
         const ikon = y.tip === "iyi" ? "check" : y.tip === "uyari" ? "warning" : y.tip === "notr" ? "target" : "tag";
         return (
           <div key={i} style={{ display: "flex", gap: 10, padding: "10px 0", borderBottom: i < yorumlar.length - 1 ? "1px solid var(--divider)" : "none" }}>
             <span style={{ fontSize: 14, flexShrink: 0 }}><Icon name={ikon} size={17}/></span>
-            <span style={{ color: "var(--text2)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.5, borderLeft: `2px solid ${renk}`, paddingLeft: 10 }}>{y.metin.replace(/[\u{1F300}-\u{1FAFF}\u2600-\u27BF\uFE0F]/gu, "").trim()}</span>
+            <span style={{ color: "var(--text2)", fontSize: 12, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", lineHeight: 1.5, borderLeft: `2px solid ${renk}`, paddingLeft: 10 }}>{y.metin.replace(/[\u{1F300}-\u{1FAFF}\u2600-\u27BF\uFE0F]/gu, "").trim()}</span>
           </div>
         );
       })}
@@ -3171,15 +3245,15 @@ function AnalizTab({ islemler, kategoriler, donemGun, kartlar, odemeler = [] }) 
       <div style={{ background:"var(--card2)", border:"1px solid var(--border)", borderRadius:12, padding:"9px 10px", marginBottom:10, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
         <button onClick={() => setYorumDonemOffset(o => o - 1)} aria-label="Önceki dönem" style={{ background:"none", border:"none", color:"#f59e0b", fontSize:20, cursor:"pointer", padding:"0 8px" }}>‹</button>
         <div style={{ textAlign:"center" }}>
-          <div style={{ color:"var(--text)", fontSize:12, fontFamily:"'Inter', system-ui, sans-serif", fontWeight:700 }}>{yorumDonemi.label}</div>
-          <div style={{ color:"var(--text5)", fontSize: 12, fontFamily:"'Inter', system-ui, sans-serif", marginTop:2 }}>{yorumDonemOffset === 0 ? "Güncel maaş dönemi" : `${Math.abs(yorumDonemOffset)} dönem önce`}</div>
+          <div style={{ color:"var(--text)", fontSize:12, fontFamily:"system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight:600 }}>{yorumDonemi.label}</div>
+          <div style={{ color:"var(--text5)", fontSize: 12, fontFamily:"system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", marginTop:2 }}>{yorumDonemOffset === 0 ? "Güncel maaş dönemi" : `${Math.abs(yorumDonemOffset)} dönem önce`}</div>
         </div>
         <button onClick={() => setYorumDonemOffset(o => Math.min(0, o + 1))} disabled={yorumDonemOffset === 0} aria-label="Sonraki dönem" style={{ background:"none", border:"none", color:yorumDonemOffset === 0 ? "var(--border2)" : "#f59e0b", fontSize:20, cursor:yorumDonemOffset === 0 ? "default" : "pointer", padding:"0 8px" }}>›</button>
       </div>
       {renderYorumKart(donemYorumlari, `${yorumDonemi.label}`)}
       {renderYorumKart(altiAyYorumlari, "Son 6 Tamamlanmış Maaş Dönemi")}
       {renderYorumKart(genelAliskanlikYorumlari, "Genel Alışkanlığın")}
-      <div style={{ textAlign: "center", color: "var(--border)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 4 }}>
+      <div style={{ textAlign: "center", color: "var(--border)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", marginTop: 4 }}>
         Yorumlar eklediğin verilere göre otomatik güncellenir
       </div>
     </div>
@@ -3197,9 +3271,9 @@ function AnalizTab({ islemler, kategoriler, donemGun, kartlar, odemeler = [] }) 
     if (!active || !payload || !payload.length) return null;
     return (
       <div style={{ background:"var(--card)", border:"1px solid var(--border)", borderRadius:10, padding:"10px 14px" }}>
-        <div style={{ color:"var(--text3)", fontSize:11, fontFamily:"'Inter', system-ui, sans-serif", marginBottom:6 }}>{label}</div>
+        <div style={{ color:"var(--text3)", fontSize:11, fontFamily:"system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", marginBottom:6 }}>{label}</div>
         {payload.map(p => (
-          <div key={p.name} style={{ color:p.color, fontSize:12, fontFamily:"'Inter', system-ui, sans-serif" }}>
+          <div key={p.name} style={{ color:p.color, fontSize:12, fontFamily:"system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}>
             {p.name}: ₺{fmtTam(p.value)}
           </div>
         ))}
@@ -3211,19 +3285,19 @@ function AnalizTab({ islemler, kategoriler, donemGun, kartlar, odemeler = [] }) 
     <div>
       <div style={{ display:"flex", gap:8, marginBottom:14 }}>
         {["gider","gelir"].map(t => (
-          <button key={t} onClick={() => setGorunum(t)} style={{ flex:1, padding:"9px", borderRadius:10, border:"none", cursor:"pointer", fontFamily:"'Inter', system-ui, sans-serif", fontSize:12, fontWeight:700, background: gorunum===t ? (t==="gider" ? "#ef4444" : "#10b981") : "var(--border)", color: gorunum===t ? "#fff" : "var(--text3)" }}>
+          <button key={t} onClick={() => setGorunum(t)} style={{ flex:1, padding:"9px", borderRadius:10, border:"none", cursor:"pointer", fontFamily:"system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontSize:12, fontWeight:600, background: gorunum===t ? (t==="gider" ? "#ef4444" : "#10b981") : "var(--border)", color: gorunum===t ? "#fff" : "var(--text3)" }}>
             {t === "gider" ? "Gider" : "Gelir"}
           </button>
         ))}
       </div>
       {kategoriVerisi.length === 0 && (
-        <div style={{ textAlign:"center", color:"var(--text5)", fontFamily:"'Inter', system-ui, sans-serif", fontSize:13, padding:"40px 0" }}>
+        <div style={{ textAlign:"center", color:"var(--text5)", fontFamily:"system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontSize:13, padding:"40px 0" }}>
           {secilenYil} için {gorunum} kaydı yok
         </div>
       )}
       {kategoriVerisi.length > 0 && (
         <div style={{ background:"var(--card)", border:"1px solid var(--border)", borderTop:"1px solid var(--border-light)", borderRadius:20, boxShadow:"var(--card-shadow)", padding:"16px 14px", marginBottom:14 }}>
-          <div style={{ color:"var(--text3)", fontSize:11, fontFamily:"'Inter', system-ui, sans-serif", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:14 }}>
+          <div style={{ color:"var(--text3)", fontSize:11, fontFamily:"system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:14 }}>
             {gorunum === "gider" ? "Gider" : "Gelir"} Dağılımı — {secilenYil}
           </div>
           <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:14 }}>
@@ -3238,8 +3312,8 @@ function AnalizTab({ islemler, kategoriler, donemGun, kartlar, odemeler = [] }) 
               {kategoriVerisi.map((d, i) => (
                 <div key={d.name} style={{ display:"flex", alignItems:"center", gap:6, marginBottom:5 }}>
                   <div style={{ width:8, height:8, borderRadius:"50%", background:PASTA_RENKLER[i % PASTA_RENKLER.length], flexShrink:0 }} />
-                  <span style={{ color:"var(--text2)", fontSize:11, fontFamily:"'Inter', system-ui, sans-serif", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{d.name}</span>
-                  <span style={{ color:PASTA_RENKLER[i % PASTA_RENKLER.length], fontSize:11, fontFamily:"'Inter', system-ui, sans-serif", fontWeight:700 }}>%{d.pct}</span>
+                  <span style={{ color:"var(--text2)", fontSize:11, fontFamily:"system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{d.name}</span>
+                  <span style={{ color:PASTA_RENKLER[i % PASTA_RENKLER.length], fontSize:11, fontFamily:"system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight:600 }}>%{d.pct}</span>
                 </div>
               ))}
             </div>
@@ -3249,14 +3323,14 @@ function AnalizTab({ islemler, kategoriler, donemGun, kartlar, odemeler = [] }) 
               <div key={d.name} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:7 }}>
                 <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                   <div style={{ width:3, height:16, borderRadius:99, background:PASTA_RENKLER[i % PASTA_RENKLER.length] }} />
-                  <span style={{ color:"var(--text3)", fontSize:12, fontFamily:"'Inter', system-ui, sans-serif" }}>{d.name}</span>
+                  <span style={{ color:"var(--text3)", fontSize:12, fontFamily:"system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}>{d.name}</span>
                 </div>
-                <span style={{ color:"var(--text)", fontSize:12, fontFamily:"'Inter', system-ui, sans-serif", fontWeight:700 }}>₺{fmtOndalik(d.value)}</span>
+                <span style={{ color:"var(--text)", fontSize:12, fontFamily:"system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight:600 }}>₺{fmtOndalik(d.value)}</span>
               </div>
             ))}
             <div style={{ borderTop:"1px solid var(--border)", paddingTop:8, marginTop:2, display:"flex", justifyContent:"space-between" }}>
-              <span style={{ color:"var(--text4)", fontSize:12, fontFamily:"'Inter', system-ui, sans-serif" }}>Toplam</span>
-              <span style={{ color:"#f59e0b", fontSize:13, fontFamily:"'Inter', system-ui, sans-serif", fontWeight:700 }}>₺{fmtOndalik(toplamTutar)}</span>
+              <span style={{ color:"var(--text4)", fontSize:12, fontFamily:"system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}>Toplam</span>
+              <span style={{ color:"#f59e0b", fontSize:13, fontFamily:"system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight:600 }}>₺{fmtOndalik(toplamTutar)}</span>
             </div>
           </div>
         </div>
@@ -3267,11 +3341,11 @@ function AnalizTab({ islemler, kategoriler, donemGun, kartlar, odemeler = [] }) 
   const renderTrend = () => (
     <div>
       <div style={{ background:"var(--card)", border:"1px solid var(--border)", borderTop:"1px solid var(--border-light)", borderRadius:20, boxShadow:"var(--card-shadow)", padding:"16px 14px", marginBottom:14 }}>
-        <div style={{ color:"var(--text3)", fontSize:11, fontFamily:"'Inter', system-ui, sans-serif", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:14 }}>Aylık Toplam Gider — {secilenYil}</div>
+        <div style={{ color:"var(--text3)", fontSize:11, fontFamily:"system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:14 }}>Aylık Toplam Gider — {secilenYil}</div>
         <ResponsiveContainer width="100%" height={200}>
           <LineChart data={kategoriTrend} margin={{ top:10, right:10, left:0, bottom:0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-            <XAxis dataKey="label" tick={{ fill:"var(--text4)", fontSize: 12, fontFamily:"'Inter', system-ui, sans-serif" }} axisLine={false} tickLine={false} />
+            <XAxis dataKey="label" tick={{ fill:"var(--text4)", fontSize: 12, fontFamily:"system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }} axisLine={false} tickLine={false} />
             <YAxis tick={{ fill:"var(--text4)", fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={v => (v/1000).toFixed(0) + "K"} width={32} />
             <Tooltip content={tt} />
             <Line type="monotone" dataKey="toplam" name="Gider" stroke="#ef4444" strokeWidth={2.5} dot={{ r:3, fill:"#ef4444" }} activeDot={{ r:5 }} />
@@ -3281,7 +3355,7 @@ function AnalizTab({ islemler, kategoriler, donemGun, kartlar, odemeler = [] }) 
       <div style={{ background:"var(--card)", border:"1px solid var(--border)", borderTop:"1px solid var(--border-light)", borderRadius:20, boxShadow:"var(--card-shadow)", padding:"16px 14px", marginBottom:14 }}>
         <div className="category-trend-heading">Kategori Bazlı Trend <span>{secilenYil}</span></div>
         {trendKategoriler.length === 0 && (
-          <div style={{ color:"var(--text5)", fontSize:13, fontFamily:"'Inter', system-ui, sans-serif", textAlign:"center", padding:"20px 0" }}>Henüz gider kaydı yok</div>
+          <div style={{ color:"var(--text5)", fontSize:13, fontFamily:"system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", textAlign:"center", padding:"20px 0" }}>Henüz gider kaydı yok</div>
         )}
         {trendKategoriler.map((kat, ki) => {
           const renk = TREND_RENKLER[kat] || PASTA_RENKLER[ki % PASTA_RENKLER.length];
@@ -3351,7 +3425,7 @@ function AnalizTab({ islemler, kategoriler, donemGun, kartlar, odemeler = [] }) 
 
   const renderBirikim = () => (
     <div>
-      <div style={{ background:"#10b98111", border:"1px solid #10b98133", borderRadius:10, padding:"10px 14px", marginBottom:14, color: "var(--income-text)", fontSize:11, fontFamily:"'Inter', system-ui, sans-serif" }}>
+      <div style={{ background:"#10b98111", border:"1px solid #10b98133", borderRadius:10, padding:"10px 14px", marginBottom:14, color: "var(--income-text)", fontSize:11, fontFamily:"system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}>
         Gelir eklerken kategori olarak <strong>Birikim</strong> seç — burada takip edilir.
       </div>
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:14 }}>
@@ -3362,46 +3436,46 @@ function AnalizTab({ islemler, kategoriler, donemGun, kartlar, odemeler = [] }) 
         ].map(c => (
           <div className="saving-stat-card" key={c.label} style={{ background:"linear-gradient(135deg,var(--card),var(--card2))", border:"1px solid var(--border)", borderRadius:14, padding:"12px 8px", textAlign:"center" }}>
             <div style={{ fontSize:16, marginBottom:4 }}><Icon name={c.icon} size={17}/></div>
-            <div style={{ color:"var(--text4)", fontSize: 12, fontFamily:"'Inter', system-ui, sans-serif", textTransform:"uppercase", marginBottom:4 }}>{c.label}</div>
-            <div style={{ color:c.color, fontSize:13, fontFamily:"'Inter', system-ui, sans-serif", fontWeight:700 }}>{c.value}</div>
+            <div style={{ color:"var(--text4)", fontSize: 12, fontFamily:"system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", textTransform:"uppercase", marginBottom:4 }}>{c.label}</div>
+            <div style={{ color:c.color, fontSize:13, fontFamily:"system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight:600 }}>{c.value}</div>
           </div>
         ))}
       </div>
       {yillikBirikim === 0 ? (
-        <div style={{ textAlign:"center", color:"var(--text5)", fontFamily:"'Inter', system-ui, sans-serif", fontSize:13, padding:"40px 0" }}>
+        <div style={{ textAlign:"center", color:"var(--text5)", fontFamily:"system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontSize:13, padding:"40px 0" }}>
           {secilenYil} için birikim kaydı yok
         </div>
       ) : (
         <div>
           <div style={{ background:"var(--card)", border:"1px solid var(--border)", borderTop:"1px solid var(--border-light)", borderRadius:20, boxShadow:"var(--card-shadow)", padding:"16px 14px", marginBottom:14 }}>
-            <div style={{ color:"var(--text3)", fontSize:11, fontFamily:"'Inter', system-ui, sans-serif", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:14 }}>Aylık Birikim</div>
+            <div style={{ color:"var(--text3)", fontSize:11, fontFamily:"system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:14 }}>Aylık Birikim</div>
             <ResponsiveContainer width="100%" height={200}>
               <LineChart data={birikimKayitlari} margin={{ top:10, right:10, left:0, bottom:0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                <XAxis dataKey="ay" tick={{ fill:"var(--text4)", fontSize: 12, fontFamily:"'Inter', system-ui, sans-serif" }} axisLine={false} tickLine={false} />
+                <XAxis dataKey="ay" tick={{ fill:"var(--text4)", fontSize: 12, fontFamily:"system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fill:"var(--text4)", fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={v => (v / 1000).toFixed(0) + "K"} width={32} />
-                <Tooltip contentStyle={{ background:"var(--card)", border:"1px solid var(--border)", borderRadius:10, fontFamily:"'Inter', system-ui, sans-serif", fontSize:12 }} formatter={v => ["₺" + fmtTam(v), "Birikim"]} />
+                <Tooltip contentStyle={{ background:"var(--card)", border:"1px solid var(--border)", borderRadius:10, fontFamily:"system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontSize:12 }} formatter={v => ["₺" + fmtTam(v), "Birikim"]} />
                 <Line type="monotone" dataKey="tutar" name="Birikim" stroke="#10b981" strokeWidth={2.5} dot={{ r:3, fill:"#10b981" }} activeDot={{ r:5 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
           <div style={{ background:"var(--card)", border:"1px solid var(--border)", borderTop:"1px solid var(--border-light)", borderRadius:20, boxShadow:"var(--card-shadow)", padding:"16px 14px" }}>
-            <div style={{ color:"var(--text3)", fontSize:11, fontFamily:"'Inter', system-ui, sans-serif", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:12 }}>Ay ay detay</div>
+            <div style={{ color:"var(--text3)", fontSize:11, fontFamily:"system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:12 }}>Ay ay detay</div>
             {birikimKayitlari.filter(d => d.tutar > 0).map((d, i) => {
               const maxT = Math.max(...birikimKayitlari.map(x => x.tutar), 1);
               return (
                 <div key={i} style={{ marginBottom:10 }}>
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
-                    <span style={{ color:"var(--text3)", fontSize:12, fontFamily:"'Inter', system-ui, sans-serif" }}>{d.ay}</span>
-                    <span style={{ color: "var(--income-text)", fontSize:12, fontFamily:"'Inter', system-ui, sans-serif", fontWeight:700 }}>₺{fmtTam(d.tutar)}</span>
+                    <span style={{ color:"var(--text3)", fontSize:12, fontFamily:"system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}>{d.ay}</span>
+                    <span style={{ color: "var(--income-text)", fontSize:12, fontFamily:"system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight:600 }}>₺{fmtTam(d.tutar)}</span>
                   </div>
                   <div style={{ height:4, background:"var(--border)", borderRadius:99 }}>
                     <div style={{ height:"100%", width: (d.tutar / maxT * 100) + "%", background:"#10b981", borderRadius:99 }} />
                   </div>
                   {d.islemler.map((x, j) => (
                     <div key={j} style={{ display:"flex", justifyContent:"space-between", padding:"3px 0 0 8px" }}>
-                      <span style={{ color:"var(--text5)", fontSize:11, fontFamily:"'Inter', system-ui, sans-serif" }}>{x.aciklama || x.kategori}</span>
-                      <span style={{ color:"var(--text4)", fontSize:11, fontFamily:"'Inter', system-ui, sans-serif" }}>₺{fmtTam(x.tutar)}</span>
+                      <span style={{ color:"var(--text5)", fontSize:11, fontFamily:"system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}>{x.aciklama || x.kategori}</span>
+                      <span style={{ color:"var(--text4)", fontSize:11, fontFamily:"system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}>₺{fmtTam(x.tutar)}</span>
                     </div>
                   ))}
                 </div>
@@ -3456,8 +3530,8 @@ function TekrarlayanTab({ tekrarlayan, setTekrarlayan, kategoriler, setKategoril
     <div>
       <div style={{ background: "var(--card)", border: "1px solid #f59e0b33", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "16px 20px", marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
-          <div style={{ color: "var(--text4)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em" }}>Aylık Sabit Gider</div>
-          <div style={{ color: "#f59e0b", fontSize: 24, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, marginTop: 2 }}>₺{fmt(toplam)}</div>
+          <div style={{ color: "var(--text4)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em" }}>Aylık Sabit Gider</div>
+          <div style={{ color: "#f59e0b", fontSize: 24, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600, marginTop: 2 }}>₺{fmt(toplam)}</div>
         </div>
         <Btn onClick={() => { setDuzenleId(null); setForm(bos); setModal(true); }}>+ Ekle</Btn>
       </div>
@@ -3467,16 +3541,16 @@ function TekrarlayanTab({ tekrarlayan, setTekrarlayan, kategoriler, setKategoril
           return (
             <div key={t.id} style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 14, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, opacity: t.aktif ? 1 : 0.45 }}>
               <div style={{ flex: 1 }}>
-                <div style={{ color: "var(--text)", fontSize: 14, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 600 }}>{t.aciklama}</div>
-                <div style={{ display: "flex", gap: 8, marginTop: 4, alignItems: "center" }}><Badge text={t.kategori} color={katRenk} /><span style={{ color: "var(--text5)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif" }}>Her ayın {t.gun}. günü</span>
-                {t.bitis && <span style={{ color: "#f59e0b", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif" }}>Bitiş: {t.bitis}</span>}
-                {t.baslangic && yerelTarihOku(t.baslangic) > yerelTarihOku(yerelTarihAnahtari()) && <span style={{ color: "#A74E32", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif" }}>Başlangıç: {t.baslangic}</span>}
+                <div style={{ color: "var(--text)", fontSize: 14, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600 }}>{t.aciklama}</div>
+                <div style={{ display: "flex", gap: 8, marginTop: 4, alignItems: "center" }}><Badge text={t.kategori} color={katRenk} /><span style={{ color: "var(--text5)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}>Her ayın {t.gun}. günü</span>
+                {t.bitis && <span style={{ color: "#f59e0b", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}>Bitiş: {t.bitis}</span>}
+                {t.baslangic && yerelTarihOku(t.baslangic) > yerelTarihOku(yerelTarihAnahtari()) && <span style={{ color: "#A74E32", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}>Başlangıç: {t.baslangic}</span>}
                 </div>
               </div>
               <div style={{ textAlign: "right" }}>
-                <div style={{ color: "var(--expense-text)", fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, fontSize: 15 }}>₺{fmt(t.tutar)}</div>
+                <div style={{ color: "var(--expense-text)", fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600, fontSize: 15 }}>₺{fmt(t.tutar)}</div>
                 <div style={{ display: "flex", gap: 6, marginTop: 4, justifyContent: "flex-end" }}>
-                  <button onClick={() => setTekrarlayan(p => p.map(x => x.id === t.id ? { ...x, aktif: !x.aktif } : x))} style={{ background: t.aktif ? "#10b98122" : "var(--border)", border: "none", borderRadius: 6, color: t.aktif ? "#10b981" : "var(--text4)", padding: "3px 8px", fontSize: 11, cursor: "pointer", fontFamily: "'Inter', system-ui, sans-serif" }}>{t.aktif ? "Aktif" : "Pasif"}</button>
+                  <button onClick={() => setTekrarlayan(p => p.map(x => x.id === t.id ? { ...x, aktif: !x.aktif } : x))} style={{ background: t.aktif ? "#10b98122" : "var(--border)", border: "none", borderRadius: 6, color: t.aktif ? "#10b981" : "var(--text4)", padding: "3px 8px", fontSize: 11, cursor: "pointer", fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}>{t.aktif ? "Aktif" : "Pasif"}</button>
                   <button onClick={() => duzenleAc(t)} style={{ background: "none", border: "none", color: "#f59e0b", cursor: "pointer", fontSize: 14 }} aria-label="Düzenle"><Icon name="edit" size={16}/></button>
                   <button onClick={() => setTekrarlayan(p => p.filter(x => x.id !== t.id))} style={{ background: "none", border: "none", color: "var(--text5)", cursor: "pointer", fontSize: 14 }} aria-label="Sil"><Icon name="trash" size={16}/></button>
                 </div>
@@ -3551,16 +3625,16 @@ function TaksitlerTab({ taksitler, setTaksitler }) {
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-        <span style={{ color: "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em" }}>{taksitler.length} TAKSİTLİ HARCAMA</span>
+        <span style={{ color: "var(--text3)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em" }}>{taksitler.length} TAKSİTLİ HARCAMA</span>
         <Btn onClick={() => { setDuzenleId(null); setForm(bos); setModal(true); }}>+ Ekle</Btn>
       </div>
 
-      <div style={{ background: "var(--accent-soft)", border: "1px solid var(--border)", borderRadius: 12, padding: "9px 13px", marginBottom: 14, color: "#a78bfa", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.5 }}>
+      <div style={{ background: "var(--accent-soft)", border: "1px solid var(--border)", borderRadius: 12, padding: "9px 13px", marginBottom: 14, color: "#a78bfa", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", lineHeight: 1.5 }}>
         Buradaki taksitler giderinden düşmez, sadece takip amaçlıdır.
       </div>
 
       {taksitler.length === 0 && (
-        <div style={{ textAlign: "center", color: "var(--text5)", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", padding: "40px 0" }}>
+        <div style={{ textAlign: "center", color: "var(--text5)", fontSize: 13, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", padding: "40px 0" }}>
           Henüz taksitli harcama eklemedin.<br />Taksitle aldığın ürünleri ekleyip takip edebilirsin.
         </div>
       )}
@@ -3569,29 +3643,29 @@ function TaksitlerTab({ taksitler, setTaksitler }) {
       {taksitler.length > 0 && (
         <div style={{ background: "var(--card)", border: "1px solid #8b5cf644", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "16px 16px", marginBottom: 16 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-            <span style={{ color: "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em" }}><span className="inline-icon"><Icon name="chart" size={16}/></span>Genel Durum</span>
-            <span style={{ color: "var(--text4)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif" }}>{aktifSayi} Aktif · Aylık ₺{fmt(aylikToplam)}</span>
+            <span style={{ color: "var(--text3)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em" }}><span className="inline-icon"><Icon name="chart" size={16}/></span>Genel Durum</span>
+            <span style={{ color: "var(--text4)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}>{aktifSayi} Aktif · Aylık ₺{fmt(aylikToplam)}</span>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
             <div style={{ background: "var(--card2)", borderRadius: 11, padding: "11px 6px", textAlign: "center" }}>
-              <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 4 }}>TOPLAM BORÇ</div>
-              <div style={{ color: "var(--text)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>₺{fmt(genelToplam)}</div>
+              <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", marginBottom: 4 }}>TOPLAM BORÇ</div>
+              <div style={{ color: "var(--text)", fontSize: 12, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600 }}>₺{fmt(genelToplam)}</div>
             </div>
             <div style={{ background: "var(--card2)", borderRadius: 11, padding: "11px 6px", textAlign: "center" }}>
-              <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 4 }}>ÖDENEN</div>
-              <div style={{ color: "var(--income-text)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>₺{fmt(genelOdenen)}</div>
+              <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", marginBottom: 4 }}>ÖDENEN</div>
+              <div style={{ color: "var(--income-text)", fontSize: 12, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600 }}>₺{fmt(genelOdenen)}</div>
             </div>
             <div style={{ background: "var(--card2)", borderRadius: 11, padding: "11px 6px", textAlign: "center" }}>
-              <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 4 }}>KALAN</div>
-              <div style={{ color: "var(--expense-text)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>₺{fmt(genelKalan)}</div>
+              <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", marginBottom: 4 }}>KALAN</div>
+              <div style={{ color: "var(--expense-text)", fontSize: 12, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600 }}>₺{fmt(genelKalan)}</div>
             </div>
           </div>
           <div style={{ height: 10, background: "var(--card2)", borderRadius: 99, overflow: "hidden", border: "1px solid var(--border)" }}>
             <div style={{ height: "100%", width: `${genelYuzde}%`, background: "linear-gradient(90deg,#10b981,#059669)", borderRadius: 99, transition: "width 0.8s ease" }} />
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
-            <span style={{ color: "var(--income-text)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>Ödenen %{genelYuzde.toFixed(1)}</span>
-            <span style={{ color: "var(--expense-text)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>Kalan %{(100 - genelYuzde).toFixed(1)}</span>
+            <span style={{ color: "var(--income-text)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600 }}>Ödenen %{genelYuzde.toFixed(1)}</span>
+            <span style={{ color: "var(--expense-text)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600 }}>Kalan %{(100 - genelYuzde).toFixed(1)}</span>
           </div>
         </div>
       )}
@@ -3609,12 +3683,12 @@ function TaksitlerTab({ taksitler, setTaksitler }) {
             <div style={{ display: "flex", alignItems: "center", gap: 11, marginBottom: 11 }}>
               <div style={{ width: 42, height: 42, borderRadius: 13, background: renk + "1c", border: `1px solid ${renk}3a`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, flexShrink: 0 }}>{taksitIkon(t.ad)}</div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ color: "var(--text)", fontSize: 14, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.ad}{bitti ? " ✓" : ""}</div>
-                <div style={{ color: "var(--text4)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 2 }}>{t.kart ? t.kart + " · " : ""}Kalan: {t.vade - (t.odenen || 0)}/{t.vade} taksit</div>
+                <div style={{ color: "var(--text)", fontSize: 14, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.ad}{bitti ? " ✓" : ""}</div>
+                <div style={{ color: "var(--text4)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", marginTop: 2 }}>{t.kart ? t.kart + " · " : ""}Kalan: {t.vade - (t.odenen || 0)}/{t.vade} taksit</div>
               </div>
               <div style={{ textAlign: "right", flexShrink: 0 }}>
-                <div style={{ color: "var(--text)", fontSize: 14, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>₺{fmt(t.aylikTutar)}<span style={{ color: "var(--text5)", fontSize: 11 }}>/ay</span></div>
-                <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 2 }}>Aylık Taksit</div>
+                <div style={{ color: "var(--text)", fontSize: 14, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600 }}>₺{fmt(t.aylikTutar)}<span style={{ color: "var(--text5)", fontSize: 11 }}>/ay</span></div>
+                <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", marginTop: 2 }}>Aylık Taksit</div>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 6, flexShrink: 0, marginLeft: 4 }}>
                 <button onClick={() => duzenleAc(t)} style={{ background: "none", border: "none", color: "var(--text4)", cursor: "pointer", fontSize: 13, padding: 0 }} aria-label="Düzenle"><Icon name="edit" size={16}/></button>
@@ -3623,25 +3697,25 @@ function TaksitlerTab({ taksitler, setTaksitler }) {
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 7, marginBottom: 10 }}>
               <div style={{ background: "var(--card2)", borderRadius: 9, padding: "8px 5px", textAlign: "center" }}>
-                <div style={{ color: "var(--text5)", fontSize: 12.5, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 2 }}>TOPLAM</div>
-                <div style={{ color: "var(--text)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>₺{fmt(toplamBorc)}</div>
+                <div style={{ color: "var(--text5)", fontSize: 12.5, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", marginBottom: 2 }}>TOPLAM</div>
+                <div style={{ color: "var(--text)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600 }}>₺{fmt(toplamBorc)}</div>
               </div>
               <div style={{ background: "var(--card2)", borderRadius: 9, padding: "8px 5px", textAlign: "center" }}>
-                <div style={{ color: "var(--text5)", fontSize: 12.5, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 2 }}>ÖDENEN</div>
-                <div style={{ color: "var(--income-text)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>₺{fmt(odenenTutar)}</div>
+                <div style={{ color: "var(--text5)", fontSize: 12.5, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", marginBottom: 2 }}>ÖDENEN</div>
+                <div style={{ color: "var(--income-text)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600 }}>₺{fmt(odenenTutar)}</div>
               </div>
               <div style={{ background: "var(--card2)", borderRadius: 9, padding: "8px 5px", textAlign: "center" }}>
-                <div style={{ color: "var(--text5)", fontSize: 12.5, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 2 }}>KALAN</div>
-                <div style={{ color: "var(--expense-text)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>₺{fmt(kalan)}</div>
+                <div style={{ color: "var(--text5)", fontSize: 12.5, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", marginBottom: 2 }}>KALAN</div>
+                <div style={{ color: "var(--expense-text)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600 }}>₺{fmt(kalan)}</div>
               </div>
             </div>
             <div style={{ height: 8, background: "var(--card2)", borderRadius: 99, overflow: "hidden", border: "1px solid var(--border)" }}>
               <div style={{ height: "100%", width: `${yuzde}%`, background: "linear-gradient(90deg,#10b981,#059669)", borderRadius: 99, transition: "width 0.8s ease" }} />
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6 }}>
-              <span style={{ color: "var(--income-text)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>Ödenen %{yuzde.toFixed(1)}</span>
-              {!bitti && <button onClick={() => taksitOde(t.id)} style={{ background: "#10b98122", border: "1px solid #10b98155", borderRadius: 8, padding: "3px 9px", color: "var(--income-text)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", cursor: "pointer", fontWeight: 700 }}>✓ Taksit Öde</button>}
-              <span style={{ color: "var(--expense-text)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>Kalan %{(100 - yuzde).toFixed(1)}</span>
+              <span style={{ color: "var(--income-text)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600 }}>Ödenen %{yuzde.toFixed(1)}</span>
+              {!bitti && <button onClick={() => taksitOde(t.id)} style={{ background: "#10b98122", border: "1px solid #10b98155", borderRadius: 8, padding: "3px 9px", color: "var(--income-text)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", cursor: "pointer", fontWeight: 600 }}>✓ Taksit Öde</button>}
+              <span style={{ color: "var(--expense-text)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600 }}>Kalan %{(100 - yuzde).toFixed(1)}</span>
             </div>
           </div>
         );
@@ -3721,12 +3795,12 @@ function KredilerTab({ krediler, setKrediler }) {
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-        <span style={{ color: "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em" }}>{krediler.length} KREDİ / BORÇ</span>
+        <span style={{ color: "var(--text3)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em" }}>{krediler.length} KREDİ / BORÇ</span>
         <Btn onClick={() => { setForm(bos); setModal(true); }}>+ Ekle</Btn>
       </div>
 
       {krediler.length === 0 && (
-        <div style={{ textAlign: "center", color: "var(--text5)", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", padding: "40px 0" }}>
+        <div style={{ textAlign: "center", color: "var(--text5)", fontSize: 13, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", padding: "40px 0" }}>
           Henüz kredi eklemedin.<br />Çektiğin krediyi ekleyip taksitleri takip edebilirsin.
         </div>
       )}
@@ -3747,8 +3821,8 @@ function KredilerTab({ krediler, setKrediler }) {
           <div key={k.id} style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "16px 14px", marginBottom: 14 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
               <div>
-                <div style={{ color: "var(--text)", fontSize: 15, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>{k.ad}</div>
-                <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 2 }}>{odenenAdet}/{k.vade} taksit ödendi</div>
+                <div style={{ color: "var(--text)", fontSize: 15, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600 }}>{k.ad}</div>
+                <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", marginTop: 2 }}>{odenenAdet}/{k.vade} taksit ödendi</div>
               </div>
               <button onClick={() => krediSil(k.id)} style={{ background: "none", border: "none", color: "var(--expense-text)", cursor: "pointer", fontSize: 15 }} aria-label="Sil"><Icon name="trash" size={16}/></button>
             </div>
@@ -3758,28 +3832,28 @@ function KredilerTab({ krediler, setKrediler }) {
               <div style={{ height: "100%", width: `${yuzde}%`, background: "linear-gradient(90deg,#10b981,#059669)", borderRadius: 99, transition: "width 0.8s ease" }} />
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 14 }}>
-              <span style={{ color: "var(--income-text)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>Ödenen %{yuzde.toFixed(1)}</span>
-              <span style={{ color: "var(--expense-text)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>Kalan %{(100 - yuzde).toFixed(1)}</span>
+              <span style={{ color: "var(--income-text)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600 }}>Ödenen %{yuzde.toFixed(1)}</span>
+              <span style={{ color: "var(--expense-text)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600 }}>Kalan %{(100 - yuzde).toFixed(1)}</span>
             </div>
 
             {/* Tutar özeti */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
               <div style={{ background: "var(--card2)", borderRadius: 10, padding: "9px 6px", textAlign: "center" }}>
-                <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 3 }}>TOPLAM</div>
-                <div style={{ color: "var(--text)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>₺{fmt(toplamBorc)}</div>
+                <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", marginBottom: 3 }}>TOPLAM</div>
+                <div style={{ color: "var(--text)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600 }}>₺{fmt(toplamBorc)}</div>
               </div>
               <div style={{ background: "var(--card2)", borderRadius: 10, padding: "9px 6px", textAlign: "center" }}>
-                <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 3 }}>ÖDENEN</div>
-                <div style={{ color: "var(--income-text)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>₺{fmt(odenen)}</div>
+                <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", marginBottom: 3 }}>ÖDENEN</div>
+                <div style={{ color: "var(--income-text)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600 }}>₺{fmt(odenen)}</div>
               </div>
               <div style={{ background: "var(--card2)", borderRadius: 10, padding: "9px 6px", textAlign: "center" }}>
-                <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 3 }}>KALAN</div>
-                <div style={{ color: "var(--expense-text)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>₺{fmt(kalan)}</div>
+                <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", marginBottom: 3 }}>KALAN</div>
+                <div style={{ color: "var(--expense-text)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600 }}>₺{fmt(kalan)}</div>
               </div>
             </div>
 
             {/* Taksitler */}
-            <button onClick={() => setAcikKredi(p => ({ ...p, [k.id]: !p[k.id] }))} style={{ width: "100%", background: "var(--card2)", border: "1px solid var(--border)", borderRadius: 10, padding: "9px", color: "var(--text3)", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12, cursor: "pointer" }}>
+            <button onClick={() => setAcikKredi(p => ({ ...p, [k.id]: !p[k.id] }))} style={{ width: "100%", background: "var(--card2)", border: "1px solid var(--border)", borderRadius: 10, padding: "9px", color: "var(--text3)", fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontSize: 12, cursor: "pointer" }}>
               {acik ? "▾ Taksitleri Gizle" : "▸ Taksitleri Göster"}
             </button>
 
@@ -3789,10 +3863,10 @@ function KredilerTab({ krediler, setKrediler }) {
                   <div key={t.no} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 10px", background: t.odendi ? "transparent" : "var(--card2)", borderRadius: 10, marginBottom: 6, opacity: t.odendi ? 0.5 : 1, border: t.odendi ? "1px solid var(--divider)" : "1px solid var(--border)" }}>
                     <button onClick={() => taksitToggle(k.id, t.no)} style={{ width: 20, height: 20, borderRadius: 6, border: `2px solid ${t.odendi ? "#10b981" : "var(--border2)"}`, background: t.odendi ? "#10b981" : "transparent", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "#fff", padding: 0 }}>{t.odendi ? "✓" : ""}</button>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ color: "var(--text)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", textDecoration: t.odendi ? "line-through" : "none" }}>{t.no}. Taksit</div>
-                      <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif" }}>{t.tarih.split("-").reverse().join(".")}</div>
+                      <div style={{ color: "var(--text)", fontSize: 12, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", textDecoration: t.odendi ? "line-through" : "none" }}>{t.no}. Taksit</div>
+                      <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}>{t.tarih.split("-").reverse().join(".")}</div>
                     </div>
-                    <span style={{ color: t.odendi ? "var(--text5)" : "#ef4444", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, textDecoration: t.odendi ? "line-through" : "none" }}>₺{fmt(t.tutar)}</span>
+                    <span style={{ color: t.odendi ? "var(--text5)" : "#ef4444", fontSize: 13, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600, textDecoration: t.odendi ? "line-through" : "none" }}>₺{fmt(t.tutar)}</span>
                   </div>
                 ))}
               </div>
@@ -3811,13 +3885,13 @@ function KredilerTab({ krediler, setKrediler }) {
 
           <label style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: "var(--card2)", borderRadius: 10, marginBottom: 8, cursor: "pointer" }}>
             <button type="button" onClick={() => setForm(f => ({ ...f, ilkFarkli: !f.ilkFarkli }))} style={{ width: 22, height: 22, borderRadius: 6, border: `2px solid ${form.ilkFarkli ? "#f59e0b" : "var(--border2)"}`, background: form.ilkFarkli ? "#f59e0b" : "transparent", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "#fff", padding: 0 }}>{form.ilkFarkli ? "✓" : ""}</button>
-            <span style={{ color: "var(--text2)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif" }}>İlk taksit farklı</span>
+            <span style={{ color: "var(--text2)", fontSize: 12, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}>İlk taksit farklı</span>
           </label>
           {form.ilkFarkli && <Input label="İlk Taksit Tutarı (₺)" type="number" value={form.ilkTaksit} onChange={e => setForm(f => ({ ...f, ilkTaksit: e.target.value }))} placeholder="0.00" />}
 
           <label style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: "var(--card2)", borderRadius: 10, marginBottom: 8, cursor: "pointer" }}>
             <button type="button" onClick={() => setForm(f => ({ ...f, sonFarkli: !f.sonFarkli }))} style={{ width: 22, height: 22, borderRadius: 6, border: `2px solid ${form.sonFarkli ? "#f59e0b" : "var(--border2)"}`, background: form.sonFarkli ? "#f59e0b" : "transparent", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "#fff", padding: 0 }}>{form.sonFarkli ? "✓" : ""}</button>
-            <span style={{ color: "var(--text2)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif" }}>Son taksit farklı</span>
+            <span style={{ color: "var(--text2)", fontSize: 12, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}>Son taksit farklı</span>
           </label>
           {form.sonFarkli && <Input label="Son Taksit Tutarı (₺)" type="number" value={form.sonTaksit} onChange={e => setForm(f => ({ ...f, sonTaksit: e.target.value }))} placeholder="0.00" />}
 
@@ -3919,7 +3993,7 @@ function MaasTab({ zamlar, setZamlar, maasAyarlar, setMaasAyarlar, enflasyon, se
       {/* Alt sekme */}
       <div style={{ display: "flex", gap: 6, marginBottom: 14, background: "var(--card2)", borderRadius: 12, padding: 4 }}>
         {[{id:"hesapla",label:"Maaş Hesapla"},{id:"zamlar",label:"Zam Oranları"}].map(s => (
-          <button key={s.id} onClick={() => setAltSekme(s.id)} style={{ flex: 1, padding: "9px 4px", borderRadius: 9, border: "none", cursor: "pointer", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12, fontWeight: 700, background: altSekme === s.id ? "#A74E32" : "transparent", color: altSekme === s.id ? "#fff" : "var(--text4)", transition: "all 0.2s" }}>
+          <button key={s.id} onClick={() => setAltSekme(s.id)} style={{ flex: 1, padding: "9px 4px", borderRadius: 9, border: "none", cursor: "pointer", fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontSize: 12, fontWeight: 600, background: altSekme === s.id ? "#A74E32" : "transparent", color: altSekme === s.id ? "#fff" : "var(--text4)", transition: "all 0.2s" }}>
             {s.label}
           </button>
         ))}
@@ -3929,19 +4003,19 @@ function MaasTab({ zamlar, setZamlar, maasAyarlar, setMaasAyarlar, enflasyon, se
       {altSekme === "zamlar" && (
         <div>
           <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "16px 14px", marginBottom: 14 }}>
-            <div style={{ color: "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>Başlangıç Yılı</div>
-            <input aria-label="Başlangıç yılı" type="number" value={dMaas.zamYil1} onChange={e => setDMaas(p => ({ ...p, zamYil1: e.target.value }))} placeholder={String(buYil)} style={{ width: "100%", background: "var(--card2)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 12px", color: "#f59e0b", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 16, fontWeight: 700, outline: "none", boxSizing: "border-box", textAlign: "center" }} />
-            <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 6, textAlign: "center" }}>{yil1}-{yil2} için 4 dönem zammı</div>
+            <div style={{ color: "var(--text3)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>Başlangıç Yılı</div>
+            <input aria-label="Başlangıç yılı" type="number" value={dMaas.zamYil1} onChange={e => setDMaas(p => ({ ...p, zamYil1: e.target.value }))} placeholder={String(buYil)} style={{ width: "100%", background: "var(--card2)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 12px", color: "#f59e0b", fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontSize: 16, fontWeight: 600, outline: "none", boxSizing: "border-box", textAlign: "center" }} />
+            <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", marginTop: 6, textAlign: "center" }}>{yil1}-{yil2} için 4 dönem zammı</div>
           </div>
 
           {[yil1, yil2].map(yil => (
             <div key={yil} style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "16px 14px", marginBottom: 14 }}>
-              <div style={{ color: "var(--text)", fontSize: 14, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, marginBottom: 12 }}>{yil} Toplu Sözleşme Zamları</div>
+              <div style={{ color: "var(--text)", fontSize: 14, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600, marginBottom: 12 }}>{yil} Toplu Sözleşme Zamları</div>
               {[{id:"ocak",label:"Ocak Zammı"},{id:"temmuz",label:"Temmuz Zammı"}].map(d => (
                 <div key={d.id} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                  <span style={{ color: "var(--text3)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", width: 110 }}>{d.label}</span>
+                  <span style={{ color: "var(--text3)", fontSize: 12, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", width: 110 }}>{d.label}</span>
                   <div style={{ flex: 1, position: "relative" }}>
-                    <input aria-label={`${yil} ${d.label}`} type="number" step="0.01" value={dZamlar[`${yil}-${d.id}`] || ""} onChange={e => setDZamlar(p => ({ ...p, [`${yil}-${d.id}`]: e.target.value }))} placeholder="0.00" style={{ width: "100%", background: "var(--card2)", border: "1px solid var(--border)", borderRadius: 8, padding: "8px 28px 8px 12px", color: "var(--text)", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                    <input aria-label={`${yil} ${d.label}`} type="number" step="0.01" value={dZamlar[`${yil}-${d.id}`] || ""} onChange={e => setDZamlar(p => ({ ...p, [`${yil}-${d.id}`]: e.target.value }))} placeholder="0.00" style={{ width: "100%", background: "var(--card2)", border: "1px solid var(--border)", borderRadius: 8, padding: "8px 28px 8px 12px", color: "var(--text)", fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
                     <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text4)", fontSize: 13 }}>%</span>
                   </div>
                 </div>
@@ -3956,17 +4030,17 @@ function MaasTab({ zamlar, setZamlar, maasAyarlar, setMaasAyarlar, enflasyon, se
         <div>
           <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "16px 14px", marginBottom: 14 }}>
             <div style={{ marginBottom: 12 }}>
-              <label style={{ display: "block", color: "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 5 }}>Mevcut (güncel) maaşın ₺</label>
-              <input aria-label="Mevcut güncel maaş" type="number" step="0.01" value={dMaas.mevcutMaas} onChange={e => setDMaas(p => ({ ...p, mevcutMaas: e.target.value }))} placeholder="0.00" style={{ width: "100%", background: "var(--card2)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 12px", color: "var(--text)", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+              <label style={{ display: "block", color: "var(--text3)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", marginBottom: 5 }}>Mevcut (güncel) maaşın ₺</label>
+              <input aria-label="Mevcut güncel maaş" type="number" step="0.01" value={dMaas.mevcutMaas} onChange={e => setDMaas(p => ({ ...p, mevcutMaas: e.target.value }))} placeholder="0.00" style={{ width: "100%", background: "var(--card2)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 12px", color: "var(--text)", fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
             </div>
             <div style={{ display: "flex", gap: 10 }}>
               <div style={{ flex: 1 }}>
-                <label style={{ display: "block", color: "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 5 }}>Yıl</label>
-                <input aria-label="Hesaplama yılı" type="number" value={dMaas.hesapYil} onChange={e => setDMaas(p => ({ ...p, hesapYil: e.target.value }))} placeholder={String(buYil)} style={{ width: "100%", background: "var(--card2)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 12px", color: "var(--text)", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                <label style={{ display: "block", color: "var(--text3)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", marginBottom: 5 }}>Yıl</label>
+                <input aria-label="Hesaplama yılı" type="number" value={dMaas.hesapYil} onChange={e => setDMaas(p => ({ ...p, hesapYil: e.target.value }))} placeholder={String(buYil)} style={{ width: "100%", background: "var(--card2)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 12px", color: "var(--text)", fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
               </div>
               <div style={{ flex: 1.4 }}>
-                <label style={{ display: "block", color: "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 5 }}>Dönem</label>
-                <select aria-label="Maaş hesaplama dönemi" value={dMaas.hesapDonem} onChange={e => setDMaas(p => ({ ...p, hesapDonem: e.target.value }))} style={{ width: "100%", background: "var(--card2)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 12px", color: "var(--text)", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, outline: "none", boxSizing: "border-box" }}>
+                <label style={{ display: "block", color: "var(--text3)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", marginBottom: 5 }}>Dönem</label>
+                <select aria-label="Maaş hesaplama dönemi" value={dMaas.hesapDonem} onChange={e => setDMaas(p => ({ ...p, hesapDonem: e.target.value }))} style={{ width: "100%", background: "var(--card2)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 12px", color: "var(--text)", fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontSize: 13, outline: "none", boxSizing: "border-box" }}>
                   <option value="ocak">Ocak - Haziran</option>
                   <option value="temmuz">Temmuz - Aralık</option>
                 </select>
@@ -3976,15 +4050,15 @@ function MaasTab({ zamlar, setZamlar, maasAyarlar, setMaasAyarlar, enflasyon, se
 
           {/* Aylık enflasyon */}
           <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "16px 14px", marginBottom: 14 }}>
-            <div style={{ color: "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>Aylık Enflasyon (%)</div>
-            <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginBottom: 12 }}>Bilmediğin aylar boş kalabilir</div>
+            <div style={{ color: "var(--text3)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>Aylık Enflasyon (%)</div>
+            <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", marginBottom: 12 }}>Bilmediğin aylar boş kalabilir</div>
             {(dMaas.hesapDonem === "ocak" ? [0,1,2,3,4,5] : [6,7,8,9,10,11]).map(ayIdx => {
               const yil = parseInt(dMaas.hesapYil) || buYil;
               return (
                 <div key={ayIdx} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                  <span style={{ color: "var(--text3)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", width: 70 }}>{MAAS_AYLAR[ayIdx]}</span>
+                  <span style={{ color: "var(--text3)", fontSize: 12, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", width: 70 }}>{MAAS_AYLAR[ayIdx]}</span>
                   <div style={{ flex: 1, position: "relative" }}>
-                    <input aria-label={`${yil} ${MAAS_AYLAR[ayIdx]} enflasyon oranı`} type="number" step="0.01" value={dEnflasyon[`${yil}-${ayIdx}`] || ""} onChange={e => setDEnflasyon(p => ({ ...p, [`${yil}-${ayIdx}`]: e.target.value }))} placeholder="boş" style={{ width: "100%", background: "var(--card2)", border: "1px solid var(--border)", borderRadius: 8, padding: "8px 28px 8px 12px", color: "var(--text)", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                    <input aria-label={`${yil} ${MAAS_AYLAR[ayIdx]} enflasyon oranı`} type="number" step="0.01" value={dEnflasyon[`${yil}-${ayIdx}`] || ""} onChange={e => setDEnflasyon(p => ({ ...p, [`${yil}-${ayIdx}`]: e.target.value }))} placeholder="boş" style={{ width: "100%", background: "var(--card2)", border: "1px solid var(--border)", borderRadius: 8, padding: "8px 28px 8px 12px", color: "var(--text)", fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontSize: 13, outline: "none", boxSizing: "border-box" }} />
                     <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text4)", fontSize: 12 }}>%</span>
                   </div>
                 </div>
@@ -3996,37 +4070,37 @@ function MaasTab({ zamlar, setZamlar, maasAyarlar, setMaasAyarlar, enflasyon, se
           {hesapla ? (
             <div>
               <div style={{ background: "linear-gradient(135deg,var(--card),var(--card2))", border: "1px solid #A74E3233", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "18px 16px", marginBottom: 14 }}>
-                <div style={{ color: "var(--text3)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 14 }}>Hesaplama Detayı</div>
+                <div style={{ color: "var(--text3)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 14 }}>Hesaplama Detayı</div>
                 <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid var(--divider)" }}>
-                  <span style={{ color: "var(--text3)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif" }}>Mevcut maaş</span>
-                  <span style={{ color: "var(--text)", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>{fmtTL(hesapla.mevcutMaas)}</span>
+                  <span style={{ color: "var(--text3)", fontSize: 12, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}>Mevcut maaş</span>
+                  <span style={{ color: "var(--text)", fontSize: 13, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600 }}>{fmtTL(hesapla.mevcutMaas)}</span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid var(--divider)" }}>
-                  <span style={{ color: "var(--text3)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif" }}>6 aylık kümülatif enflasyon</span>
-                  <span style={{ color: "#f59e0b", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>{fmtPct(hesapla.kumEnflasyon)}</span>
+                  <span style={{ color: "var(--text3)", fontSize: 12, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}>6 aylık kümülatif enflasyon</span>
+                  <span style={{ color: "#f59e0b", fontSize: 13, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600 }}>{fmtPct(hesapla.kumEnflasyon)}</span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid var(--divider)" }}>
-                  <span style={{ color: "var(--text3)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif" }}>Enflasyon farkı</span>
-                  <span style={{ color: hesapla.enfFarki > 0 ? "#10b981" : "var(--text4)", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>{hesapla.enfFarki > 0 ? fmtPct(hesapla.enfFarki) : "Yok"}</span>
+                  <span style={{ color: "var(--text3)", fontSize: 12, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}>Enflasyon farkı</span>
+                  <span style={{ color: hesapla.enfFarki > 0 ? "#10b981" : "var(--text4)", fontSize: 13, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600 }}>{hesapla.enfFarki > 0 ? fmtPct(hesapla.enfFarki) : "Yok"}</span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0" }}>
-                  <span style={{ color: "var(--text3)", fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif" }}>{hesapla.sonrakiDonem === "ocak" ? `${hesapla.sonrakiYil} Ocak` : "Temmuz"} zammı</span>
-                  <span style={{ color: "var(--income-text)", fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>{fmtPct(hesapla.sonrakiZam)}</span>
+                  <span style={{ color: "var(--text3)", fontSize: 12, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}>{hesapla.sonrakiDonem === "ocak" ? `${hesapla.sonrakiYil} Ocak` : "Temmuz"} zammı</span>
+                  <span style={{ color: "var(--income-text)", fontSize: 13, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600 }}>{fmtPct(hesapla.sonrakiZam)}</span>
                 </div>
               </div>
 
               <div style={{ background: "var(--card)", border: "1px solid #10b98144", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "18px 16px", textAlign: "center" }}>
-                <div style={{ color: "var(--text4)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>
+                <div style={{ color: "var(--text4)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>
                   {hesapla.sonrakiDonem === "ocak" ? `${hesapla.sonrakiYil} Ocak` : `${hesapla.secYil} Temmuz`} Tahmini Maaşın
                 </div>
-                <div style={{ color: "var(--income-text)", fontSize: 26, fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700 }}>{fmtTL(hesapla.tahminiMaas)}</div>
-                <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 8 }}>
+                <div style={{ color: "var(--income-text)", fontSize: 26, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600 }}>{fmtTL(hesapla.tahminiMaas)}</div>
+                <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", marginTop: 8 }}>
                   Mevcuttan {fmtPct((hesapla.tahminiMaas / hesapla.mevcutMaas - 1) * 100)} artış
                 </div>
               </div>
             </div>
           ) : (
-            <div style={{ textAlign: "center", color: "var(--text5)", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, padding: "30px 0" }}>
+            <div style={{ textAlign: "center", color: "var(--text5)", fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontSize: 13, padding: "30px 0" }}>
               Mevcut maaşını gir, hesaplama burada görünsün
             </div>
           )}
@@ -4034,11 +4108,11 @@ function MaasTab({ zamlar, setZamlar, maasAyarlar, setMaasAyarlar, enflasyon, se
       )}
 
       {/* KAYDET BUTONU */}
-      <button onClick={kaydet} disabled={!degisti} style={{ width: "100%", marginTop: 8, padding: 14, borderRadius: 12, border: "none", cursor: degisti ? "pointer" : "default", background: degisti ? "linear-gradient(135deg,#10b981,#059669)" : "var(--card2)", color: degisti ? "#fff" : "var(--text5)", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 14, fontWeight: 700, transition: "all 0.2s" }}>
+      <button onClick={kaydet} disabled={!degisti} style={{ width: "100%", marginTop: 8, padding: 14, borderRadius: 12, border: "none", cursor: degisti ? "pointer" : "default", background: degisti ? "linear-gradient(135deg,#10b981,#059669)" : "var(--card2)", color: degisti ? "#fff" : "var(--text5)", fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontSize: 14, fontWeight: 600, transition: "all 0.2s" }}>
         {degisti ? "Kaydet" : "✓ Kaydedildi"}
       </button>
       {degisti && (
-        <div style={{ textAlign: "center", color: "#f59e0b", fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 6 }}>
+        <div style={{ textAlign: "center", color: "#f59e0b", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", marginTop: 6 }}>
           Kaydedilmemiş değişiklik var
         </div>
       )}
@@ -4302,7 +4376,6 @@ export default function App() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap');
         :root {
           --bg:#0b1020; --header:rgba(15,23,42,.92); --card:#121a2e; --card2:#182238;
           --border:#26334d; --divider:#202c43; --border2:#34435f;
@@ -4334,12 +4407,12 @@ export default function App() {
         input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible { outline:2px solid var(--accent) !important; outline-offset:3px; }
         .kayit-hatasi { margin:12px 16px; padding:14px; border:1px solid #c24132; border-radius:14px; color:var(--text); background:var(--card); font-size:13px; line-height:1.6; }
         .ilk-kullanim { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
-        .ilk-kullanim button { min-height:44px; padding:10px 14px; border:1px solid rgba(255,255,255,.6); border-radius:12px; background:rgba(0,0,0,.16); color:#fff; font-weight:700; }
+        .ilk-kullanim button { min-height:44px; padding:10px 14px; border:1px solid rgba(255,255,255,.6); border-radius:12px; background:rgba(0,0,0,.16); color:#fff; font-weight:600; }
         .nav-dock button, .app-content button { min-height:44px; }
         .app-content button[style*="width: 22px"], .app-content button[style*="width: 26px"], .app-content button[style*="width: 28px"], .app-content button[style*="width: 30px"], .app-content button[style*="width: 32px"] { min-width:44px; }
 
 
-        button, input, select { font-family:'Inter',system-ui,sans-serif !important; }
+        button, input, select { font-family:system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif !important; }
         button { transition:transform .18s ease, background .18s ease, border-color .18s ease, opacity .18s ease; }
         button:active { transform:scale(.97); }
         ::-webkit-scrollbar { width:5px; }
@@ -4374,7 +4447,7 @@ export default function App() {
         }
 
 
-        .category-trend-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; color:var(--text); font-size:16px; font-weight:700; margin-bottom:16px; }
+        .category-trend-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; color:var(--text); font-size:16px; font-weight:600; margin-bottom:16px; }
         .tools-card { background:var(--card); color:var(--text); border:1px solid var(--border); border-radius:18px; padding:16px; margin-bottom:14px; min-width:0; }
         .tools-card h3 { font-size:14px; margin:0 0 12px; }
         .tools-card h4 { font-size:12px; margin:14px 0 8px; }
@@ -4395,20 +4468,22 @@ export default function App() {
         .category-trend-card:last-child { margin-bottom:0; }
         .category-trend-top { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
         .category-trend-main { min-width:0; }
-        .category-trend-name { display:flex; align-items:center; gap:9px; color:var(--text2); font-size:14px; font-weight:700; overflow-wrap:anywhere; }
+        .category-trend-name { display:flex; align-items:center; gap:9px; color:var(--text2); font-size:14px; font-weight:600; overflow-wrap:anywhere; }
         .category-trend-icon { width:34px; height:34px; display:grid; place-items:center; border-radius:11px; flex-shrink:0; }
-        .category-trend-amount { color:var(--text); font-size:22px; font-weight:750; letter-spacing:-.025em; margin-top:12px; overflow-wrap:anywhere; }
+        .category-trend-amount { color:var(--text); font-size:22px; font-weight:700; letter-spacing:-.025em; margin-top:12px; overflow-wrap:anywhere; }
         .category-trend-caption { display:block; color:var(--text3); font-size:11px; line-height:1.5; margin-top:4px; }
         .category-trend-change { text-align:right; flex-shrink:0; }
-        .category-trend-badge { display:inline-block; border-radius:8px; padding:5px 8px; font-size:12px; font-weight:700; }
+        .category-trend-badge { display:inline-block; border-radius:8px; padding:5px 8px; font-size:12px; font-weight:600; }
         .category-trend-scroll { width:100%; min-width:0; margin-top:17px; padding-bottom:4px; }
         .category-trend-columns { display:grid; width:100%; min-width:0; gap:2px; align-items:end; }
         .category-trend-column { display:flex; flex-direction:column; gap:7px; align-items:center; justify-content:flex-end; border:0; border-radius:6px; background:transparent; padding:2px 0 4px; color:var(--text4); min-width:0; width:100%; min-height:104px; cursor:pointer; }
         .category-trend-column:focus-visible { outline:2px solid var(--accent); outline-offset:-2px; }
         .category-trend-bar-area { display:flex; align-items:flex-end; justify-content:center; height:72px; width:100%; }
-        .category-trend-bar { display:block; max-width:16px; width:70%; border-radius:5px 5px 2px 2px; transition:height .3s,opacity .15s; }
+        .category-trend-bar { position:relative; display:block; max-width:16px; width:70%; border-radius:5px 5px 2px 2px; transition:height .3s,opacity .15s; }
+        .annual-category-chart .category-trend-bar::before { content:""; position:absolute; width:2px; background:currentColor; left:calc(50% - 1px); top:-4px; bottom:-3px; opacity:.6; }
+        .annual-category-chart .category-trend-bar-area { padding:5px 0; box-sizing:border-box; }
         .category-trend-month { font-size:clamp(8px,2.4vw,11px); letter-spacing:-.2px; white-space:nowrap; line-height:1.5; }
-        .category-trend-column[aria-pressed="true"] .category-trend-month { color:var(--text); font-weight:700; }
+        .category-trend-column[aria-pressed="true"] .category-trend-month { color:var(--text); font-weight:600; }
         .category-trend-selected { color:var(--text3); border-top:1px solid var(--border); padding-top:10px; margin-top:7px; font-size:12px; }
         .category-trend-selected strong { color:var(--text2); font-weight:600; }
         @media(max-width:360px) { .category-trend-card { padding:13px; } .category-trend-top { gap:8px; } .category-trend-amount { font-size:20px; } .category-trend-change { max-width:105px; } }
@@ -4419,7 +4494,7 @@ export default function App() {
         .home-overview .home-period-pill { display:flex; align-items:center; max-width:100%; background:rgba(245,158,11,.09); border:1px solid rgba(245,158,11,.24); border-radius:99px; padding:0 3px; color:#f59e0b; }
         .home-period-pill > button { width:30px; min-height:40px; border:0; background:none; color:inherit; font-size:21px; cursor:pointer; border-radius:99px; }
         .home-period-pill > button:disabled { opacity:.3; cursor:default; }
-        .home-period-label { position:relative; display:flex; align-items:center; gap:8px; min-height:40px; min-width:0; padding:0 4px; font-size:12px; font-weight:700; }
+        .home-period-label { position:relative; display:flex; align-items:center; gap:8px; min-height:40px; min-width:0; padding:0 4px; font-size:12px; font-weight:600; }
         .home-period-label > svg { flex-shrink:0; }
         .home-period-text { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
         .home-period-chevron { font-size:18px; line-height:1; }
@@ -4430,8 +4505,8 @@ export default function App() {
         [data-theme="light"] .home-period-pill { color:#92400e; background:#fffbeb; border-color:#fcd34d; }
         .home-overview .home-balance { padding:23px 22px !important; margin-bottom:14px !important; }
         .home-balance-heading { position:relative; z-index:1; display:flex; align-items:center; justify-content:space-between; gap:10px; color:#fff; font-weight:600; font-size:16px; }
-        .home-balance-badge { display:inline-flex; align-items:center; gap:5px; flex-shrink:0; background:rgba(0,0,0,.15); border:1px solid rgba(255,255,255,.16); border-radius:99px; padding:7px 12px; font-size:11px; font-weight:700; }
-        .home-balance-value { position:relative; z-index:1; color:#fff; font-family:'Inter',system-ui,sans-serif; font-size:clamp(30px,9.5vw,46px); font-weight:750; line-height:1.1; letter-spacing:-.025em; margin:5px 0 3px; overflow-wrap:anywhere; }
+        .home-balance-badge { display:inline-flex; align-items:center; gap:5px; flex-shrink:0; background:rgba(0,0,0,.15); border:1px solid rgba(255,255,255,.16); border-radius:99px; padding:7px 12px; font-size:11px; font-weight:600; }
+        .home-balance-value { position:relative; z-index:1; color:#fff; font-family:system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size:clamp(30px,9.5vw,46px); font-weight:700; line-height:1.1; letter-spacing:-.025em; margin:5px 0 3px; overflow-wrap:anywhere; }
         .home-balance-caption { position:relative; z-index:1; color:rgba(255,255,255,.84); font-size:11px; line-height:1.5; }
         .home-balance-wave { position:absolute; right:-70px; bottom:-115px; width:310px; height:205px; border-radius:48%; background:rgba(255,255,255,.08); transform:rotate(-19deg); pointer-events:none; }
         .home-overview .home-summary { gap:8px !important; margin-bottom:16px !important; }
@@ -4440,7 +4515,7 @@ export default function App() {
         .home-overview .home-summary-value { font-size:clamp(11px,3.35vw,15px) !important; letter-spacing:-.025em; margin-bottom:8px !important; overflow:visible !important; white-space:normal !important; overflow-wrap:anywhere; }
         .home-overview .home-summary-caption { font-size:11px !important; line-height:1.45; margin-top:5px !important; }
         .home-panel, .home-overview .home-credit-panel { background:var(--card); border:1px solid var(--border); border-radius:22px !important; padding:18px !important; margin-bottom:14px !important; box-shadow:var(--card-shadow); }
-        .home-panel-heading { display:flex; justify-content:space-between; align-items:center; gap:12px; color:var(--text); font-size:16px; font-weight:750; }
+        .home-panel-heading { display:flex; justify-content:space-between; align-items:center; gap:12px; color:var(--text); font-size:16px; font-weight:700; }
         .home-panel-heading > svg { color:var(--text4); }
         .home-gauge-panel { padding-bottom:16px !important; }
         .home-gauge-svg { margin-top:12px !important; }
@@ -4448,7 +4523,7 @@ export default function App() {
         .home-gauge-split > div { display:flex; flex-direction:column; gap:5px; padding:0 16px; }
         .home-gauge-split > div + div { border-left:1px solid var(--border); }
         .home-detail-label { color:var(--text3); font-size:12px; }
-        .home-gauge-split strong { color:var(--text); font-size:21px; font-weight:700; }
+        .home-gauge-split strong { color:var(--text); font-size:21px; font-weight:600; }
         .home-percent-value { display:flex; align-items:center; gap:7px; }
         .home-percent-dot { display:inline-block; width:9px; height:9px; border-radius:50%; flex-shrink:0; }
         .home-gauge-note { color:var(--text4); font-size:11px; text-align:center; line-height:1.5; margin-top:14px; }
@@ -4459,7 +4534,7 @@ export default function App() {
         .home-overview .home-forecast > div:nth-child(2) > div:first-child, .home-overview .home-daily-limit > div:nth-child(2) > div:first-child { font-size:12px !important; }
         .home-overview .home-forecast > div:nth-child(2) > div:last-child, .home-overview .home-daily-limit > div:nth-child(2) > div:last-child { font-size:11px !important; line-height:1.6; }
         .home-overview .home-forecast > div:nth-child(2) span:first-child, .home-overview .home-daily-limit > div:nth-child(2) span:first-child { font-size:19px !important; }
-        .home-overview .home-credit-panel > div:first-child { color:var(--text) !important; font-size:15px !important; font-weight:750; text-transform:none !important; letter-spacing:0 !important; }
+        .home-overview .home-credit-panel > div:first-child { color:var(--text) !important; font-size:15px !important; font-weight:700; text-transform:none !important; letter-spacing:0 !important; }
         .home-overview .home-credit-card { border-radius:16px !important; padding:14px !important; margin-bottom:12px !important; }
         .home-overview .home-credit-card > div:nth-child(2) > div { padding:10px 8px !important; border-radius:10px !important; min-width:0; }
         .home-overview .home-credit-card > div:nth-child(2) > div > div:first-child { font-size:11px !important; }
@@ -4472,7 +4547,7 @@ export default function App() {
           .home-overview .home-credit-card { padding:12px 10px !important; }
         }
 
-        .app-shell { width:100%; max-width:540px; margin:0 auto; min-height:100vh; padding-bottom:104px; font-family:'Inter',system-ui,sans-serif; }
+        .app-shell { width:100%; max-width:540px; margin:0 auto; min-height:100vh; padding-bottom:104px; font-family:system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
         .app-shell:before { content:""; position:fixed; inset:0; z-index:0; pointer-events:none; background:radial-gradient(circle at 10% -10%,rgba(167,78,50,.13),transparent 34%),radial-gradient(circle at 92% 18%,rgba(20,184,166,.08),transparent 30%); }
         .app-content { padding:14px 16px 0; position:relative; z-index:1; }
         .app-content > div { animation:pageEnter .28s cubic-bezier(.16,1,.3,1); }
@@ -4508,7 +4583,7 @@ export default function App() {
         .app-shell:before { display:none; }
         .topbar { box-shadow:none; border-bottom:0; }
         .app-content { padding-top:10px; }
-        .app-content h3 { font-size:14px; font-weight:700; letter-spacing:-.01em; }
+        .app-content h3 { font-size:14px; font-weight:600; letter-spacing:-.01em; }
         .tools-card h3 { display:flex; align-items:center; gap:8px; }
         .tools-card h3 svg { color:var(--accent); flex-shrink:0; }
         .tools-card, .home-panel { box-shadow:var(--card-shadow); border-radius:18px !important; }
@@ -4591,7 +4666,7 @@ export default function App() {
         .report-range { margin-top:8px; }
         .report-tabs { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:3px; padding:4px; background:var(--card2); border:1px solid var(--border); border-radius:13px; margin-bottom:12px; }
         .report-tabs button { display:flex; flex-direction:column; align-items:center; gap:5px; border:0; border-radius:9px; background:none; color:var(--text3); font-size:10px; padding:8px 1px; cursor:pointer; }
-        .report-tabs button[aria-selected="true"] { background:var(--card); color:var(--accent); box-shadow:0 2px 5px rgba(48,30,18,.05); font-weight:700; }
+        .report-tabs button[aria-selected="true"] { background:var(--card); color:var(--accent); box-shadow:0 2px 5px rgba(48,30,18,.05); font-weight:600; }
         .report-stat-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
         .report-stat-grid .report-stat:last-child { grid-column:1/-1; display:flex; align-items:center; justify-content:space-between; }
         .report-stat-grid .report-stat:last-child strong { margin-top:0; max-width:70%; width:70%; text-align:right; }
@@ -4668,7 +4743,7 @@ export default function App() {
         .saving-stat-card > div:first-child { display:flex; justify-content:center; color:var(--accent); }
         .saving-stat-card > div:nth-child(2) { text-transform:none !important; font-size:11px !important; }
         .home-overview .home-credit-panel { background:var(--card) !important; border-color:var(--border) !important; }
-        .credit-section-heading { display:flex; align-items:center; gap:8px; color:var(--text); font-size:14px; font-weight:700; margin-bottom:12px; text-transform:none; }
+        .credit-section-heading { display:flex; align-items:center; gap:8px; color:var(--text); font-size:14px; font-weight:600; margin-bottom:12px; text-transform:none; }
         .home-overview .credit-tile { background:var(--card); border:1px solid var(--border); border-radius:20px !important; box-shadow:var(--surface-depth); padding:16px !important; margin-bottom:16px !important; color:var(--text); }
         .credit-tile-heading { display:flex; justify-content:space-between; align-items:center; gap:8px; }
         .credit-tile-heading > div { display:flex; gap:8px; align-items:center; min-width:0; }
@@ -4677,11 +4752,11 @@ export default function App() {
         .credit-type { background:var(--card2); color:var(--text3); padding:5px 7px; border-radius:8px; font-size:9px; white-space:nowrap; }
         .credit-total { margin:16px 0 12px; }
         .credit-total > span:first-child { display:block; color:var(--text3); font-size:11px; line-height:1.5; margin-bottom:5px; }
-        .credit-total .money-fit { color:var(--text); font-weight:750; }
+        .credit-total .money-fit { color:var(--text); font-weight:700; }
         .credit-buckets { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; margin-bottom:12px; }
         .credit-buckets > div { border:1px solid var(--border); background:var(--card2); border-radius:12px; padding:10px 7px; min-width:0; }
         .credit-buckets > div > span:first-child { display:block; color:var(--text3); font-size:10px; line-height:1.4; margin-bottom:6px; text-transform:none; }
-        .credit-buckets .money-fit { color:var(--text); font-weight:700; }
+        .credit-buckets .money-fit { color:var(--text); font-weight:600; }
         .credit-dates { display:grid; gap:9px; margin:14px 0 10px; padding-top:12px; border-top:1px solid var(--border); }
         .credit-dates > div { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; font-size:11px; line-height:1.5; }
         .credit-dates span { color:var(--text3); }
@@ -4689,7 +4764,7 @@ export default function App() {
         .credit-actions { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px; }
         .credit-actions button:only-child { grid-column:1/-1; }
         .credit-actions button { min-width:0; font-size:10px !important; padding:9px 7px !important; line-height:1.5; letter-spacing:0 !important; }
-        .home-payments .upcoming-heading { display:flex; align-items:center; gap:8px; text-transform:none !important; font-size:14px !important; font-weight:700; letter-spacing:0 !important; margin-bottom:7px !important; }
+        .home-payments .upcoming-heading { display:flex; align-items:center; gap:8px; text-transform:none !important; font-size:14px !important; font-weight:600; letter-spacing:0 !important; margin-bottom:7px !important; }
         .upcoming-heading svg { color:var(--accent); }
         .upcoming-note { margin-bottom:10px; }
         .upcoming-item { padding:12px 0; border-top:1px solid var(--border); }
@@ -4736,7 +4811,7 @@ export default function App() {
         .needle-facts { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
         .needle-facts > div { min-width:0; }
         .needle-facts span:not(.money-fit) { display:block; font-size:11px; color:rgba(255,255,255,.8); margin-bottom:5px; }
-        .needle-facts strong { display:block; font-weight:700; color:#fff !important; }
+        .needle-facts strong { display:block; font-weight:600; color:#fff !important; }
         .needle-legend { display:flex; justify-content:space-between; flex-wrap:wrap; gap:6px; font-size:10px; color:rgba(255,255,255,.85); margin-top:2px; }
         .needle-legend span { display:flex; align-items:center; gap:4px; }
         .needle-legend i { width:6px; height:6px; border-radius:50%; background:#fff !important; }
@@ -4745,7 +4820,7 @@ export default function App() {
         .needle-balance p { font-size:10px; line-height:1.5; color:rgba(255,255,255,.8); margin-top:4px; }
         @media(max-width:360px) { .hero-budget.hero-budget--ibre { padding:8px 0 0; } .needle-legend { font-size:9px; } }
         .quick-template-section { padding:0; overflow:hidden; }
-        .quick-template-toggle { display:flex; align-items:center; justify-content:space-between; width:100%; gap:10px; background:transparent; color:var(--text); border:0; padding:15px 16px; cursor:pointer; font-size:13px; font-weight:700; }
+        .quick-template-toggle { display:flex; align-items:center; justify-content:space-between; width:100%; gap:10px; background:transparent; color:var(--text); border:0; padding:15px 16px; cursor:pointer; font-size:13px; font-weight:600; }
         .quick-template-toggle > span:first-child { display:flex; align-items:center; gap:8px; }
         .quick-template-toggle svg { color:var(--accent); }
         .quick-template-toggle small { font-size:10px; background:var(--card2); color:var(--text3); padding:3px 6px; border-radius:6px; }
@@ -4758,7 +4833,7 @@ export default function App() {
         .quick-template-name b { display:block; font-size:13px; font-variant-numeric:tabular-nums; }
         .quick-template-actions { display:flex; align-items:center; gap:5px; flex-shrink:0; }
         .quick-template-actions .tools-button { display:flex; align-items:center; justify-content:center; min-width:36px; min-height:44px; padding:8px; }
-        .quick-template-actions .quick-template-add { color:var(--on-accent); background:var(--accent-strong); font-weight:700; padding:8px 12px; }
+        .quick-template-actions .quick-template-add { color:var(--on-accent); background:var(--accent-strong); font-weight:600; padding:8px 12px; }
         .quick-template-preview { display:flex; flex-direction:column; gap:6px; padding:12px; background:var(--card2); border:1px solid var(--border); border-radius:12px; margin-bottom:16px; }
         .quick-template-preview strong { color:var(--text); font-size:14px; }
         .quick-template-preview span { color:var(--text3); font-size:12px; }
@@ -4776,8 +4851,8 @@ export default function App() {
                 <Icon name="menu" size={21} />
               </button>
               <div style={{ minWidth: 0 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--text4)", fontSize: 11, fontWeight: 700, letterSpacing: ".13em", textTransform: "uppercase", marginBottom: 2 }}>Bütçe Takip</div>
-                <div style={{ color: "var(--text)", fontSize: 19, lineHeight: 1.15, fontFamily: "'Manrope', 'Inter', system-ui, sans-serif", fontWeight: 800, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{aktifSekmeBilgi.label}</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--text4)", fontSize: 11, fontWeight: 600, letterSpacing: ".13em", textTransform: "uppercase", marginBottom: 2 }}>Bütçe Takip</div>
+                <div style={{ color: "var(--text)", fontSize: 19, lineHeight: 1.15, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{aktifSekmeBilgi.label}</div>
               </div>
             </div>
             <button aria-label={tema === "dark" ? "Açık temaya geç" : "Koyu temaya geç"} onClick={() => setTema(tema === "dark" ? "light" : "dark")} style={{ width: 42, height: 42, borderRadius: 14, background: "var(--card)", border: "1px solid var(--border)", color: "var(--accent)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0, margin: 0, boxSizing: "border-box", lineHeight: 0, boxShadow: "var(--card-shadow)" }}>
@@ -4795,7 +4870,7 @@ export default function App() {
                 <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
                   <div style={{ width: 42, height: 42, borderRadius: 14, background: "var(--accent-strong)", color: "#fff", display: "grid", placeItems: "center", boxShadow: "none" }}><Icon name="wallet" size={21} /></div>
                   <div>
-                    <div style={{ fontSize: 17, fontFamily: "'Manrope', 'Inter', system-ui, sans-serif", fontWeight: 800, color: "var(--text)" }}>Bütçe Takip</div>
+                    <div style={{ fontSize: 17, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 700, color: "var(--text)" }}>Bütçe Takip</div>
                     <div style={{ color: "var(--text4)", fontSize: 11, marginTop: 2 }}>Finans merkeziniz</div>
                   </div>
                 </div>
@@ -4803,7 +4878,7 @@ export default function App() {
               </div>
               {menuGruplari.map(grup => (
                 <div key={grup.grup} style={{ marginBottom: 8 }}>
-                  <div style={{ color: "var(--text5)", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", padding: "10px 12px 6px" }}>{grup.grup}</div>
+                  <div style={{ color: "var(--text5)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.12em", padding: "10px 12px 6px" }}>{grup.grup}</div>
                   {grup.items.map(t => (
                     <button key={t.id} onClick={() => { setAktifTab(t.id); setMenuAcik(false); }} style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "11px 12px", marginBottom: 3, borderRadius: 13, background: aktifTab === t.id ? "var(--accent-soft)" : "transparent", border: aktifTab === t.id ? "1px solid rgba(167,78,50,.2)" : "1px solid transparent", cursor: "pointer", textAlign: "left" }}>
                       <span style={{ width: 35, height: 35, borderRadius: 11, display: "grid", placeItems: "center", color: aktifTab === t.id ? "var(--accent)" : "var(--text4)", background: aktifTab === t.id ? "rgba(167,78,50,.1)" : "var(--card2)" }}><Icon name={t.icon} size={18} /></span>
