@@ -524,6 +524,7 @@ function yedekVerisiniDogrula(paket) {
         if (key === "ft_islemler" && !["gelir", "gider"].includes(kayit.tip)) throw new Error("İşlem türü geçersiz.");
         if (key === "ft_odemeler" && kayit.odendi != null && typeof kayit.odendi !== "boolean") throw new Error("Ödeme durumu geçersiz.");
         if (key === "ft_kartlar" && typeof kayit.isim !== "string") throw new Error("Kart adı geçersiz.");
+        if (key === "ft_hizli_sablonlar" && kayit.tip!=null && !["gelir","gider"].includes(kayit.tip)) throw new Error("Hızlı işlem türü geçersiz.");
         if (key === "ft_hizli_sablonlar" && typeof kayit.kategori !== "string") throw new Error("Şablon kategorisi geçersiz.");
         if (key === "ft_tekrarlayan" && (!tamSayiGecerli(kayit.gun, 1, 31) || typeof kayit.aktif !== "boolean")) throw new Error("Sabit gider günü/durumu geçersiz.");
         if (key === "ft_taksitler" && (!tutarGecerli(kayit.aylikTutar) || !tamSayiGecerli(kayit.vade, 1, 1200) || !tamSayiGecerli(kayit.odenen ?? 0, 0, Number(kayit.vade)))) throw new Error("Taksit kaydı geçersiz.");
@@ -913,25 +914,38 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
   const [kartOdemeTarih, setKartOdemeTarih] = useState(yerelTarihAnahtari());
   const [hizliForm, setHizliForm] = useState({ tip: "gider", kategori: "Market", tutar: "", aciklama: "", tarih: yerelTarihAnahtari(), donemeDahil: true, donemIci: "", provizyon: "", taksitAd: "", taksitAylik: "", taksitVade: "", taksitOdenen: "", taksitKart: "" });
   const hizliKartMi = (kartlar || []).some(k => k.isim === hizliForm.kategori) && hizliForm.tip === "gider";
-  const sablondanGiderEkle = (sablon) => {
-    const tutar = Number(sablon?.tutar) || 0;
-    if (tutar <= 0) { toast("Şablon tutarı geçersiz", "uyari"); return; }
-    const giderKategorileri = kategoriler?.gider || VARSAYILAN_KATEGORILER.gider;
-    const kartIsimleri = (kartlar || []).map(k => k.isim);
-    const kategori = giderKategorileri.includes(sablon.kategori) && !kartIsimleri.includes(sablon.kategori)
-      ? sablon.kategori
-      : "Diğer";
-    setIslemler(p => [...p, {
-      id: Date.now(), tip: "gider", kategori, tutar,
-      aciklama: sablon.aciklama || sablon.ad || kategori,
-      tarih: yerelTarihAnahtari(), donemeDahil: true,
-      kaynak: "hizli_sablon", sablonId: sablon.id,
-    }]);
+  const [hizliListeAcik,setHizliListeAcik]=useState(false);
+  const [sablonModal,setSablonModal]=useState(false);
+  const [sablonForm,setSablonForm]=useState({id:null,ad:'',tip:'gider',kategori:'Market',tutar:''});
+  const [seciliSablon,setSeciliSablon]=useState(null);
+  const sablonKategorileri=tip=>(kategoriler?.[tip]||VARSAYILAN_KATEGORILER[tip]).filter(k=>tip!=='gider'||!kartlar.some(c=>c.isim===k));
+  const sablonKimligi=()=>globalThis.crypto?.randomUUID?.()||`${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const sablonFormunuAc=s=>{
+    const tip=s?.tip==='gelir'?'gelir':'gider',cats=sablonKategorileri(tip);
+    setSablonForm({id:s?.id??null,ad:s?.ad||s?.aciklama||'',tip,kategori:cats.includes(s?.kategori)?s.kategori:(cats.includes('Market')?'Market':cats[0]||''),tutar:s?String(s.tutar):''});
+    setSablonModal(true);
+  };
+  const sablonKaydet=()=>{
+    if(!sablonForm.ad.trim()||!tutarGecerli(sablonForm.tutar)||!sablonKategorileri(sablonForm.tip).includes(sablonForm.kategori)){formHatasi('İşlem adı, kategori ve geçerli pozitif tutar gir.');return;}
+    const yeni={...sablonForm,id:sablonForm.id??sablonKimligi(),ad:sablonForm.ad.trim(),aciklama:sablonForm.ad.trim(),tutar:paraOku(sablonForm.tutar)};
+    if(setHizliSablonlar(p=>sablonForm.id!=null?p.map(s=>s.id===sablonForm.id?{...s,...yeni}:s):[...p,yeni])===false)return;
+    setSablonModal(false);setHizliListeAcik(true);toast('Hızlı işlem kaydedildi');
+  };
+  const sablonIsleminiKaydet=(sablon,deger,guncelle=false)=>{
+    const tip=sablon.tip==='gelir'?'gelir':'gider';
+    if(!tutarGecerli(deger)){formHatasi();return;}
+    if(!sablonKategorileri(tip).includes(sablon.kategori)){toast('Bu kategori artık kullanılamıyor. Hızlı işlemi düzenleyip kategori seç.', 'uyari');return;}
+    const tutar=paraOku(deger);
+    if(setIslemler(p=>[...p,{id:sablonKimligi(),tip,kategori:sablon.kategori,tutar,aciklama:sablon.aciklama||sablon.ad||sablon.kategori,tarih:yerelTarihAnahtari(),donemeDahil:true,kaynak:'hizli_sablon',sablonId:sablon.id}])===false)return;
+    if(guncelle&&setHizliSablonlar(p=>p.map(s=>s.id===sablon.id?{...s,tutar}:s))===false)return;
+    setSeciliSablon(null);toast(`${sablon.ad||sablon.kategori} ${tip==='gelir'?'geliri':'gideri'} eklendi`);
+  };
+  const sablondanGiderEkle=sablon=>{
     setHizliModal(false);
-    toast(`${sablon.ad || kategori} gideri eklendi`);
+    setSeciliSablon({sablon,adim:'soru',tutar:String(sablon.tutar)});
   };
   const hizliSablonSil = (id) => {
-    setHizliSablonlar(p => p.filter(s => s.id !== id));
+    if(setHizliSablonlar(p => p.filter(s => s.id !== id))===false)return;
     toast("Şablon silindi", "uyari");
   };
   const hizliEkle = () => {
@@ -1269,6 +1283,28 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
         })}
       </div>
       <div className="home-quick-actions"><button onClick={()=>{setHizliForm(f=>({...f,tip:'gider',kategori:'Market'}));setHizliModal(true);}}><Icon name="arrowDown" size={18}/>Gider ekle</button><button onClick={()=>{setHizliForm(f=>({...f,tip:'gelir',kategori:'Maaş'}));setHizliModal(true);}}><Icon name="arrowUp" size={18}/>Gelir ekle</button></div>
+      <section className="tools-card quick-template-section">
+        <button className="quick-template-toggle" aria-expanded={hizliListeAcik} aria-controls="hizli-islem-listesi" onClick={()=>setHizliListeAcik(p=>!p)}><span><Icon name="repeat" size={18}/>Hızlı işlemler <small>{hizliSablonlar.length}</small></span><span aria-hidden="true">{hizliListeAcik?'⌃':'⌄'}</span></button>
+        {hizliListeAcik&&<div id="hizli-islem-listesi"><p className="tools-note">Kaydettiğin işlemleri bugünün tarihiyle ekleyebilirsin.</p>{hizliSablonlar.length===0&&<p className="tools-note quick-template-empty">Henüz hızlı işlem yok. Örneğin “Nakit çekim” için kategori ve tutar kaydet.</p>}
+          {hizliSablonlar.map(s=><article className="quick-template-row" key={s.id}><div className="quick-template-name"><strong>{s.ad||s.aciklama||s.kategori}</strong><span>{s.tip==='gelir'?'Gelir':'Gider'} · {s.kategori}</span><b style={{color:s.tip==='gelir'?'var(--income-text)':'var(--expense-text)'}}>₺{fmt(s.tutar)}</b></div><div className="quick-template-actions"><button className="tools-button quick-template-add" onClick={()=>sablondanGiderEkle(s)}>Ekle</button><button className="tools-button" aria-label={`${s.ad||s.kategori} hızlı işlemini düzenle`} onClick={()=>sablonFormunuAc(s)}><Icon name="edit" size={16}/></button><button className="tools-button" aria-label={`${s.ad||s.kategori} hızlı işlemini sil`} onClick={()=>hizliSablonSil(s.id)}><Icon name="trash" size={16}/></button></div></article>)}
+          <Btn onClick={()=>sablonFormunuAc(null)} style={{width:'100%',marginTop:12}}>+ Hızlı işlem oluştur</Btn>
+        </div>}
+      </section>
+      {sablonModal&&<Modal title={sablonForm.id!=null?'Hızlı işlemi düzenle':'Hızlı işlem oluştur'} onClose={()=>setSablonModal(false)}>
+        <Input label="İşlem adı" value={sablonForm.ad} onChange={e=>setSablonForm(f=>({...f,ad:e.target.value}))} placeholder="Örn: Nakit çekim"/>
+        <Select label="İşlem türü" value={sablonForm.tip} onChange={e=>{const tip=e.target.value;setSablonForm(f=>({...f,tip,kategori:sablonKategorileri(tip)[0]||''}));}}><option value="gider">Gider</option><option value="gelir">Gelir</option></Select>
+        <Select label="Hızlı işlem kategorisi" value={sablonForm.kategori} onChange={e=>setSablonForm(f=>({...f,kategori:e.target.value}))}>{sablonKategorileri(sablonForm.tip).map(k=><option key={k} value={k}>{k}</option>)}</Select>
+        <Input label="Kayıtlı tutar (₺)" inputMode="decimal" value={sablonForm.tutar} onChange={e=>setSablonForm(f=>({...f,tutar:e.target.value}))} placeholder="1000,00"/>
+        <p className="tools-note">Bu adım yalnızca hızlı işlemi kaydeder; gelir veya gider oluşturmaz.</p><Btn onClick={sablonKaydet} style={{width:'100%',marginTop:12}}>Hızlı işlemi kaydet</Btn>
+      </Modal>}
+      {seciliSablon&&<Modal title={seciliSablon.adim==='soru'?'Hızlı işlem ekle':'Tutarı güncelle'} onClose={()=>setSeciliSablon(null)}>
+        <div className="quick-template-preview"><strong>{seciliSablon.sablon.ad||seciliSablon.sablon.kategori}</strong><span>{seciliSablon.sablon.kategori} · ₺{fmt(seciliSablon.sablon.tutar)}</span></div>
+        {seciliSablon.adim==='soru'?<><p className="quick-template-question">Tutarı güncellemek istiyor musun?</p><div className="tools-grid"><Btn onClick={()=>setSeciliSablon(p=>({...p,adim:'tutar'}))}>Evet</Btn><Btn variant="secondary" onClick={()=>sablonIsleminiKaydet(seciliSablon.sablon,seciliSablon.sablon.tutar)}>Hayır</Btn></div><button className="tools-button quick-template-cancel" onClick={()=>setSeciliSablon(null)}>İptal</button></>:<>
+          <Input label="Yeni işlem tutarı (₺)" inputMode="decimal" value={seciliSablon.tutar} onChange={e=>setSeciliSablon(p=>({...p,tutar:e.target.value}))}/>
+          <p className="tools-note">Yeni tutar bu işlemde kullanılır ve hızlı işlemin kayıtlı tutarı güncellenir.</p><Btn onClick={()=>sablonIsleminiKaydet(seciliSablon.sablon,seciliSablon.tutar,true)} style={{width:'100%'}}>İşlemi ekle</Btn>
+        </>}
+      </Modal>}
+
       {/* Sabit gider uyarısı */}
       {sabitGider > 0 && (
         <div style={{ background:"#ef444411", border:"1px solid #ef444433", borderRadius:10, padding:"8px 14px", marginBottom:10, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
@@ -1535,18 +1571,18 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
           {(hizliSablonlar || []).length > 0 && (
             <div style={{ marginBottom: 14 }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 7 }}>
-                <span style={{ color: "var(--text4)", fontSize: 11, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase" }}><span className="inline-icon"><Icon name="plus" size={16}/></span>Hızlı giderler</span>
-                <span style={{ color: "var(--text5)", fontSize: 11 }}>Dokununca hemen eklenir</span>
+                <span style={{ color: "var(--text4)", fontSize: 11, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase" }}><span className="inline-icon"><Icon name="plus" size={16}/></span>Hızlı işlemler</span>
+                <span style={{ color: "var(--text5)", fontSize: 11 }}>Tutar seçerek ekle</span>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 7 }}>
                 {(hizliSablonlar || []).map(s => {
                   return (
                     <div key={s.id} onClick={() => sablondanGiderEkle(s)} role="button" tabIndex={0} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") sablondanGiderEkle(s); }} style={{ position: "relative", minWidth: 0, padding: "10px 30px 10px 10px", background: "var(--card2)", border: "1px solid var(--border)", borderRadius: 12, cursor: "pointer" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 7, minWidth: 0 }}>
-                        <span style={{ width: 27, height: 27, flexShrink: 0, display: "grid", placeItems: "center", borderRadius: 9, background: "#ef444417", fontSize: 13 }}>{katIkon(s.kategori, "gider")}</span>
+                        <span style={{ width: 27, height: 27, flexShrink: 0, display: "grid", placeItems: "center", borderRadius: 9, background: s.tip==="gelir" ? "#10b98117" : "#ef444417", fontSize: 13 }}>{katIkon(s.kategori, s.tip||"gider")}</span>
                         <div style={{ minWidth: 0 }}>
                           <div style={{ color: "var(--text2)", fontSize: 11, fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.ad || s.kategori}</div>
-                          <div style={{ color: "var(--expense-text)", fontSize: 11, fontWeight: 800, marginTop: 2 }}>₺{fmt(Number(s.tutar) || 0)}</div>
+                          <div style={{ color: s.tip==="gelir" ? "var(--income-text)" : "var(--expense-text)", fontSize: 11, fontWeight: 800, marginTop: 2 }}>₺{fmt(Number(s.tutar) || 0)}</div>
                         </div>
                       </div>
                       <button aria-label="Şablonu sil" onClick={e => { e.stopPropagation(); hizliSablonSil(s.id); }} style={{ position: "absolute", top: 6, right: 6, width: 22, height: 22, border: "none", borderRadius: 7, background: "transparent", color: "var(--text5)", cursor: "pointer", fontSize: 14 }}>×</button>
@@ -4662,6 +4698,27 @@ export default function App() {
         .needle-balance strong { font-size:12px; overflow-wrap:anywhere; }
         .needle-balance p { font-size:10px; line-height:1.5; color:rgba(255,255,255,.8); margin-top:4px; }
         @media(max-width:360px) { .hero-budget.hero-budget--ibre { padding:8px 0 0; } .needle-legend { font-size:9px; } }
+        .quick-template-section { padding:0; overflow:hidden; }
+        .quick-template-toggle { display:flex; align-items:center; justify-content:space-between; width:100%; gap:10px; background:transparent; color:var(--text); border:0; padding:15px 16px; cursor:pointer; font-size:13px; font-weight:700; }
+        .quick-template-toggle > span:first-child { display:flex; align-items:center; gap:8px; }
+        .quick-template-toggle svg { color:var(--accent); }
+        .quick-template-toggle small { font-size:10px; background:var(--card2); color:var(--text3); padding:3px 6px; border-radius:6px; }
+        #hizli-islem-listesi { border-top:1px solid var(--border); padding:12px 16px 16px; }
+        .quick-template-empty { padding:12px 0; }
+        .quick-template-row { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 0; border-bottom:1px solid var(--border); }
+        .quick-template-name { min-width:0; }
+        .quick-template-name strong { display:block; font-size:12px; color:var(--text); overflow-wrap:anywhere; }
+        .quick-template-name span { display:block; font-size:10px; color:var(--text3); margin:4px 0; }
+        .quick-template-name b { display:block; font-size:13px; font-variant-numeric:tabular-nums; }
+        .quick-template-actions { display:flex; align-items:center; gap:5px; flex-shrink:0; }
+        .quick-template-actions .tools-button { display:flex; align-items:center; justify-content:center; min-width:36px; min-height:44px; padding:8px; }
+        .quick-template-actions .quick-template-add { color:var(--on-accent); background:var(--accent-strong); font-weight:700; padding:8px 12px; }
+        .quick-template-preview { display:flex; flex-direction:column; gap:6px; padding:12px; background:var(--card2); border:1px solid var(--border); border-radius:12px; margin-bottom:16px; }
+        .quick-template-preview strong { color:var(--text); font-size:14px; }
+        .quick-template-preview span { color:var(--text3); font-size:12px; }
+        .quick-template-question { color:var(--text); font-size:14px; line-height:1.6; margin-bottom:16px; }
+        .quick-template-cancel { width:100%; margin-top:10px; }
+        @media(max-width:360px) { #hizli-islem-listesi { padding-left:12px; padding-right:12px; } .quick-template-actions { gap:3px; } .quick-template-actions .tools-button { min-width:32px; padding:6px; } }
       `}</style>
       <div data-theme={tema} style={{ background: "var(--bg)", minHeight: "100vh", width: "100%" }}>
       <div className="app-shell">
