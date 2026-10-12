@@ -309,6 +309,56 @@ const KATEGORI_IKON = {
 };
 const katIkon = (kat, tip) => <Icon name={KATEGORI_IKON[kat] || (tip === 'gelir' ? 'arrowUp' : 'tag')} size={18}/>;
 
+// Kart bakiyeleri birikmiş toplamdır; günlük harcama toplamların farkıdır.
+function kartGuncelToplami(kayit) {
+  return kayit.donemIci != null || kayit.provizyon != null
+    ? paraTopla(kayit.donemIci || 0, kayit.provizyon || 0)
+    : paraOku(kayit.tutar) || 0;
+}
+
+function kartKaydiniGuncelle(kayitlar, alanlar, tarih) {
+  const ilk = kayitlar[0];
+  const eskiToplam = kayitlar.reduce((s, k) => paraTopla(s, kartGuncelToplami(k)), 0);
+  const yeniToplam = paraTopla(alanlar.donemIci || 0, alanlar.provizyon || 0);
+  const hareketler = {};
+  kayitlar.forEach(k => {
+    if (k.kartGunlukHareketler && typeof k.kartGunlukHareketler === "object") {
+      Object.entries(k.kartGunlukHareketler).forEach(([gun, tutar]) => {
+        hareketler[gun] = paraTopla(hareketler[gun] || 0, tutar);
+      });
+    } else if (k.kartGunBaslangicToplam != null && k.kartGunlukDelta && k.tarih) {
+      hareketler[k.tarih] = paraTopla(hareketler[k.tarih] || 0, k.kartGunlukDelta);
+    }
+  });
+  // Dönem içi/provizyon aktarımı toplam değişmedikçe harcama üretmez.
+  const delta = ilk ? paraTopla(hareketler[tarih] || 0, yeniToplam, -eskiToplam) : 0;
+  if (ilk) hareketler[tarih] = delta;
+  return {
+    ...(ilk || {}), ...alanlar, tip: "gider", kartHarcama: true,
+    tutar: yeniToplam, tarih, kartGunlukDelta: delta,
+    kartGunBaslangicToplam: ilk ? (ilk.kartGunBaslangicToplam ?? eskiToplam) : yeniToplam,
+    kartGunBaslangicTarih: ilk?.kartGunBaslangicTarih || ilk?.tarih || tarih,
+    kartGunlukHareketler: hareketler,
+  };
+}
+
+function kartAnalizHareketleri(kayit) {
+  if (!kayit.kartHarcama) return [];
+  if (kayit.kartGunlukHareketler && typeof kayit.kartGunlukHareketler === "object") {
+    return Object.entries(kayit.kartGunlukHareketler)
+      .filter(([tarih, tutar]) => yerelTarihOku(tarih) && Number(tutar) > 0)
+      .map(([tarih, tutar]) => ({ tarih, tutar: Number(tutar) }));
+  }
+  return kayit.kartGunBaslangicToplam != null && Number(kayit.kartGunlukDelta) > 0 && kayit.tarih
+    ? [{ tarih: kayit.tarih, tutar: Number(kayit.kartGunlukDelta) }] : [];
+}
+
+function analizIslemleri(islemler) {
+  return islemler.flatMap(i => i.kartHarcama
+    ? kartAnalizHareketleri(i).map(h => ({ ...i, ...h, kartHarcama: false, kartGunlukKayit: true }))
+    : [i]);
+}
+
 // Alışkanlık analizi (en pahalı gün / haftalık dağılım / genel alışkanlık) için bir işlemin sayılacak tutarı.
 // Sabit giderler tamamen hariç. Kredi kartında İLK kez girilen toplam (geçmiş birikmiş tutar) hariç,
 // ama SONRAKİ güncellemelerdeki fark (o gün gerçekten eklenen harcama) dahil edilir. Ödemeler zaten normal işlemdir, dahil.
@@ -316,19 +366,7 @@ const habitHareketleri = (i) => {
   if (!i || i.sabitId) return []; // sabit gider — tarihi kullanıcı alışkanlığını yansıtmaz
   if (!i.kartHarcama) return i.tutar > 0 && i.tarih ? [{ tarih: i.tarih, tutar: i.tutar }] : [];
 
-  // Yeni sürümde kartın gün gün farkları kaydın içinde korunur. Böylece kart toplamı
-  // güncellenirken eski haftaların harcaması kaybolmaz.
-  if (i.kartGunlukHareketler && typeof i.kartGunlukHareketler === "object") {
-    return Object.entries(i.kartGunlukHareketler)
-      .filter(([tarih, tutar]) => yerelTarihOku(tarih) && Number(tutar) > 0)
-      .map(([tarih, tutar]) => ({ tarih, tutar: Number(tutar) }));
-  }
-
-  // Eski sürümden kalan son günlük farkı da kaybetme. İlk kart toplamı ise günlük
-  // harcama olmadığı için analiz dışı kalır.
-  const baslangicVar = i.kartGunBaslangicToplam != null && i.kartGunBaslangicToplam > 0;
-  const delta = Number(i.kartGunlukDelta) || 0;
-  return baslangicVar && delta > 0 && i.tarih ? [{ tarih: i.tarih, tutar: delta }] : [];
+  return kartAnalizHareketleri(i);
 };
 
 // Taksit adına göre akıllı ikon seçimi (anahtar kelime eşleştirme)
@@ -1118,19 +1156,12 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
     const gecenGun = Math.min(toplamGun, Math.max(1, takvimGunFarki(bugun, donemBas) + 1));
     // Projeksiyon tabanı: kredi kartında dönem başında (ör. ayın 15'inde) İLK kez girilen toplam tutar hariç
     // (o, geçmiş birikmiş bir tutardır, günlük harcama hızını yansıtmaz). 15'ten sonraki güncelleme farkları dahil.
-    const projeksiyonGideri = buDonemIslemler.filter(i => i.tip === "gider").reduce((s, i) => {
-      if (i.kartHarcama) {
-        const baslangicVar = i.kartGunBaslangicToplam != null && i.kartGunBaslangicToplam > 0;
-        if (!baslangicVar) return s; // ilk giriş — hariç
-        return paraTopla(s, Math.max(0, i.kartGunlukDelta || 0));
-      }
-      return paraTopla(s, i.tutar);
-    }, 0);
+    const projeksiyonGideri = analizIslemleri(islemler).filter(i => i.tip === "gider" && tarihAralikta(i.tarih, donemBas, bugun)).reduce((s, i) => paraTopla(s, i.tutar), 0);
     if (projeksiyonGideri === 0 || gecenGun < 1) return null;
     const gunlukOrt = projeksiyonGideri / gecenGun;
     const tahmin = gunlukOrt * toplamGun;
     return { gunlukOrt, tahmin, gecenGun, toplamGun };
-  }, [donemOffset, donemGun, secilenDonem, buDonemIslemler]);
+  }, [donemOffset, donemGun, secilenDonem, islemler]);
 
   // Günlük harcama limiti: ödeme kayıtları ilk eklendiği anda Kalan Bakiye'ye
   // gider olarak zaten yansır. Bu nedenle yaklaşan ödemeleri ikinci kez düşme.
@@ -1511,43 +1542,18 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
             if (![kartDuzForm.donemIci, kartDuzForm.provizyon, kartDuzForm.ekstre].every(v => tutarGecerli(v || 0, true))) return formHatasi();
             const di = paraOku(kartDuzForm.donemIci) || 0;
             const pr = paraOku(kartDuzForm.provizyon) || 0;
-            const yeniToplam = paraTopla(di, pr);
-            const eskiToplam = kartDuzenle.toplam || 0;
             const hedefIds = (kartDuzenle.islemler || []).map(i => i.id);
-            const ilk = (kartDuzenle.islemler || [])[0];
             const bugun = yerelTarihAnahtari();
-            if (di === 0 && pr === 0) {
-              // ikisi de sıfırsa tüm kayıtları sil
-              setIslemler(p => p.filter(i => !hedefIds.includes(i.id)));
-            } else if (ilk) {
-              // Eski günlerin farkları bir harita içinde korunur. Aynı gün tekrar düzenlenirse
-              // yalnızca o günün farkı güncellenir; önceki hafta verileri silinmez.
-              const hareketler = {};
-              (kartDuzenle.islemler || []).forEach(kayit => {
-                if (kayit.kartGunlukHareketler && typeof kayit.kartGunlukHareketler === "object") {
-                  Object.entries(kayit.kartGunlukHareketler).forEach(([tarih, tutar]) => {
-                    hareketler[tarih] = paraTopla(hareketler[tarih] || 0, (Number(tutar) || 0));
-                  });
-                } else if (kayit.kartGunBaslangicToplam > 0 && kayit.kartGunlukDelta > 0 && kayit.tarih) {
-                  hareketler[kayit.tarih] = paraTopla(hareketler[kayit.tarih] || 0, Number(kayit.kartGunlukDelta));
-                }
-              });
-              // Günlük harcamaya yalnızca önceki toplam ile yeni toplam arasındaki fark eklenir.
-              // Böylece 4.000 -> 4.100 güncellemesi 100 TL, ardından 4.100 -> 4.200
-              // güncellemesi de 100 TL ekler; bugün toplam harcama 200 TL olur.
-              const toplamFarki = yeniToplam - eskiToplam;
-              const oncekiBugunHareketi = Number(hareketler[bugun]) || 0;
-              const delta = oncekiBugunHareketi + toplamFarki;
-              hareketler[bugun] = delta;
-              const gunBaslangic = ilk.kartGunBaslangicToplam != null
-                ? Number(ilk.kartGunBaslangicToplam)
-                : eskiToplam;
-              setIslemler(p => p.filter(i => !hedefIds.includes(i.id) || i.id === ilk.id).map(i => i.id === ilk.id ? { ...i, tip: "gider", kategori: kartDuzenle.isim, tutar: yeniToplam, donemIci: di, provizyon: pr, kartHarcama: true, tarih: bugun, kartGunlukDelta: delta, kartGunBaslangicToplam: gunBaslangic, kartGunBaslangicTarih: ilk.kartGunBaslangicTarih || bugun, kartGunlukHareketler: hareketler } : i));
-            } else {
-              // İlk girilen kart toplamı geçmiş günlerden birikmiş olabilir; günlük harcama
-              // sayılmaz. Bundan sonraki değişiklikler gün gün kaydedilir.
-              setIslemler(p => [...p, { id: Date.now(), tip: "gider", kategori: kartDuzenle.isim, tutar: yeniToplam, donemIci: di, provizyon: pr, kartHarcama: true, aciklama: kartDuzenle.isim, tarih: bugun, kartGunlukDelta: 0, kartGunBaslangicToplam: yeniToplam, kartGunBaslangicTarih: bugun, kartGunlukHareketler: {} }]);
-            }
+            setIslemler(p => {
+              const kayitlar = p.filter(i => hedefIds.includes(i.id));
+              const yeni = kartKaydiniGuncelle(kayitlar, {
+                id: kayitlar[0]?.id ?? Date.now(), kategori: kartDuzenle.isim,
+                donemIci: di, provizyon: pr,
+                aciklama: kayitlar[0]?.aciklama || kartDuzenle.isim,
+              }, bugun);
+              // Sıfırlanan borçta günlük geçmişi koru.
+              return [...p.filter(i => !hedefIds.includes(i.id)), yeni];
+            });
             const ekstreTutar = paraOku(kartDuzForm.ekstre) || 0;
             setKartlar(p => p.map(x => x.id === kartDuzenle.id ? { ...x, ekstre: ekstreTutar, ekstreDonemKey: aktifDonem, bakiyedenDussun: kartDuzForm.bakiyedenDussun } : x));
             setKartDuzenle(null);
@@ -1680,7 +1686,7 @@ function esnekRaporAraligi(mod, donemGun, offset, yil, ilk, son, bugun = yerelTa
   return {ilk:yerelTarihAnahtari(new Date(bas.getFullYear(),bas.getMonth()-(mod==='uc'?2:0),aktif.gun)),son:yerelTarihAnahtari(new Date(bas.getFullYear(),bas.getMonth()+1,aktif.gun-1))};
 }
 function aralikOzeti(islemler, ilk, son, bugun = yerelTarihAnahtari()) {
-  const kayitlar = islemler.filter(i => i.tarih >= ilk && i.tarih <= son && i.tarih <= bugun);
+  const kayitlar = analizIslemleri(islemler).filter(i => i.tarih >= ilk && i.tarih <= son && i.tarih <= bugun);
   const gelir = kayitlar.filter(i => i.tip === 'gelir' && i.kategori !== 'Birikim' && !(i.kategori === 'Kira Geliri' && i.donemeDahil === false)).reduce((s,i)=>paraTopla(s,i.tutar),0);
   const gider = kayitlar.filter(i => i.tip === 'gider').reduce((s,i)=>paraTopla(s,i.tutar),0);
   return {kayitlar,gelir,gider,net:paraTopla(gelir,-gider),oran:gelir>0?(gelir-gider)/gelir*100:null};
@@ -1698,7 +1704,7 @@ function TasarrufHedefi({hedef,setHedef}) {
 }
 function gunlukGiderHareketleri(islemler,odemeler,ilk,son,bugun=yerelTarihAnahtari()) {
   return islemler.filter(i=>i.tip==='gider').flatMap(i=>{
-    if(i.kartHarcama)return habitHareketleri(i).map(h=>({...i,...h}));
+    if(i.kartHarcama)return kartAnalizHareketleri(i).map(h=>({...i,...h}));
     if(i.kaynak==='odeme') {
       const o=odemeler.find(o=>String(o.id)===String(i.odemeId)||(o.islemId!=null&&String(o.islemId)===String(i.id)));
       if(!o?.odendi)return [];
@@ -1878,7 +1884,7 @@ function EsnekRapor({islemler,odemeler,donemGun,gelismisYorum,birikimRaporu}) {
           <div className="savings-result"><span>Tasarruf oranı</span><strong>{ozet.oran==null?'—':`%${ozet.oran.toFixed(1).replace('.',',')}`}</strong></div>
           {onceki&&<div className="report-comparisons"><span>Gelir <strong>{fark(ozet.gelir,onceki.gelir)}</strong></span><span>Gider <strong>{fark(ozet.gider,onceki.gider)}</strong></span><p className="tools-note">Önceki eşit uzunluktaki aralığa göre; bugüne kadar geçen günler karşılaştırılır.</p></div>}
           {!ozet.kayitlar.length&&<div className="empty-state"><Icon name="receipt" size={26}/><p>Bu aralıkta henüz veri yok.</p></div>}
-          <details className="calculation-help"><summary>Nasıl hesaplanır?</summary><p className="tools-note">Gelir, birikim kayıtlarını ve döneme dahil edilmeyen kira gelirini içermez. Giderler kayıtlı bekleyen ödemeleri ve kart toplamlarını içerir. İleri tarihli kayıtlar hariçtir. Kart ödeme transferi eklenmez. Tasarruf oranı gelir ile gider arasındaki farkın gelire oranıdır.</p></details>
+          <details className="calculation-help"><summary>Nasıl hesaplanır?</summary><p className="tools-note">Gelir, birikim kayıtlarını ve döneme dahil edilmeyen kira gelirini içermez. Giderler kayıtlı bekleyen ödemeleri ve kartların günlük toplam farklarını içerir. İlk kart toplamı günlük harcama sayılmaz. İleri tarihli kayıtlar hariçtir. Kart ödeme transferi eklenmez. Tasarruf oranı gelir ile gider arasındaki farkın gelire oranıdır.</p></details>
         </section>
         {dagilim(giderKategorileri.slice(0,5),ozet.gider,'gider')}
       </>}
@@ -1979,7 +1985,7 @@ function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler
       const di = paraOku(duzenleForm.donemIci) || 0;
       const pr = paraOku(duzenleForm.provizyon) || 0;
       if (di === 0 && pr === 0) return;
-      setIslemler(p => p.map(x => x.id === duzenleHedef.id ? { ...x, tip: "gider", kategori: duzenleForm.kategori, tutar: paraTopla(di, pr), donemIci: di, provizyon: pr, kartHarcama: true, aciklama: duzenleForm.aciklama, tarih: duzenleForm.tarih } : x));
+      setIslemler(p => p.map(x => x.id === duzenleHedef.id ? kartKaydiniGuncelle(x.kartHarcama ? [x] : [], { ...x, kategori: duzenleForm.kategori, donemIci: di, provizyon: pr, aciklama: duzenleForm.aciklama }, duzenleForm.tarih) : x));
     } else {
       if (!duzenleForm.tutar) return;
       setIslemler(p => p.map(x => x.id === duzenleHedef.id ? { ...x, ...duzenleForm, tutar: paraOku(duzenleForm.tutar), donemIci: undefined, provizyon: undefined, kartHarcama: undefined } : x));
@@ -2895,7 +2901,7 @@ function AnalizTab({ islemler, kategoriler, donemGun, kartlar, odemeler = [] }) 
 
   // Raporlar kendi hesaplarını kullanır; işlem ve ödeme kayıtları değiştirilmez.
   const bugunKey = yerelTarihAnahtari();
-  const raporIslemleri = useMemo(() => islemler.filter(i =>
+  const raporIslemleri = useMemo(() => analizIslemleri(islemler).filter(i =>
     yerelTarihOku(i.tarih) && Number.isFinite(Number(i.tutar))
   ).map(i => ({ ...i, tutar: Number(i.tutar) })), [islemler]);
   const gelirDahil = i => i.tip === "gelir" && i.kategori !== "Birikim"
