@@ -104,6 +104,9 @@ function tamSayiGecerli(deger, min, max) {
   const n = sayisalOku(deger);
   return Number.isInteger(n) && n >= min && n <= max;
 }
+function odemeOnayi(ad,tutar) {
+  return window.confirm(`${ad || 'Ödeme'}${Number.isFinite(Number(tutar)) ? ` · ₺${fmt(tutar)}` : ''} ödendi olarak işaretlensin mi?`);
+}
 function formHatasi(mesaj = "Geçerli, pozitif bir tutar ve tarih gir. Tutar en fazla iki ondalık basamak içerebilir.") {
   toast(mesaj, "hata"); return false;
 }
@@ -997,6 +1000,7 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
     const kart = kartOdemeModal;
     const tutar = Math.min(Math.max(0, Number(kart.ekstre) || 0), Math.max(0, (Number(kart.ekstre) || 0) - kartEkstreOdemeToplami(kart)));
     if (tutar <= 0) { toast("Bu ekstrenin ödenecek tutarı kalmadı", "uyari"); return; }
+    if(!odemeOnayi(`${kart.isim} ekstresi`,tutar))return;
     const odemeDonemKey = maasDonemKey(kartOdemeTarih, donemGun).key;
     const ekstreDonemKey = kartEkstreAnahtari(kart);
     setKartOdemeleri(p => [
@@ -1154,6 +1158,7 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
 
   // Bugün harcanan: normal işlemler tam tutarıyla, kredi kartı güncellemeleri sadece bugün eklenen fark (delta) ile sayılır
   const ozettenOdendiYap = (odeme) => {
+    if(odeme.odendi || !odemeOnayi(odeme.aciklama||odeme.kategori,odeme.tutar))return;
     const mevcut = (islemler || []).find(i =>
       (odeme.islemId != null && String(i.id) === String(odeme.islemId)) ||
       (i.odemeId != null && String(i.odemeId) === String(odeme.id))
@@ -1226,11 +1231,7 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
           {!veriYok && <div className={`hero-budget hero-budget--${grafikTipi}`}>
             {grafikTipi==='ibre'&&<h3 className="needle-panel-title">Dönem bütçem</h3>}
             <HarcamaGauge oran={buAyGelir>0?gosterilenRiskOrani:null} grafikTipi={grafikTipi}/>
-            {grafikTipi==='ibre'?<>
-              <div className="needle-facts"><div><span>Gelir</span><strong style={{color:'var(--income-text)'}}><Money value={buAyGelir} size={17}/></strong></div><div><span>Harcama</span><strong style={{color:'var(--expense-text)'}}><Money value={toplamGider} size={17}/></strong></div></div>
-              <div className="needle-legend"><span><i style={{background:'#10b981'}}/>%0–50</span><span><i style={{background:'#f59e0b'}}/>%50–80</span><span><i style={{background:'#ef4444'}}/>%80 ve üzeri</span></div>
-              <div className="needle-balance"><strong>₺{fmt(gosterilenBakiye)} dönem dengesi</strong><p>Harcama ve birikim dahil{buAyBirikim>0?` · Birikim ₺${fmt(buAyBirikim)}`:''}{gosterilenBakiye<0?' · Bütçe aşıldı':''}</p></div>
-            </>:<div className="hero-budget-copy"><h3>Dönem bütçem</h3><p><strong>₺{fmt(paraTopla(toplamGider,buAyBirikim))}</strong><span> / ₺{fmt(buAyGelir)}</span></p><p className="hero-caption">Harcama ve birikim dahil{gosterilenBakiye<0?' · Bütçe aşıldı':''}</p><div className="hero-budget-limit">{buAyGelir>0?`Kalan oran %${Math.round(Math.max(0,100-gosterilenRiskOrani))}`:'Oran için gelir kaydı gerekli'}</div></div>}
+            {grafikTipi!=='ibre'&&<div className="hero-budget-copy"><h3>Dönem bütçem</h3><p className="hero-caption">Harcama ve birikim dahil{gosterilenBakiye<0?' · Bütçe aşıldı':''}</p><div className="hero-budget-limit">{buAyGelir>0?`Kalan oran %${Math.round(Math.max(0,100-gosterilenRiskOrani))}`:'Oran için gelir kaydı gerekli'}</div></div>}
           </div>}
 
           {veriYok&&<div className="ilk-kullanim"><button onClick={()=>{setHizliForm(f=>({...f,tip:'gelir',kategori:'Maaş'}));setHizliModal(true);}}><Icon name="plus" size={16}/>İlk gelirini ekle</button></div>}
@@ -2214,6 +2215,7 @@ function OdemelerTab({ odemeler, setOdemeler, islemler, setIslemler, kategoriler
 
   const toggleOdendi = (odeme) => {
     if (!odeme.odendi) {
+      if(!odemeOnayi(odeme.aciklama||odeme.kategori,odeme.tutar))return;
       odemeIsleminiBagla(odeme);
       toast("Ödendi olarak işaretlendi");
     } else {
@@ -3464,7 +3466,7 @@ function TaksitlerTab({ taksitler, setTaksitler }) {
   };
   const duzenleAc = (t) => { setDuzenleId(t.id); setForm({ ad: t.ad, aylikTutar: String(t.aylikTutar), vade: String(t.vade), odenen: String(t.odenen || 0), kart: t.kart || "" }); setModal(true); };
   const sil = (id) => { setTaksitler(p => p.filter(x => x.id !== id)); toast("Taksit silindi", "uyari"); };
-  const taksitOde = (id) => { setTaksitler(p => p.map(x => x.id === id ? { ...x, odenen: Math.min(x.vade, (x.odenen || 0) + 1) } : x)); toast("Taksit ödendi olarak işaretlendi"); };
+  const taksitOde = (id) => { const t=taksitler.find(t=>t.id===id);if(!t||!odemeOnayi(`${t.ad} taksiti`,t.aylikTutar))return;setTaksitler(p => p.map(x => x.id === id ? { ...x, odenen: Math.min(x.vade, (x.odenen || 0) + 1) } : x)); toast("Taksit ödendi olarak işaretlendi"); };
 
   // Toplam özet
   const genelToplam = taksitler.reduce((s, t) => paraTopla(s, t.aylikTutar * t.vade), 0);
@@ -3645,6 +3647,8 @@ function KredilerTab({ krediler, setKrediler }) {
   };
 
   const taksitToggle = (krediId, no) => {
+    const k=krediler.find(k=>k.id===krediId),t=k?.taksitler.find(t=>t.no===no);
+    if(!t||(!t.odendi&&!odemeOnayi(`${k.ad||k.isim} · ${no}. taksit`,t.tutar)))return;
     setKrediler(p => p.map(k => k.id === krediId ? { ...k, taksitler: k.taksitler.map(t => t.no === no ? { ...t, odendi: !t.odendi } : t) } : k));
   };
   const krediSil = (id) => setKrediler(p => p.filter(k => k.id !== id));
