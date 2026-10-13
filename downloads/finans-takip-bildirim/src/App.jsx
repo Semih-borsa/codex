@@ -1484,7 +1484,7 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
               const sonOdeme = k.sonOdeme;
               return (
                 <article className="home-credit-card credit-tile" key={k.id}>
-                  <div className="credit-tile-heading"><div><Icon name="card" size={21}/><h3>{k.isim}</h3></div><span className="credit-type">Kredi kartı</span></div>
+                  <div className="credit-tile-heading"><div><Icon name="card" size={21}/><h3>{k.isim}</h3></div><span className="credit-type">KREDİ KARTI</span></div>
                   <div className="credit-total"><span>Toplam kart borcu · provizyon dahil</span><Money value={paraTopla(k.ekstre,k.donem,k.prov)} size={27}/></div>
                   <div className="credit-buckets">
                     {[["Ekstre borcu",k.ekstre],["Dönem içi",k.donem],["Provizyon",k.prov]].map(([label,value])=><div key={label}><span>{label}</span><Money value={value} size={14}/></div>)}
@@ -4794,6 +4794,29 @@ export default function App() {
         .credit-dates span { color:var(--text3); }
         .credit-dates strong { color:var(--text); font-weight:600; text-align:right; }
         .credit-actions { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px; }
+        .home-overview .credit-tile {
+          --credit-blue:#99abff; --credit-green:#35d6ae; --credit-yellow:#f6bd60;
+          --text:#f3f6fa; --text2:#f3f6fa; --text3:#9aa8ba;
+          background:linear-gradient(135deg,#232e54,#171e2b);
+          border-color:rgba(153,171,255,.255);
+        }
+        [data-theme="light"] .home-overview .credit-tile {
+          --credit-blue:#5261c9; --credit-green:#00795d; --credit-yellow:#9d5700;
+          --text:#30231e; --text2:#30231e; --text3:#79675e;
+          background:linear-gradient(135deg,#f0f1ff,#ffffff);
+          border-color:rgba(82,97,201,.255);
+        }
+        .credit-tile-heading svg { color:var(--credit-blue); }
+        .credit-type { color:var(--credit-blue); background:rgba(153,171,255,.094); }
+        [data-theme="light"] .credit-type { background:rgba(82,97,201,.094); }
+        .credit-buckets > div { background:rgba(16,27,50,.667); border-color:transparent; }
+        [data-theme="light"] .credit-buckets > div { background:rgba(255,255,255,.8); }
+        .credit-buckets > div:nth-child(1) .money-fit { color:var(--credit-blue); }
+        .credit-buckets > div:nth-child(2) .money-fit { color:var(--credit-green); }
+        .credit-buckets > div:nth-child(3) .money-fit { color:var(--credit-yellow); }
+        .credit-dates > div:first-child strong { color:var(--text3); }
+        .credit-dates > div:last-child strong { color:var(--credit-blue); }
+        .credit-tile .tools-note { color:var(--text3); }
         .credit-actions button:only-child { grid-column:1/-1; }
         .credit-actions button { min-width:0; font-size:10px !important; padding:9px 7px !important; line-height:1.5; letter-spacing:0 !important; }
         .home-payments .upcoming-heading { display:flex; align-items:center; gap:8px; text-transform:none !important; font-size:14px !important; font-weight:600; letter-spacing:0 !important; margin-bottom:7px !important; }
