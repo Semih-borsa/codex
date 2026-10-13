@@ -319,7 +319,7 @@ function kartGuncelToplami(kayit) {
     : paraOku(kayit.tutar) || 0;
 }
 
-function kartKaydiniGuncelle(kayitlar, alanlar, tarih) {
+function kartKaydiniGuncelle(kayitlar, alanlar, tarih, ekstreAktarimi = 0) {
   const ilk = kayitlar[0];
   const eskiToplam = kayitlar.reduce((s, k) => paraTopla(s, kartGuncelToplami(k)), 0);
   const yeniToplam = paraTopla(alanlar.donemIci || 0, alanlar.provizyon || 0);
@@ -334,7 +334,7 @@ function kartKaydiniGuncelle(kayitlar, alanlar, tarih) {
     }
   });
   // Dönem içi/provizyon aktarımı toplam değişmedikçe harcama üretmez.
-  const delta = ilk ? paraTopla(hareketler[tarih] || 0, yeniToplam, -eskiToplam) : 0;
+  const delta = ilk ? paraTopla(hareketler[tarih] || 0, yeniToplam, -eskiToplam, ekstreAktarimi) : 0;
   if (ilk) hareketler[tarih] = delta;
   return {
     ...(ilk || {}), ...alanlar, tip: "gider", kartHarcama: true,
@@ -1539,6 +1539,7 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
       {/* KART TUTAR DÜZENLE MODAL */}
       {kartDuzenle && (
         <Modal title={`${kartDuzenle.isim} - Tutarları Düzenle`} onClose={() => setKartDuzenle(null)}>
+          <p className="tools-note">Ekstre borcu, dönem içi ve provizyondan ayrı takip edilir. Ekstre ödenmeden de yeni alışveriş tutarlarını güncelleyebilirsin. Dönem içi tutarın ekstreye taşınması yeni harcama sayılmaz.</p>
           <Input label="Kalan Ekstre Borcu (₺)" type="number" value={kartDuzForm.ekstre} onChange={e => setKartDuzForm(f => ({ ...f, ekstre: e.target.value }))} placeholder="0.00" />
           <Input label="Dönem İçi (₺)" type="number" value={kartDuzForm.donemIci} onChange={e => setKartDuzForm(f => ({ ...f, donemIci: e.target.value }))} placeholder="0.00" />
           <Input label="Provizyon (₺)" type="number" value={kartDuzForm.provizyon} onChange={e => setKartDuzForm(f => ({ ...f, provizyon: e.target.value }))} placeholder="0.00" />
@@ -1554,19 +1555,24 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
             if (![kartDuzForm.donemIci, kartDuzForm.provizyon, kartDuzForm.ekstre].every(v => tutarGecerli(v || 0, true))) return formHatasi();
             const di = paraOku(kartDuzForm.donemIci) || 0;
             const pr = paraOku(kartDuzForm.provizyon) || 0;
+            const ekstreTutar = paraOku(kartDuzForm.ekstre) || 0;
             const hedefIds = (kartDuzenle.islemler || []).map(i => i.id);
             const bugun = yerelTarihAnahtari();
             if (setIslemler(p => {
               const kayitlar = p.filter(i => hedefIds.includes(i.id));
+              const eskiToplam = kayitlar.reduce((s, k) => paraTopla(s, kartGuncelToplami(k)), 0);
+              const ekstreAktarimi = Math.min(
+                Math.max(0, paraTopla(eskiToplam, -di, -pr)),
+                Math.max(0, paraTopla(ekstreTutar, -(kartDuzenle.ekstre || 0))),
+              );
               const yeni = kartKaydiniGuncelle(kayitlar, {
                 id: kayitlar[0]?.id ?? Date.now(), kategori: kartDuzenle.isim,
                 donemIci: di, provizyon: pr,
                 aciklama: kayitlar[0]?.aciklama || kartDuzenle.isim,
-              }, bugun);
+              }, bugun, ekstreAktarimi);
               // Sıfırlanan borçta günlük geçmişi koru.
               return [...p.filter(i => !hedefIds.includes(i.id)), yeni];
             }) === false) return;
-            const ekstreTutar = paraOku(kartDuzForm.ekstre) || 0;
             if (setKartlar(p => p.map(x => {
               if (String(x.id) !== String(kartDuzenle.id)) return x;
               const eskiTarih = x.ekstreSonOdemeTarihi || kartDuzenle.sonEkstreOdeme?.sonOdemeTarihi;
