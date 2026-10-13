@@ -332,6 +332,18 @@ function kategoriGorunumu(kategori, tip = 'gider', gorunumler = {}) {
   }
   return { ikon, renk };
 }
+function KartMarkaRozeti({ isim }) {
+  const ad = String(isim || '').toLocaleLowerCase('tr-TR').replace(/ı/g,'i').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const marka = /world|vakif/.test(ad) ? { kart:'World', banka:'VakıfBank', renk:'#6d28d9', bankaRenk:'#946700' }
+    : /maximum|is bank/.test(ad) ? { kart:'maximum', banka:'İş Bankası', renk:'#d41478', bankaRenk:'#164783' }
+    : /bonus|garanti/.test(ad) ? { kart:'bonus', banka:'Garanti BBVA', renk:'#00864a', bankaRenk:'#006c3b' } : null;
+  if (!marka) return <Icon name="card" size={21}/>;
+  return <span className="card-brand-badge" aria-label={`${marka.kart} · ${marka.banka} marka rozeti`}>
+    <strong style={{ color:marka.renk }}>{marka.kart}</strong>
+    <small style={{ color:marka.bankaRenk }}>{marka.banka}</small>
+  </span>;
+}
+
 function KategoriSimge({ kategori, tip = 'gider', size = 30 }) {
   const { gorunumler } = useContext(KategoriGorunumContext);
   const { ikon, renk } = kategoriGorunumu(kategori,tip,gorunumler);
@@ -1540,7 +1552,7 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
               const sonOdeme = k.sonOdeme;
               return (
                 <article className="home-credit-card credit-tile" key={k.id}>
-                  <div className="credit-tile-heading"><div><Icon name="card" size={21}/><h3>{k.isim}</h3></div><span className="credit-type">KREDİ KARTI</span></div>
+                  <div className="credit-tile-heading"><div><KartMarkaRozeti isim={k.isim}/><h3>{k.isim}</h3></div><span className="credit-type">KREDİ KARTI</span></div>
                   <div className="credit-total"><span>Toplam kart borcu · provizyon dahil</span><Money value={paraTopla(k.ekstre,k.donem,k.prov)} size={27}/></div>
                   <div className="credit-buckets">
                     {[["Ekstre borcu",k.ekstre],["Dönem içi",k.donem],["Provizyon",k.prov]].map(([label,value])=><div key={label}><span>{label}</span><Money value={value} size={14}/></div>)}
@@ -2780,7 +2792,7 @@ function AyarlarTab({ donemGun, setDonemGun, kartlar, setKartlar, kategoriler, s
       <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "18px 16px", marginBottom: 14 }}>
         <div style={{ color: "var(--text)", fontSize: 13, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600, marginBottom: 12 }}><span className="inline-icon"><Icon name="sun" size={16}/></span>Görünüm</div>
         <div style={{ display: "flex", gap: 8 }}>
-          {[{id:"dark",label:"Koyu",bg:"#16161f",fg:"#f1f0ee"},{id:"light",label:"Açık",bg:"#ffffff",fg:"#16243f"},{id:"gray",label:"Gri",bg:"#535b62",fg:"#f3f6fa"}].map(t => (
+          {[{id:"dark",label:"Koyu",bg:"#16161f",fg:"#f1f0ee"},{id:"light",label:"Açık",bg:"#ffffff",fg:"#16243f"},{id:"gray",label:"Gri",bg:"#cdd2d8",fg:"#14202e"}].map(t => (
             <button key={t.id} onClick={() => setTema(t.id)} style={{ flex: 1, padding: "14px 8px", borderRadius: 12, cursor: "pointer", border: tema === t.id ? "2px solid #A74E32" : "2px solid var(--border)", background: t.bg, color: t.fg, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontSize: 13, fontWeight: 600, transition: "all 0.2s" }}>
               <span className="inline-icon"><Icon name={t.id==='dark'?'moon':'sun'} size={16}/></span>{t.label}
             </button>
@@ -4312,7 +4324,7 @@ export default function App() {
   useEffect(() => {
     try {
       document.documentElement.setAttribute("data-theme", tema);
-      document.body.style.background = tema === "light" ? "#FCF5EF" : tema === "gray" ? "#434b52" : "#0e131c";
+      document.body.style.background = tema === "light" ? "#FCF5EF" : tema === "gray" ? "#b7bec5" : "#0e131c";
     } catch (e) {}
   }, [tema]);
 
@@ -4968,17 +4980,30 @@ export default function App() {
         .category-colors { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
         .category-colors button { width:32px; height:32px; border:2px solid transparent; border-radius:50%; color:white; font-size:16px; cursor:pointer; }
         .category-colors button[aria-pressed="true"] { border-color:var(--text); }
+        .card-brand-badge { display:flex; flex-direction:column; justify-content:center; align-items:center; gap:4px; width:70px; min-height:44px; padding:7px 5px; flex-shrink:0; border-radius:11px; background:#fff; border:1px solid rgba(15,23,42,.09); box-shadow:0 2px 5px rgba(0,0,0,.05); line-height:1.1; }
+        .card-brand-badge strong { font-size:12px; font-weight:800; letter-spacing:-.35px; }
+        .card-brand-badge small { font-size:8px; font-weight:650; white-space:nowrap; }
         [data-theme="gray"] {
-          --bg:#434b52; --header:#434b52; --card:#535c64; --card2:#485159;
-          --border:#707b85; --border-light:#78828b; --divider:#69747e; --border2:#82909a;
-          --text:#f7f9fb; --text2:#e9eef2; --text3:#d2dce4; --text4:#d2dce4; --text5:#bdcbd6;
-          --accent:#35d6ae; --accent-strong:#007e66; --accent-soft:rgba(53,214,174,.15); --on-accent:#fff;
-          --income-text:#62e6bc; --expense-text:#ff969e; --card-shadow:0 5px 18px rgba(0,0,0,.12);
-          --surface-depth:inset 0 1px 0 rgba(255,255,255,.08),0 7px 20px rgba(0,0,0,.13);
+          --bg:#b7bec5; --header:#c8cdd3; --card:#d3d7dc; --card2:#c7cdd3;
+          --border:rgba(255,255,255,.3); --border-light:rgba(255,255,255,.44); --divider:#b8c0c8; --border2:#929eaa;
+          --text:#101b29; --text2:#243242; --text3:#465564; --text4:#4b5968; --text5:#526170;
+          --accent:#00815f; --accent-strong:#007e66; --accent-soft:rgba(0,153,111,.12); --on-accent:#fff;
+          --income-text:#008359; --expense-text:#c92b3c; --card-shadow:0 4px 14px rgba(49,63,78,.07); --ring-track:rgba(255,255,255,.2);
+          --surface-depth:inset 0 1px 0 rgba(255,255,255,.25),0 5px 15px rgba(49,63,78,.08);
         }
-        [data-theme="gray"] .home-overview .credit-tile { background:linear-gradient(135deg,#596174,#4d565f); }
-        [data-theme="gray"] .credit-buckets > div { background:rgba(44,51,59,.55); }
+        [data-theme="gray"] .app-shell:before { background:linear-gradient(155deg,rgba(255,255,255,.09),transparent 65%); }
+        [data-theme="gray"] .topbar { background:rgba(200,205,211,.96); box-shadow:0 4px 18px rgba(49,63,78,.04); }
+        [data-theme="gray"] .nav-dock-inner { background:rgba(209,214,220,.97); box-shadow:0 8px 24px rgba(49,63,78,.12); }
+        [data-theme="gray"] .home-overview .credit-tile {
+          --credit-blue:#5261c9; --credit-green:#00795d; --credit-yellow:#9d5700;
+          --text:#142031; --text2:#243242; --text3:#4b5968;
+          background:linear-gradient(135deg,#dddfe9,#ccd2d8); border-color:rgba(82,97,201,.2);
+        }
+        [data-theme="gray"] .credit-type { background:rgba(82,97,201,.09); }
+        [data-theme="gray"] .credit-buckets > div { background:rgba(255,255,255,.32); }
         [data-theme="gray"] .budget-needle, [data-theme="gray"] .finance-hero { color:#fff; }
+        [data-theme="gray"] .category-customizer-body { background:#ccd2d8; }
+        @media(max-width:360px) { .card-brand-badge { width:59px; padding:6px 3px; } .card-brand-badge strong { font-size:11px; } }
       `}</style>
       <div data-theme={tema} style={{ background: "var(--bg)", minHeight: "100vh", width: "100%" }}>
       <div className="app-shell">
