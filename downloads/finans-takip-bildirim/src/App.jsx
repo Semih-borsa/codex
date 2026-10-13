@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef, useId, useCallback } from "react";
+import { useState, useMemo, useEffect, useRef, useId, useCallback, createContext, useContext } from "react";
 import { createPortal } from "react-dom";
 import { Capacitor } from "@capacitor/core";
 import { LocalNotifications } from "@capacitor/local-notifications";
@@ -310,7 +310,48 @@ const KATEGORI_IKON = {
   Market: "cart", Fatura: "receipt", Ulaşım: "car", Sağlık: "medical",
   Eğlence: "play", Giyim: "shirt", Restoran: "utensils", Kira: "home", Diğer: "tag",
 };
-const katIkon = (kat, tip) => <Icon name={KATEGORI_IKON[kat] || (tip === 'gelir' ? 'arrowUp' : 'tag')} size={18}/>;
+const katIkon = (kat, tip) => <KategoriSimge kategori={kat} tip={tip}/>;
+const KATEGORI_SIMGE_SECENEKLERI = [
+  ['tag','Etiket'],['building','Apartman'],['bolt','Elektrik'],['drop','Su'],['flame','Doğalgaz'],['wifi','İnternet'],['phone','Telefon'],['utensils','Yemek'],['basketball','Basketbol'],['school','Okul / Kreş'],['piggy','Birikim'],['banknote','Nakit'],['transfer','Transfer'],['calendar','Ödeme takvimi'],['card','Kredi kartı'],['carry','Devir'],['exam','Sınav'],['walletPlus','Maaş farkı'],['cart','Market'],['car','Ulaşım'],['medical','Sağlık'],['play','Eğlence'],['shirt','Giyim'],['home','Ev'],['briefcase','İş'],['wallet','Cüzdan'],['receipt','Fatura'],['coins','Para'],['screen','Bilgisayar'],
+];
+const KATEGORI_RENK_SECENEKLERI = ['#10b981','#3b82f6','#f59e0b','#8b5cf6','#ec4899','#06b6d4','#ef4444','#a74e32','#64748b'];
+const KategoriGorunumContext = createContext({ gorunumler: {}, setGorunumler: () => false });
+function kategoriGorunumu(kategori, tip = 'gider', gorunumler = {}) {
+  const secim = gorunumler[`${tip}:${kategori}`];
+  if (secim) return secim;
+  const ad = String(kategori || '').toLocaleLowerCase('tr-TR').replace(/ı/g,'i').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const kurallar = [
+    ['aidat','building','#8b5cf6'],['elektrik','bolt','#f59e0b'],['dogalgaz','flame','#f97316'],['internet','wifi','#3b82f6'],['telefon','phone','#06b6d4'],['basketbol','basketball','#f59e0b'],['kres','school','#ec4899'],['yemek','utensils','#f59e0b'],['birikim','piggy','#10b981'],['nakit','banknote','#10b981'],['transfer','transfer','#3b82f6'],['kredi kart','card','#8b5cf6'],['kredi','calendar','#8b5cf6'],['world','card','#8b5cf6'],['bonus','card','#10b981'],['maximum','card','#ec4899'],['devir','carry','#06b6d4'],['sinav','exam','#8b5cf6'],['maas fark','walletPlus','#10b981'],
+  ];
+  let kural = kurallar.find(([kelime]) => ad.includes(kelime));
+  if (!kural && /(^|\s)su($|\s)/.test(ad)) kural=['su','drop','#3b82f6'];
+  let ikon = kural?.[1] || KATEGORI_IKON[kategori] || 'tag';
+  let renk = kural?.[2] || KATEGORI_RENKLER[kategori] || '#64748b';
+  if (ad.includes('telefon') || /(?:ediz|oyku).*birikim/.test(ad)) {
+    renk = ad.includes('semih') ? '#3b82f6' : ad.includes('bilge') ? '#8b5cf6' : ad.includes('ediz') ? '#06b6d4' : '#ec4899';
+  }
+  return { ikon, renk };
+}
+function KategoriSimge({ kategori, tip = 'gider', size = 30 }) {
+  const { gorunumler } = useContext(KategoriGorunumContext);
+  const { ikon, renk } = kategoriGorunumu(kategori,tip,gorunumler);
+  return <span className="category-symbol" aria-hidden="true" style={{ '--category-color':renk, width:size, height:size }}><Icon name={ikon} size={Math.round(size*.6)}/></span>;
+}
+function KategoriGorunumDuzenle({ kategori, tip }) {
+  const { gorunumler, setGorunumler } = useContext(KategoriGorunumContext);
+  const key = `${tip}:${kategori}`;
+  const gorunum = kategoriGorunumu(kategori,tip,gorunumler);
+  const kaydet = (alan,deger) => setGorunumler(p => ({...p,[key]:{...kategoriGorunumu(kategori,tip,p),[alan]:deger}}));
+  return <details className="category-customizer"><summary><KategoriSimge kategori={kategori} tip={tip}/><span>{kategori}</span><small>Simge / renk</small></summary><div className="category-customizer-body">
+    <Select label={`${kategori} ${tip} simgesi`} value={gorunum.ikon} onChange={e=>kaydet('ikon',e.target.value)}>{KATEGORI_SIMGE_SECENEKLERI.map(([id,ad])=><option key={id} value={id}>{ad}</option>)}</Select>
+    <div className="category-colors" role="group" aria-label={`${kategori} ${tip} rengi`}>{KATEGORI_RENK_SECENEKLERI.map(renk=><button type="button" key={renk} aria-label={`${kategori} ${tip} renk ${renk}`} aria-pressed={gorunum.renk===renk} onClick={()=>kaydet('renk',renk)} style={{background:renk}}>{gorunum.renk===renk?'✓':''}</button>)}</div>
+    <button type="button" className="tools-button" onClick={()=>setGorunumler(p=>{const yeni={...p};delete yeni[key];return yeni;})}>Otomatik simge ve renge dön</button>
+  </div></details>;
+}
+function KategoriGorunumAyarlari({ kategoriler }) {
+  return <section className="tools-card"><h3><Icon name="tag" size={17}/>Kategori simgeleri ve renkleri</h3><p className="tools-note">Mevcut ve yeni kategorilerin isimlerine göre simgeler otomatik önerilir. Bir kategoriye dokunarak simgeyi ve rengi değiştirebilirsin. Gelir ve gider seçimleri ayrı saklanır ve yedeğe dahildir.</p>{['gelir','gider'].map(tip=><details key={tip}><summary>{tip==='gelir'?'Gelir kategorileri':'Gider kategorileri'}</summary>{(kategoriler[tip]||[]).map(k=><KategoriGorunumDuzenle key={k} kategori={k} tip={tip}/>)}</details>)}</section>;
+}
+
 
 // Kart bakiyeleri birikmiş toplamdır; günlük harcama toplamların farkıdır.
 function kartGuncelToplami(kayit) {
@@ -597,7 +638,8 @@ function yedekVerisiniDogrula(paket) {
     if (key === "ft_bakiye_hesap_modu" && typeof value !== "string") throw new Error("Bakiye hesap modu geçersiz.");
     if (key === "ft_tasarruf_hedefi" && !tamSayiGecerli(value,0,100)) throw new Error("Tasarruf hedefi geçersiz.");
     if (key === "ft_grafik_tipi" && !["halka","ibre"].includes(value)) throw new Error("Bütçe grafiği seçimi geçersiz.");
-    if (key === "ft_tema" && !["light", "dark"].includes(value)) throw new Error("Tema geçersiz.");
+    if (key === "ft_kategori_gorunumleri" && (!nesneMi(value) || Object.values(value).some(v => !nesneMi(v) || !KATEGORI_SIMGE_SECENEKLERI.some(([id]) => id === v.ikon) || !/^#[0-9a-f]{6}$/i.test(v.renk)))) throw new Error("Kategori simge veya renk ayarları geçersiz.");
+    if (key === "ft_tema" && !["light", "dark", "gray"].includes(value)) throw new Error("Tema geçersiz.");
     if (key === "ft_butceler" && Object.values(value).some(v => v !== "" && !tutarGecerli(v, true))) throw new Error("Bütçe limiti geçersiz.");
     if (["ft_zamlar", "ft_enflasyon"].includes(key) && Object.values(value).some(v => v !== "" && (!Number.isFinite(sayisalOku(v)) || sayisalOku(v) <= -100 || sayisalOku(v) > 10000))) throw new Error("Oran kaydı geçersiz.");
     if (key === "ft_sabit_log" && Object.values(value).some(v => typeof v !== "boolean")) throw new Error("Sabit gider günlüğü geçersiz.");
@@ -739,6 +781,20 @@ function Badge({ text, color }) {
 
 function Icon({ name, size = 22, strokeWidth = 1.9 }) {
   const paths = {
+    building:<><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 7h1m4 0h1M9 11h1m4 0h1M9 15h1m4 0h1M10 21v-3h4v3"/></>,
+    bolt:<path d="m13 2-9 12h7l-1 8 10-13h-7l0-7Z"/>,
+    drop:<path d="M12 2C9 7 5 10 5 14a7 7 0 0 0 14 0c0-4-4-7-7-12Z"/>,
+    flame:<path d="M12 2c2 5 6 6 6 12a6 6 0 0 1-12 0c0-3 2-5 4-7 0 4 2 4 2 1V2Z"/>,
+    wifi:<><path d="M3 7a15 15 0 0 1 18 0M6 11a10 10 0 0 1 12 0M9 15a5 5 0 0 1 6 0"/><circle cx="12" cy="19" r="1"/></>,
+    phone:<><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M10 5h4M11 18h2"/></>,
+    basketball:<><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3v18M5.5 5.5c7 1 12 6 13 13M18.5 5.5c-7 1-12 6-13 13"/></>,
+    school:<><path d="m3 9 9-6 9 6v12H3V9ZM10 21v-6h4v6M7 11h1m8 0h1M12 3V1"/></>,
+    piggy:<><path d="M5 9a8 6 0 0 1 13-1l3-1v7l-3 1-1 5h-3v-3H9v3H6l-1-5H3V9h2ZM10 6h4"/><circle cx="16" cy="10" r=".6"/></>,
+    banknote:<><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M5 9h1m12 6h1"/></>,
+    transfer:<><path d="M3 7h17l-4-4M21 17H4l4 4"/></>,
+    carry:<><path d="M4 12h15l-4-4m4 4-4 4M4 4v16"/></>,
+    exam:<><path d="M6 3h12v18H6V3ZM9 8h6M9 12h6m-6 4h3"/></>,
+    walletPlus:<><rect x="3" y="5" width="18" height="15" rx="2"/><path d="M3 9h18M12 12v5m-3-2.5h6"/></>,
     briefcase: <><rect x="3" y="7" width="18" height="14" rx="2"/><path d="M8 7V3h8v4M3 12h18M10 12v3h4v-3"/></>,
     screen: <><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></>,
     cart: <><path d="M2 3h3l3 13h11l3-9H6M9 20h.01M18 20h.01"/><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></>,
@@ -1821,7 +1877,7 @@ function YillikKategoriKiyas({ islemler, yil, tip }) {
       const toplam = degerler.reduce((s, v) => paraTopla(s, v), 0);
       return <section className="category-trend-card" key={key} aria-label={`${kategori} ${tip} yıllık karşılaştırması`}>
         <div className="category-trend-top"><div className="category-trend-main">
-          <div className="category-trend-name">{kategori}</div>
+          <div className="category-trend-name"><KategoriSimge kategori={kategori} tip={tip}/>{kategori}</div>
           <div className="category-trend-amount">{fmtTL(tutar)}</div>
           <span className="category-trend-caption">{AYLAR_TAM[idx]} {yil}{yil === new Date().getFullYear() && idx === new Date().getMonth() ? " · devam ediyor" : ""}</span>
         </div><div className="category-trend-change">
@@ -1853,6 +1909,7 @@ function EsnekRapor({islemler,odemeler,donemGun,gelismisYorum,birikimRaporu}) {
   const [son,setSon]=useState(yerelTarihAnahtari());
   const [sekme,setSekme]=useState('ozet');
   const [kategoriYili,setKategoriYili]=useState(new Date().getFullYear());
+  const { gorunumler: kategoriGorunumleri } = useContext(KategoriGorunumContext);
   const aralik=esnekRaporAraligi(mod,donemGun,offset,yil,ilk,son);
   const bugun=yerelTarihAnahtari();
   const ozet=useMemo(()=>aralik?aralikOzeti(islemler,aralik.ilk,aralik.son):null,[islemler,aralik?.ilk,aralik?.son]);
@@ -1889,7 +1946,7 @@ function EsnekRapor({islemler,odemeler,donemGun,gelismisYorum,birikimRaporu}) {
     return Object.values(map);
   },[ozet,aralik?.ilk,bitis]);
   const fark=(simdi,eski)=>eski>0?`${simdi>=eski?'+':''}${((simdi-eski)/eski*100).toFixed(1).replace('.',',')}%`:'Önceki tutar yok';
-  const dagilim=(liste,toplam,tip)=><section className="tools-card"><h3><Icon name={tip==='gelir'?'arrowUp':'arrowDown'} size={17}/>{tip==='gelir'?'Gelir kaynakları':'Gider kategorileri'}</h3>{liste.length?liste.map(([k,v])=><div className="category-distribution" key={k}><div className="tools-row"><span>{k}</span><strong>{fmtTL(v)} <small>%{toplam>0?(v/toplam*100).toFixed(1):0}</small></strong></div><div className="distribution-track"><span style={{width:`${toplam>0?v/toplam*100:0}%`,background:tip==='gelir'?'var(--income-text)':'var(--expense-text)'}}/></div></div>):<p className="tools-note">Bu aralıkta {tip} kaydı yok.</p>}</section>;
+  const dagilim=(liste,toplam,tip)=><section className="tools-card"><h3><Icon name={tip==='gelir'?'arrowUp':'arrowDown'} size={17}/>{tip==='gelir'?'Gelir kaynakları':'Gider kategorileri'}</h3>{liste.length?liste.map(([k,v])=><div className="category-distribution" key={k}><div className="tools-row"><span className="category-label"><KategoriSimge kategori={k} tip={tip}/>{k}</span><strong>{fmtTL(v)} <small>%{toplam>0?(v/toplam*100).toFixed(1):0}</small></strong></div><div className="distribution-track"><span style={{width:`${toplam>0?v/toplam*100:0}%`,background:kategoriGorunumu(k,tip,kategoriGorunumleri).renk}}/></div></div>):<p className="tools-note">Bu aralıkta {tip} kaydı yok.</p>}</section>;
   const gunSayisi=aralik&&bitis>=aralik.ilk?takvimGunFarki(bitis,aralik.ilk)+1:0;
   return <div className="reports-page">
     <section className="tools-card report-period"><h3><Icon name="calendar" size={17}/>Dönem raporu</h3>
@@ -1944,6 +2001,7 @@ function EsnekRapor({islemler,odemeler,donemGun,gelismisYorum,birikimRaporu}) {
 }
 
 function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler, setKategoriler, kartlar, donemGun, odemeler = [] }) {
+  const { gorunumler: kategoriGorunumleri } = useContext(KategoriGorunumContext);
   const [modal, setModal] = useState(false);
   const [duzenleModal, setDuzenleModal] = useState(false);
   const [butceModal, setButceModal] = useState(false);
@@ -2097,7 +2155,7 @@ function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler
                 <div style={{ border: "1px solid var(--border)", borderTop: "none", borderRadius: "0 0 12px 12px", overflow: "hidden" }}>
                   {grup.islemler.map((i, idx) => {
                     const renk = i.tip === "gelir" ? "var(--income-text)" : "var(--expense-text)";
-                    const katRenk = KATEGORI_RENKLER[i.kategori] || "#78716c";
+                    const katRenk = kategoriGorunumu(i.kategori,i.tip,kategoriGorunumleri).renk;
                     return (
                       <div className="transaction-row" key={i.id} style={{ background: "var(--card)", borderTop: idx > 0 ? "1px solid var(--divider)" : "none", padding: "12px 14px", display: "flex", alignItems: "center", gap: 11 }}>
                         <div style={{ width: 42, height: 42, borderRadius: 13, background: katRenk + "1c", border: `1px solid ${katRenk}3a`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, flexShrink: 0 }}>{katIkon(i.kategori, i.tip)}</div>
@@ -2149,7 +2207,7 @@ function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler
                   const varsayilan = VARSAYILAN_KATEGORILER[tip].includes(kat);
                   return (
                     <div key={kat} style={{ display: "flex", alignItems: "center", gap: 4, background: "var(--card2)", border: "1px solid var(--border)", borderRadius: 8, padding: "5px 10px" }}>
-                      <span style={{ color: "var(--text2)", fontSize: 12, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}>{kat}</span>
+                      <KategoriGorunumDuzenle kategori={kat} tip={tip}/>
                       {!varsayilan && (
                         <button onClick={() => katSil(tip, kat)} style={{ background: "none", border: "none", color: "var(--expense-text)", cursor: "pointer", fontSize: 13, lineHeight: 1, padding: 0, marginLeft: 2 }}>×</button>
                       )}
@@ -2183,7 +2241,7 @@ function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler
             return (
               <div key={kat} style={{ marginBottom: 12 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                  <span style={{ color: asim ? "#ef4444" : "var(--text2)", fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontSize: 13, fontWeight: 600 }}>{asim ? "" : ""}{kat}</span>
+                  <span style={{ color: asim ? "#ef4444" : "var(--text2)", fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontSize: 13, fontWeight: 600 }}><span className="category-label"><KategoriSimge kategori={kat} tip="gider"/>{kat}</span></span>
                   <span style={{ color: "var(--text4)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}>Harcanan: ₺{fmt(aylikHarcama)}</span>
                 </div>
                 <input
@@ -2264,6 +2322,7 @@ function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler
 
 // ── ÖDEMELER ──────────────────────────────────────────────────────────────────
 function OdemelerTab({ odemeler, setOdemeler, islemler, setIslemler, kategoriler, donemGun }) {
+  const { gorunumler: kategoriGorunumleri } = useContext(KategoriGorunumContext);
   const [modal, setModal] = useState(false);
   const [acikDonemler, setAcikDonemler] = useState({});
   const [odemeFiltre, setOdemeFiltre] = useState("bekleyen");
@@ -2448,7 +2507,7 @@ function OdemelerTab({ odemeler, setOdemeler, islemler, setIslemler, kategoriler
               {acik && (
                 <div style={{ border: "1px solid var(--border)", borderTop: "none", borderRadius: "0 0 12px 12px", overflow: "hidden" }}>
                   {grup.odemeler.sort((a, b) => yerelTarihOku(a.tarih) - yerelTarihOku(b.tarih)).map((o, idx) => {
-                    const katRenk = KATEGORI_RENKLER[o.kategori] || "#78716c";
+                    const katRenk = kategoriGorunumu(o.kategori,"gider",kategoriGorunumleri).renk;
                     return (
                       <div className="payment-row" key={o.id} style={{ background: o.odendi ? "var(--header)" : "var(--card)", borderTop: idx > 0 ? "1px solid var(--divider)" : "none", padding: "12px 14px", display: "flex", alignItems: "center", gap: 10, opacity: o.odendi ? 0.5 : 1, transition: "opacity 0.2s" }}>
                         {/* Checkbox */}
@@ -2721,7 +2780,7 @@ function AyarlarTab({ donemGun, setDonemGun, kartlar, setKartlar, kategoriler, s
       <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "18px 16px", marginBottom: 14 }}>
         <div style={{ color: "var(--text)", fontSize: 13, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600, marginBottom: 12 }}><span className="inline-icon"><Icon name="sun" size={16}/></span>Görünüm</div>
         <div style={{ display: "flex", gap: 8 }}>
-          {[{id:"dark",label:"Koyu",bg:"#16161f",fg:"#f1f0ee"},{id:"light",label:"Açık",bg:"#ffffff",fg:"#16243f"}].map(t => (
+          {[{id:"dark",label:"Koyu",bg:"#16161f",fg:"#f1f0ee"},{id:"light",label:"Açık",bg:"#ffffff",fg:"#16243f"},{id:"gray",label:"Gri",bg:"#535b62",fg:"#f3f6fa"}].map(t => (
             <button key={t.id} onClick={() => setTema(t.id)} style={{ flex: 1, padding: "14px 8px", borderRadius: 12, cursor: "pointer", border: tema === t.id ? "2px solid #A74E32" : "2px solid var(--border)", background: t.bg, color: t.fg, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontSize: 13, fontWeight: 600, transition: "all 0.2s" }}>
               <span className="inline-icon"><Icon name={t.id==='dark'?'moon':'sun'} size={16}/></span>{t.label}
             </button>
@@ -2730,6 +2789,7 @@ function AyarlarTab({ donemGun, setDonemGun, kartlar, setKartlar, kategoriler, s
       </div>
 
       <section className="tools-card"><h3><Icon name="chart" size={17}/>Bütçe grafiği</h3><p className="tools-note">Genel Bakış ekranında halka veya ibre göstergesini kullan. Seçimin sonraki açılışlarda korunur.</p><div className="gauge-options">{[{id:'halka',label:'Halka',note:'Kompakt dairesel gösterge'},{id:'ibre',label:'İbre',note:'Renkli ölçek ve hareketli ibre'}].map(t=><button type="button" key={t.id} aria-pressed={grafikTipi===t.id} onClick={()=>setGrafikTipi(t.id)}><strong>{t.label}</strong><span>{t.note}</span></button>)}</div></section>
+      <KategoriGorunumAyarlari kategoriler={kategoriler}/>
       <TasarrufHedefi hedef={tasarrufHedefi} setHedef={setTasarrufHedefi}/>
       <section className="tools-card"><h3>Excel / CSV aktarımı</h3><p className="tools-note">Tüm işlemlerini Türkçe sütunlar ve kuruş hassasiyetiyle aktar. İşlemler ekranında filtrelenmiş kayıtları da aktarabilirsin. CSV tam yedeğin yerine geçmez.</p><Btn onClick={()=>csvAktar(islemler,odemeler)} disabled={!islemler.length}>Tüm işlemleri CSV aktar</Btn></section>
       {/* Veri yedekleme */}
@@ -3523,6 +3583,7 @@ function AnalizTab({ islemler, kategoriler, donemGun, kartlar, odemeler = [] }) 
 }
 
 function TekrarlayanTab({ tekrarlayan, setTekrarlayan, kategoriler, setKategoriler }) {
+  const { gorunumler: kategoriGorunumleri } = useContext(KategoriGorunumContext);
   const [modal, setModal] = useState(false);
   const [duzenleId, setDuzenleId] = useState(null);
   const bugun = yerelTarihAnahtari();
@@ -3569,12 +3630,12 @@ function TekrarlayanTab({ tekrarlayan, setTekrarlayan, kategoriler, setKategoril
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {tekrarlayan.map(t => {
-          const katRenk = KATEGORI_RENKLER[t.kategori] || "#78716c";
+          const katRenk = kategoriGorunumu(t.kategori,"gider",kategoriGorunumleri).renk;
           return (
             <div key={t.id} style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 14, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, opacity: t.aktif ? 1 : 0.45 }}>
               <div style={{ flex: 1 }}>
                 <div style={{ color: "var(--text)", fontSize: 14, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600 }}>{t.aciklama}</div>
-                <div style={{ display: "flex", gap: 8, marginTop: 4, alignItems: "center" }}><Badge text={t.kategori} color={katRenk} /><span style={{ color: "var(--text5)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}>Her ayın {t.gun}. günü</span>
+                <div style={{ display: "flex", gap: 8, marginTop: 4, alignItems: "center" }}><KategoriSimge kategori={t.kategori} tip="gider" size={24}/><Badge text={t.kategori} color={katRenk} /><span style={{ color: "var(--text5)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}>Her ayın {t.gun}. günü</span>
                 {t.bitis && <span style={{ color: "#f59e0b", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}>Bitiş: {t.bitis}</span>}
                 {t.baslangic && yerelTarihOku(t.baslangic) > yerelTarihOku(yerelTarihAnahtari()) && <span style={{ color: "#A74E32", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}>Başlangıç: {t.baslangic}</span>}
                 </div>
@@ -4178,6 +4239,7 @@ export default function App() {
   const [donemGun, setDonemGun] = useLocalStorage("ft_donem_gun", "15");
   const [tekrarlayan, setTekrarlayan] = useLocalStorage("ft_tekrarlayan", INITIAL_TEKRARLAYAN);
   const [butceler, setButceler] = useLocalStorage("ft_butceler", {});
+  const [kategoriGorunumleri, setKategoriGorunumleri] = useLocalStorage("ft_kategori_gorunumleri", {});
   const [kategoriler, setKategoriler] = useLocalStorage("ft_kategoriler", VARSAYILAN_KATEGORILER);
 
   // 💾 Hangi ay/yıl sabit gider eklendi kaydı
@@ -4250,7 +4312,7 @@ export default function App() {
   useEffect(() => {
     try {
       document.documentElement.setAttribute("data-theme", tema);
-      document.body.style.background = tema === "light" ? "#FCF5EF" : "#0e131c";
+      document.body.style.background = tema === "light" ? "#FCF5EF" : tema === "gray" ? "#434b52" : "#0e131c";
     } catch (e) {}
   }, [tema]);
 
@@ -4406,6 +4468,7 @@ export default function App() {
   const aktifSekmeBilgi = tumSekmeler.find(t => t.id === aktifTab) || tumSekmeler[0];
 
   return (
+    <KategoriGorunumContext.Provider value={{ gorunumler:kategoriGorunumleri, setGorunumler:setKategoriGorunumleri }}>
     <>
       <style>{`
         :root {
@@ -4895,6 +4958,27 @@ export default function App() {
         .quick-template-question { color:var(--text); font-size:14px; line-height:1.6; margin-bottom:16px; }
         .quick-template-cancel { width:100%; margin-top:10px; }
         @media(max-width:360px) { #hizli-islem-listesi { padding-left:12px; padding-right:12px; } .quick-template-actions { gap:3px; } .quick-template-actions .tools-button { min-width:32px; padding:6px; } }
+
+        .category-symbol { display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; color:var(--category-color); background:color-mix(in srgb,var(--category-color) 15%,transparent); border-radius:9px; }
+        .category-label { display:flex; align-items:center; gap:9px; min-width:0; }
+        .category-customizer { min-width:0; margin:6px 0; }
+        .category-customizer summary { display:flex; align-items:center; gap:8px; cursor:pointer; color:var(--text); font-size:12px; padding:6px 0; }
+        .category-customizer summary small { color:var(--text3); font-size:10px; margin-left:auto; }
+        .category-customizer-body { padding:10px; background:var(--card2); border:1px solid var(--border); border-radius:12px; }
+        .category-colors { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
+        .category-colors button { width:32px; height:32px; border:2px solid transparent; border-radius:50%; color:white; font-size:16px; cursor:pointer; }
+        .category-colors button[aria-pressed="true"] { border-color:var(--text); }
+        [data-theme="gray"] {
+          --bg:#434b52; --header:#434b52; --card:#535c64; --card2:#485159;
+          --border:#707b85; --border-light:#78828b; --divider:#69747e; --border2:#82909a;
+          --text:#f7f9fb; --text2:#e9eef2; --text3:#d2dce4; --text4:#d2dce4; --text5:#bdcbd6;
+          --accent:#35d6ae; --accent-strong:#007e66; --accent-soft:rgba(53,214,174,.15); --on-accent:#fff;
+          --income-text:#62e6bc; --expense-text:#ff969e; --card-shadow:0 5px 18px rgba(0,0,0,.12);
+          --surface-depth:inset 0 1px 0 rgba(255,255,255,.08),0 7px 20px rgba(0,0,0,.13);
+        }
+        [data-theme="gray"] .home-overview .credit-tile { background:linear-gradient(135deg,#596174,#4d565f); }
+        [data-theme="gray"] .credit-buckets > div { background:rgba(44,51,59,.55); }
+        [data-theme="gray"] .budget-needle, [data-theme="gray"] .finance-hero { color:#fff; }
       `}</style>
       <div data-theme={tema} style={{ background: "var(--bg)", minHeight: "100vh", width: "100%" }}>
       <div className="app-shell">
@@ -4910,7 +4994,7 @@ export default function App() {
                 <div style={{ color: "var(--text)", fontSize: 19, lineHeight: 1.15, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{aktifSekmeBilgi.label}</div>
               </div>
             </div>
-            <button aria-label={tema === "dark" ? "Açık temaya geç" : "Koyu temaya geç"} onClick={() => setTema(tema === "dark" ? "light" : "dark")} style={{ width: 42, height: 42, borderRadius: 14, background: "var(--card)", border: "1px solid var(--border)", color: "var(--accent)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0, margin: 0, boxSizing: "border-box", lineHeight: 0, boxShadow: "var(--card-shadow)" }}>
+            <button aria-label={tema === "dark" ? "Açık temaya geç" : tema === "light" ? "Gri temaya geç" : "Koyu temaya geç"} onClick={() => setTema(tema === "light" ? "gray" : tema === "gray" ? "dark" : "light")} style={{ width: 42, height: 42, borderRadius: 14, background: "var(--card)", border: "1px solid var(--border)", color: "var(--accent)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0, margin: 0, boxSizing: "border-box", lineHeight: 0, boxShadow: "var(--card-shadow)" }}>
               <Icon name={tema === "dark" ? "sun" : "moon"} size={20} />
             </button>
           </div>
@@ -4995,5 +5079,6 @@ export default function App() {
       </div>
       <ToastKutusu />
     </>
+    </KategoriGorunumContext.Provider>
   );
 }
