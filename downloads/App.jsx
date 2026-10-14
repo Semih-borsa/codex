@@ -389,12 +389,17 @@ function kartKaydiniGuncelle(kayitlar, alanlar, tarih, ekstreAktarimi = 0) {
   // Dönem içi/provizyon aktarımı toplam değişmedikçe harcama üretmez.
   const delta = ilk ? paraTopla(hareketler[tarih] || 0, yeniToplam, -eskiToplam, ekstreAktarimi) : 0;
   if (ilk) hareketler[tarih] = delta;
+  const aktarimlar = {};
+  kayitlar.forEach(k => Object.entries(k.kartEkstreAktarimlari || {}).forEach(([gun,tutar]) => {
+    aktarimlar[gun] = paraTopla(aktarimlar[gun] || 0,tutar);
+  }));
+  if (ekstreAktarimi > 0) aktarimlar[tarih] = paraTopla(aktarimlar[tarih] || 0,ekstreAktarimi);
   return {
     ...(ilk || {}), ...alanlar, tip: "gider", kartHarcama: true,
     tutar: yeniToplam, tarih, kartGunlukDelta: delta,
     kartGunBaslangicToplam: ilk ? (ilk.kartGunBaslangicToplam ?? eskiToplam) : yeniToplam,
     kartGunBaslangicTarih: ilk?.kartGunBaslangicTarih || ilk?.tarih || tarih,
-    kartGunlukHareketler: hareketler,
+    kartGunlukHareketler: hareketler, kartEkstreAktarimlari: aktarimlar,
   };
 }
 
@@ -637,6 +642,7 @@ function yedekVerisiniDogrula(paket) {
         for (const alan of ["baslangic", "bitis", "sonOdemeTarihi", "hesapKesimTarihi"]) {
           if (kayit[alan] && !yerelTarihOku(kayit[alan])) throw new Error(`${key}: ${alan} tarihi geçersiz.`);
         }
+        if (kayit.kartEkstreAktarimlari != null && (!nesneMi(kayit.kartEkstreAktarimlari) || Object.entries(kayit.kartEkstreAktarimlari).some(([gun, tutar]) => !yerelTarihOku(gun) || !tutarGecerli(tutar, true)))) throw new Error("Kart ekstre aktarımı geçersiz.");
         if (kayit.kartGunlukHareketler != null && (!nesneMi(kayit.kartGunlukHareketler) || Object.entries(kayit.kartGunlukHareketler).some(([gun, tutar]) => !yerelTarihOku(gun) || !tutarGecerli(tutar, true, true)))) throw new Error("Günlük kart hareketleri geçersiz.");
         for (const alan of ["donemIci", "provizyon", "ekstre", "aylikTutar", "toplamTutar"]) {
           if (kayit[alan] != null && !tutarGecerli(kayit[alan], true)) throw new Error(`${key}: ${alan} geçersiz.`);
@@ -1232,16 +1238,10 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
     const donemBas = new Date(basYil, basAy, gun);
     // Dönem bitiş: bir sonraki ayın (gun-1)'i
     const donemBit = new Date(basYil, basAy + 1, gun - 1);
-    const toplamGun = takvimGunFarki(donemBit, donemBas) + 1;
-    const gecenGun = Math.min(toplamGun, Math.max(1, takvimGunFarki(bugun, donemBas) + 1));
-    // Projeksiyon tabanı: kredi kartında dönem başında (ör. ayın 15'inde) İLK kez girilen toplam tutar hariç
-    // (o, geçmiş birikmiş bir tutardır, günlük harcama hızını yansıtmaz). 15'ten sonraki güncelleme farkları dahil.
-    const projeksiyonGideri = analizIslemleri(islemler).filter(i => i.tip === "gider" && tarihAralikta(i.tarih, donemBas, bugun)).reduce((s, i) => paraTopla(s, i.tutar), 0);
-    if (projeksiyonGideri === 0 || gecenGun < 1) return null;
-    const gunlukOrt = projeksiyonGideri / gecenGun;
-    const tahmin = gunlukOrt * toplamGun;
-    return { gunlukOrt, tahmin, gecenGun, toplamGun };
-  }, [donemOffset, donemGun, secilenDonem, islemler]);
+    const sonuc = donemSonuGiderTahmini({ islemler, odemeler, kartlar, kartOdemeleri,
+      baslangic:donemBas, bitis:donemBit, bugun });
+    return sonuc.sabitTaban > 0 || sonuc.degiskenGider > 0 ? sonuc : null;
+  }, [donemOffset, donemGun, secilenDonem, islemler, odemeler, kartlar, kartOdemeleri]);
 
   // Günlük harcama limiti: ödeme kayıtları ilk eklendiği anda Kalan Bakiye'ye
   // gider olarak zaten yansır. Bu nedenle yaklaşan ödemeleri ikinci kez düşme.
@@ -1454,7 +1454,8 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
               <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
                 <span style={{ color: "var(--text)", fontSize: 17, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600 }}>₺{fmt(tahminiAySonu.tahmin)}</span>
               </div>
-              <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", marginTop: 3 }}>{tahminiAySonu.gecenGun}/{tahminiAySonu.toplamGun} Gün · Günlük Ort. ₺{fmt(tahminiAySonu.gunlukOrt)}</div>
+              <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", marginTop: 3 }}>{tahminiAySonu.gecenGun}/{tahminiAySonu.toplamGun} Gün · Değişken Günlük Ort. ₺{fmt(tahminiAySonu.gunlukOrt)}</div>
+              <div className="tools-note" style={{marginTop:5}}>Sabit gider ve ekstre: ₺{fmt(tahminiAySonu.sabitTaban)} · Bu tutar bir kez sayılır.</div>
             </div>
             <span style={{ background: rozetRenk + "22", border: `1px solid ${rozetRenk}55`, color: rozetRenk, borderRadius: 99, padding: "5px 11px", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600, flexShrink: 0 }}>{rozetMetin}</span>
           </div>
@@ -1787,6 +1788,52 @@ function aralikOzeti(islemler, ilk, son, bugun = yerelTarihAnahtari()) {
   const gider = kayitlar.filter(i => i.tip === 'gider').reduce((s,i)=>paraTopla(s,i.tutar),0);
   return {kayitlar,gelir,gider,net:paraTopla(gelir,-gider),oran:gelir>0?(gelir-gider)/gelir*100:null};
 }
+function donemSonuGiderTahmini({ islemler, odemeler = [], kartlar = [], kartOdemeleri = [], baslangic, bitis, bugun = new Date() }) {
+  const ilk = yerelTarihAnahtari(baslangic), son = yerelTarihAnahtari(bitis), simdi = yerelTarihAnahtari(bugun);
+  const toplamGun = takvimGunFarki(son, ilk) + 1;
+  const gecenGun = Math.min(toplamGun, Math.max(1, takvimGunFarki(simdi, ilk) + 1));
+  const aralikta = tarih => tarih >= ilk && tarih <= son;
+  const kartIsimleri = new Set(kartlar.map(k => k.isim));
+  const normal = islemler.filter(i => i.tip === 'gider' && !i.kartHarcama && !kartIsimleri.has(i.kategori) && aralikta(i.tarih));
+  const sabitMi = i => i.sabitId != null || i.kaynak === 'odeme' || i.odemeId != null || i.tarih > simdi
+    || odemeler.some(o => o.islemId != null && String(o.islemId) === String(i.id));
+  let sabitGider = normal.filter(sabitMi).reduce((s,i) => paraTopla(s,i.tutar),0);
+  // Ödeme ekranındaki kayıt, bağlı işlemde zaten sayıldıysa ikinci kez ekleme.
+  odemeler.filter(o => aralikta(o.tarih)).forEach(o => {
+    if (!normal.some(i => (o.islemId != null && String(i.id) === String(o.islemId)) || (i.odemeId != null && String(i.odemeId) === String(o.id)))) {
+      sabitGider = paraTopla(sabitGider,o.tutar);
+    }
+  });
+  // Kalan ekstre borcu ve bu dönemde yapılan ekstre ödemeleri bir kez sayılır.
+  const kalanEkstre = kartlar.reduce((s,k) => {
+    const odenen = kartOdemeleri.filter(o => String(o.kartId) === String(k.id)
+      && (k.ekstreDonemKey ? (o.ekstreDonemKey || o.donemKey) === k.ekstreDonemKey : !k.sonOdemeTarihi || o.sonOdemeTarihi === k.sonOdemeTarihi))
+      .reduce((n,o) => paraTopla(n,o.tutar),0);
+    return paraTopla(s,Math.max(0,paraTopla(k.ekstre || 0,-odenen)));
+  },0);
+  const odenmisEkstre = kartOdemeleri.filter(o => aralikta(o.tarih) && o.tarih <= simdi).reduce((s,o) => paraTopla(s,o.tutar),0);
+  const ekstreGideri = paraTopla(kalanEkstre,odenmisEkstre);
+  // Bu dönem yapılan alışveriş sonradan ekstreye taşınırsa hem tabanda hem
+  // günlük harcamada sayılmasın; günlük ortalaması korunur.
+  const ekstreyeTasinanDegisken = islemler.filter(i => i.tip === 'gider' && i.kartHarcama).reduce((s,i) => {
+    const hareketler = kartAnalizHareketleri(i).filter(h => aralikta(h.tarih) && h.tarih <= simdi);
+    let kapsanan = 0;
+    Object.entries(i.kartEkstreAktarimlari || {}).filter(([t]) => aralikta(t) && t <= simdi).sort(([a],[b]) => a.localeCompare(b)).forEach(([t,tutar]) => {
+      const oncekiHarcama = hareketler.filter(h => h.tarih <= t).reduce((n,h) => paraTopla(n,h.tutar),0);
+      kapsanan = paraTopla(kapsanan,Math.min(Number(tutar) || 0,Math.max(0,paraTopla(oncekiHarcama,-kapsanan))));
+    });
+    return paraTopla(s,kapsanan);
+  },0);
+  const degiskenNormal = normal.filter(i => !sabitMi(i) && i.tarih <= simdi).reduce((s,i) => paraTopla(s,i.tutar),0);
+  const degiskenKart = islemler.filter(i => i.tip === 'gider' && i.kartHarcama).flatMap(kartAnalizHareketleri)
+    .filter(h => aralikta(h.tarih) && h.tarih <= simdi).reduce((s,h) => paraTopla(s,h.tutar),0);
+  const degiskenGider = paraTopla(degiskenNormal,degiskenKart);
+  const sabitTaban = paraTopla(sabitGider,Math.max(0,paraTopla(ekstreGideri,-ekstreyeTasinanDegisken)));
+  const gunlukOrt = degiskenGider / gecenGun;
+  const tahmin = paraOku(sabitTaban + gunlukOrt * toplamGun);
+  return { tahmin, gunlukOrt, sabitTaban, sabitGider, ekstreGideri, degiskenGider, gecenGun, toplamGun };
+}
+
 function tasarrufPayiHesapla({gelir,gider,birikim=0,hedef,kalanGun,ekBekleyen=0}) {
   const hedefTutar = Math.round(paraKurus(gelir)*hedef/100)/100;
   const ayrilacak = Math.max(0,paraTopla(hedefTutar,-birikim));
