@@ -1481,20 +1481,21 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
       {/* YAKLAŞAN ÖDEMELER */}
       {(() => {
         const bugun = new Date(); bugun.setHours(0, 0, 0, 0);
-        const gosterilecek = donemOffset === 0
-          ? donemOdemeleri.filter(o => !o.odendi && o.tarih && yerelTarihOku(o.tarih) >= bugun && takvimGunFarki(o.tarih, bugun) <= 3).slice(0, 5)
-          : donemOdemeleri.slice(0, 8);
+        const gosterilecek = (odemeler || []).filter(o => {
+          const tarih = yerelTarihOku(o.tarih);
+          return !o.odendi && tarih && tarih >= bugun && takvimGunFarki(tarih, bugun) <= 3;
+        }).sort((a,b) => yerelTarihOku(a.tarih) - yerelTarihOku(b.tarih));
         if (gosterilecek.length === 0) return null;
         const gunFark = (t) => takvimGunFarki(t, bugun);
         return (
           <div className="home-panel home-payments" style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "14px 16px", marginBottom: 12 }}>
-            <div className="upcoming-heading" style={{ color: "var(--text3)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}><Icon name="calendar" size={18}/>{donemOffset === 0 ? "Yaklaşan Ödemeler" : "Dönem Ödemeleri"}</div>
-            <p className="tools-note upcoming-note">{donemOffset===0?'Bugün ve önümüzdeki 7 gün · güncel tarihe göre':'Seçili dönemin ödeme kayıtları'}</p>
+            <div className="upcoming-heading" style={{ color: "var(--text3)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}><Icon name="calendar" size={18}/>Yaklaşan Ödemeler</div>
+            <p className="tools-note upcoming-note">Bugün ve önümüzdeki 3 gün · maaş döneminden bağımsız</p>
             {gosterilecek.map(o => {
               const gf = gunFark(o.tarih);
               return <article className="upcoming-item" key={o.id}>
-                <div className="upcoming-description"><div><strong>{o.aciklama||o.kategori}</strong><span className={gf===0&&donemOffset===0?'due-today':''}>{donemOffset===0?(gf===0?'Bugün ödenecek':`${gf} gün kaldı · ${o.tarih.split('-').reverse().join('.')}`):(o.odendi?'Ödenmiş':'Ödenmedi')+' · '+o.tarih.split('-').reverse().join('.')}</span></div><strong>{fmtTL(o.tutar)}</strong></div>
-                {donemOffset===0&&<Btn onClick={()=>ozettenOdendiYap(o)} style={{width:'100%'}}>Ödendi olarak işaretle</Btn>}
+                <div className="upcoming-description"><div><strong>{o.aciklama||o.kategori}</strong><span className={gf===0?'due-today':''}>{gf===0?'Bugün ödenecek':`${gf} gün kaldı · ${o.tarih.split('-').reverse().join('.')}`}</span></div><strong>{fmtTL(o.tutar)}</strong></div>
+                <Btn onClick={()=>ozettenOdendiYap(o)} style={{width:'100%'}}>Ödendi olarak işaretle</Btn>
               </article>;
             })}
           </div>
@@ -2458,20 +2459,19 @@ function OdemelerTab({ odemeler, setOdemeler, islemler, setIslemler, kategoriler
   };
 
   const donemGruplari = useMemo(() => {
-    const bugun = yerelTarihAnahtari();
-    const hafta = yerelTarihAnahtari(takvimGunuEkle(bugun,7));
     const gruplar = [
-      {key:'gecikmis',label:'Gecikmiş',odemeler:[]},
-      {key:'yaklasan',label:'Yaklaşan · 7 gün',odemeler:[]},
-      {key:'planlanan',label:'Daha sonraki ödemeler',odemeler:[]},
+      {key:'bekleyen',label:'Bekleyen Ödemeler',odemeler:[]},
       {key:'odendi',label:'Ödenmiş',odemeler:[]},
     ];
-    odemeler.forEach(o=>{
-      const durum=o.odendi?'odendi':o.tarih<bugun?'gecikmis':o.tarih<=hafta?'yaklasan':'planlanan';
-      if(odemeFiltre!=='hepsi' && (odemeFiltre==='bekleyen'?o.odendi:durum!==odemeFiltre))return;
-      gruplar.find(g=>g.key===durum).odemeler.push(o);
+    odemeler.forEach(o => {
+      const durum = o.odendi ? 'odendi' : 'bekleyen';
+      if (odemeFiltre !== 'hepsi' && durum !== odemeFiltre) return;
+      gruplar.find(g => g.key === durum).odemeler.push(o);
     });
-    return gruplar.filter(g=>g.odemeler.length).map(g=>({...g,toplam:g.odemeler.reduce((n,o)=>paraTopla(n,o.tutar),0),odendi:g.odemeler.filter(o=>o.odendi).reduce((n,o)=>paraTopla(n,o.tutar),0)}));
+    return gruplar.filter(g => g.odemeler.length).map(g => ({...g,
+      toplam:g.odemeler.reduce((n,o) => paraTopla(n,o.tutar),0),
+      odendi:g.odemeler.filter(o => o.odendi).reduce((n,o) => paraTopla(n,o.tutar),0),
+    }));
   },[odemeler,odemeFiltre]);
 
   return (
@@ -2483,7 +2483,7 @@ function OdemelerTab({ odemeler, setOdemeler, islemler, setIslemler, kategoriler
         <Btn onClick={() => { setForm(bos); setModal(true); }}>+ Ekle</Btn>
       </div>
       <div className="payment-filters">
-        {[{ id: "bekleyen", label: "Bekleyen" }, { id: "gecikmis", label: "Gecikmiş" }, { id: "yaklasan", label: "Yaklaşan" }, { id: "odendi", label: "Ödenmiş" }, { id: "hepsi", label: "Tümü" }].map(f => (
+        {[{ id: "bekleyen", label: "Bekleyen" }, { id: "odendi", label: "Ödenmiş" }, { id: "hepsi", label: "Tümü" }].map(f => (
           <button key={f.id} onClick={() => setOdemeFiltre(f.id)} style={{ border: odemeFiltre === f.id ? "1px solid rgba(167,78,50,.45)" : "1px solid var(--border)", background: odemeFiltre === f.id ? "var(--accent-soft)" : "var(--card2)", color: odemeFiltre === f.id ? "var(--accent)" : "var(--text4)", borderRadius: 11, padding: "8px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>{f.label}</button>
         ))}
       </div>
