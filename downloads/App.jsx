@@ -4731,8 +4731,10 @@ export default function App() {
         .home-quick-actions { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px; }
         .home-quick-actions button { display:flex; align-items:center; justify-content:center; gap:8px; min-height:48px; padding:10px; color:var(--text); font-size:12px; font-weight:650; background:var(--card); border:1px solid var(--border); border-radius:14px; }
         .home-quick-actions button svg { color:var(--accent); }
-        .home-quick-actions button:first-child { background:var(--accent-strong); color:var(--on-accent); border-color:transparent; }
+        .home-quick-actions button:first-child { background:#c92b3c; color:#fff; border-color:transparent; }
         .home-quick-actions button:first-child svg { color:inherit; }
+        .home-quick-actions button:last-child { background:#007e66; color:#fff; border-color:transparent; }
+        .home-quick-actions button:last-child svg { color:inherit; }
         .home-panel-heading { font-size:14px; }
         .nav-dock-inner { min-height:66px; border-radius:20px; box-shadow:0 5px 20px rgba(48,30,18,.12); padding:6px; }
         .nav-dock-inner > button { min-height:48px; }
@@ -4988,7 +4990,7 @@ export default function App() {
           --border:rgba(255,255,255,.3); --border-light:rgba(255,255,255,.44); --divider:#b8c0c8; --border2:#929eaa;
           --text:#101b29; --text2:#243242; --text3:#465564; --text4:#4b5968; --text5:#526170;
           --accent:#00815f; --accent-strong:#007e66; --accent-soft:rgba(0,153,111,.12); --on-accent:#fff;
-          --income-text:#008359; --expense-text:#c92b3c; --card-shadow:0 4px 14px rgba(49,63,78,.07); --ring-track:rgba(255,255,255,.2);
+          --income-text:#008359; --expense-text:#c92b3c; --saving-text:#244d8a; --card-shadow:0 4px 14px rgba(49,63,78,.07); --ring-track:rgba(255,255,255,.2);
           --surface-depth:inset 0 1px 0 rgba(255,255,255,.25),0 5px 15px rgba(49,63,78,.08);
         }
         [data-theme="gray"] .app-shell:before { background:linear-gradient(155deg,rgba(255,255,255,.09),transparent 65%); }
