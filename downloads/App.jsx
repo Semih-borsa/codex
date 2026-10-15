@@ -381,6 +381,15 @@ function donemDevriHesapla(islemler,kartlar,kartOdemeleri,donemGun,hesapModu,sim
   return { donemKey:aktif.key, kaynakDonemKey:onceki.key, tarih:yerelTarihAnahtari(aktif.baslangic), tutar:Math.max(0,paraTopla(gelir,-gider,-birikim)) };
 }
 
+function kartEkstreDoneminiBul(kart, donemGun) {
+  const tarih = kart.ekstreSonOdemeTarihi || kart.sonOdemeTarihi;
+  if (yerelTarihOku(tarih)) return maasDonemKey(tarih,donemGun).key;
+  const anahtar = String(kart.ekstreDonemKey || '');
+  if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(anahtar)) return anahtar;
+  const tarihAnahtari = anahtar.startsWith('ekstre:') ? anahtar.slice(7) : '';
+  return yerelTarihOku(tarihAnahtari) ? maasDonemKey(tarihAnahtari,donemGun).key : null;
+}
+
 function kartGuncelToplami(kayit) {
   return kayit.donemIci != null || kayit.provizyon != null
     ? paraTopla(kayit.donemIci || 0, kayit.provizyon || 0)
@@ -1139,7 +1148,7 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
     if (donemOffset === 0) return kayit;
     return new Date(kayit.tarih) <= secilenDonem.bitis ? kayit : null;
   };
-  const kartEkstreAnahtari = (kart) => kart?.ekstreDonemKey || aktifDonem;
+  const kartEkstreAnahtari = (kart) => kart?.ekstreDonemKey || kartEkstreDoneminiBul(kart,donemGun) || aktifDonem;
   const kartEkstreOdemeToplami = (kart) => (kartOdemeleri || [])
     .filter(o => String(o.kartId) === String(kart.id) && (o.ekstreDonemKey || o.donemKey) === kartEkstreAnahtari(kart))
     .reduce((s, o) => paraTopla(s, (Number(o.tutar) || 0)), 0);
@@ -1538,10 +1547,13 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
           const kartIslemleri = buDonemIslemler.filter(i => i.tip === "gider" && i.kategori === k.isim);
           const prov = kartIslemleri.reduce((s, i) => paraTopla(s, (Number(i.provizyon) || 0)), 0);
           const donem = kartIslemleri.reduce((s, i) => paraTopla(s, (Number(i.donemIci) || 0)), 0);
-          const ekstre = Math.max(0, (Number(k.ekstre) || 0) - kartEkstreOdemeToplami(k));
+          const ekstreBuDonemde = kartEkstreDoneminiBul(k,donemGun) === aktifDonem;
+          const kalanEkstre = Math.max(0,paraTopla(k.ekstre || 0,-kartEkstreOdemeToplami(k)));
+          const ekstre = ekstreBuDonemde ? kalanEkstre : 0;
+          const digerEkstre = ekstreBuDonemde ? 0 : kalanEkstre;
           const guncelBorc = donem + prov;
           const sonEkstreOdeme = (kartOdemeleri || []).filter(o => String(o.kartId) === String(k.id) && (o.ekstreDonemKey || o.donemKey) === kartEkstreAnahtari(k)).sort((a,b) => String(b.tarih).localeCompare(String(a.tarih)))[0] || null;
-          return { ...k, ...kartDonemTarihleriniBul(k), ekstreToplam: Number(k.ekstre) || 0, ekstreOdenen: kartEkstreOdemeToplami(k), ekstre, prov, donem, guncelBorc, sonEkstreOdeme, islemler: kartIslemleri };
+          return { ...k, ...kartDonemTarihleriniBul(k), ekstreToplam: Number(k.ekstre) || 0, ekstreOdenen: kartEkstreOdemeToplami(k), ekstre, digerEkstre, ekstreBuDonemde, prov, donem, guncelBorc, sonEkstreOdeme, islemler: kartIslemleri };
         });
         const toplamEkstre = kartOzetleri.reduce((s, k) => paraTopla(s, k.ekstre), 0);
         const toplamGuncelBorc = kartOzetleri.reduce((s, k) => paraTopla(s, k.guncelBorc), 0);
@@ -1574,17 +1586,19 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
               return (
                 <article className="home-credit-card credit-tile" key={k.id}>
                   <div className="credit-tile-heading"><div><KartMarkaRozeti isim={k.isim}/><h3>{k.isim}</h3></div><span className="credit-type">KREDİ KARTI</span></div>
-                  <div className="credit-total"><span>Toplam kart borcu · provizyon dahil</span><Money value={paraTopla(k.ekstre,k.donem,k.prov)} size={27}/></div>
+                  <div className="credit-total"><span>Toplam kart borcu · provizyon dahil</span><Money value={paraTopla(k.ekstre,k.digerEkstre,k.donem,k.prov)} size={27}/></div>
                   <div className="credit-buckets">
                     {[["Ekstre borcu",k.ekstre],["Dönem içi",k.donem],["Provizyon",k.prov]].map(([label,value])=><div key={label}><span>{label}</span><Money value={value} size={14}/></div>)}
                   </div>
-                  {k.sonEkstreOdeme&&<p className="tools-note">Ekstre ödendi: {k.sonEkstreOdeme.tarih.split('-').reverse().join('.')}</p>}
+                  {k.digerEkstre>0&&<p className="tools-note">Diğer döneme ait ödenmemiş ekstre: <strong>{fmtTL(k.digerEkstre)}</strong></p>}
+                  {!k.ekstreBuDonemde&&<p className="tools-note">Seçili dönem için kayıtlı ekstre yok.</p>}
+                  {k.sonEkstreOdeme&&<p className="tools-note">{k.ekstreBuDonemde?"Ekstre ödendi:":"Diğer dönemin ekstre ödemesi:"} {k.sonEkstreOdeme.tarih.split('-').reverse().join('.')}</p>}
                   <div className="credit-dates"><div><span>Hesap Kesim Tarihi</span><strong>{k.hesapKesimTarihi?k.hesapKesimTarihi.split('-').reverse().join('.'):'Henüz girilmedi'}</strong></div><div><span>Son Ödeme Tarihi</span><strong>{sonOdeme?sonOdeme.tarihAnahtari.split('-').reverse().join('.'):'Henüz girilmedi'}</strong></div></div>
                   <p className="tools-note">{k.bakiyedenDussun===false?'Dönem içi ve provizyon bakiyeden düşmüyor.':'Dönem içi ve provizyon bakiyeden düşüyor.'}</p>
                   <div className="credit-actions">{donemOffset===0&&<Btn onClick={()=>{
                     setKartDuzenle(k);
-                    setKartDuzForm({donemIci:k.donem>0?String(k.donem):'',provizyon:k.prov>0?String(k.prov):'',ekstre:k.ekstre>0?String(k.ekstre):'',bakiyedenDussun:k.bakiyedenDussun!==false});
-                  }}>Tutarları güncelle</Btn>}<button className="tools-button" disabled={k.ekstre<=0} onClick={()=>{setKartOdemeModal({...k,odemeDuzenle:false});setKartOdemeTarih(yerelTarihAnahtari());}}>Ödendi olarak işaretle</button>{k.sonEkstreOdeme&&<button className="tools-button" onClick={()=>{setKartOdemeModal({...k,odemeDuzenle:true});setKartOdemeTarih(k.sonEkstreOdeme.tarih);}}>Ödeme tarihini düzenle</button>}</div>
+                    setKartDuzForm({donemIci:k.donem>0?String(k.donem):'',provizyon:k.prov>0?String(k.prov):'',ekstre:paraTopla(k.ekstre,k.digerEkstre)>0?String(paraTopla(k.ekstre,k.digerEkstre)):'',bakiyedenDussun:k.bakiyedenDussun!==false});
+                  }}>Tutarları güncelle</Btn>}<button className="tools-button" disabled={paraTopla(k.ekstre,k.digerEkstre)<=0} onClick={()=>{setKartOdemeModal({...k,ekstre:paraTopla(k.ekstre,k.digerEkstre),odemeDuzenle:false});setKartOdemeTarih(yerelTarihAnahtari());}}>Ödendi olarak işaretle</button>{k.sonEkstreOdeme&&<button className="tools-button" onClick={()=>{setKartOdemeModal({...k,odemeDuzenle:true});setKartOdemeTarih(k.sonEkstreOdeme.tarih);}}>Ödeme tarihini düzenle</button>}</div>
                 </article>
               );
             })}
@@ -1652,7 +1666,7 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
               const eskiToplam = kayitlar.reduce((s, k) => paraTopla(s, kartGuncelToplami(k)), 0);
               const ekstreAktarimi = Math.min(
                 Math.max(0, paraTopla(eskiToplam, -di, -pr)),
-                Math.max(0, paraTopla(ekstreTutar, -(kartDuzenle.ekstre || 0))),
+                Math.max(0, paraTopla(ekstreTutar, -paraTopla(kartDuzenle.ekstre || 0,kartDuzenle.digerEkstre || 0))),
               );
               const yeni = kartKaydiniGuncelle(kayitlar, {
                 id: kayitlar[0]?.id ?? Date.now(), kategori: kartDuzenle.isim,
