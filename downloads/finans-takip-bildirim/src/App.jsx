@@ -2091,7 +2091,7 @@ function EsnekRapor({islemler,odemeler,kartlar=[],kartOdemeleri=[],donemGun,geli
   </div>;
 }
 
-function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler, setKategoriler, kartlar, donemGun, odemeler = [], kartOdemeleri = [] }) {
+function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler, setKategoriler, kartlar, donemGun, odemeler = [], kartOdemeleri = [], setKartOdemeleri }) {
   const { gorunumler: kategoriGorunumleri } = useContext(KategoriGorunumContext);
   const [modal, setModal] = useState(false);
   const [duzenleModal, setDuzenleModal] = useState(false);
@@ -2131,8 +2131,8 @@ function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler
   };
   const filtered = [...islemler,...kartOdemeleri.map(o => ({
     id:`kart-odeme:${o.id}`,tip:'gider',kategori:o.kartAdi || 'Kredi kartı',
-    tutar:o.tutar,tarih:o.tarih,aciklama:`${o.kartAdi || 'Kredi kartı'} ekstre ödemesi`,
-    kartEkstreOdeme:true,
+    tutar:o.tutar,tarih:o.tarih,aciklama:o.aciklama || `${o.kartAdi || 'Kredi kartı'} ekstre ödemesi`,
+    kartEkstreOdeme:true,kartOdemeId:o.id,
   }))]
     .filter(i =>
       !tarihFiltreHatasi &&
@@ -2159,6 +2159,14 @@ function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler
   }, [filtered, donemGun]);
   const islemDuzenle = () => {
     if (!duzenleHedef) return;
+    if (duzenleHedef.kartEkstreOdeme) {
+      if (!tutarGecerli(duzenleForm.tutar) || !yerelTarihOku(duzenleForm.tarih)) return formHatasi();
+      if (setKartOdemeleri(p => p.map(o => String(o.id) === String(duzenleHedef.kartOdemeId) ? {
+        ...o,tutar:paraOku(duzenleForm.tutar),tarih:duzenleForm.tarih,
+        aciklama:duzenleForm.aciklama.trim(),odemeDonemKey:maasDonemKey(duzenleForm.tarih,donemGun).key,
+      } : o)) === false) return;
+      setDuzenleModal(false);setDuzenleHedef(null);toast("Ekstre ödemesi güncellendi");return;
+    }
     if (!islemFormuGecerli(duzenleForm, duzenleKartMi)) return;
     const kMi = (kartlar || []).some(k => k.isim === duzenleForm.kategori) && duzenleForm.tip === "gider";
     if (kMi) {
@@ -2192,6 +2200,15 @@ function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler
     toast("İşlem eklendi");
   };
   const islemSil = (hedef) => {
+    if (hedef.kartEkstreOdeme) {
+      const kayit = kartOdemeleri.find(o => String(o.id) === String(hedef.kartOdemeId));
+      if (!kayit || !window.confirm(`${kayit.kartAdi || 'Kredi kartı'} ekstre ödemesi (${fmtTL(kayit.tutar)}) silinsin mi? Kalan ekstre borcu ve bakiye yeniden hesaplanacak.`)) return;
+      if (setKartOdemeleri(p => p.filter(o => String(o.id) !== String(kayit.id))) === false) return;
+      toast("Ekstre ödemesi silindi","uyari",()=>{
+        if (setKartOdemeleri(p => p.some(o => String(o.id) === String(kayit.id)) ? p : [...p,kayit]) === false) return;
+        toast("Ekstre ödemesi geri yüklendi");
+      });return;
+    }
     setIslemler(p => p.filter(x => x.id !== hedef.id));
     toast("İşlem silindi", "uyari", () => {
       setIslemler(p => p.some(x => x.id === hedef.id) ? p : [...p, hedef]);
@@ -2276,12 +2293,10 @@ function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler
                         </div>
                         <div className="transaction-amount" style={{ textAlign: "right", flexShrink: 0 }}>
                           <div style={{ color: renk, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600, fontSize: 14 }}>{i.tip === "gelir" ? "+" : "-"}₺{fmt(i.tutar)}</div>
-                          {i.kartEkstreOdeme?<span className="tools-note">Karttan düzenlenir</span>:<>
                           <div style={{ display: "flex", gap: 4, marginTop: 2, justifyContent: "flex-end" }}>
                             <button onClick={() => { setDuzenleHedef(i); setDuzenleForm({ tip: i.tip, kategori: i.kategori, tutar: String(i.tutar), aciklama: i.aciklama || "", tarih: i.tarih || yerelTarihAnahtari(), donemeDahil: i.donemeDahil !== false, donemIci: i.donemIci != null ? String(i.donemIci) : "", provizyon: i.provizyon != null ? String(i.provizyon) : "" }); setDuzenleModal(true); }} style={{ background: "none", border: "none", color: "var(--text4)", cursor: "pointer", fontSize: 13 }} aria-label="Düzenle"><Icon name="edit" size={16}/></button>
                             <button onClick={() => islemSil(i)} style={{ background: "none", border: "none", color: "var(--text5)", cursor: "pointer", fontSize: 13 }} aria-label="Sil"><Icon name="trash" size={16}/></button>
                           </div>
-                          </>}
                         </div>
                       </div>
                     );
@@ -2388,7 +2403,16 @@ function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler
           <Btn onClick={ekle} style={{ width: "100%", padding: 12, marginTop: 8 }}>Kaydet</Btn>
         </Modal>
       )}
-      {duzenleModal && duzenleHedef && (
+      {duzenleModal && duzenleHedef?.kartEkstreOdeme && (
+        <Modal title="Ekstre Ödemesini Düzenle" onClose={()=>{setDuzenleModal(false);setDuzenleHedef(null);}}>
+          <p className="tools-note">{duzenleHedef.kategori} · Tutarı veya tarihi değiştirdiğinde kart borcu, bakiye ve ödeme raporları güncellenir.</p>
+          <Input label="Ödenen Tutar (₺)" type="number" value={duzenleForm.tutar} onChange={e=>setDuzenleForm(f=>({...f,tutar:e.target.value}))}/>
+          <Input label="Ödeme Tarihi" type="date" value={duzenleForm.tarih} onChange={e=>setDuzenleForm(f=>({...f,tarih:e.target.value}))}/>
+          <Input label="Açıklama" value={duzenleForm.aciklama} onChange={e=>setDuzenleForm(f=>({...f,aciklama:e.target.value}))}/>
+          <Btn onClick={islemDuzenle} style={{width:'100%'}}>Güncelle</Btn>
+        </Modal>
+      )}
+      {duzenleModal && duzenleHedef && !duzenleHedef.kartEkstreOdeme && (
         <Modal title="İşlemi Düzenle" onClose={() => { setDuzenleModal(false); setDuzenleHedef(null); }}>
           <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
             {["gider", "gelir"].map(t => <button key={t} onClick={() => setDuzenleForm(f => ({ ...f, tip: t, kategori: t === "gelir" ? "Maaş" : "Market" }))} style={{ flex: 1, padding: "8px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontSize: 13, fontWeight: 600, background: duzenleForm.tip === t ? (t === "gelir" ? "#10b981" : "#ef4444") : "var(--border)", color: duzenleForm.tip === t ? "#fff" : "var(--text3)" }}>{t === "gelir" ? "Gelir" : "Gider"}</button>)}
@@ -5168,7 +5192,7 @@ export default function App() {
           <div style={{ display: aktifTab === "ozet" ? "block" : "none" }}>
             <Ozet islemler={islemler} setIslemler={setIslemler} kartlar={kartlar} setKartlar={setKartlar} donemGun={parseInt(donemGun)||15} kategoriler={kategoriler} odemeler={odemeler} setOdemeler={setOdemeler} hizliModal={hizliModal} setHizliModal={setHizliModal} hizliSablonlar={hizliSablonlar} setHizliSablonlar={setHizliSablonlar} taksitler={taksitler} setTaksitler={setTaksitler} kartOdemeleri={kartOdemeleri} setKartOdemeleri={setKartOdemeleri} bakiyeHesapModu={bakiyeHesapModu} tasarrufHedefi={tasarrufHedefi} grafikTipi={grafikTipi} />
           </div>
-          {aktifTab === "islemler" && <IslemlerTab islemler={islemler} setIslemler={setIslemler} odemeler={odemeler} butceler={butceler} setButceler={setButceler} kategoriler={kategoriler} setKategoriler={setKategoriler} kartlar={kartlar} kartOdemeleri={kartOdemeleri} donemGun={parseInt(donemGun)||15} />}
+          {aktifTab === "islemler" && <IslemlerTab islemler={islemler} setIslemler={setIslemler} odemeler={odemeler} butceler={butceler} setButceler={setButceler} kategoriler={kategoriler} setKategoriler={setKategoriler} kartlar={kartlar} kartOdemeleri={kartOdemeleri} setKartOdemeleri={setKartOdemeleri} donemGun={parseInt(donemGun)||15} />}
           {aktifTab === "odemeler" && <OdemelerTab odemeler={odemeler} setOdemeler={setOdemeler} islemler={islemler} setIslemler={setIslemler} kategoriler={kategoriler} donemGun={parseInt(donemGun)||15} />}
           {aktifTab === "tekrarlayan" && <TekrarlayanTab tekrarlayan={tekrarlayan} setTekrarlayan={setTekrarlayan} kategoriler={kategoriler} setKategoriler={setKategoriler} />}
           {aktifTab === "analiz" && <AnalizTab islemler={islemler} kategoriler={kategoriler} donemGun={parseInt(donemGun)||15} kartlar={kartlar} odemeler={odemeler} kartOdemeleri={kartOdemeleri} />}
