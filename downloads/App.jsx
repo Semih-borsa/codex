@@ -366,6 +366,21 @@ function KategoriGorunumAyarlari({ kategoriler }) {
 
 
 // Kart bakiyeleri birikmiş toplamdır; günlük harcama toplamların farkıdır.
+function devirIslemiMi(i) {
+  const ad = String(i.kategori || '').toLocaleLowerCase('tr-TR').replace(/ı/g,'i').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+  return i.kaynak === 'donem_devri' || ad === 'onceki aydan devir';
+}
+function donemDevriHesapla(islemler,kartlar,kartOdemeleri,donemGun,hesapModu,simdi = new Date()) {
+  const aktif = maasDonemiBul(yerelTarihAnahtari(simdi),donemGun);
+  const onceki = maasDonemiBul(yerelTarihAnahtari(takvimGunuEkle(aktif.baslangic,-1)),donemGun);
+  const kayitlar = islemler.filter(i => maasDonemKey(i.tarih,donemGun).key === onceki.key);
+  const gelir = kayitlar.filter(i => i.tip === 'gelir' && i.kategori !== 'Birikim' && !(i.kategori === 'Kira Geliri' && i.donemeDahil === false)).reduce((s,i)=>paraTopla(s,i.tutar),0);
+  const birikim = kayitlar.filter(i => i.tip === 'gelir' && i.kategori === 'Birikim').reduce((s,i)=>paraTopla(s,i.tutar),0);
+  const odenmisler = kartOdemeleri.filter(o => o.tarih && maasDonemKey(o.tarih,donemGun).key === onceki.key).map(o=>o.kartId);
+  const gider = donemGiderOzeti(kayitlar,kartlar,odenmisler,hesapModu,kartOdemeleri,onceki.key).toplamGider;
+  return { donemKey:aktif.key, kaynakDonemKey:onceki.key, tarih:yerelTarihAnahtari(aktif.baslangic), tutar:Math.max(0,paraTopla(gelir,-gider,-birikim)) };
+}
+
 function kartGuncelToplami(kayit) {
   return kayit.donemIci != null || kayit.provizyon != null
     ? paraTopla(kayit.donemIci || 0, kayit.provizyon || 0)
@@ -415,7 +430,7 @@ function kartAnalizHareketleri(kayit) {
 }
 
 function analizIslemleri(islemler) {
-  return islemler.flatMap(i => i.kartHarcama
+  return islemler.filter(i => !devirIslemiMi(i)).flatMap(i => i.kartHarcama
     ? kartAnalizHareketleri(i).map(h => ({ ...i, ...h, kartHarcama: false, kartGunlukKayit: true }))
     : [i]);
 }
@@ -661,6 +676,7 @@ function yedekVerisiniDogrula(paket) {
     if (key === "ft_butceler" && Object.values(value).some(v => v !== "" && !tutarGecerli(v, true))) throw new Error("Bütçe limiti geçersiz.");
     if (["ft_zamlar", "ft_enflasyon"].includes(key) && Object.values(value).some(v => v !== "" && (!Number.isFinite(sayisalOku(v)) || sayisalOku(v) <= -100 || sayisalOku(v) > 10000))) throw new Error("Oran kaydı geçersiz.");
     if (key === "ft_sabit_log" && Object.values(value).some(v => typeof v !== "boolean")) throw new Error("Sabit gider günlüğü geçersiz.");
+    if (key === "ft_donem_devir_log" && (!nesneMi(value) || Object.values(value).some(v => !nesneMi(v) || !tutarGecerli(v.tutar,true) || !yerelTarihOku(v.tarih)))) throw new Error("Dönem devri kaydı geçersiz.");
     if (key === "ft_son_bildirim_planlama" && value !== null && !nesneMi(value)) throw new Error("Bildirim kaydı geçersiz.");
     if (key === "ft_bildirim_ayarlari" && value.saatler != null && (!Array.isArray(value.saatler) || value.saatler.length < 1 || value.saatler.length > 3 || value.saatler.some(s => typeof s !== "string" || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(s)))) throw new Error("Bildirim saatleri geçersiz.");
     if (key === "ft_bildirim_ayarlari" && (!Array.isArray(value.gunler) || value.gunler.some(g => !tamSayiGecerli(g, 0, 365)) || typeof value.saat !== "string" || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value.saat))) throw new Error("Bildirim ayarları geçersiz.");
@@ -1100,6 +1116,7 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
     toast("İşlem eklendi");
   }; // 0=bu dönem, -1=önceki, vb.
   // Offset'e göre dönem hesapla
+  const gununTarihi = yerelTarihAnahtari();
   const secilenDonem = useMemo(() => {
     const gun = donemGun || 15;
     const b = new Date();
@@ -1112,7 +1129,7 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
     const baslangic = new Date(yil, ay, gun);
     const bitis = new Date(yil, ay + 1, gun - 1, 23, 59, 59, 999);
     return { yil, ay, key: `${yil}-${ay}-${gun}`, etiket: donemLabel(yil, ay, gun), baslangic, bitis };
-  }, [donemOffset, donemGun]);
+  }, [donemOffset, donemGun, gununTarihi]);
   const aktifDonem = secilenDonem.key;
   const donemEtiketi = secilenDonem.etiket;
   const kartOdemeKaydiBul = (kart) => {
@@ -1185,7 +1202,7 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
   const aylikVeriler = useMemo(() => {
     const buSira = secilenDonem.yil * 100 + secilenDonem.ay;
     const map = {};
-    islemler.forEach(i => {
+    islemler.filter(i => !devirIslemiMi(i)).forEach(i => {
       const { yil, ay, key } = maasDonemKey(i.tarih, donemGun);
       if (!map[key]) map[key] = { ay: donemLabel(yil, ay, donemGun), gelir: 0, gider: 0, sira: yil * 100 + ay };
       if (i.tip === "gelir") map[key].gelir += i.tutar; else map[key].gider += i.tutar;
@@ -1194,7 +1211,8 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
   }, [islemler, donemGun, secilenDonem]);
   const buDonemIslemler = islemler.filter(i => maasDonemKey(i.tarih, donemGun).key === aktifDonem);
   const buAyBirikim = buDonemIslemler.filter(i => i.tip === "gelir" && i.kategori === "Birikim").reduce((s, i) => paraTopla(s, i.tutar), 0);
-  const buAyGelir = buDonemIslemler.filter(i => i.tip === "gelir" && i.kategori !== "Birikim" && !(i.kategori === "Kira Geliri" && i.donemeDahil === false)).reduce((s, i) => paraTopla(s, i.tutar), 0);
+  const buAyDevir = buDonemIslemler.filter(i => i.tip === "gelir" && devirIslemiMi(i)).reduce((s,i)=>paraTopla(s,i.tutar),0);
+  const buAyGelir = buDonemIslemler.filter(i => i.tip === "gelir" && !devirIslemiMi(i) && i.kategori !== "Birikim" && !(i.kategori === "Kira Geliri" && i.donemeDahil === false)).reduce((s, i) => paraTopla(s, i.tutar), 0);
   const odenmisKartIdleri = (kartlar || []).filter(kart => !!kartOdemeKaydiBul(kart)).map(kart => kart.id);
   const giderOzeti = donemGiderOzeti(buDonemIslemler, kartlar, odenmisKartIdleri, bakiyeHesapModu, kartOdemeleri, aktifDonem);
   const buAyGider = giderOzeti.toplamGider;
@@ -1202,7 +1220,7 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
   const toplamGider = buAyGider;
 
   // Harcama ibresi: gelirin yüzde kaçı harcandı (max 100)
-  const kalanBakiye = paraTopla(buAyGelir, -toplamGider, -buAyBirikim);
+  const kalanBakiye = paraTopla(buAyGelir, buAyDevir, -toplamGider, -buAyBirikim);
   // Kalan bakiyene göre "ne kadarı elden çıktı" oranı (harcama + birikim). Dolu = riskli, boş = güvenli mantığı korunuyor.
   const harcamaOrani = donemHarcamaOrani(buAyGelir, toplamGider, buAyBirikim);
   const guncelDonemMi = donemOffset === 0;
@@ -1260,8 +1278,8 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
       return (t >= bugun && t <= donemBit) ? paraTopla(s, o.tutar) : s;
     }, 0);
     const ekBekleyen = (odemeler || []).filter(o=>!o.odendi && o.tarih <= yerelTarihAnahtari(donemBit) && !buDonemIslemler.some(i=>String(i.id)===String(o.islemId)||String(i.odemeId)===String(o.id))).reduce((s,o)=>paraTopla(s,o.tutar),0);
-    const gercekGelir = buDonemIslemler.filter(i=>i.tip === "gelir" && i.tarih <= yerelTarihAnahtari(bugun) && i.kategori !== "Birikim" && !(i.kategori === "Kira Geliri" && i.donemeDahil === false)).reduce((s,i)=>paraTopla(s,i.tutar),0);
-    const hedef = tasarrufPayiHesapla({gelir:gercekGelir,gider:toplamGider,birikim:buAyBirikim,hedef:tasarrufHedefi,kalanGun,ekBekleyen});
+    const gercekGelir = buDonemIslemler.filter(i=>i.tip === "gelir" && !devirIslemiMi(i) && i.tarih <= yerelTarihAnahtari(bugun) && i.kategori !== "Birikim" && !(i.kategori === "Kira Geliri" && i.donemeDahil === false)).reduce((s,i)=>paraTopla(s,i.tutar),0);
+    const hedef = tasarrufPayiHesapla({gelir:paraTopla(gercekGelir,buAyDevir),gider:toplamGider,birikim:buAyBirikim,hedef:tasarrufHedefi,kalanGun,ekBekleyen});
     return { ...hedef, kalanGun, yaklasanToplam, kullanilabilir:Math.max(0,hedef.pay) };
   }, [donemOffset, donemGun, secilenDonem, odemeler, kalanBakiye, buDonemIslemler, buAyGelir, toplamGider, buAyBirikim, tasarrufHedefi]);
 
@@ -1272,7 +1290,7 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
     while (oAy < 0) { oAy += 12; oYil--; }
     const oKey = `${oYil}-${oAy}-${gun}`;
     const oIslem = islemler.filter(i => maasDonemKey(i.tarih, gun).key === oKey);
-    const oGelir = oIslem.filter(i => i.tip === "gelir" && i.kategori !== "Birikim" && !(i.kategori === "Kira Geliri" && i.donemeDahil === false)).reduce((s, i) => paraTopla(s, i.tutar), 0);
+    const oGelir = oIslem.filter(i => i.tip === "gelir" && !devirIslemiMi(i) && i.kategori !== "Birikim" && !(i.kategori === "Kira Geliri" && i.donemeDahil === false)).reduce((s, i) => paraTopla(s, i.tutar), 0);
     const oGider = oIslem.filter(i => i.tip === "gider").reduce((s, i) => paraTopla(s, i.tutar), 0);
     const oBirikim = oIslem.filter(i => i.tip === "gelir" && i.kategori === "Birikim").reduce((s, i) => paraTopla(s, i.tutar), 0);
     const yuzde = (yeni, eski) => eski > 0 ? ((yeni - eski) / eski) * 100 : (yeni > 0 ? 100 : 0);
@@ -1354,6 +1372,7 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
         return <section className="home-balance finance-hero" data-status={durum}>
           <div className="home-balance-heading"><span>Dönem bakiyesi</span><span className="home-balance-badge"><Icon name={durum==='bos'?'wallet':durum==='iyi'?'shield':durum==='orta'?'warning':'alert'} size={14}/>{veriYok?'Henüz veri yok':buAyGelir<=0?'Gelir kaydı yok':durum==='iyi'?'Güvende':durum==='orta'?'Dikkat':'Riskli'}</span></div>
           <div className="home-balance-value"><Money value={Math.abs(gosterilenBakiye)} prefix={gosterilenBakiye<0?'−₺':'₺'} size={34}/></div>
+          {buAyDevir>0&&<p className="hero-caption">Önceki aydan devir: {fmtTL(buAyDevir)}</p>}
           <p className="hero-caption">{veriYok?'İlk gelirini veya giderini ekleyerek başla.':'Seçili dönemin gelir, harcama ve birikim dengesi'}</p>
           {!veriYok && <div className={`hero-budget hero-budget--${grafikTipi}`}>
             {grafikTipi==='ibre'&&<h3 className="needle-panel-title">Dönem bütçem</h3>}
@@ -1565,7 +1584,7 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
                   <div className="credit-actions">{donemOffset===0&&<Btn onClick={()=>{
                     setKartDuzenle(k);
                     setKartDuzForm({donemIci:k.donem>0?String(k.donem):'',provizyon:k.prov>0?String(k.prov):'',ekstre:k.ekstre>0?String(k.ekstre):'',bakiyedenDussun:k.bakiyedenDussun!==false});
-                  }}>Tutarları güncelle</Btn>}<button className="tools-button" onClick={()=>{setKartOdemeModal({...k,odemeDuzenle:!!k.sonEkstreOdeme&&k.ekstre<=0});setKartOdemeTarih(k.ekstre<=0?k.sonEkstreOdeme?.tarih||yerelTarihAnahtari():yerelTarihAnahtari());}}>{k.sonEkstreOdeme&&k.ekstre<=0?'Ödeme tarihini düzenle':'Ekstreyi ödendi işaretle'}</button></div>
+                  }}>Tutarları güncelle</Btn>}<button className="tools-button" disabled={k.ekstre<=0} onClick={()=>{setKartOdemeModal({...k,odemeDuzenle:false});setKartOdemeTarih(yerelTarihAnahtari());}}>Ödendi olarak işaretle</button>{k.sonEkstreOdeme&&<button className="tools-button" onClick={()=>{setKartOdemeModal({...k,odemeDuzenle:true});setKartOdemeTarih(k.sonEkstreOdeme.tarih);}}>Ödeme tarihini düzenle</button>}</div>
                 </article>
               );
             })}
@@ -1650,7 +1669,7 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
               const ekstreDonemKey = yeniEkstre ? `ekstre:${x.sonOdemeTarihi || aktifDonem}` : kartEkstreAnahtari(x);
               const odenen = yeniEkstre ? 0 : kartEkstreOdemeToplami(x);
               // Düzenleme alanı kalan borçtur; önceki ödeme yeniden düşülmez.
-              return { ...x, ekstre: paraTopla(ekstreTutar, odenen), ekstreDonemKey,
+              return { ...x, ekstre: paraTopla(ekstreTutar,odenen), ekstreDonemKey,
                 ekstreSonOdemeTarihi: x.sonOdemeTarihi || "", bakiyedenDussun: kartDuzForm.bakiyedenDussun };
             })) === false) return;
             setKartDuzenle(null);
@@ -1753,7 +1772,7 @@ function csvMetniOlustur(islemler, odemeler = []) {
   const satirlar = [["Tarih", "Tür", "Kategori", "Açıklama", "Tutar (TL)", "Durum", "Kayıt türü"]];
   [...islemler].sort((a,b) => a.tarih.localeCompare(b.tarih)).forEach(i => {
     const o = odemeler.find(o => String(o.id) === String(i.odemeId) || String(o.islemId) === String(i.id));
-    satirlar.push([i.tarih, i.tip === "gelir" ? "Gelir" : "Gider", i.kategori, i.aciklama || "", (paraKurus(i.tutar) / 100).toFixed(2).replace('.', ','), o ? (o.odendi ? "Ödendi" : "Bekleyen ödeme") : i.tarih > yerelTarihAnahtari() ? "Planlanan" : "Kayıtlı", i.kartHarcama ? "Kart toplamı" : i.sabitId ? "Sabit gider" : "İşlem"]);
+    satirlar.push([i.tarih, devirIslemiMi(i) ? "Devir" : i.tip === "gelir" ? "Gelir" : "Gider", i.kategori, i.aciklama || "", (paraKurus(i.tutar) / 100).toFixed(2).replace('.', ','), o ? (o.odendi ? "Ödendi" : "Bekleyen ödeme") : i.tarih > yerelTarihAnahtari() ? "Planlanan" : "Kayıtlı", i.kartHarcama ? "Kart toplamı" : i.sabitId ? "Sabit gider" : "İşlem"]);
   });
   return '\uFEFF' + satirlar.map(s => s.map(hucre).join(';')).join('\r\n');
 }
@@ -1897,6 +1916,16 @@ function HarcamaHaritasi({islemler,odemeler,ilk,son}) {
     return <button key={t} className="heat-day" disabled={dis} aria-pressed={secili===t} aria-label={`${t}: ${fmtTL(tutar)}`} onClick={()=>setSecili(t)} style={{background:tutar>0?`rgba(167,78,50,${.12+.65*tutar/max})`:'var(--card2)',color:tutar/max>.6?'#fff':'var(--text)',borderColor:secili===t?'var(--accent)':'var(--border)'}}><span>{i+1}</span><small>{tutar>0?'●':'·'}</small></button>;
   })}</div><p className="tools-note">Koyu renk daha fazla harcama demektir. Boş gün, kayıt olmadığı anlamına gelir. Bekleyen ödemeler ve ilk kart toplamı haritada yer almaz; kartların günlük farkları gösterilir. Gelir toplamında birikim kayıtları hariçtir.</p>{secili&&<div aria-live="polite"><h4>{secili.split('-').reverse().join('.')} · {fmtTL(map[secili]||0)}</h4><div className="day-totals"><div><span>Gelir toplamı</span><strong style={{color:'var(--income-text)'}}>{fmtTL(gunGeliri)}</strong></div><div><span>Gider toplamı</span><strong style={{color:'var(--expense-text)'}}>{fmtTL(map[secili]||0)}</strong></div></div><h4>Harcama Ayrıntıları</h4>{hareketler.filter(i=>i.tarih===secili).map((i,k)=><div className="tools-row" key={`${i.id}-${k}`}><span>{i.aciklama||i.kategori}<small className="tools-note"> · {i.kategori}</small></span><strong>{fmtTL(i.tutar)}</strong></div>)}{!map[secili]&&<p className="tools-note">Bu gün için harcama kaydı yok.</p>}</div>}</section>;
 }
+function ekstreTrendIslemleri(islemler, kartlar, kartOdemeleri) {
+  const kartIsimleri = new Set(kartlar.map(k => k.isim));
+  const normal = islemler.filter(i => !i.kartHarcama && !(i.tip === 'gider' && kartIsimleri.has(i.kategori)));
+  const odemeler = kartOdemeleri.map(o => ({
+    id:`ekstre-trend:${o.id}`,tip:'gider',kategori:o.kartAdi || kartlar.find(k=>String(k.id)===String(o.kartId))?.isim || 'Kredi kartı',
+    tutar:Number(o.tutar) || 0,tarih:o.tarih,kaynak:'ekstre_odemesi',
+  }));
+  return [...normal,...odemeler];
+}
+
 function yillikKategoriVerisi(islemler, yil, tip, simdi = new Date()) {
   const aySayisi = yil < simdi.getFullYear() ? 12 : yil === simdi.getFullYear() ? simdi.getMonth() + 1 : 0;
   return Array.from({ length: aySayisi }, (_, ay) => {
@@ -1961,7 +1990,7 @@ function YillikKategoriKiyas({ islemler, yil, tip }) {
   </section>;
 }
 
-function EsnekRapor({islemler,odemeler,donemGun,gelismisYorum,birikimRaporu}) {
+function EsnekRapor({islemler,odemeler,kartlar=[],kartOdemeleri=[],donemGun,gelismisYorum,birikimRaporu}) {
   const [mod,setMod]=useState('donem');
   const [offset,setOffset]=useState(0);
   const [yil,setYil]=useState(new Date().getFullYear());
@@ -1985,6 +2014,8 @@ function EsnekRapor({islemler,odemeler,donemGun,gelismisYorum,birikimRaporu}) {
   };
   const giderKategorileri=kategoriToplamlari('gider');
   const gelirKategorileri=kategoriToplamlari('gelir');
+  const trendIslemleri=useMemo(()=>ekstreTrendIslemleri(islemler,kartlar,kartOdemeleri),[islemler,kartlar,kartOdemeleri,bugun]);
+  const trendOzeti=useMemo(()=>aralik?aralikOzeti(trendIslemleri,aralik.ilk,aralik.son):null,[trendIslemleri,aralik?.ilk,aralik?.son]);
   const grafik=useMemo(()=>{
     if(!aralik||bitis<aralik.ilk)return [];
     const gunSayisi=takvimGunFarki(bitis,aralik.ilk)+1;
@@ -1998,13 +2029,13 @@ function EsnekRapor({islemler,odemeler,donemGun,gelismisYorum,birikimRaporu}) {
       else if(mod==='ay')t=new Date(t.getFullYear(),t.getMonth()+1,1);
       else t=new Date(t.getFullYear()+1,0,1);
     }
-    ozet?.kayitlar.forEach(i=>{
+    trendOzeti?.kayitlar.forEach(i=>{
       const bucket=map[key(i.tarih)];
       if(!bucket||i.kategori==='Birikim'||(i.tip==='gelir'&&i.kategori==='Kira Geliri'&&i.donemeDahil===false))return;
       bucket[i.tip]=paraTopla(bucket[i.tip],i.tutar);
     });
     return Object.values(map);
-  },[ozet,aralik?.ilk,bitis]);
+  },[trendOzeti,aralik?.ilk,bitis]);
   const fark=(simdi,eski)=>eski>0?`${simdi>=eski?'+':''}${((simdi-eski)/eski*100).toFixed(1).replace('.',',')}%`:'Önceki tutar yok';
   const dagilim=(liste,toplam,tip)=><section className="tools-card"><h3><Icon name={tip==='gelir'?'arrowUp':'arrowDown'} size={17}/>{tip==='gelir'?'Gelir kaynakları':'Gider kategorileri'}</h3>{liste.length?liste.map(([k,v])=><div className="category-distribution" key={k}><div className="tools-row"><span className="category-label"><KategoriSimge kategori={k} tip={tip}/>{k}</span><strong>{fmtTL(v)} <small>%{toplam>0?(v/toplam*100).toFixed(1):0}</small></strong></div><div className="distribution-track"><span style={{width:`${toplam>0?v/toplam*100:0}%`,background:kategoriGorunumu(k,tip,kategoriGorunumleri).renk}}/></div></div>):<p className="tools-note">Bu aralıkta {tip} kaydı yok.</p>}</section>;
   const gunSayisi=aralik&&bitis>=aralik.ilk?takvimGunFarki(bitis,aralik.ilk)+1:0;
@@ -2033,16 +2064,16 @@ function EsnekRapor({islemler,odemeler,donemGun,gelismisYorum,birikimRaporu}) {
         {dagilim(giderKategorileri.slice(0,5),ozet.gider,'gider')}
       </>}
       {sekme==='dagilim'&&<>{dagilim(giderKategorileri,ozet.gider,'gider')}{dagilim(gelirKategorileri,ozet.gelir,'gelir')}</>}
-      {sekme==='trend'&&<section className="tools-card"><h3><Icon name="chart" size={17}/>Gelir ve gider trendi</h3>
-        {grafik.length&&ozet.kayitlar.length?<><div className="report-chart"><ResponsiveContainer width="100%" height={220}><LineChart data={grafik} margin={{top:12,right:8,left:0,bottom:8}}><CartesianGrid stroke="var(--border)" vertical={false} strokeDasharray="3 4"/><XAxis dataKey="label" tick={{fontSize:10,fill:'var(--text3)'}} tickLine={false} axisLine={false} minTickGap={24}/><YAxis width={42} tick={{fontSize:10,fill:'var(--text3)'}} tickLine={false} axisLine={false} tickFormatter={v=>v>=1000?`${Math.round(v/1000)}B`:v}/><Tooltip content={({active,payload,label})=>active&&payload?.length?<div className="chart-tooltip"><strong>{label}</strong>{payload.map(p=><div key={p.dataKey}>{p.name}: {fmtTL(p.value)}</div>)}</div>:null}/><Line type="monotone" dataKey="gelir" name="Gelir" stroke="var(--income-text)" strokeWidth={2.3} dot={false}/><Line type="monotone" dataKey="gider" name="Gider" stroke="var(--expense-text)" strokeWidth={2.3} dot={false}/></LineChart></ResponsiveContainer></div><div className="chart-legend"><span><i style={{background:'var(--income-text)'}}/>Gelir</span><span><i style={{background:'var(--expense-text)'}}/>Gider</span></div><details className="calculation-help"><summary>Tutarları listele</summary><div className="trend-table">{grafik.map(g=><div className="tools-row" key={g.key}><span>{g.label}</span><span>{fmtTL(g.gelir)} / {fmtTL(g.gider)}</span></div>)}</div></details></>:<div className="empty-state"><Icon name="chart" size={26}/><p>Trend için henüz veri yok.</p></div>}
+      {sekme==='trend'&&<section className="tools-card"><h3><Icon name="chart" size={17}/>Gelir ve gider trendi</h3><p className="tools-note">Gelir/gider ve kategori trendlerinde kredi kartları, ödendiği tarihteki ekstre ödemesiyle gösterilir. Dönem içi ve provizyon toplamları bu trendlere eklenmez.</p>
+        {grafik.length&&trendOzeti?.kayitlar.length?<><div className="report-chart"><ResponsiveContainer width="100%" height={220}><LineChart data={grafik} margin={{top:12,right:8,left:0,bottom:8}}><CartesianGrid stroke="var(--border)" vertical={false} strokeDasharray="3 4"/><XAxis dataKey="label" tick={{fontSize:10,fill:'var(--text3)'}} tickLine={false} axisLine={false} minTickGap={24}/><YAxis width={42} tick={{fontSize:10,fill:'var(--text3)'}} tickLine={false} axisLine={false} tickFormatter={v=>v>=1000?`${Math.round(v/1000)}B`:v}/><Tooltip content={({active,payload,label})=>active&&payload?.length?<div className="chart-tooltip"><strong>{label}</strong>{payload.map(p=><div key={p.dataKey}>{p.name}: {fmtTL(p.value)}</div>)}</div>:null}/><Line type="monotone" dataKey="gelir" name="Gelir" stroke="var(--income-text)" strokeWidth={2.3} dot={false}/><Line type="monotone" dataKey="gider" name="Gider" stroke="var(--expense-text)" strokeWidth={2.3} dot={false}/></LineChart></ResponsiveContainer></div><div className="chart-legend"><span><i style={{background:'var(--income-text)'}}/>Gelir</span><span><i style={{background:'var(--expense-text)'}}/>Gider</span></div><details className="calculation-help"><summary>Tutarları listele</summary><div className="trend-table">{grafik.map(g=><div className="tools-row" key={g.key}><span>{g.label}</span><span>{fmtTL(g.gelir)} / {fmtTL(g.gider)}</span></div>)}</div></details></>:<div className="empty-state"><Icon name="chart" size={26}/><p>Trend için henüz veri yok.</p></div>}
       </section>}
       {sekme==='trend'&&<>
         <section className="tools-card"><h3><Icon name="chart" size={17}/>Yıllık kategori karşılaştırması</h3>
           <Input label="Kategori karşılaştırma yılı" type="number" min="2000" max={new Date().getFullYear()} value={kategoriYili} onChange={e=>{if(tamSayiGecerli(e.target.value,2000,new Date().getFullYear()))setKategoriYili(Number(e.target.value));}}/>
           <p className="tools-note">Grafikler seçili rapor aralığından bağımsızdır; takvim aylarına göre yılbaşından bugünün ayına kadar gösterilir. Geçmiş yıllar 12 ay gösterilir. İçinde bulunduğumuz ay tamamlanmadığı için önceki tam ayla karşılaştırması geçicidir.</p>
         </section>
-        <YillikKategoriKiyas islemler={islemler} yil={kategoriYili} tip="gider"/>
-        <YillikKategoriKiyas islemler={islemler} yil={kategoriYili} tip="gelir"/>
+        <YillikKategoriKiyas islemler={trendIslemleri} yil={kategoriYili} tip="gider"/>
+        <YillikKategoriKiyas islemler={trendIslemleri} yil={kategoriYili} tip="gelir"/>
       </>}
       {sekme==='trend'&&<HaftaninGunleri islemler={islemler} odemeler={odemeler} ilk={aralik.ilk} son={aralik.son}/>}
       {sekme==='harita'&&<HarcamaHaritasi islemler={islemler} odemeler={odemeler} ilk={aralik.ilk} son={aralik.son}/>}
@@ -2060,7 +2091,7 @@ function EsnekRapor({islemler,odemeler,donemGun,gelismisYorum,birikimRaporu}) {
   </div>;
 }
 
-function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler, setKategoriler, kartlar, donemGun, odemeler = [] }) {
+function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler, setKategoriler, kartlar, donemGun, odemeler = [], kartOdemeleri = [] }) {
   const { gorunumler: kategoriGorunumleri } = useContext(KategoriGorunumContext);
   const [modal, setModal] = useState(false);
   const [duzenleModal, setDuzenleModal] = useState(false);
@@ -2076,7 +2107,7 @@ function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler
   const [tarihIlk,setTarihIlk] = useState("");
   const [tarihSon,setTarihSon] = useState("");
   const tarihFiltreHatasi = !!(tarihIlk && tarihSon && tarihIlk > tarihSon);
-  const filtreKategorileri = [...new Set([...kategoriler.gelir,...kategoriler.gider,...islemler.map(i=>i.kategori)])].sort((a,b)=>a.localeCompare(b,'tr'));
+  const filtreKategorileri = [...new Set([...kategoriler.gelir,...kategoriler.gider,...islemler.map(i=>i.kategori),...kartOdemeleri.map(o=>o.kartAdi || 'Kredi kartı')])].sort((a,b)=>a.localeCompare(b,'tr'));
   const [form, setForm] = useState({ tip: "gider", kategori: "Market", tutar: "", aciklama: "", tarih: yerelTarihAnahtari(), donemeDahil: true, donemIci: "", provizyon: "" });
   const [acikDonemler, setAcikDonemler] = useState({});
   const donemToggle = (key) => setAcikDonemler(p => ({ ...p, [key]: !p[key] }));
@@ -2098,7 +2129,11 @@ function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler
     if (varsayilan.includes(isim)) return; // varsayılanları silme
     setKategoriler(k => ({ ...k, [tip]: k[tip].filter(x => x !== isim) }));
   };
-  const filtered = islemler
+  const filtered = [...islemler,...kartOdemeleri.map(o => ({
+    id:`kart-odeme:${o.id}`,tip:'gider',kategori:o.kartAdi || 'Kredi kartı',
+    tutar:o.tutar,tarih:o.tarih,aciklama:`${o.kartAdi || 'Kredi kartı'} ekstre ödemesi`,
+    kartEkstreOdeme:true,
+  }))]
     .filter(i =>
       !tarihFiltreHatasi &&
       (!kategoriFiltre || i.kategori === kategoriFiltre) &&
@@ -2117,7 +2152,7 @@ function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler
         grupMap[key] = { key, label: dk.label, islemler: [], gelir: 0, gider: 0, baslangic: dk.baslangic };
       }
       grupMap[key].islemler.push(i);
-      if (i.tip === "gelir") grupMap[key].gelir += i.tutar;
+      if (i.tip === "gelir") { if (!devirIslemiMi(i)) grupMap[key].gelir += i.tutar; }
       else grupMap[key].gider += i.tutar;
     });
     return Object.values(grupMap).sort((a, b) => yerelTarihOku(b.baslangic) - yerelTarihOku(a.baslangic));
@@ -2241,10 +2276,12 @@ function IslemlerTab({ islemler, setIslemler, butceler, setButceler, kategoriler
                         </div>
                         <div className="transaction-amount" style={{ textAlign: "right", flexShrink: 0 }}>
                           <div style={{ color: renk, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600, fontSize: 14 }}>{i.tip === "gelir" ? "+" : "-"}₺{fmt(i.tutar)}</div>
+                          {i.kartEkstreOdeme?<span className="tools-note">Karttan düzenlenir</span>:<>
                           <div style={{ display: "flex", gap: 4, marginTop: 2, justifyContent: "flex-end" }}>
                             <button onClick={() => { setDuzenleHedef(i); setDuzenleForm({ tip: i.tip, kategori: i.kategori, tutar: String(i.tutar), aciklama: i.aciklama || "", tarih: i.tarih || yerelTarihAnahtari(), donemeDahil: i.donemeDahil !== false, donemIci: i.donemIci != null ? String(i.donemIci) : "", provizyon: i.provizyon != null ? String(i.provizyon) : "" }); setDuzenleModal(true); }} style={{ background: "none", border: "none", color: "var(--text4)", cursor: "pointer", fontSize: 13 }} aria-label="Düzenle"><Icon name="edit" size={16}/></button>
                             <button onClick={() => islemSil(i)} style={{ background: "none", border: "none", color: "var(--text5)", cursor: "pointer", fontSize: 13 }} aria-label="Sil"><Icon name="trash" size={16}/></button>
                           </div>
+                          </>}
                         </div>
                       </div>
                     );
@@ -2849,6 +2886,7 @@ function AyarlarTab({ donemGun, setDonemGun, kartlar, setKartlar, kategoriler, s
 
       <section className="tools-card"><h3><Icon name="chart" size={17}/>Bütçe grafiği</h3><p className="tools-note">Genel Bakış ekranında halka veya ibre göstergesini kullan. Seçimin sonraki açılışlarda korunur.</p><div className="gauge-options">{[{id:'halka',label:'Halka',note:'Kompakt dairesel gösterge'},{id:'ibre',label:'İbre',note:'Renkli ölçek ve hareketli ibre'}].map(t=><button type="button" key={t.id} aria-pressed={grafikTipi===t.id} onClick={()=>setGrafikTipi(t.id)}><strong>{t.label}</strong><span>{t.note}</span></button>)}</div></section>
       <KategoriGorunumAyarlari kategoriler={kategoriler}/>
+      <section className="tools-card"><h3>Önceki aydan devir</h3><p className="tools-note">Önceki maaş döneminin yalnızca artı bakiyesi yeni döneme bir kez eklenir. Devir gelir raporlarına dahil edilmez. Geçmiş dönemi sonradan düzeltirsen İşlemler ekranındaki devir kaydını düzenleyebilirsin.</p></section>
       <TasarrufHedefi hedef={tasarrufHedefi} setHedef={setTasarrufHedefi}/>
       <section className="tools-card"><h3>Excel / CSV aktarımı</h3><p className="tools-note">Tüm işlemlerini Türkçe sütunlar ve kuruş hassasiyetiyle aktar. İşlemler ekranında filtrelenmiş kayıtları da aktarabilirsin. CSV tam yedeğin yerine geçmez.</p><Btn onClick={()=>csvAktar(islemler,odemeler)} disabled={!islemler.length}>Tüm işlemleri CSV aktar</Btn></section>
       {/* Veri yedekleme */}
@@ -3023,7 +3061,7 @@ function AyarlarTab({ donemGun, setDonemGun, kartlar, setKartlar, kategoriler, s
 
 
 // ── ANALİZ ────────────────────────────────────────────────────────────────────
-function AnalizTab({ islemler, kategoriler, donemGun, kartlar, odemeler = [] }) {
+function AnalizTab({ islemler, kategoriler, donemGun, kartlar, odemeler = [], kartOdemeleri = [] }) {
   const [secilenYil, setSecilenYil] = useState(new Date().getFullYear());
   const [gorunum, setGorunum] = useState("gider");
   const [analizSekme, setAnalizSekme] = useState("yorum");
@@ -3638,7 +3676,7 @@ function AnalizTab({ islemler, kategoriler, donemGun, kartlar, odemeler = [] }) 
     </div>
   );
 
-  return <EsnekRapor islemler={islemler} odemeler={odemeler} donemGun={donemGun} gelismisYorum={renderAkilliYorum} birikimRaporu={()=><><Input label="Birikim raporu yılı" type="number" min="2000" max="2100" value={secilenYil} onChange={e=>{if(tamSayiGecerli(e.target.value,2000,2100))setSecilenYil(Number(e.target.value));}}/>{renderBirikim()}</>}/>;
+  return <EsnekRapor islemler={islemler} odemeler={odemeler} kartlar={kartlar} kartOdemeleri={kartOdemeleri} donemGun={donemGun} gelismisYorum={renderAkilliYorum} birikimRaporu={()=><><Input label="Birikim raporu yılı" type="number" min="2000" max="2100" value={secilenYil} onChange={e=>{if(tamSayiGecerli(e.target.value,2000,2100))setSecilenYil(Number(e.target.value));}}/>{renderBirikim()}</>}/>;
 }
 
 function TekrarlayanTab({ tekrarlayan, setTekrarlayan, kategoriler, setKategoriler }) {
@@ -4295,6 +4333,7 @@ export default function App() {
   const [kartOdemeleri, setKartOdemeleri] = useLocalStorage("ft_kart_odemeleri", []);
   const [bakiyeHesapModu, setBakiyeHesapModu] = useLocalStorage("ft_bakiye_hesap_modu", "kartlar_dahil");
   const [hizliSablonlar, setHizliSablonlar] = useLocalStorage("ft_hizli_sablonlar", []);
+  const [devirLog,setDevirLog] = useLocalStorage("ft_donem_devir_log", {});
   const [donemGun, setDonemGun] = useLocalStorage("ft_donem_gun", "15");
   const [tekrarlayan, setTekrarlayan] = useLocalStorage("ft_tekrarlayan", INITIAL_TEKRARLAYAN);
   const [butceler, setButceler] = useLocalStorage("ft_butceler", {});
@@ -4451,6 +4490,22 @@ export default function App() {
     bildirimPlanlamaSirasi = bildirimPlanlamaSirasi.then(planla, planla);
     return () => { iptal = true; };
   }, [odemeler, kartlar, kartOdemeleri, krediler, bildirimAyarlari, bildirimYenileme]);
+
+  useEffect(() => {
+    const hesap = donemDevriHesapla(islemler,kartlar,kartOdemeleri,Number(donemGun)||15,bakiyeHesapModu);
+    if (Object.prototype.hasOwnProperty.call(devirLog,hesap.donemKey)) return;
+    const mevcut = islemler.some(i => devirIslemiMi(i) && maasDonemKey(i.tarih,Number(donemGun)||15).key === hesap.donemKey);
+    if (!mevcut && hesap.tutar > 0) {
+      try {
+        if (!localStorage.getItem('ft_auto_backup_devir_v1')) localStorage.setItem('ft_auto_backup_devir_v1',JSON.stringify({format:'finora-v2',data:{ft_islemler:islemler,ft_kartlar:kartlar,ft_kart_odemeleri:kartOdemeleri,ft_donem_gun:donemGun,ft_donem_devir_log:devirLog}}));
+      } catch { kayitHatasiBildir('Dönem devrinden önce güvenlik yedeği yazılamadı; otomatik devir eklenmedi.'); return; }
+      if (setIslemler(p => p.some(i => i.id === `donem-devri:${hesap.donemKey}`) ? p : [...p,{
+        id:`donem-devri:${hesap.donemKey}`,tip:'gelir',kategori:'Önceki aydan devir',kaynak:'donem_devri',
+        aciklama:'Önceki aydan devir',tutar:hesap.tutar,tarih:hesap.tarih,kaynakDonemKey:hesap.kaynakDonemKey,
+      }]) === false) return;
+    }
+    setDevirLog(p => ({...p,[hesap.donemKey]:{...hesap,manuel:mevcut}}));
+  },[islemler,kartlar,kartOdemeleri,donemGun,bakiyeHesapModu,devirLog,bildirimYenileme]);
 
   // 🔄 Her açılışta aktif sabit giderleri kontrol et, bu ay eklenmemişse ekle
   useEffect(() => {
@@ -4941,7 +4996,7 @@ export default function App() {
         .credit-dates > div:first-child strong { color:var(--text3); }
         .credit-dates > div:last-child strong { color:var(--credit-blue); }
         .credit-tile .tools-note { color:var(--text3); }
-        .credit-actions button:only-child { grid-column:1/-1; }
+        .credit-actions button:only-child, .credit-actions button:nth-child(3) { grid-column:1/-1; }
         .credit-actions button { min-width:0; font-size:10px !important; padding:9px 7px !important; line-height:1.5; letter-spacing:0 !important; }
         .home-payments .upcoming-heading { display:flex; align-items:center; gap:8px; text-transform:none !important; font-size:14px !important; font-weight:600; letter-spacing:0 !important; margin-bottom:7px !important; }
         .upcoming-heading svg { color:var(--accent); }
@@ -5113,10 +5168,10 @@ export default function App() {
           <div style={{ display: aktifTab === "ozet" ? "block" : "none" }}>
             <Ozet islemler={islemler} setIslemler={setIslemler} kartlar={kartlar} setKartlar={setKartlar} donemGun={parseInt(donemGun)||15} kategoriler={kategoriler} odemeler={odemeler} setOdemeler={setOdemeler} hizliModal={hizliModal} setHizliModal={setHizliModal} hizliSablonlar={hizliSablonlar} setHizliSablonlar={setHizliSablonlar} taksitler={taksitler} setTaksitler={setTaksitler} kartOdemeleri={kartOdemeleri} setKartOdemeleri={setKartOdemeleri} bakiyeHesapModu={bakiyeHesapModu} tasarrufHedefi={tasarrufHedefi} grafikTipi={grafikTipi} />
           </div>
-          {aktifTab === "islemler" && <IslemlerTab islemler={islemler} setIslemler={setIslemler} odemeler={odemeler} butceler={butceler} setButceler={setButceler} kategoriler={kategoriler} setKategoriler={setKategoriler} kartlar={kartlar} donemGun={parseInt(donemGun)||15} />}
+          {aktifTab === "islemler" && <IslemlerTab islemler={islemler} setIslemler={setIslemler} odemeler={odemeler} butceler={butceler} setButceler={setButceler} kategoriler={kategoriler} setKategoriler={setKategoriler} kartlar={kartlar} kartOdemeleri={kartOdemeleri} donemGun={parseInt(donemGun)||15} />}
           {aktifTab === "odemeler" && <OdemelerTab odemeler={odemeler} setOdemeler={setOdemeler} islemler={islemler} setIslemler={setIslemler} kategoriler={kategoriler} donemGun={parseInt(donemGun)||15} />}
           {aktifTab === "tekrarlayan" && <TekrarlayanTab tekrarlayan={tekrarlayan} setTekrarlayan={setTekrarlayan} kategoriler={kategoriler} setKategoriler={setKategoriler} />}
-          {aktifTab === "analiz" && <AnalizTab islemler={islemler} kategoriler={kategoriler} donemGun={parseInt(donemGun)||15} kartlar={kartlar} odemeler={odemeler} />}
+          {aktifTab === "analiz" && <AnalizTab islemler={islemler} kategoriler={kategoriler} donemGun={parseInt(donemGun)||15} kartlar={kartlar} odemeler={odemeler} kartOdemeleri={kartOdemeleri} />}
           {aktifTab === "krediler" && <KredilerTab krediler={krediler} setKrediler={setKrediler} />}
           {aktifTab === "taksitler" && <TaksitlerTab taksitler={taksitler} setTaksitler={setTaksitler} />}
           {aktifTab === "maas" && <MaasTab zamlar={zamlar} setZamlar={setZamlar} maasAyarlar={maasAyarlar} setMaasAyarlar={setMaasAyarlar} enflasyon={enflasyon} setEnflasyon={setEnflasyon} />}
