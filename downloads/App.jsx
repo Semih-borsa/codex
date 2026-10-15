@@ -1878,22 +1878,40 @@ function TasarrufHedefi({hedef,setHedef}) {
   useEffect(()=>setTaslak(String(hedef)),[hedef]);
   return <section className="tools-card"><h3>Tasarruf hedefi</h3><p className="tools-note">Gelirinin ayırmak istediğin yüzdesi. Günlük harcama payı bu hedef ve kayıtlı ödemeler dikkate alınarak hesaplanır.</p><div className="tools-grid"><Input label="Hedef (%)" type="number" min="0" max="100" step="1" value={taslak} onChange={e=>setTaslak(e.target.value)} /><Btn onClick={()=>{if(!tamSayiGecerli(taslak,0,100)){toast("0–100 arasında tam sayı gir", "uyari");return;}setHedef(Number(taslak));toast("Tasarruf hedefi kaydedildi");}}>Hedefi kaydet</Btn></div></section>;
 }
-function gunlukGiderHareketleri(islemler,odemeler,ilk,son,bugun=yerelTarihAnahtari()) {
-  return islemler.filter(i=>i.tip==='gider').flatMap(i=>{
-    if(i.kartHarcama)return kartAnalizHareketleri(i).map(h=>({...i,...h}));
-    if(i.kaynak==='odeme') {
-      const o=odemeler.find(o=>String(o.id)===String(i.odemeId)||(o.islemId!=null&&String(o.islemId)===String(i.id)));
-      if(!o?.odendi)return [];
-      const t=o.odendiTarih?new Date(o.odendiTarih):yerelTarihOku(i.tarih);
-      if(!t||!Number.isFinite(t.getTime()))return [];
-      return [{...i,tarih:yerelTarihAnahtari(t)}];
+function gunlukFinansHareketleri(islemler,odemeler, kartOdemeleri,ilk,son,bugun=yerelTarihAnahtari()) {
+  const sonuc = [], sayilanOdemeler = new Set();
+  const ekle = i => { if(yerelTarihOku(i.tarih) && i.tarih>=ilk && i.tarih<=son && i.tarih<=bugun) sonuc.push(i); };
+  const odemeEkle = (o,i={}) => {
+    if(!o.odendi || sayilanOdemeler.has(String(o.id))) return;
+    sayilanOdemeler.add(String(o.id));
+    const odendi = o.odendiTarih ? new Date(o.odendiTarih) : null;
+    const tarih = odendi && Number.isFinite(odendi.getTime()) ? yerelTarihAnahtari(odendi) : o.tarih || i.tarih;
+    ekle({...i,id:`odeme:${o.id}`,tip:'gider',kategori:o.kategori||i.kategori||'Fatura',aciklama:o.aciklama||i.aciklama||o.kategori||'Ödeme',tutar:paraOku(o.tutar),tarih,kaynak:'odeme'});
+  };
+  islemler.forEach(i=>{
+    if(i.tip==='gelir') {
+      if(!devirIslemiMi(i) && i.kategori!=='Birikim' && !(i.kategori==='Kira Geliri'&&i.donemeDahil===false))ekle(i);
+      return;
     }
-    return [i];
-  }).filter(i=>yerelTarihOku(i.tarih)&&i.tarih>=ilk&&i.tarih<=son&&i.tarih<=bugun);
+    if(i.tip!=='gider' || i.kartEkstreOdeme || i.kaynak==='ekstre_odemesi')return;
+    if(i.kartHarcama) {
+      kartAnalizHareketleri(i).forEach(h=>ekle({...i,...h,id:`kart-fark:${i.id}:${h.tarih}`,aciklama:`${i.kategori} · Kart harcama artışı`,kaynak:'kart_gunluk_fark'}));return;
+    }
+    const o=odemeler.find(o=>(i.odemeId!=null&&String(o.id)===String(i.odemeId)) || (o.islemId!=null&&String(o.islemId)===String(i.id)));
+    if(o){odemeEkle(o,i);return;}
+    if(i.kaynak==='odeme'||i.odemeId!=null)return;
+    ekle(i);
+  });
+  odemeler.forEach(o=>odemeEkle(o));
+  kartOdemeleri.forEach(o=>ekle({id:`ekstre:${o.id}`,tip:'gider',kategori:o.kartAdi||'Kredi kartı',aciklama:o.aciklama||`${o.kartAdi||'Kredi kartı'} ekstre ödemesi`,tutar:paraOku(o.tutar),tarih:o.tarih,kaynak:'ekstre_odemesi'}));
+  return sonuc;
+}
+function gunlukGiderHareketleri(islemler,odemeler,ilk,son,bugun=yerelTarihAnahtari(),kartOdemeleri=[]) {
+  return gunlukFinansHareketleri(islemler,odemeler,kartOdemeleri,ilk,son,bugun).filter(i=>i.tip==='gider');
 }
 function haftaninGunleriOzeti(hareketler,ilk,son,bugun=yerelTarihAnahtari()) {
   const adlar=['Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi','Pazar'];
-  const gruplar=adlar.map(ad=>({ad,kacGun:0,toplamKurus:0,ortalama:0}));
+  const gruplar=adlar.map(ad=>({ad,kacGun:0,toplamKurus:0,toplam:0}));
   const bitis=son<bugun?son:bugun;
   const bas=yerelTarihOku(ilk),sonTarih=yerelTarihOku(bitis);
   if(!bas||!sonTarih||bas>sonTarih)return gruplar;
@@ -1904,22 +1922,24 @@ function haftaninGunleriOzeti(hareketler,ilk,son,bugun=yerelTarihAnahtari()) {
     const t=yerelTarihOku(i.tarih);
     if(t)gruplar[(t.getDay()+6)%7].toplamKurus+=paraKurus(i.tutar)||0;
   });
-  return gruplar.map(g=>({...g,ortalama:g.kacGun?Math.round(g.toplamKurus/g.kacGun)/100:0}));
+  return gruplar.map(g=>({...g,toplam:g.toplamKurus/100}));
 }
-function HaftaninGunleri({islemler,odemeler,ilk,son}) {
+function HaftaninGunleri({islemler,odemeler,kartOdemeleri=[],ilk,son}) {
   const bugun=yerelTarihAnahtari();
-  const veri=useMemo(()=>haftaninGunleriOzeti(gunlukGiderHareketleri(islemler,odemeler,ilk,son,bugun),ilk,son,bugun),[islemler,odemeler,ilk,son,bugun]);
-  const max=Math.max(1,...veri.map(g=>g.ortalama));
-  return <section className="tools-card weekday-card"><h3><Icon name="calendar" size={17}/>Haftanın Günleri</h3><p className="tools-note">Seçili aralıkta gün başına ortalama gider</p>{veri.map(g=><div className="weekday-row" key={g.ad}><div><span>{g.ad}</span><strong>{g.kacGun?fmtTL(g.ortalama):'—'}</strong></div><div className="weekday-track"><span style={{width:`${g.ortalama/max*100}%`}}/></div></div>)}<details className="calculation-help"><summary>Nasıl hesaplanır?</summary><p className="tools-note">Her günün gider toplamı, aralıktaki o haftanın günü sayısına bölünür. Harcama kaydı olmayan günler de ortalamaya dahildir; gelecekteki günler hariçtir. Ödemeler ödendiği tarihte, kartlar günlük harcama farkıyla sayılır. İlk kart toplamı ve bekleyen ödemeler sayılmaz.</p></details></section>;
+  const veri=useMemo(()=>haftaninGunleriOzeti(gunlukGiderHareketleri(islemler,odemeler,ilk,son,bugun,kartOdemeleri),ilk,son,bugun),[islemler,odemeler,kartOdemeleri,ilk,son,bugun]);
+  const max=Math.max(1,...veri.map(g=>g.toplam));
+  return <section className="tools-card weekday-card"><h3><Icon name="calendar" size={17}/>Haftanın Günleri</h3><p className="tools-note">Seçili aralıkta haftanın her günü için toplam gider</p>{veri.map(g=><div className="weekday-row" key={g.ad}><div><span>{g.ad}</span><strong>{fmtTL(g.toplam)}</strong></div><div className="weekday-track"><span style={{width:`${g.toplam/max*100}%`}}/></div></div>)}<details className="calculation-help"><summary>Nasıl hesaplanır?</summary><p className="tools-note">Seçili aralıktaki tüm pazartesiler kendi içinde, diğer günler de kendi içinde toplanır; ortalama alınmaz. Kartlarda yalnızca dönem içi + provizyon artışı sayılır. Ekstre ödemeleri ödeme tarihinde ayrıca gösterilir. Gelecek tarihli ve bekleyen ödemeler hariçtir.</p></details></section>;
 }
 
-function HarcamaHaritasi({islemler,odemeler,ilk,son}) {
+function HarcamaHaritasi({islemler,odemeler,kartOdemeleri=[],ilk,son}) {
   const [ay,setAy] = useState(ilk.slice(0,7));
   const [secili,setSecili] = useState(null);
   useEffect(()=>{setAy(ilk.slice(0,7));setSecili(null);},[ilk,son]);
   const bugun = yerelTarihAnahtari();
-  const hareketler = useMemo(()=>gunlukGiderHareketleri(islemler,odemeler,ilk,son,bugun),[islemler,odemeler,ilk,son,bugun]);
-  const gunGeliri = secili ? aralikOzeti(islemler,secili,secili,bugun).gelir : 0;
+  const tumHareketler = useMemo(()=>gunlukFinansHareketleri(islemler,odemeler,kartOdemeleri,ilk,son,bugun),[islemler,odemeler,kartOdemeleri,ilk,son,bugun]);
+  const hareketler = tumHareketler.filter(i=>i.tip==='gider');
+  const gelirler = tumHareketler.filter(i=>i.tip==='gelir');
+  const gunGeliri = gelirler.filter(i=>i.tarih===secili).reduce((s,i)=>paraTopla(s,i.tutar),0);
   const map = {};
   hareketler.forEach(i=>{map[i.tarih]=paraTopla(map[i.tarih]||0,i.tutar);});
   const [y,m]=ay.split('-').map(Number), bas=new Date(y,m-1,1), gunler=new Date(y,m,0).getDate();
@@ -1928,7 +1948,7 @@ function HarcamaHaritasi({islemler,odemeler,ilk,son}) {
   return <section className="tools-card"><h3>Harcama haritası</h3><div className="tools-row"><button className="tools-button" aria-label="Haritada önceki ay" disabled={ay<=ilk.slice(0,7)} onClick={()=>ayDegistir(-1)}>‹</button><strong>{bas.toLocaleDateString('tr-TR',{month:'long',year:'numeric'})}</strong><button className="tools-button" aria-label="Haritada sonraki ay" disabled={ay>=son.slice(0,7)} onClick={()=>ayDegistir(1)}>›</button></div><div className="heat-grid">{['Pt','Sa','Ça','Pe','Cu','Ct','Pa'].map(g=><span className="tools-note" key={g}>{g}</span>)}{Array.from({length:(bas.getDay()+6)%7},(_,i)=><span key={'blank'+i}/>)}{Array.from({length:gunler},(_,i)=>{
     const t=yerelTarihAnahtari(new Date(y,m-1,i+1)),tutar=map[t]||0,dis=t<ilk||t>son||t>bugun;
     return <button key={t} className="heat-day" disabled={dis} aria-pressed={secili===t} aria-label={`${t}: ${fmtTL(tutar)}`} onClick={()=>setSecili(t)} style={{background:tutar>0?`rgba(167,78,50,${.12+.65*tutar/max})`:'var(--card2)',color:tutar/max>.6?'#fff':'var(--text)',borderColor:secili===t?'var(--accent)':'var(--border)'}}><span>{i+1}</span><small>{tutar>0?'●':'·'}</small></button>;
-  })}</div><p className="tools-note">Koyu renk daha fazla harcama demektir. Boş gün, kayıt olmadığı anlamına gelir. Bekleyen ödemeler ve ilk kart toplamı haritada yer almaz; kartların günlük farkları gösterilir. Gelir toplamında birikim kayıtları hariçtir.</p>{secili&&<div aria-live="polite"><h4>{secili.split('-').reverse().join('.')} · {fmtTL(map[secili]||0)}</h4><div className="day-totals"><div><span>Gelir toplamı</span><strong style={{color:'var(--income-text)'}}>{fmtTL(gunGeliri)}</strong></div><div><span>Gider toplamı</span><strong style={{color:'var(--expense-text)'}}>{fmtTL(map[secili]||0)}</strong></div></div><h4>Harcama Ayrıntıları</h4>{hareketler.filter(i=>i.tarih===secili).map((i,k)=><div className="tools-row" key={`${i.id}-${k}`}><span>{i.aciklama||i.kategori}<small className="tools-note"> · {i.kategori}</small></span><strong>{fmtTL(i.tutar)}</strong></div>)}{!map[secili]&&<p className="tools-note">Bu gün için harcama kaydı yok.</p>}</div>}</section>;
+  })}</div><p className="tools-note">Koyu renk daha fazla harcama demektir. Boş gün, kayıt olmadığı anlamına gelir. Bekleyen ödemeler ve ilk kart toplamı haritada yer almaz; kartların günlük farkları gösterilir. Ekstre ödemeleri ödeme tarihinde ayrı kalem olarak eklenir. Günlük gider toplamı hem yeni kart harcamasını hem ekstre ödemesini içerir. Gelirde birikim ve önceki aydan devir hariçtir.</p>{secili&&<div aria-live="polite"><h4>{secili.split('-').reverse().join('.')} · {fmtTL(map[secili]||0)}</h4><div className="day-totals"><div><span>Gelir toplamı</span><strong style={{color:'var(--income-text)'}}>{fmtTL(gunGeliri)}</strong></div><div><span>Gider toplamı</span><strong style={{color:'var(--expense-text)'}}>{fmtTL(map[secili]||0)}</strong></div></div>{[['gelir','Gelir ayrıntıları',gelirler],['gider','Gider ayrıntıları',hareketler]].map(([tip,baslik,liste])=><div key={tip}><h4>{baslik}</h4>{liste.filter(i=>i.tarih===secili).map((i,k)=><div className="tools-row" key={`${i.id}-${k}`}><span>{i.aciklama||i.kategori}<small className="tools-note"> · {i.kategori}</small></span><strong style={{color:tip==='gelir'?'var(--income-text)':'var(--expense-text)'}}>{tip==='gelir'?'+':'−'}{fmtTL(i.tutar)}</strong></div>)}{!liste.some(i=>i.tarih===secili)&&<p className="tools-note">Bu gün için {tip} kaydı yok.</p>}</div>)}</div>}</section>;
 }
 function ekstreTrendIslemleri(islemler, kartlar, kartOdemeleri) {
   const kartIsimleri = new Set(kartlar.map(k => k.isim));
@@ -2089,8 +2109,8 @@ function EsnekRapor({islemler,odemeler,kartlar=[],kartOdemeleri=[],donemGun,geli
         <YillikKategoriKiyas islemler={trendIslemleri} yil={kategoriYili} tip="gider"/>
         <YillikKategoriKiyas islemler={trendIslemleri} yil={kategoriYili} tip="gelir"/>
       </>}
-      {sekme==='trend'&&<HaftaninGunleri islemler={islemler} odemeler={odemeler} ilk={aralik.ilk} son={aralik.son}/>}
-      {sekme==='harita'&&<HarcamaHaritasi islemler={islemler} odemeler={odemeler} ilk={aralik.ilk} son={aralik.son}/>}
+      {sekme==='trend'&&<HaftaninGunleri islemler={islemler} odemeler={odemeler} kartOdemeleri={kartOdemeleri} ilk={aralik.ilk} son={aralik.son}/>}
+      {sekme==='harita'&&<HarcamaHaritasi islemler={islemler} odemeler={odemeler} kartOdemeleri={kartOdemeleri} ilk={aralik.ilk} son={aralik.son}/>}
       {sekme==='yorum'&&<><section className="tools-card"><h3><Icon name="target" size={17}/>Seçili aralığın yorumu</h3>
         {!ozet.kayitlar.length?<p className="tools-note">Yorum için henüz veri yok.</p>:<>
           <div className="insight-row"><Icon name={ozet.net>=0?'shield':'warning'} size={18}/><p>Bu aralıkta {fmtTL(Math.abs(ozet.net))} {ozet.net>=0?'gelir fazlası':'gider fazlası'} kaydedildi.{ozet.oran!==null?` Tasarruf oranı %${ozet.oran.toFixed(1).replace('.',',')}.`:' Gelir olmadığı için tasarruf oranı hesaplanmaz.'}</p></div>
