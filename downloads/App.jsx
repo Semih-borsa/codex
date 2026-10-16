@@ -387,6 +387,27 @@ function kartEkstreDoneminiBul(kart, donemGun) {
   return yerelTarihOku(tarihAnahtari) ? maasDonemKey(tarihAnahtari,donemGun).key : null;
 }
 
+function kartToplamBorcHesapla(kart,islemler,kartOdemeleri,donemKey,donemGun) {
+  const toplam=islemler.filter(i=>i.tip==='gider' && i.kategori===kart.isim && maasDonemKey(i.tarih,donemGun).key===donemKey)
+    .reduce((n,i)=>paraTopla(n,i.donemIci||0,i.provizyon||0),0);
+  const ekstreKey=kart.ekstreDonemKey || kartEkstreDoneminiBul(kart,donemGun) || donemKey;
+  const odenen=kartOdemeleri.filter(o=>String(o.kartId)===String(kart.id) && (o.ekstreDonemKey||o.donemKey)===ekstreKey).reduce((n,o)=>paraTopla(n,o.tutar),0);
+  return paraTopla(toplam,Math.max(0,paraTopla(kart.ekstre||0,-odenen)));
+}
+function kartBorcDegisimi(toplam,onceki) {
+  if(!onceki || !tutarGecerli(onceki.toplam,true))return null;
+  const fark=paraTopla(toplam,-Number(onceki.toplam));
+  return {fark,oran:Number(onceki.toplam)>0?fark/Number(onceki.toplam)*100:fark===0?0:null,yon:fark<0?'azalis':fark>0?'artis':'ayni'};
+}
+function KartBorcDegisimi({toplam,onceki}) {
+  const fark=kartBorcDegisimi(toplam,onceki);
+  if(!fark)return <span className="credit-debt-change" style={{color:'var(--text3)'}}>(Önceki dönem verisi yok)</span>;
+  const isaret=fark.fark<0?'−':fark.fark>0?'+':'';
+  return <span className="credit-debt-change" title={`Önceki maaş döneminin son kaydı: ${onceki.tarih} · ${fmtTL(onceki.toplam)}`} style={{color:fark.yon==='azalis'?'var(--income-text)':fark.yon==='artis'?'var(--expense-text)':'var(--text3)'}}>
+    ({isaret}{fmtTL(Math.abs(fark.fark))} · {fark.oran==null?'Önceki dönem ₺0':`${isaret}%${Math.abs(fark.oran).toLocaleString('tr-TR',{maximumFractionDigits:1})}`})
+  </span>;
+}
+
 function kartGuncelToplami(kayit) {
   return kayit.donemIci != null || kayit.provizyon != null
     ? paraTopla(kayit.donemIci || 0, kayit.provizyon || 0)
@@ -739,6 +760,7 @@ function yedekVerisiniDogrula(paket) {
     if (key === "ft_butceler" && Object.values(value).some(v => v !== "" && !tutarGecerli(v, true))) throw new Error("Bütçe limiti geçersiz.");
     if (["ft_zamlar", "ft_enflasyon"].includes(key) && Object.values(value).some(v => v !== "" && (!Number.isFinite(sayisalOku(v)) || sayisalOku(v) <= -100 || sayisalOku(v) > 10000))) throw new Error("Oran kaydı geçersiz.");
     if (key === "ft_sabit_log" && Object.values(value).some(v => typeof v !== "boolean")) throw new Error("Sabit gider günlüğü geçersiz.");
+    if(key==='ft_kart_borc_ozetleri' && (!nesneMi(value)||Object.values(value).some(d=>!nesneMi(d)||Object.values(d).some(k=>!nesneMi(k)||!tutarGecerli(k.toplam,true)||!yerelTarihOku(k.tarih)))))throw new Error('Kart borcu dönem geçmişi geçersiz.');
     if (key === "ft_donem_devir_log" && (!nesneMi(value) || Object.values(value).some(v => !nesneMi(v) || !tutarGecerli(v.tutar,true) || !yerelTarihOku(v.tarih)))) throw new Error("Dönem devri kaydı geçersiz.");
     if (key === "ft_son_bildirim_planlama" && value !== null && !nesneMi(value)) throw new Error("Bildirim kaydı geçersiz.");
     if (key === "ft_bildirim_ayarlari" && value.saatler != null && (!Array.isArray(value.saatler) || value.saatler.length < 1 || value.saatler.length > 3 || value.saatler.some(s => typeof s !== "string" || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(s)))) throw new Error("Bildirim saatleri geçersiz.");
@@ -1102,7 +1124,7 @@ function Money({value, prefix="₺", size=15}) {
 }
 
 // ── ÖZET ──────────────────────────────────────────────────────────────────────
-function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategoriler, odemeler, setOdemeler, hizliModal, setHizliModal, hizliSablonlar, setHizliSablonlar, taksitler, setTaksitler, kartOdemeleri, setKartOdemeleri, bakiyeHesapModu, tasarrufHedefi = 0, grafikTipi = "halka" }) {
+function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategoriler, odemeler, setOdemeler, hizliModal, setHizliModal, hizliSablonlar, setHizliSablonlar, taksitler, setTaksitler, kartOdemeleri, setKartOdemeleri, kartBorcOzetleri = {}, bakiyeHesapModu, tasarrufHedefi = 0, grafikTipi = "halka" }) {
   const [donemOffset, setDonemOffset] = useState(0);
   const [kartDuzenle, setKartDuzenle] = useState(null);
   const [kartDuzForm, setKartDuzForm] = useState({ donemIci: "", provizyon: "", ekstre: "", bakiyedenDussun: true });
@@ -1622,16 +1644,19 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
             </div>
 
             <div style={{ color: "var(--text5)", fontSize: 11, lineHeight: 1.45, marginBottom: 10 }}>
-              Ekstre, kesilmiş dönem borcudur. Güncel borç ise dönem içi + provizyon toplamıdır. Kalan bakiye hesabını yalnızca kart bazındaki seçim etkiler.
+              Ekstre kesilmiş dönem borcudur; toplam borç kalan ekstre + dönem içi + provizyondur. Parantezdeki fark önceki maaş döneminin son kayıtlı toplamına göredir. Kart seçimi yalnız ayrılan bütçeyi ve tahmini gideri etkiler.
             </div>
 
             {kartOzetleri.map(k => {
               const odemeKaydi = kartOdemeKaydiBul(k);
               const sonOdeme = k.sonOdeme;
+              const oncekiDonem=maasDonemiBul(yerelTarihAnahtari(takvimGunuEkle(secilenDonem.baslangic,-1)),donemGun);
+              const oncekiBorc=kartBorcOzetleri[oncekiDonem.key]?.[String(k.id)];
+              const toplamBorc=paraTopla(k.ekstre,k.digerEkstre,k.donem,k.prov);
               return (
                 <article className="home-credit-card credit-tile" key={k.id}>
                   <div className="credit-tile-heading"><div><KartMarkaRozeti isim={k.isim}/><h3>{k.isim}</h3></div><span className="credit-type">KREDİ KARTI</span></div>
-                  <div className="credit-total"><span>Toplam kart borcu · provizyon dahil</span><Money value={paraTopla(k.ekstre,k.digerEkstre,k.donem,k.prov)} size={27}/></div>
+                  <div className="credit-total"><span>Toplam kart borcu · provizyon dahil</span><div className="credit-total-row"><Money value={toplamBorc} size={27}/><KartBorcDegisimi toplam={toplamBorc} onceki={oncekiBorc}/></div></div>
                   <div className="credit-buckets">
                     {[["Ekstre borcu",k.ekstre],["Dönem içi",k.donem],["Provizyon",k.prov]].map(([label,value])=><div key={label}><span>{label}</span><Money value={value} size={14}/></div>)}
                   </div>
@@ -1639,7 +1664,7 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
                   {!k.ekstreBuDonemde&&<p className="tools-note">Seçili dönem için kayıtlı ekstre yok.</p>}
                   {k.sonEkstreOdeme&&<p className="tools-note">{k.ekstreBuDonemde?"Ekstre ödendi:":"Diğer dönemin ekstre ödemesi:"} {k.sonEkstreOdeme.tarih.split('-').reverse().join('.')}</p>}
                   <div className="credit-dates"><div><span>Hesap Kesim Tarihi</span><strong>{k.hesapKesimTarihi?k.hesapKesimTarihi.split('-').reverse().join('.'):'Henüz girilmedi'}</strong></div><div><span>Son Ödeme Tarihi</span><strong>{sonOdeme?sonOdeme.tarihAnahtari.split('-').reverse().join('.'):'Henüz girilmedi'}</strong></div></div>
-                  <p className="tools-note">{k.bakiyedenDussun===false?'Dönem içi ve provizyon bakiyeden düşmüyor.':'Dönem içi ve provizyon bakiyeden düşüyor.'}</p>
+                  <p className="tools-note">{k.bakiyedenDussun===false?'Dönem içi ve provizyon için bütçeden pay ayrılmıyor.':'Dönem içi ve provizyon için bütçeden pay ayrılıyor.'}</p>
                   <div className="credit-actions">{donemOffset===0&&<Btn onClick={()=>{
                     setKartDuzenle(k);
                     setKartDuzForm({donemIci:k.donem>0?String(k.donem):'',provizyon:k.prov>0?String(k.prov):'',ekstre:paraTopla(k.ekstre,k.digerEkstre)>0?String(paraTopla(k.ekstre,k.digerEkstre)):'',bakiyedenDussun:k.bakiyedenDussun!==false});
@@ -4506,6 +4531,7 @@ export default function App() {
   const [odemeler, setOdemeler] = useLocalStorage("ft_odemeler", []);
   const [kartlar, setKartlar] = useLocalStorage("ft_kartlar", []);
   const [kartOdemeleri, setKartOdemeleri] = useLocalStorage("ft_kart_odemeleri", []);
+  const [kartBorcOzetleri,setKartBorcOzetleri]=useLocalStorage("ft_kart_borc_ozetleri",{});
   const [bakiyeHesapModu, setBakiyeHesapModu] = useLocalStorage("ft_bakiye_hesap_modu", "kartlar_dahil");
   const [hizliSablonlar, setHizliSablonlar] = useLocalStorage("ft_hizli_sablonlar", []);
   const [devirLog,setDevirLog] = useLocalStorage("ft_donem_devir_log", {});
@@ -4543,7 +4569,7 @@ export default function App() {
   useEffect(()=>{
     const id=setTimeout(()=>{try{otomatikYedekle();}catch{kayitHatasiBildir('Otomatik güvenlik kopyası güncellenemedi; dosya yedeği al.');}},1500);
     return()=>clearTimeout(id);
-  },[islemler,odemeler,kartlar,kartOdemeleri,donemGun,tekrarlayan,butceler,kategoriler,krediler,taksitler,devirLog,bildirimYenileme]);
+  },[islemler,odemeler,kartlar,kartOdemeleri,donemGun,tekrarlayan,butceler,kategoriler,krediler,taksitler,devirLog,kartBorcOzetleri,bildirimYenileme]);
   useEffect(() => {
     try {
       const hedefSurum = "1.7.0";
@@ -4675,6 +4701,14 @@ export default function App() {
     bildirimPlanlamaSirasi = bildirimPlanlamaSirasi.then(planla, planla);
     return () => { iptal = true; };
   }, [odemeler, kartlar, kartOdemeleri, krediler, bildirimAyarlari, bildirimYenileme]);
+
+  useEffect(()=>{
+    const gun=Number(donemGun)||15,tarih=yerelTarihAnahtari(),donem=maasDonemKey(tarih,gun).key;
+    const mevcut=kartBorcOzetleri[donem]||{};
+    const yeni=Object.fromEntries(kartlar.map(k=>[String(k.id),{toplam:kartToplamBorcHesapla(k,islemler,kartOdemeleri,donem,gun),tarih,isim:k.isim}]));
+    if(Object.entries(yeni).every(([id,k])=>mevcut[id]?.toplam===k.toplam && mevcut[id]?.isim===k.isim))return;
+    setKartBorcOzetleri(p=>({...p,[donem]:{...(p[donem]||{}),...yeni}}));
+  },[islemler,kartlar,kartOdemeleri,donemGun,kartBorcOzetleri,bildirimYenileme]);
 
   useEffect(() => {
     const hesap = donemDevriHesapla(islemler,kartlar,kartOdemeleri,Number(donemGun)||15,bakiyeHesapModu,yerelTarihAnahtari(),odemeler);
@@ -5163,6 +5197,8 @@ export default function App() {
         .credit-tile-heading svg { color:var(--text3); flex-shrink:0; }
         .credit-type { background:var(--card2); color:var(--text3); padding:5px 7px; border-radius:8px; font-size:9px; white-space:nowrap; }
         .credit-total { margin:16px 0 12px; }
+        .credit-total-row { display:flex; flex-wrap:wrap; align-items:baseline; gap:5px 9px; }
+        .credit-debt-change { font-size:12px; font-weight:600; line-height:1.5; }
         .credit-total > span:first-child { display:block; color:var(--text3); font-size:11px; line-height:1.5; margin-bottom:5px; }
         .credit-total .money-fit { color:var(--text); font-weight:700; }
         .credit-buckets { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; margin-bottom:12px; }
@@ -5367,7 +5403,7 @@ export default function App() {
               sekmeler arasında bağlı tutuyoruz. Görsel içerik gizlenir; modal
               document.body üzerinde açılarak mevcut sekmeyi değiştirmez. */}
           <div style={{ display: aktifTab === "ozet" ? "block" : "none" }}>
-            <Ozet islemler={islemler} setIslemler={setIslemler} kartlar={kartlar} setKartlar={setKartlar} donemGun={parseInt(donemGun)||15} kategoriler={kategoriler} odemeler={odemeler} setOdemeler={setOdemeler} hizliModal={hizliModal} setHizliModal={setHizliModal} hizliSablonlar={hizliSablonlar} setHizliSablonlar={setHizliSablonlar} taksitler={taksitler} setTaksitler={setTaksitler} kartOdemeleri={kartOdemeleri} setKartOdemeleri={setKartOdemeleri} bakiyeHesapModu={bakiyeHesapModu} tasarrufHedefi={tasarrufHedefi} grafikTipi={grafikTipi} />
+            <Ozet kartBorcOzetleri={kartBorcOzetleri} islemler={islemler} setIslemler={setIslemler} kartlar={kartlar} setKartlar={setKartlar} donemGun={parseInt(donemGun)||15} kategoriler={kategoriler} odemeler={odemeler} setOdemeler={setOdemeler} hizliModal={hizliModal} setHizliModal={setHizliModal} hizliSablonlar={hizliSablonlar} setHizliSablonlar={setHizliSablonlar} taksitler={taksitler} setTaksitler={setTaksitler} kartOdemeleri={kartOdemeleri} setKartOdemeleri={setKartOdemeleri} bakiyeHesapModu={bakiyeHesapModu} tasarrufHedefi={tasarrufHedefi} grafikTipi={grafikTipi} />
           </div>
           {aktifTab === "islemler" && <IslemlerTab setOdemeler={setOdemeler} islemler={islemler} setIslemler={setIslemler} odemeler={odemeler} butceler={butceler} setButceler={setButceler} kategoriler={kategoriler} setKategoriler={setKategoriler} kartlar={kartlar} kartOdemeleri={kartOdemeleri} setKartOdemeleri={setKartOdemeleri} donemGun={parseInt(donemGun)||15} />}
           {aktifTab === "odemeler" && <OdemelerTab odemeler={odemeler} setOdemeler={setOdemeler} islemler={islemler} setIslemler={setIslemler} kategoriler={kategoriler} donemGun={parseInt(donemGun)||15} />}
