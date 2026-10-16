@@ -1,0 +1,53 @@
+{
+  "format": "finora-v2",
+  "surum": "1.7.0",
+  "yedekTuru": "tam",
+  "anahtarlar": [
+    "ft_islemler",
+    "ft_odemeler",
+    "ft_kartlar",
+    "ft_kart_odemeleri",
+    "ft_krediler",
+    "ft_taksitler",
+    "ft_tekrarlayan",
+    "ft_hizli_sablonlar",
+    "ft_butceler",
+    "ft_kart_borc_ozetleri",
+    "ft_donem_devir_log",
+    "ft_donem_gun",
+    "ft_bakiye_hesap_modu",
+    "ft_schema_version"
+  ],
+  "olusturulma": "2026-10-16T12:00:00+03:00",
+  "aciklama": "SADECE com.butcetakip.app.devtest ICIN. Gercek uygulamaya yukleme: mevcut test bolumlerini degistirir.",
+  "data": {
+    "ft_islemler": [
+      {
+        "id": "android-test-income",
+        "tip": "gelir",
+        "kategori": "Maaş",
+        "aciklama": "YALNIZ SENTETIK ANDROID TESTI",
+        "tutar": 20000,
+        "tarih": "2026-10-16"
+      }
+    ],
+    "ft_odemeler": [],
+    "ft_kartlar": [],
+    "ft_kart_odemeleri": [],
+    "ft_krediler": [],
+    "ft_taksitler": [],
+    "ft_tekrarlayan": [],
+    "ft_hizli_sablonlar": [],
+    "ft_butceler": {},
+    "ft_kart_borc_ozetleri": {},
+    "ft_donem_devir_log": {
+      "2026-9-15": {
+        "tutar": 0,
+        "tarih": "2026-10-15"
+      }
+    },
+    "ft_donem_gun": 15,
+    "ft_bakiye_hesap_modu": "kartlar_dahil",
+    "ft_schema_version": "1.7.0"
+  }
+}

@@ -1,0 +1,560 @@
+[
+  {
+    "line": 147,
+    "column": 7,
+    "severity": 2,
+    "ruleId": "no-unused-vars",
+    "priority": "P3",
+    "reason": "Düşük öncelik: bakım/görsel/bildirim tanılama veya mevcut sabit useCallback setter bağı; finansal hata olarak yorumlanmamalı.",
+    "message": "'tarihAralikta' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "line": 152,
+    "column": 10,
+    "severity": 2,
+    "ruleId": "no-unused-vars",
+    "priority": "P3",
+    "reason": "Düşük öncelik: bakım/görsel/bildirim tanılama veya mevcut sabit useCallback setter bağı; finansal hata olarak yorumlanmamalı.",
+    "message": "'donemGiderOzeti' is defined but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "line": 783,
+    "column": 7,
+    "severity": 2,
+    "ruleId": "no-unused-vars",
+    "priority": "P3",
+    "reason": "Düşük öncelik: bakım/görsel/bildirim tanılama veya mevcut sabit useCallback setter bağı; finansal hata olarak yorumlanmamalı.",
+    "message": "'krediKartiMarkaRengi' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "line": 1139,
+    "column": 12,
+    "severity": 2,
+    "ruleId": "no-unused-vars",
+    "priority": "P3",
+    "reason": "Düşük öncelik: bakım/görsel/bildirim tanılama veya mevcut sabit useCallback setter bağı; finansal hata olarak yorumlanmamalı.",
+    "message": "'hata' is defined but never used."
+  },
+  {
+    "line": 1171,
+    "column": 3,
+    "severity": 2,
+    "ruleId": "react-hooks/refs",
+    "priority": "P2",
+    "reason": "Orta öncelik: hook/render, memoizasyon, rapor güncelliği veya dönem varsayılanı davranışı hedefli incelenmeli.",
+    "message": "Error: Cannot access refs during render"
+  },
+  {
+    "line": 1346,
+    "column": 27,
+    "severity": 2,
+    "ruleId": "no-constant-binary-expression",
+    "priority": "P2",
+    "reason": "Orta öncelik: hook/render, memoizasyon, rapor güncelliği veya dönem varsayılanı davranışı hedefli incelenmeli.",
+    "message": "Unexpected constant truthiness on the left-hand side of a `||` expression."
+  },
+  {
+    "line": 1346,
+    "column": 97,
+    "severity": 2,
+    "ruleId": "no-unused-vars",
+    "priority": "P3",
+    "reason": "Düşük öncelik: bakım/görsel/bildirim tanılama veya mevcut sabit useCallback setter bağı; finansal hata olarak yorumlanmamalı.",
+    "message": "'e' is defined but never used."
+  },
+  {
+    "line": 1382,
+    "column": 12,
+    "severity": 2,
+    "ruleId": "no-unused-vars",
+    "priority": "P3",
+    "reason": "Düşük öncelik: bakım/görsel/bildirim tanılama veya mevcut sabit useCallback setter bağı; finansal hata olarak yorumlanmamalı.",
+    "message": "'e' is defined but never used."
+  },
+  {
+    "line": 1386,
+    "column": 87,
+    "severity": 2,
+    "ruleId": "no-unused-vars",
+    "priority": "P3",
+    "reason": "Düşük öncelik: bakım/görsel/bildirim tanılama veya mevcut sabit useCallback setter bağı; finansal hata olarak yorumlanmamalı.",
+    "message": "'e' is defined but never used."
+  },
+  {
+    "line": 1407,
+    "column": 5,
+    "severity": 2,
+    "ruleId": "react-hooks/set-state-in-effect",
+    "priority": "P2",
+    "reason": "Orta öncelik: hook/render, memoizasyon, rapor güncelliği veya dönem varsayılanı davranışı hedefli incelenmeli.",
+    "message": "Error: Calling setState synchronously within an effect can trigger cascading renders"
+  },
+  {
+    "line": 1562,
+    "column": 6,
+    "severity": 1,
+    "ruleId": "react-hooks/exhaustive-deps",
+    "priority": "P3",
+    "reason": "Düşük öncelik: bakım/görsel/bildirim tanılama veya mevcut sabit useCallback setter bağı; finansal hata olarak yorumlanmamalı.",
+    "message": "React Hook useMemo has an unnecessary dependency: 'gununTarihi'. Either exclude it or remove the dependency array."
+  },
+  {
+    "line": 1648,
+    "column": 9,
+    "severity": 2,
+    "ruleId": "no-unused-vars",
+    "priority": "P3",
+    "reason": "Düşük öncelik: bakım/görsel/bildirim tanılama veya mevcut sabit useCallback setter bağı; finansal hata olarak yorumlanmamalı.",
+    "message": "'guncelDonemMi' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "line": 1702,
+    "column": 6,
+    "severity": 1,
+    "ruleId": "react-hooks/exhaustive-deps",
+    "priority": "P1",
+    "reason": "Veri yedeği bütünlüğü veya finansal özetin güncelliği önce incelenmeli; tek başına doğrulanmış hata kanıtı değildir.",
+    "message": "React Hook useMemo has missing dependencies: 'bakiyeOzeti.ayrilan', 'bakiyeOzeti.nakitCikis', and 'buAyDevir'. Either include them or remove the dependency array."
+  },
+  {
+    "line": 1746,
+    "column": 9,
+    "severity": 2,
+    "ruleId": "no-unused-vars",
+    "priority": "P3",
+    "reason": "Düşük öncelik: bakım/görsel/bildirim tanılama veya mevcut sabit useCallback setter bağı; finansal hata olarak yorumlanmamalı.",
+    "message": "'kategoriTrendVeri' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "line": 1990,
+    "column": 21,
+    "severity": 2,
+    "ruleId": "no-unused-vars",
+    "priority": "P3",
+    "reason": "Düşük öncelik: bakım/görsel/bildirim tanılama veya mevcut sabit useCallback setter bağı; finansal hata olarak yorumlanmamalı.",
+    "message": "'odemeKaydi' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "line": 2315,
+    "column": 17,
+    "severity": 2,
+    "ruleId": "react-hooks/set-state-in-effect",
+    "priority": "P2",
+    "reason": "Orta öncelik: hook/render, memoizasyon, rapor güncelliği veya dönem varsayılanı davranışı hedefli incelenmeli.",
+    "message": "Error: Calling setState synchronously within an effect can trigger cascading renders"
+  },
+  {
+    "line": 2424,
+    "column": 18,
+    "severity": 2,
+    "ruleId": "react-hooks/set-state-in-effect",
+    "priority": "P2",
+    "reason": "Orta öncelik: hook/render, memoizasyon, rapor güncelliği veya dönem varsayılanı davranışı hedefli incelenmeli.",
+    "message": "Error: Calling setState synchronously within an effect can trigger cascading renders"
+  },
+  {
+    "line": 2440,
+    "column": 10,
+    "severity": 2,
+    "ruleId": "no-unused-vars",
+    "priority": "P3",
+    "reason": "Düşük öncelik: bakım/görsel/bildirim tanılama veya mevcut sabit useCallback setter bağı; finansal hata olarak yorumlanmamalı.",
+    "message": "'ekstreTrendIslemleri' is defined but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "line": 2467,
+    "column": 73,
+    "severity": 1,
+    "ruleId": "react-hooks/exhaustive-deps",
+    "priority": "P3",
+    "reason": "Düşük öncelik: bakım/görsel/bildirim tanılama veya mevcut sabit useCallback setter bağı; finansal hata olarak yorumlanmamalı.",
+    "message": "React Hook useMemo has an unnecessary dependency: 'bugun'. Either exclude it or remove the dependency array."
+  },
+  {
+    "line": 2514,
+    "column": 40,
+    "severity": 2,
+    "ruleId": "no-unused-vars",
+    "priority": "P3",
+    "reason": "Düşük öncelik: bakım/görsel/bildirim tanılama veya mevcut sabit useCallback setter bağı; finansal hata olarak yorumlanmamalı.",
+    "message": "'kartlar' is assigned a value but never used."
+  },
+  {
+    "line": 2528,
+    "column": 22,
+    "severity": 2,
+    "ruleId": "react-hooks/preserve-manual-memoization",
+    "priority": "P2",
+    "reason": "Orta öncelik: hook/render, memoizasyon, rapor güncelliği veya dönem varsayılanı davranışı hedefli incelenmeli.",
+    "message": "Compilation Skipped: Existing memoization could not be preserved"
+  },
+  {
+    "line": 2528,
+    "column": 88,
+    "severity": 1,
+    "ruleId": "react-hooks/exhaustive-deps",
+    "priority": "P2",
+    "reason": "Orta öncelik: hook/render, memoizasyon, rapor güncelliği veya dönem varsayılanı davranışı hedefli incelenmeli.",
+    "message": "React Hook useMemo has a missing dependency: 'aralik'. Either include it or remove the dependency array."
+  },
+  {
+    "line": 2542,
+    "column": 94,
+    "severity": 1,
+    "ruleId": "react-hooks/exhaustive-deps",
+    "priority": "P2",
+    "reason": "Orta öncelik: hook/render, memoizasyon, rapor güncelliği veya dönem varsayılanı davranışı hedefli incelenmeli.",
+    "message": "React Hook useMemo has a missing dependency: 'aralik'. Either include it or remove the dependency array."
+  },
+  {
+    "line": 2562,
+    "column": 5,
+    "severity": 1,
+    "ruleId": "react-hooks/exhaustive-deps",
+    "priority": "P2",
+    "reason": "Orta öncelik: hook/render, memoizasyon, rapor güncelliği veya dönem varsayılanı davranışı hedefli incelenmeli.",
+    "message": "React Hook useMemo has a missing dependency: 'aralik'. Either include it or remove the dependency array."
+  },
+  {
+    "line": 2562,
+    "column": 29,
+    "severity": 2,
+    "ruleId": "react-hooks/preserve-manual-memoization",
+    "priority": "P2",
+    "reason": "Orta öncelik: hook/render, memoizasyon, rapor güncelliği veya dönem varsayılanı davranışı hedefli incelenmeli.",
+    "message": "Compilation Skipped: Existing memoization could not be preserved"
+  },
+  {
+    "line": 2786,
+    "column": 17,
+    "severity": 2,
+    "ruleId": "no-unused-vars",
+    "priority": "P3",
+    "reason": "Düşük öncelik: bakım/görsel/bildirim tanılama veya mevcut sabit useCallback setter bağı; finansal hata olarak yorumlanmamalı.",
+    "message": "'net' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "line": 2980,
+    "column": 83,
+    "severity": 2,
+    "ruleId": "no-unused-vars",
+    "priority": "P3",
+    "reason": "Düşük öncelik: bakım/görsel/bildirim tanılama veya mevcut sabit useCallback setter bağı; finansal hata olarak yorumlanmamalı.",
+    "message": "'donemGun' is defined but never used."
+  },
+  {
+    "line": 3046,
+    "column": 53,
+    "severity": 2,
+    "ruleId": "react-hooks/purity",
+    "priority": "P2",
+    "reason": "Orta öncelik: hook/render, memoizasyon, rapor güncelliği veya dönem varsayılanı davranışı hedefli incelenmeli.",
+    "message": "Error: Cannot call impure function during render"
+  },
+  {
+    "line": 3222,
+    "column": 191,
+    "severity": 2,
+    "ruleId": "no-unused-vars",
+    "priority": "P3",
+    "reason": "Düşük öncelik: bakım/görsel/bildirim tanılama veya mevcut sabit useCallback setter bağı; finansal hata olarak yorumlanmamalı.",
+    "message": "'devirLog' is defined but never used."
+  },
+  {
+    "line": 3222,
+    "column": 347,
+    "severity": 2,
+    "ruleId": "no-unused-vars",
+    "priority": "P3",
+    "reason": "Düşük öncelik: bakım/görsel/bildirim tanılama veya mevcut sabit useCallback setter bağı; finansal hata olarak yorumlanmamalı.",
+    "message": "'setBakiyeHesapModu' is defined but never used."
+  },
+  {
+    "line": 3225,
+    "column": 19,
+    "severity": 2,
+    "ruleId": "no-unused-vars",
+    "priority": "P3",
+    "reason": "Düşük öncelik: bakım/görsel/bildirim tanılama veya mevcut sabit useCallback setter bağı; finansal hata olarak yorumlanmamalı.",
+    "message": "'setKurtarma' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "line": 3278,
+    "column": 16,
+    "severity": 2,
+    "ruleId": "no-unused-vars",
+    "priority": "P3",
+    "reason": "Düşük öncelik: bakım/görsel/bildirim tanılama veya mevcut sabit useCallback setter bağı; finansal hata olarak yorumlanmamalı.",
+    "message": "'e' is defined but never used."
+  },
+  {
+    "line": 3278,
+    "column": 19,
+    "severity": 2,
+    "ruleId": "no-empty",
+    "priority": "P3",
+    "reason": "Düşük öncelik: bakım/görsel/bildirim tanılama veya mevcut sabit useCallback setter bağı; finansal hata olarak yorumlanmamalı.",
+    "message": "Empty block statement."
+  },
+  {
+    "line": 3430,
+    "column": 14,
+    "severity": 2,
+    "ruleId": "no-unused-vars",
+    "priority": "P3",
+    "reason": "Düşük öncelik: bakım/görsel/bildirim tanılama veya mevcut sabit useCallback setter bağı; finansal hata olarak yorumlanmamalı.",
+    "message": "'e' is defined but never used."
+  },
+  {
+    "line": 3646,
+    "column": 48,
+    "severity": 2,
+    "ruleId": "no-unused-vars",
+    "priority": "P3",
+    "reason": "Düşük öncelik: bakım/görsel/bildirim tanılama veya mevcut sabit useCallback setter bağı; finansal hata olarak yorumlanmamalı.",
+    "message": "'kategoriler' is defined but never used."
+  },
+  {
+    "line": 3649,
+    "column": 10,
+    "severity": 2,
+    "ruleId": "no-unused-vars",
+    "priority": "P3",
+    "reason": "Düşük öncelik: bakım/görsel/bildirim tanılama veya mevcut sabit useCallback setter bağı; finansal hata olarak yorumlanmamalı.",
+    "message": "'analizSekme' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "line": 3649,
+    "column": 23,
+    "severity": 2,
+    "ruleId": "no-unused-vars",
+    "priority": "P3",
+    "reason": "Düşük öncelik: bakım/görsel/bildirim tanılama veya mevcut sabit useCallback setter bağı; finansal hata olarak yorumlanmamalı.",
+    "message": "'setAnalizSekme' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "line": 3701,
+    "column": 9,
+    "severity": 2,
+    "ruleId": "no-unused-vars",
+    "priority": "P3",
+    "reason": "Düşük öncelik: bakım/görsel/bildirim tanılama veya mevcut sabit useCallback setter bağı; finansal hata olarak yorumlanmamalı.",
+    "message": "'aylikVerisi' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "line": 3996,
+    "column": 251,
+    "severity": 2,
+    "ruleId": "no-misleading-character-class",
+    "priority": "P3",
+    "reason": "Düşük öncelik: bakım/görsel/bildirim tanılama veya mevcut sabit useCallback setter bağı; finansal hata olarak yorumlanmamalı.",
+    "message": "Unexpected combined character in character class."
+  },
+  {
+    "line": 4022,
+    "column": 9,
+    "severity": 2,
+    "ruleId": "no-unused-vars",
+    "priority": "P3",
+    "reason": "Düşük öncelik: bakım/görsel/bildirim tanılama veya mevcut sabit useCallback setter bağı; finansal hata olarak yorumlanmamalı.",
+    "message": "'yillikGelir' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "line": 4023,
+    "column": 9,
+    "severity": 2,
+    "ruleId": "no-unused-vars",
+    "priority": "P3",
+    "reason": "Düşük öncelik: bakım/görsel/bildirim tanılama veya mevcut sabit useCallback setter bağı; finansal hata olarak yorumlanmamalı.",
+    "message": "'yillikGider' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "line": 4044,
+    "column": 9,
+    "severity": 2,
+    "ruleId": "no-unused-vars",
+    "priority": "P3",
+    "reason": "Düşük öncelik: bakım/görsel/bildirim tanılama veya mevcut sabit useCallback setter bağı; finansal hata olarak yorumlanmamalı.",
+    "message": "'renderDagilim' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "line": 4101,
+    "column": 9,
+    "severity": 2,
+    "ruleId": "no-unused-vars",
+    "priority": "P3",
+    "reason": "Düşük öncelik: bakım/görsel/bildirim tanılama veya mevcut sabit useCallback setter bağı; finansal hata olarak yorumlanmamalı.",
+    "message": "'renderTrend' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "line": 4253,
+    "column": 69,
+    "severity": 2,
+    "ruleId": "no-unused-vars",
+    "priority": "P3",
+    "reason": "Düşük öncelik: bakım/görsel/bildirim tanılama veya mevcut sabit useCallback setter bağı; finansal hata olarak yorumlanmamalı.",
+    "message": "'setKategoriler' is defined but never used."
+  },
+  {
+    "line": 4491,
+    "column": 23,
+    "severity": 2,
+    "ruleId": "no-unused-vars",
+    "priority": "P3",
+    "reason": "Düşük öncelik: bakım/görsel/bildirim tanılama veya mevcut sabit useCallback setter bağı; finansal hata olarak yorumlanmamalı.",
+    "message": "'ti' is defined but never used."
+  },
+  {
+    "line": 4807,
+    "column": 19,
+    "severity": 2,
+    "ruleId": "react-hooks/preserve-manual-memoization",
+    "priority": "P2",
+    "reason": "Orta öncelik: hook/render, memoizasyon, rapor güncelliği veya dönem varsayılanı davranışı hedefli incelenmeli.",
+    "message": "Compilation Skipped: Existing memoization could not be preserved"
+  },
+  {
+    "line": 4847,
+    "column": 6,
+    "severity": 1,
+    "ruleId": "react-hooks/exhaustive-deps",
+    "priority": "P2",
+    "reason": "Orta öncelik: hook/render, memoizasyon, rapor güncelliği veya dönem varsayılanı davranışı hedefli incelenmeli.",
+    "message": "React Hook useMemo has missing dependencies: 'buYil', 'enfAl', and 'zamAl'. Either include them or remove the dependency array."
+  },
+  {
+    "line": 5051,
+    "column": 86,
+    "severity": 2,
+    "ruleId": "no-unused-vars",
+    "priority": "P3",
+    "reason": "Düşük öncelik: bakım/görsel/bildirim tanılama veya mevcut sabit useCallback setter bağı; finansal hata olarak yorumlanmamalı.",
+    "message": "'e' is defined but never used."
+  },
+  {
+    "line": 5051,
+    "column": 89,
+    "severity": 2,
+    "ruleId": "no-empty",
+    "priority": "P1",
+    "reason": "Veri yedeği bütünlüğü veya finansal özetin güncelliği önce incelenmeli; tek başına doğrulanmış hata kanıtı değildir.",
+    "message": "Empty block statement."
+  },
+  {
+    "line": 5061,
+    "column": 86,
+    "severity": 2,
+    "ruleId": "no-unused-vars",
+    "priority": "P3",
+    "reason": "Düşük öncelik: bakım/görsel/bildirim tanılama veya mevcut sabit useCallback setter bağı; finansal hata olarak yorumlanmamalı.",
+    "message": "'e' is defined but never used."
+  },
+  {
+    "line": 5061,
+    "column": 89,
+    "severity": 2,
+    "ruleId": "no-empty",
+    "priority": "P1",
+    "reason": "Veri yedeği bütünlüğü veya finansal özetin güncelliği önce incelenmeli; tek başına doğrulanmış hata kanıtı değildir.",
+    "message": "Empty block statement."
+  },
+  {
+    "line": 5071,
+    "column": 86,
+    "severity": 2,
+    "ruleId": "no-unused-vars",
+    "priority": "P3",
+    "reason": "Düşük öncelik: bakım/görsel/bildirim tanılama veya mevcut sabit useCallback setter bağı; finansal hata olarak yorumlanmamalı.",
+    "message": "'e' is defined but never used."
+  },
+  {
+    "line": 5071,
+    "column": 89,
+    "severity": 2,
+    "ruleId": "no-empty",
+    "priority": "P1",
+    "reason": "Veri yedeği bütünlüğü veya finansal özetin güncelliği önce incelenmeli; tek başına doğrulanmış hata kanıtı değildir.",
+    "message": "Empty block statement."
+  },
+  {
+    "line": 5081,
+    "column": 86,
+    "severity": 2,
+    "ruleId": "no-unused-vars",
+    "priority": "P3",
+    "reason": "Düşük öncelik: bakım/görsel/bildirim tanılama veya mevcut sabit useCallback setter bağı; finansal hata olarak yorumlanmamalı.",
+    "message": "'e' is defined but never used."
+  },
+  {
+    "line": 5081,
+    "column": 89,
+    "severity": 2,
+    "ruleId": "no-empty",
+    "priority": "P1",
+    "reason": "Veri yedeği bütünlüğü veya finansal özetin güncelliği önce incelenmeli; tek başına doğrulanmış hata kanıtı değildir.",
+    "message": "Empty block statement."
+  },
+  {
+    "line": 5093,
+    "column": 14,
+    "severity": 2,
+    "ruleId": "no-unused-vars",
+    "priority": "P3",
+    "reason": "Düşük öncelik: bakım/görsel/bildirim tanılama veya mevcut sabit useCallback setter bağı; finansal hata olarak yorumlanmamalı.",
+    "message": "'e' is defined but never used."
+  },
+  {
+    "line": 5093,
+    "column": 17,
+    "severity": 2,
+    "ruleId": "no-empty",
+    "priority": "P1",
+    "reason": "Veri yedeği bütünlüğü veya finansal özetin güncelliği önce incelenmeli; tek başına doğrulanmış hata kanıtı değildir.",
+    "message": "Empty block statement."
+  },
+  {
+    "line": 5171,
+    "column": 6,
+    "severity": 1,
+    "ruleId": "react-hooks/exhaustive-deps",
+    "priority": "P3",
+    "reason": "Düşük öncelik: bakım/görsel/bildirim tanılama veya mevcut sabit useCallback setter bağı; finansal hata olarak yorumlanmamalı.",
+    "message": "React Hook useEffect has a missing dependency: 'setSonBildirimPlanlama'. Either include it or remove the dependency array."
+  },
+  {
+    "line": 5189,
+    "column": 5,
+    "severity": 1,
+    "ruleId": "react-hooks/exhaustive-deps",
+    "priority": "P3",
+    "reason": "Düşük öncelik: bakım/görsel/bildirim tanılama veya mevcut sabit useCallback setter bağı; finansal hata olarak yorumlanmamalı.",
+    "message": "React Hook useEffect has a missing dependency: 'setKartBorcOzetleri'. Either include it or remove the dependency array."
+  },
+  {
+    "line": 5205,
+    "column": 5,
+    "severity": 1,
+    "ruleId": "react-hooks/exhaustive-deps",
+    "priority": "P3",
+    "reason": "Düşük öncelik: bakım/görsel/bildirim tanılama veya mevcut sabit useCallback setter bağı; finansal hata olarak yorumlanmamalı.",
+    "message": "React Hook useEffect has missing dependencies: 'setDevirLog' and 'setIslemler'. Either include them or remove the dependency array."
+  },
+  {
+    "line": 5216,
+    "column": 5,
+    "severity": 1,
+    "ruleId": "react-hooks/exhaustive-deps",
+    "priority": "P3",
+    "reason": "Düşük öncelik: bakım/görsel/bildirim tanılama veya mevcut sabit useCallback setter bağı; finansal hata olarak yorumlanmamalı.",
+    "message": "React Hook useEffect has missing dependencies: 'setIslemler' and 'setOdemeler'. Either include them or remove the dependency array."
+  },
+  {
+    "line": 5268,
+    "column": 6,
+    "severity": 1,
+    "ruleId": "react-hooks/exhaustive-deps",
+    "priority": "P3",
+    "reason": "Düşük öncelik: bakım/görsel/bildirim tanılama veya mevcut sabit useCallback setter bağı; finansal hata olarak yorumlanmamalı.",
+    "message": "React Hook useEffect has missing dependencies: 'setIslemler', 'setOdemeler', and 'setSabitEklemeLog'. Either include them or remove the dependency array."
+  }
+]
