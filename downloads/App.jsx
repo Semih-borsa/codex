@@ -334,7 +334,8 @@ function kategoriGorunumu(kategori, tip = 'gider', gorunumler = {}) {
 }
 function KartMarkaRozeti({ isim }) {
   const ad = String(isim || '').toLocaleLowerCase('tr-TR').replace(/ı/g,'i').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-  const marka = /world|vakif/.test(ad) ? { kart:'World', banka:'VakıfBank', renk:'#6d28d9', bankaRenk:'#946700' }
+  const marka = /yapi[\s_-]*kredi|\bykb\b/.test(ad) ? { kart:'World', banka:'Yapı Kredi', renk:'#6d28d9', bankaRenk:'#005baa' }
+    : /world|vakif/.test(ad) ? { kart:'World', banka:'VakıfBank', renk:'#6d28d9', bankaRenk:'#946700' }
     : /maximum|is bank/.test(ad) ? { kart:'maximum', banka:'İş Bankası', renk:'#d41478', bankaRenk:'#164783' }
     : /bonus|garanti/.test(ad) ? { kart:'bonus', banka:'Garanti BBVA', renk:'#00864a', bankaRenk:'#006c3b' } : null;
   if (!marka) return <Icon name="card" size={21}/>;
@@ -3241,7 +3242,7 @@ function AyarlarTab({ donemGun, setDonemGun, kartlar, setKartlar, kategoriler, s
             value={kartIsim}
             onChange={e => setKartIsim(e.target.value)}
             onKeyDown={e => e.key === "Enter" && kartEkle()}
-            placeholder="Kart adı (Bonus, Axess...)"
+            placeholder="Kart adı (World, Yapı Kredi World, Bonus...)"
             style={{ minWidth: 0, background: "var(--card2)", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", color: "var(--text)", fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontSize: 12, outline: "none" }}
           />
           <input
