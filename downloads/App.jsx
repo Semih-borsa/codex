@@ -1445,12 +1445,10 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
         const veriYok = islemler.length === 0 && odemeler.length === 0 && kartlar.length === 0;
         const durum = veriYok || buAyGelir <= 0 ? "bos" : gosterilenBakiye < 0 ? "kotu" : gosterilenRiskOrani < 50 ? "iyi" : gosterilenRiskOrani < 80 ? "orta" : "kotu";
         return <section className="home-balance finance-hero" data-status={durum}>
-          <div className="home-balance-heading"><span>Gerçek bakiye</span><span className="home-balance-badge"><Icon name={durum==='bos'?'wallet':durum==='iyi'?'shield':durum==='orta'?'warning':'alert'} size={14}/>{veriYok?'Henüz veri yok':buAyGelir<=0?'Gelir kaydı yok':durum==='iyi'?'Güvende':durum==='orta'?'Dikkat':'Riskli'}</span></div>
+          <div className="home-balance-heading"><span>BAKİYE</span><span className="home-balance-badge"><Icon name={durum==='bos'?'wallet':durum==='iyi'?'shield':durum==='orta'?'warning':'alert'} size={14}/>{veriYok?'Henüz veri yok':buAyGelir<=0?'Gelir kaydı yok':durum==='iyi'?'Güvende':durum==='orta'?'Dikkat':'Riskli'}</span></div>
           <div className="home-balance-value"><Money value={Math.abs(gosterilenBakiye)} prefix={gosterilenBakiye<0?'−₺':'₺'} size={34}/></div>
-          {buAyDevir>0&&<p className="hero-caption">Önceki aydan devir: {fmtTL(buAyDevir)}</p>}
           <p className="hero-caption">{veriYok?'İlk gelirini veya giderini ekleyerek başla.':'Gerçekleşen gelir ve nakit çıkışları · Kart alışverişi ödeme yapılana kadar nakitten düşmez'}</p>
           {!veriYok&&<div className="day-totals" style={{marginTop:12}}><div><span>Ödemeler sonrası kalan</span><strong>{fmtTL(bakiyeOzeti.odemelerSonrasi)}</strong></div><div><span>Ayrılan toplam</span><strong>{fmtTL(bakiyeOzeti.ayrilan)}</strong></div></div>}
-          {!veriYok&&<details className="calculation-help"><summary>Bakiye nasıl hesaplanır?</summary><p className="hero-caption">Gerçek bakiye = gerçekleşen gelir + devir − nakit çıkışları (birikime ayrılan para dahil). Banka bağlantısı yoktur; yalnız kayıtlarına dayanır. Bekleyen ödemeler: {fmtTL(bakiyeOzeti.bekleyen)} · Ödenmemiş ekstre: {fmtTL(bakiyeOzeti.ekstreBekleyen)} · Kart dönem içi/provizyon için ayrılan: {fmtTL(bakiyeOzeti.kartAyrilan)}. Bu tutarlar yalnız ödemeler sonrası kalanı azaltır. Kartın bakiye seçeneği tahmini gideri ve ayrılan tutarı etkiler.</p></details>}
           {!veriYok && <div className={`hero-budget hero-budget--${grafikTipi}`}>
             {grafikTipi==='ibre'&&<h3 className="needle-panel-title">Dönem bütçem</h3>}
             <HarcamaGauge oran={buAyGelir>0?gosterilenRiskOrani:null} grafikTipi={grafikTipi}/>
@@ -5253,6 +5251,9 @@ export default function App() {
         .day-totals > div { background:var(--card2); border:1px solid var(--border); border-radius:12px; padding:12px 9px; box-shadow:var(--surface-depth); }
         .day-totals span { display:block; color:var(--text3); font-size:10px; margin-bottom:6px; }
         .day-totals strong { font-size:14px; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+        .finance-hero .day-totals > div { background:transparent; border:0; border-radius:0; box-shadow:none; padding:6px 0; }
+        .finance-hero .day-totals span { color:rgba(255,255,255,.8); }
+        .finance-hero .day-totals strong { color:inherit; }
         .weekday-card > p { margin-bottom:12px; }
         .weekday-row { margin:0 0 14px; }
         .weekday-row > div:first-child { display:flex; justify-content:space-between; gap:10px; font-size:12px; margin-bottom:7px; line-height:1.5; }
