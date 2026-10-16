@@ -1447,7 +1447,7 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
         return <section className="home-balance finance-hero" data-status={durum}>
           <div className="home-balance-heading"><span>BAKİYE</span><span className="home-balance-badge"><Icon name={durum==='bos'?'wallet':durum==='iyi'?'shield':durum==='orta'?'warning':'alert'} size={14}/>{veriYok?'Henüz veri yok':buAyGelir<=0?'Gelir kaydı yok':durum==='iyi'?'Güvende':durum==='orta'?'Dikkat':'Riskli'}</span></div>
           <div className="home-balance-value"><Money value={Math.abs(gosterilenBakiye)} prefix={gosterilenBakiye<0?'−₺':'₺'} size={34}/></div>
-          {!veriYok&&<div className="day-totals" style={{marginTop:12}}><div><span>Ödemeler sonrası kalan</span><strong>{fmtTL(bakiyeOzeti.odemelerSonrasi)}</strong></div><div><span>Ayrılan toplam</span><strong>{fmtTL(bakiyeOzeti.ayrilan)}</strong></div></div>}
+          {!veriYok&&<div className="day-totals" style={{marginTop:12}}><div><span>Ödemeler sonrası kalan</span><strong>{fmtTL(bakiyeOzeti.odemelerSonrasi)}</strong></div><div><span>Bekleyen ödemeler toplamı</span><strong>{fmtTL(bakiyeOzeti.ayrilan)}</strong></div></div>}
           {!veriYok && <div className={`hero-budget hero-budget--${grafikTipi}`}>
             {grafikTipi==='ibre'&&<h3 className="needle-panel-title">Dönem bütçem</h3>}
             <HarcamaGauge oran={buAyGelir>0?gosterilenRiskOrani:null} grafikTipi={grafikTipi}/>
