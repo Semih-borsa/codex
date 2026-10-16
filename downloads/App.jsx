@@ -1093,7 +1093,7 @@ function HarcamaGauge({ oran, grafikTipi = "halka" }) {
       <text x="33" y="168" textAnchor="middle" fill="rgba(255,255,255,.8)" fontSize="12">0</text><text x="287" y="168" textAnchor="middle" fill="rgba(255,255,255,.8)" fontSize="12">100</text>
       {veriVar&&<g data-gauge-angle={angle}><path d={`M ${left[0]} ${left[1]} L ${tip[0]} ${tip[1]} L ${right[0]} ${right[1]} Z`} fill="currentColor"/><circle cx={cx} cy={cy} r="8" fill="currentColor"/><circle cx={cx} cy={cy} r="3" fill="rgba(0,0,0,.22)"/></g>}
       <text x="160" y="195" textAnchor="middle" fill={percentageColor} fontSize={Math.min(35,180/(String(Math.round(gosterOran)).length+1)/.65)} fontWeight="750">{veriVar?`%${Math.round(gosterOran)}`:'—'}</text>
-      <text x="160" y="218" textAnchor="middle" fill="rgba(255,255,255,.8)" fontSize="12">{veriVar?'Kullanılan bütçe oranı':'Oran için gelir gerekli'}</text>
+      <text x="160" y="218" textAnchor="middle" fill="rgba(255,255,255,.8)" fontSize="12">{veriVar?'KULLANILAN BÜTÇE ORANI':'Oran için gelir gerekli'}</text>
     </svg>;
   }
   return (
@@ -1445,13 +1445,13 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
         const veriYok = islemler.length === 0 && odemeler.length === 0 && kartlar.length === 0;
         const durum = veriYok || buAyGelir <= 0 ? "bos" : gosterilenBakiye < 0 ? "kotu" : gosterilenRiskOrani < 50 ? "iyi" : gosterilenRiskOrani < 80 ? "orta" : "kotu";
         return <section className="home-balance finance-hero" data-status={durum}>
-          <div className="home-balance-heading"><span>BAKİYE</span><span className="home-balance-badge"><Icon name={durum==='bos'?'wallet':durum==='iyi'?'shield':durum==='orta'?'warning':'alert'} size={14}/>{veriYok?'Henüz veri yok':buAyGelir<=0?'Gelir kaydı yok':durum==='iyi'?'Güvende':durum==='orta'?'Dikkat':'Riskli'}</span></div>
+          <div className="home-balance-heading"><span>BAKİYE</span><span className="home-balance-badge"><Icon name={durum==='bos'?'wallet':durum==='iyi'?'shield':durum==='orta'?'warning':'alert'} size={14}/>{veriYok?'HENÜZ VERİ YOK':buAyGelir<=0?'GELİR KAYDI YOK':durum==='iyi'?'GÜVENDE':durum==='orta'?'DİKKAT':'RİSKLİ'}</span></div>
           <div className="home-balance-value"><Money value={Math.abs(gosterilenBakiye)} prefix={gosterilenBakiye<0?'−₺':'₺'} size={34}/></div>
-          {!veriYok&&<div className="day-totals" style={{marginTop:12}}><div><span>Ödemeler sonrası kalan</span><strong>{fmtTL(bakiyeOzeti.odemelerSonrasi)}</strong></div><div><span>BEKLEYEN ÖDEMELER TOPLAMI</span><strong>{fmtTL(bakiyeOzeti.ayrilan)}</strong></div></div>}
+          {!veriYok&&<div className="day-totals" style={{marginTop:12}}><div><span>ÖDEMELER SONRASI KALAN BAKİYE</span><strong>{fmtTL(bakiyeOzeti.odemelerSonrasi)}</strong></div><div><span>BEKLEYEN ÖDEMELER TOPLAMI</span><strong>{fmtTL(bakiyeOzeti.ayrilan)}</strong></div></div>}
           {!veriYok && <div className={`hero-budget hero-budget--${grafikTipi}`}>
-            {grafikTipi==='ibre'&&<h3 className="needle-panel-title">Dönem bütçem</h3>}
+            {grafikTipi==='ibre'&&<h3 className="needle-panel-title">DÖNEM BÜTÇEM</h3>}
             <HarcamaGauge oran={buAyGelir>0?gosterilenRiskOrani:null} grafikTipi={grafikTipi}/>
-            {grafikTipi!=='ibre'&&<div className="hero-budget-copy"><h3>Dönem bütçem</h3><div className="hero-budget-limit">{buAyGelir>0?`Kalan oran %${Math.round(Math.max(0,100-gosterilenRiskOrani))}`:'Oran için gelir kaydı gerekli'}</div></div>}
+            {grafikTipi!=='ibre'&&<div className="hero-budget-copy"><h3>DÖNEM BÜTÇEM</h3><div className="hero-budget-limit">{buAyGelir>0?`Kalan oran %${Math.round(Math.max(0,100-gosterilenRiskOrani))}`:'Oran için gelir kaydı gerekli'}</div></div>}
           </div>}
 
           {veriYok&&<div className="ilk-kullanim"><button onClick={()=>{setHizliForm(f=>({...f,tip:'gelir',kategori:'Maaş'}));setHizliModal(true);}}><Icon name="plus" size={16}/>İlk gelirini ekle</button></div>}
@@ -1537,7 +1537,7 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
       {tahminiAySonu && (() => {
         const tahminOran = buAyGelir > 0 ? (tahminiAySonu.tahmin / buAyGelir) * 100 : 100;
         const rozetDurum = tahminOran < 50 ? "iyi" : tahminOran < 80 ? "orta" : "kotu";
-        const rozetMetin = rozetDurum === "iyi" ? "Güvende" : rozetDurum === "orta" ? "Dikkat" : "Riskli";
+        const rozetMetin = rozetDurum === "iyi" ? "GÜVENDE" : rozetDurum === "orta" ? "DİKKAT" : "RİSKLİ";
         const rozetRenk = rozetDurum === "iyi" ? "#10b981" : rozetDurum === "orta" ? "#f59e0b" : "#ef4444";
         return (
           <div className="home-panel home-forecast" style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "14px 16px", marginBottom: 12, display: "flex", alignItems: "center", gap: 13 }}>
