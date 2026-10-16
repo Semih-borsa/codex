@@ -1447,12 +1447,11 @@ function Ozet({ islemler, setIslemler, kartlar, setKartlar, donemGun, kategorile
         return <section className="home-balance finance-hero" data-status={durum}>
           <div className="home-balance-heading"><span>BAKİYE</span><span className="home-balance-badge"><Icon name={durum==='bos'?'wallet':durum==='iyi'?'shield':durum==='orta'?'warning':'alert'} size={14}/>{veriYok?'Henüz veri yok':buAyGelir<=0?'Gelir kaydı yok':durum==='iyi'?'Güvende':durum==='orta'?'Dikkat':'Riskli'}</span></div>
           <div className="home-balance-value"><Money value={Math.abs(gosterilenBakiye)} prefix={gosterilenBakiye<0?'−₺':'₺'} size={34}/></div>
-          <p className="hero-caption">{veriYok?'İlk gelirini veya giderini ekleyerek başla.':'Gerçekleşen gelir ve nakit çıkışları · Kart alışverişi ödeme yapılana kadar nakitten düşmez'}</p>
           {!veriYok&&<div className="day-totals" style={{marginTop:12}}><div><span>Ödemeler sonrası kalan</span><strong>{fmtTL(bakiyeOzeti.odemelerSonrasi)}</strong></div><div><span>Ayrılan toplam</span><strong>{fmtTL(bakiyeOzeti.ayrilan)}</strong></div></div>}
           {!veriYok && <div className={`hero-budget hero-budget--${grafikTipi}`}>
             {grafikTipi==='ibre'&&<h3 className="needle-panel-title">Dönem bütçem</h3>}
             <HarcamaGauge oran={buAyGelir>0?gosterilenRiskOrani:null} grafikTipi={grafikTipi}/>
-            {grafikTipi!=='ibre'&&<div className="hero-budget-copy"><h3>Dönem bütçem</h3><p className="hero-caption">Harcama ve birikim dahil{gosterilenBakiye<0?' · Bütçe aşıldı':''}</p><div className="hero-budget-limit">{buAyGelir>0?`Kalan oran %${Math.round(Math.max(0,100-gosterilenRiskOrani))}`:'Oran için gelir kaydı gerekli'}</div></div>}
+            {grafikTipi!=='ibre'&&<div className="hero-budget-copy"><h3>Dönem bütçem</h3><div className="hero-budget-limit">{buAyGelir>0?`Kalan oran %${Math.round(Math.max(0,100-gosterilenRiskOrani))}`:'Oran için gelir kaydı gerekli'}</div></div>}
           </div>}
 
           {veriYok&&<div className="ilk-kullanim"><button onClick={()=>{setHizliForm(f=>({...f,tip:'gelir',kategori:'Maaş'}));setHizliModal(true);}}><Icon name="plus" size={16}/>İlk gelirini ekle</button></div>}
@@ -5253,7 +5252,7 @@ export default function App() {
         .day-totals strong { font-size:14px; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
         .finance-hero .day-totals > div { background:transparent; border:0; border-radius:0; box-shadow:none; padding:6px 0; }
         .finance-hero .day-totals span { color:rgba(255,255,255,.8); }
-        .finance-hero .day-totals strong { color:inherit; }
+        .finance-hero .day-totals strong { display:block; color:inherit; font-size:28px; font-weight:600; line-height:1.2; letter-spacing:-.6px; }
         .weekday-card > p { margin-bottom:12px; }
         .weekday-row { margin:0 0 14px; }
         .weekday-row > div:first-child { display:flex; justify-content:space-between; gap:10px; font-size:12px; margin-bottom:7px; line-height:1.5; }
