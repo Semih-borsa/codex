@@ -1,0 +1,3 @@
+db9a0b245c05b35ee4a9d8c0433470d508fe2664815eabb1da61f1a7d85f114d  Piyasa-Pusulasi-1.5.2.apk
+ad3d067f2a2a3c62d81f1914fe25e498168ac7ba9b99210a6b4c2019354b6978  Piyasa-Pusulasi-1.5.2-Kaynak.zip
+52f13c01900b2a05be971e322611a8e8df7ac69c1720c9c0e33228f881a233d7  Piyasa-Pusulasi-1.5.2-Dogrulama.md
