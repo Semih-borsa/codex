@@ -1,0 +1,9 @@
+{
+  "App.jsx": "3ae33e0c41bcca8a85220f094483b4c8affdb3292b679266b3738a91b957010c",
+  "App.main.jsx": "3ae33e0c41bcca8a85220f094483b4c8affdb3292b679266b3738a91b957010c",
+  "build.gradle": "559c0d519183a26ebf9170c000b776b9652ceeb5198fa4caed1f25993a66d86d",
+  "source-harness.mjs": "7ced4a46963e1bc7bdc92df2a87d6f916eb121886b35a3c95a133bc9539507ab",
+  "devtest/android/app/build.gradle": "15eaf6b1799051d9cf3f9e74497df3bddd007834d0fad761e419c7f8025db27b",
+  "bagimsiz/android/app/build.gradle": "c8110510b0cf3510666f78a84e01fac76a0d6ac7f9dd0296e5b05a90d74f84f7",
+  "bagimsiz/capacitor.config.json": "5fc194835f4ea5b4bd8a49bf9405f030479a4c9e959e3f444b9169339fa7eebc"
+}

@@ -1,0 +1,23 @@
+{
+  "degisen": [
+    "NakitAkisiTab",
+    "YedekOnizleme",
+    "nakitAkisiHesapla",
+    "useLocalStorage",
+    "yedekVerisiniDogrula"
+  ],
+  "eklenen": [
+    "planlamaVarsayilan",
+    "planlamaVerisiniDogrula",
+    "useNakitPlanlama",
+    "planlamaTarihleri",
+    "planlamaHedefleri",
+    "planlamaHareketleri",
+    "PlanlamaAyarlar"
+  ],
+  "ortak_finans_motoru_ve_ABC_D_islevleri_ayni": true,
+  "App_ve_global_tema_bloklari_ayni": true,
+  "storage_sadece_planlama_yazmasina_ek_dogrulama": true,
+  "onceki_sha256": "3ae33e0c41bcca8a85220f094483b4c8affdb3292b679266b3738a91b957010c",
+  "sonraki_sha256": "e91cd17f12ef1078b75f810fe0a8267fa8180b642da5dbd4b3c6e24c4efc2b10"
+}

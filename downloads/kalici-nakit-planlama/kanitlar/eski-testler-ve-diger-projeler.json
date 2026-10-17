@@ -1,0 +1,24 @@
+{
+  "eski_test_dosyalari_degismedi": [
+    "finance-baseline/phase-a.test.mjs",
+    "finance-baseline/backup-export.test.mjs",
+    "finance-baseline/finance.test.mjs",
+    "finance-baseline/cashflow.test.mjs",
+    "finance-baseline/phase-c.test.mjs",
+    "finance-baseline/phase-c.browser.test.mjs",
+    "finance-baseline/phase-d.test.mjs",
+    "finance-baseline/phase-a.browser.test.mjs",
+    "finance-baseline/phase-b.browser.test.mjs",
+    "finance-baseline/phase-b.test.mjs",
+    "finance-baseline/browser.test.mjs",
+    "finance-baseline/restore-read.browser.test.mjs",
+    "finance-baseline/backup-export.browser.test.mjs",
+    "finance-baseline/phase-d.browser.test.mjs",
+    "finance-baseline/cashflow.browser.test.mjs",
+    "finance-history-review/history.test.mjs",
+    "finance-history-review/history-fix-extra.browser.test.mjs",
+    "finance-history-review/history-fix-extra.test.mjs",
+    "finance-history-review/history.browser.test.mjs"
+  ],
+  "devtest_ve_bagimsiz_ayarlar_degismedi": true
+}
