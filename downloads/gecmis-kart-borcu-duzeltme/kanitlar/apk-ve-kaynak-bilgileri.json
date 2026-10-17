@@ -1,0 +1,29 @@
+{
+  "appSha256": "ddd4161b6a892a38c40a876900169d7885aff169fe779b281b8465d123f0aee2",
+  "apklar": [
+    {
+      "file": "Finans-gecmis-borc-ayni-kimlik.apk",
+      "source_path": "/workspace/finans-upload/finans-takip/android/app/build/outputs/apk/debug/app-debug.apk",
+      "bytes": 6989093,
+      "sha256": "94038a95c3c9aa540bee7dd113b7974567c10a5eef050b675c2e425c96ec4f76",
+      "applicationId": "com.butcetakip.app",
+      "versionCode": 4,
+      "versionName": "1.2.2",
+      "certSha256": "bfb3b3c3dc6fdb0d279a6cd4bf6002d9731e0aa87e1ea714c24df079542b04c1",
+      "previous_apk": "Finans-yedek-duzeltme-ayni-kimlik.apk",
+      "previous_cert_matches": true
+    },
+    {
+      "file": "Finans-Test-D-gecmis-borc-duzeltme.apk",
+      "source_path": "/workspace/android-device-validation/android/app/build/outputs/apk/debug/app-debug.apk",
+      "bytes": 6987912,
+      "sha256": "1a441bc3a45ae038835fa12a4e51e17408718be6ceb1107d546ae4dcd3bb2214",
+      "applicationId": "com.butcetakip.app.devtest",
+      "versionCode": 4,
+      "versionName": "1.2.2-d-test",
+      "certSha256": "bfb3b3c3dc6fdb0d279a6cd4bf6002d9731e0aa87e1ea714c24df079542b04c1",
+      "previous_apk": "Finans-Test-D-yedek-duzeltme.apk",
+      "previous_cert_matches": true
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+export const card={id:'test-card',isim:'Test World',ekstre:0,bakiyedenDussun:true};
+export const oldPeriod='2026-8-15',currentPeriod='2026-9-15';
+export const observation=(id,date,amount)=>({id,tip:'gider',kartHarcama:true,kartId:'test-card',kategori:'Test World',tutar:amount,donemIci:amount,provizyon:0,tarih:date,kartGunlukHareketler:{},kartGunBaslangicToplam:amount,kartGunBaslangicTarih:date});
+export const current=observation('current','2026-10-16',15000);
+export const zero={toplam:0,donemIci:0,provizyon:0,ekstre:0,tarih:'2026-10-14',kartId:'test-card',dogrulandi:true,kapsam:'ekstre_donem_ici_provizyon',ekstreler:[]};
+export const archivedZero={[oldPeriod]:{'test-card':zero}};
+export const statement=(id,amount,cut,due,recorded)=>({id,kartId:'test-card',tutar:amount,hesapKesimTarihi:cut,sonOdemeTarihi:due,kayitTarihi:recorded,dogrulandi:true});
+export const legacy=()=>({...observation('legacy','2026-09-30',15000),kartDurumGecmisi:{'2026-09-20':{donemIci:0,provizyon:0},'2026-10-16':{donemIci:15000,provizyon:0}}});
+export const futureStatement=()=>({...card,ekstre:15000,ekstreler:[statement('future',15000,'2026-10-16','2026-10-20','2026-09-20')]});
+export const inconsistentArchive=()=>({[oldPeriod]:{'test-card':{...zero,ekstreler:[{...statement('stale',15000,'2026-09-10','2026-09-20','2026-09-10'),kalan:15000}]}}});
+export const seed=(cards=[card],rows=[current],history={})=>({ft_islemler:[{id:'income',tip:'gelir',kategori:'Maaş',tutar:20000,tarih:'2026-10-15'},...rows],ft_kartlar:cards,ft_kart_odemeleri:[],ft_odemeler:[],ft_krediler:[],ft_taksitler:[],ft_kart_borc_ozetleri:history,ft_donem_devir_log:{[oldPeriod]:{tutar:0,tarih:'2026-09-15'},[currentPeriod]:{tutar:0,tarih:'2026-10-15'}}});

@@ -1,0 +1,40 @@
+{
+  "before": "3d3fa6386aefeee2577c4ccb303c65ff23da8409ee467f336aa2991bb87d3c31",
+  "after": "ddd4161b6a892a38c40a876900169d7885aff169fe779b281b8465d123f0aee2",
+  "changedFunctions": [
+    "kartSonDurum",
+    "kartBorcDurumu",
+    "kartTaksitSatirOzeti",
+    "kartTaksitYukumlulukleri",
+    "Ozet",
+    "donemBakiyeHesapla"
+  ],
+  "newHelpers": [
+    "kartEkstreTarihteGecerli"
+  ],
+  "protectedUnchanged": [
+    "gunlukFinansHareketleri",
+    "KredilerTab",
+    "kartEkstreBakiyeleri",
+    "kartEkstreOdemesiMi",
+    "kartEkstreGuncelle",
+    "kartEkstreleriKoru",
+    "kartKaydiniGuncelle",
+    "kartAnalizHareketleri",
+    "donemDevriHesapla",
+    "kartTaksitPlaniOlustur",
+    "kartTaksitIadesi",
+    "kartTaksitIadeGeriAl",
+    "kartTaksitIptal",
+    "yedekVerisiniDogrula",
+    "yedekBaglariniDogrula",
+    "yedegiGuvenleYaz",
+    "yerelYedekPaketi",
+    "yedekDosyasiniAktar",
+    "AyarlarTab",
+    "App",
+    "useLocalStorage",
+    "AnalizTab"
+  ],
+  "stylesUnchanged": true
+}
