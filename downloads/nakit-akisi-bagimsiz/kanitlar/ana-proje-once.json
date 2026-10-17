@@ -1,0 +1,7 @@
+{
+  "src/App.jsx": "3ae33e0c41bcca8a85220f094483b4c8affdb3292b679266b3738a91b957010c",
+  "android/app/build.gradle": "559c0d519183a26ebf9170c000b776b9652ceeb5198fa4caed1f25993a66d86d",
+  "android/app/src/main/res/values/strings.xml": "523070258b06d0a3aeaf18c8a7da00a075ed9fbbae47385c7bdee00f22e99caf",
+  "capacitor.config.json": "d4d35767bd67c724eed118b975c1201b0bc9405b273eb1e5cd3b48073ed20662",
+  "android/app/src/main/AndroidManifest.xml": "66cf2036fa558af4db10bd7069c294dd5288012da86db343f47b2fdab6c5d16e"
+}

@@ -1,0 +1,27 @@
+{
+  "paket": "com.butcetakip.nakitakisi",
+  "uygulama_adi": "Finans Nakit Akışı",
+  "versionCode": 1,
+  "versionName": "1.3.0-nakit",
+  "boyut_bayt": 6994820,
+  "sha256": "2e74558f26f5602f05124b6f0bf4b32731331a103614f3569535ba6641cef393",
+  "imza": "Signer #1 certificate DN: C=US, O=Android, CN=Android Debug\nSigner #1 certificate SHA-256 digest: bfb3b3c3dc6fdb0d279a6cd4bf6002d9731e0aa87e1ea714c24df079542b04c1\nSigner #1 certificate SHA-1 digest: 12c6f44ad94e21e90326bc64a6f274c64b888862\nSigner #1 certificate MD5 digest: 91476b874fb27d3e324b08746823e68f\n",
+  "web_varliklari_ana_nakit_akisi_APK_ile_birebir_ayni": true,
+  "native_testler": [
+    {
+      "name": "com.butcetakip.app.BackupDocumentIOTest",
+      "tests": "10",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.getcapacitor.myapp.ExampleUnitTest",
+      "tests": "1",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    }
+  ],
+  "gercek_telefon_testi": false
+}
