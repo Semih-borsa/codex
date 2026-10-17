@@ -1,0 +1,13 @@
+{
+  "before": "980a0eadaa3837c93b6be781c388f32827c97fb52adaac0f4e54025c7990e155",
+  "after": "3d3fa6386aefeee2577c4ccb303c65ff23da8409ee467f336aa2991bb87d3c31",
+  "changedExisting": [
+    "AyarlarTab"
+  ],
+  "newHelpers": [
+    "AndroidYedekDosyasi",
+    "yedekDosyasiniAktar"
+  ],
+  "stylesUnchanged": true,
+  "financialDeclarationsUnchanged": true
+}

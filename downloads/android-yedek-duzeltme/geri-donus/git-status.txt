@@ -1,0 +1,10 @@
+ M downloads/App.jsx
+ M downloads/finans-takip-bildirim/src/App.jsx
+?? ASAMA_A_SONUC_RAPORU.md
+?? ASAMA_B_SONUC_RAPORU.md
+?? ASAMA_C_SONUC_RAPORU.md
+?? ASAMA_D_SONUC_RAPORU.md
+?? FINANS_ANALIZ_RAPORU.md
+?? FINANS_TEST_SONUCLARI_VE_DUZELTME_PLANI.md
+?? downloads/android-asama-d/
+?? tests/

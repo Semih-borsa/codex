@@ -1,0 +1,32 @@
+{
+  "appSha256": "3d3fa6386aefeee2577c4ccb303c65ff23da8409ee467f336aa2991bb87d3c31",
+  "apklar": [
+    {
+      "teslim": "/workspace/output/android-yedek-duzeltme/Finans-yedek-duzeltme-ayni-kimlik.apk",
+      "derleme": "/workspace/finans-upload/finans-takip/android/app/build/outputs/apk/debug/app-debug.apk",
+      "bytes": 6986456,
+      "sha256": "ada84f701cc6fc3cdbe256ba1e577f9e80f9f03271bf61094d1f2ce768c19a6c",
+      "applicationId": "com.butcetakip.app",
+      "versionCode": 3,
+      "versionName": "1.2.1",
+      "sertifikaSha256": "bfb3b3c3dc6fdb0d279a6cd4bf6002d9731e0aa87e1ea714c24df079542b04c1",
+      "onceki_teslim_apk": "Finans-D-debug-ayni-kimlik.apk",
+      "onceki_teslimle_imza_ayni": true
+    },
+    {
+      "teslim": "/workspace/output/android-yedek-duzeltme/Finans-Test-D-yedek-duzeltme.apk",
+      "derleme": "/workspace/android-device-validation/android/app/build/outputs/apk/debug/app-debug.apk",
+      "bytes": 6986488,
+      "sha256": "7942c1ec36b16c94e051b37d4f7595619d5e45080c1579d379c68fb34247f46c",
+      "applicationId": "com.butcetakip.app.devtest",
+      "versionCode": 3,
+      "versionName": "1.2.1-d-test",
+      "sertifikaSha256": "bfb3b3c3dc6fdb0d279a6cd4bf6002d9731e0aa87e1ea714c24df079542b04c1",
+      "onceki_teslim_apk": "Finans-D-bagimsiz-test.apk",
+      "onceki_teslimle_imza_ayni": true
+    }
+  ],
+  "mevcut207_dahil_jsTest": 229,
+  "yeniJsTest": 22,
+  "nativeTest": 10
+}
