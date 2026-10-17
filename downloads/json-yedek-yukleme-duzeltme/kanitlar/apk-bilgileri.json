@@ -1,0 +1,16 @@
+[
+  {
+    "dosya": "Finans-Test-D-json-yukleme-duzeltme.apk",
+    "bayt": 6988216,
+    "sha256": "8864ebfdba6fdd35469bd1383764e628603fd055fdf722bdf49a0aadf0d3bd11",
+    "paket": "package: name='com.butcetakip.app.devtest' versionCode='5' versionName='1.2.3-d-test' platformBuildVersionName='16' platformBuildVersionCode='36' compileSdkVersion='36' compileSdkVersionCodename='16'",
+    "imza": "Signer #1 certificate DN: C=US, O=Android, CN=Android Debug\nSigner #1 certificate SHA-256 digest: bfb3b3c3dc6fdb0d279a6cd4bf6002d9731e0aa87e1ea714c24df079542b04c1\nSigner #1 certificate SHA-1 digest: 12c6f44ad94e21e90326bc64a6f274c64b888862\nSigner #1 certificate MD5 digest: 91476b874fb27d3e324b08746823e68f\n"
+  },
+  {
+    "dosya": "Finans-json-yukleme-ayni-kimlik.apk",
+    "bayt": 6988188,
+    "sha256": "1d4f0b930378f89311ea54dbae7a4ce2a55dc7967d35b6e1ed7a1732a4cb774a",
+    "paket": "package: name='com.butcetakip.app' versionCode='5' versionName='1.2.3' platformBuildVersionName='16' platformBuildVersionCode='36' compileSdkVersion='36' compileSdkVersionCodename='16'",
+    "imza": "Signer #1 certificate DN: C=US, O=Android, CN=Android Debug\nSigner #1 certificate SHA-256 digest: bfb3b3c3dc6fdb0d279a6cd4bf6002d9731e0aa87e1ea714c24df079542b04c1\nSigner #1 certificate SHA-1 digest: 12c6f44ad94e21e90326bc64a6f274c64b888862\nSigner #1 certificate MD5 digest: 91476b874fb27d3e324b08746823e68f\n"
+  }
+]
