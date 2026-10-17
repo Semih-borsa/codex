@@ -1,0 +1,15 @@
+{
+  "degisen": [
+    "App",
+    "donemBakiyeHesapla"
+  ],
+  "eklenen": [
+    "bekleyenNakitHareketleri",
+    "nakitAkisiHesapla",
+    "NakitAkisiTab"
+  ],
+  "App_sadece_menu_ve_route": true,
+  "mevcut_tema_ve_CSS_bloklari_ayni": true,
+  "eski_kaynak_sha256": "566211d1ac627e3d3f5dac68fb354e0c5b89ac1079055ad6bf71295ee16ba2e9",
+  "yeni_kaynak_sha256": "3ae33e0c41bcca8a85220f094483b4c8affdb3292b679266b3738a91b957010c"
+}
