@@ -1,5 +1,7 @@
 # Cep Bütçem
 
+**NOVA AI · Adaş:** ücretsiz, kişisel ve cihazda çalışan yapay zekâ asistanı. [APK indir](downloads/NOVA-Adas.apk) · [Android Studio paketi](downloads/NOVA-Adas-Android-Studio.zip) · [Kurulum ve model indirme](nova/README.md). Model ağırlıkları ayrı indirilir; fiziksel Xiaomi cihazında kalite/hız kontrolü henüz yapılmadı.
+
 **Yeni Android uygulaması: [İlacım — ilaç dolabı ve randevu takibi](ilacim/README.md).** [APK indir](downloads/Ilacim.apk) · [Android Studio proje paketi](downloads/Ilacim-Android-Studio.zip). Dosya sayfasında **Download raw file** ile indir. Barkod/karekod, kutu bazında son kullanma tarihi ve stok, günlük doz planı, randevu ve yerel hatırlatmalar; API sağlayıcısı sonradan ayarlardan bağlanır.
 
 Türkçe, çevrimdışı kişisel gelir-gider takibi ve ayrıntılı finans analizi için yerel Android uygulaması. Android Studio'da açılır ve telefona kurulabilen APK üretir. Java 17, Android'in yerel arayüz bileşenleri ve SQLite kullanır; hesap açma, internet bağlantısı veya ücretli bir servis gerekmez.

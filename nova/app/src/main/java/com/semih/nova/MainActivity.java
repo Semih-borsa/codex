@@ -1,0 +1,1474 @@
+package com.semih.nova;
+
+import android.Manifest;
+import android.app.*;
+import android.content.*;
+import android.content.pm.PackageManager;
+import android.graphics.*;
+import android.graphics.drawable.*;
+import android.net.Uri;
+import android.os.*;
+import android.speech.*;
+import android.speech.tts.*;
+import android.text.InputFilter;
+import android.view.*;
+import android.widget.*;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.text.*;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+public final class MainActivity extends Activity implements RecognitionListener {
+  private final ExecutorService worker = Executors.newSingleThreadExecutor();
+  private final Handler ui = new Handler(Looper.getMainLooper());
+  private Store db;
+  private SharedPreferences prefs;
+  private LinearLayout root, body;
+  private ScrollView scroll;
+  private EditText composer;
+  private TextView live, status;
+  private Button voiceButton;
+  private int page = 0, shownPage = -1;
+  private boolean light, busy, modelJob, recording, ttsReady, follow = true;
+  private String draft = "", streamText = "", operation = "";
+  private final AtomicBoolean cancel = new AtomicBoolean();
+  private Documents.Result document;
+  private final VoiceRecorder recorder = new VoiceRecorder();
+  private boolean localRecording;
+  private SpeechRecognizer recognizer;
+  private TextToSpeech tts;
+  private int bg, surface, text, muted, accent, line;
+  private static final Locale TR = new Locale("tr", "TR");
+
+  @Override
+  public void onCreate(Bundle state) {
+    super.onCreate(state);
+    db = new Store(this);
+    prefs = getSharedPreferences("nova", MODE_PRIVATE);
+    light = prefs.getBoolean("light", false);
+    if (state != null) {
+      page = state.getInt("page");
+      draft = state.getString("draft", "");
+    }
+    if (getIntent().getBooleanExtra("tasks", false)) page = 1;
+    tts =
+        new TextToSpeech(
+            this,
+            result -> {
+              ttsReady = result == TextToSpeech.SUCCESS;
+            });
+    ReminderReceiver.all(this);
+    render();
+  }
+
+  @Override
+  protected void onSaveInstanceState(Bundle s) {
+    super.onSaveInstanceState(s);
+    s.putInt("page", page);
+    s.putString("draft", composer != null && page == 0 ? composer.getText().toString() : draft);
+  }
+
+  @Override
+  protected void onPause() {
+    if (recording) {
+      recorder.cancel();
+      if (recognizer != null) recognizer.cancel();
+      recording = false;
+      localRecording = false;
+    }
+    super.onPause();
+  }
+
+  @Override
+  protected void onDestroy() {
+    cancel.set(true);
+    recorder.cancel();
+    NativeBridge.stop();
+    if (recognizer != null) recognizer.destroy();
+    if (tts != null) {
+      tts.stop();
+      tts.shutdown();
+    }
+    worker.execute(
+        () -> {
+          NativeBridge.release();
+          db.close();
+        });
+    worker.shutdown();
+    super.onDestroy();
+  }
+
+  private int dp(float n) {
+    return (int) (getResources().getDisplayMetrics().density * n + .5f);
+  }
+
+  private void colors() {
+    bg = Color.parseColor(light ? "#F7F8FC" : "#0B1020");
+    surface = Color.parseColor(light ? "#FFFFFF" : "#151D30");
+    text = Color.parseColor(light ? "#172033" : "#F3F5FC");
+    muted = Color.parseColor(light ? "#59647B" : "#A7B1C8");
+    accent = Color.parseColor(light ? "#5B4FE9" : "#AAA2FF");
+    line = Color.parseColor(light ? "#E6E9F2" : "#29334B");
+  }
+
+  private GradientDrawable shape(int color, int radius) {
+    GradientDrawable d = new GradientDrawable();
+    d.setColor(color);
+    d.setCornerRadius(dp(radius));
+    return d;
+  }
+
+  private LinearLayout col() {
+    LinearLayout l = new LinearLayout(this);
+    l.setOrientation(LinearLayout.VERTICAL);
+    return l;
+  }
+
+  private LinearLayout row() {
+    LinearLayout l = new LinearLayout(this);
+    l.setOrientation(LinearLayout.HORIZONTAL);
+    l.setGravity(Gravity.CENTER_VERTICAL);
+    return l;
+  }
+
+  private void add(LinearLayout p, View v) {
+    p.addView(v, new LinearLayout.LayoutParams(-1, -2));
+  }
+
+  private void gap(LinearLayout p, int n) {
+    View v = new View(this);
+    p.addView(v, new LinearLayout.LayoutParams(1, dp(n)));
+  }
+
+  private void weight(LinearLayout p, View v) {
+    p.addView(v, new LinearLayout.LayoutParams(0, -2, 1));
+  }
+
+  private TextView label(String s, int sp, int color, boolean bold) {
+    TextView t = new TextView(this);
+    t.setText(s);
+    t.setTextSize(sp);
+    t.setTextColor(color);
+    t.setFontFeatureSettings("kern");
+    t.setLineSpacing(dp(3), 1);
+    if (bold) t.setTypeface(null, Typeface.BOLD);
+    return t;
+  }
+
+  private TextView copy(LinearLayout p, String s, int sp, int color, boolean bold) {
+    TextView t = label(s, sp, color, bold);
+    add(p, t);
+    return t;
+  }
+
+  private LinearLayout card(LinearLayout p) {
+    LinearLayout c = col();
+    c.setPadding(dp(18), dp(18), dp(18), dp(18));
+    GradientDrawable d = shape(surface, 22);
+    d.setStroke(dp(1), line);
+    c.setBackground(d);
+    LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
+    lp.bottomMargin = dp(12);
+    p.addView(c, lp);
+    return c;
+  }
+
+  private Button button(String s, boolean primary, Runnable action) {
+    Button b = new Button(this);
+    b.setText(s);
+    b.setTextSize(13);
+    b.setAllCaps(false);
+    b.setMinHeight(dp(48));
+    b.setMinimumHeight(dp(48));
+    b.setTextColor(primary ? Color.WHITE : accent);
+    b.setPadding(dp(12), dp(8), dp(12), dp(8));
+    b.setBackground(shape(primary ? (light ? 0xFF5B4FE9 : 0xFF6255CE) : surface, 15));
+    b.setOnClickListener(v -> action.run());
+    return b;
+  }
+
+  private EditText field(String hint, String value, int max) {
+    EditText e = new EditText(this);
+    e.setTextColor(text);
+    e.setHintTextColor(muted);
+    e.setTextSize(15);
+    e.setHint(hint);
+    e.setText(value);
+    e.setPadding(dp(14), dp(12), dp(14), dp(12));
+    e.setBackground(shape(bg, 14));
+    e.setFilters(new InputFilter[] {new InputFilter.LengthFilter(max)});
+    return e;
+  }
+
+  private void info(String message) {
+    Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+  }
+
+  private String error(Throwable e) {
+    return e.getMessage() == null ? "İşlem tamamlanamadı." : e.getMessage();
+  }
+
+  private void confirm(String title, String detail, Runnable action) {
+    new AlertDialog.Builder(this)
+        .setTitle(title)
+        .setMessage(detail)
+        .setNegativeButton("Vazgeç", null)
+        .setPositiveButton("Onaylıyorum", (d, w) -> action.run())
+        .show();
+  }
+
+  private String modelPath() {
+    return prefs.getString("model", "");
+  }
+
+  private boolean hasModel() {
+    String path = modelPath();
+    return !path.isEmpty() && new File(path).isFile();
+  }
+
+  private void render() {
+    if (isDestroyed()) return;
+    int y = shownPage == page && scroll != null ? scroll.getScrollY() : 0;
+    if (shownPage == 0 && composer != null) draft = composer.getText().toString();
+    shownPage = page;
+    composer = null;
+    live = null;
+    status = null;
+    voiceButton = null;
+    colors();
+    getWindow().setStatusBarColor(bg);
+    getWindow().setNavigationBarColor(bg);
+    getWindow()
+        .getDecorView()
+        .setSystemUiVisibility(
+            light
+                ? View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR | View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+                : 0);
+    root = col();
+    root.setBackgroundColor(bg);
+    root.setFitsSystemWindows(true);
+    root.setOnApplyWindowInsetsListener(
+        (v, insets) -> {
+          v.setPadding(
+              insets.getSystemWindowInsetLeft(),
+              insets.getSystemWindowInsetTop(),
+              insets.getSystemWindowInsetRight(),
+              insets.getSystemWindowInsetBottom());
+          return insets.consumeSystemWindowInsets();
+        });
+    setContentView(root);
+    root.requestApplyInsets();
+    LinearLayout head = row();
+    head.setPadding(dp(22), dp(12), dp(22), dp(14));
+    ImageView logo = new ImageView(this);
+    logo.setImageResource(R.drawable.ic_nova);
+    head.addView(logo, new LinearLayout.LayoutParams(dp(42), dp(42)));
+    View spacer = new View(this);
+    head.addView(spacer, new LinearLayout.LayoutParams(dp(12), 1));
+    LinearLayout title = col();
+    copy(title, "NOVA", 11, accent, true);
+    copy(
+        title,
+        new String[] {"Adaş", "Görevler", "Hafıza", "Belgeler", "Ayarlar"}[page],
+        22,
+        text,
+        true);
+    weight(head, title);
+    TextView dot = label("● YEREL", 10, 0xFF37BAA3, true);
+    head.addView(dot);
+    add(root, head);
+    scroll = new ScrollView(this);
+    scroll.setFillViewport(true);
+    scroll.setClipToPadding(false);
+    scroll.setVerticalScrollBarEnabled(false);
+    body = col();
+    body.setPadding(dp(20), dp(8), dp(20), dp(16));
+    scroll.addView(body);
+    root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1));
+    scroll.setOnScrollChangeListener(
+        (v, sx, sy, ox, oy) -> {
+          if (page == 0) follow = body.getHeight() - scroll.getHeight() - sy < dp(120);
+        });
+    switch (page) {
+      case 0:
+        chat();
+        break;
+      case 1:
+        tasks();
+        break;
+      case 2:
+        memories();
+        break;
+      case 3:
+        documents();
+        break;
+      default:
+        settings();
+    }
+    if (page == 0) compose();
+    LinearLayout nav = row();
+    nav.setPadding(dp(8), dp(6), dp(8), dp(8));
+    nav.setBackground(shape(surface, 22));
+    String[] names = {"Sohbet", "Görevler", "Hafıza", "Belgeler", "Ayarlar"};
+    String[] icons = {"✦", "✓", "◇", "▤", "⚙"};
+    for (int i = 0; i < 5; i++) {
+      final int index = i;
+      LinearLayout item = col();
+      item.setGravity(Gravity.CENTER);
+      item.setPadding(dp(2), dp(7), dp(2), dp(7));
+      TextView icon = label(icons[i], 21, i == page ? accent : muted, true);
+      item.addView(icon);
+      TextView name = label(names[i], 10, i == page ? accent : muted, i == page);
+      item.addView(name);
+      item.setContentDescription(names[i]);
+      item.setOnClickListener(
+          v -> {
+            if (recording) {
+              info("Önce ses kaydını bitir.");
+              return;
+            }
+            page = index;
+            render();
+          });
+      nav.addView(item, new LinearLayout.LayoutParams(0, dp(58), 1));
+    }
+    LinearLayout.LayoutParams nl = new LinearLayout.LayoutParams(-1, -2);
+    nl.setMargins(dp(12), dp(4), dp(12), dp(8));
+    root.addView(nav, nl);
+    final ScrollView current = scroll;
+    current
+        .getViewTreeObserver()
+        .addOnPreDrawListener(
+            new android.view.ViewTreeObserver.OnPreDrawListener() {
+              public boolean onPreDraw() {
+                current.getViewTreeObserver().removeOnPreDrawListener(this);
+                current.scrollTo(0, y);
+                return true;
+              }
+            });
+  }
+
+  private void chat() {
+    List<Store.Row> messages = db.messages();
+    if (messages.isEmpty()) {
+      LinearLayout hero = card(body);
+      GradientDrawable gradient =
+          new GradientDrawable(
+              GradientDrawable.Orientation.TL_BR,
+              light ? new int[] {0xFFE8E3FF, 0xFFF1F5FF} : new int[] {0xFF2B2252, 0xFF162B3B});
+      gradient.setCornerRadius(dp(24));
+      hero.setBackground(gradient);
+      copy(hero, "SANA ÖZEL BİR ALAN", 10, accent, true);
+      gap(hero, 18);
+      copy(hero, "Merhaba,\nben Adaş.", 34, text, true);
+      gap(hero, 10);
+      copy(
+          hero,
+          "Birlikte düşünelim. Bir soru sor, bir belgeyi keşfet ya da aklındakileri paylaş.",
+          15,
+          muted,
+          false);
+      gap(hero, 22);
+      copy(hero, "Kişisel  ·  Çevrimdışı  ·  Ücretsiz", 11, accent, true);
+      if (!hasModel()) {
+        LinearLayout setup = card(body);
+        copy(setup, "Önce Adaş'ın modelini kuralım", 17, text, true);
+        gap(setup, 7);
+        copy(
+            setup,
+            "Sohbet için ücretsiz yerel model gerekir. İlk indirme yaklaşık 1,1 GB; sonrasında"
+                + " internet gerekmez.",
+            13,
+            muted,
+            false);
+        gap(setup, 10);
+        add(
+            setup,
+            button(
+                "Model kurulumunu aç",
+                true,
+                () -> {
+                  page = 4;
+                  render();
+                }));
+      }
+      copy(body, "NEREDEN BAŞLAYALIM?", 11, muted, true);
+      gap(body, 10);
+      for (String s :
+          new String[] {
+            "Bugünümü planlamama yardımcı ol",
+            "Bir konuyu sade bir dille açıkla",
+            "Birlikte yeni bir fikir geliştirelim"
+          }) {
+        LinearLayout c = card(body);
+        copy(c, s + "  ↗", 14, text, false);
+        c.setOnClickListener(
+            v -> {
+              composer.setText(s);
+              composer.requestFocus();
+            });
+      }
+    }
+    for (Store.Row m : messages) {
+      LinearLayout c = card(body);
+      if (m.role.equals("user")) c.setBackground(shape(light ? 0xFFEDE9FF : 0xFF282347, 20));
+      copy(c, m.role.equals("user") ? "SEN" : "ADAŞ", 10, accent, true);
+      gap(c, 8);
+      TextView value = copy(c, m.body, 15, text, false);
+      value.setTextIsSelectable(true);
+    }
+    if (busy && !modelJob) {
+      LinearLayout c = card(body);
+      copy(c, "ADAŞ · " + (streamText.isEmpty() ? "Düşünüyor…" : "Yanıtlıyor"), 10, accent, true);
+      gap(c, 8);
+      live =
+          copy(
+              c,
+              streamText.isEmpty() ? "Model ilk açılışta biraz zaman alabilir." : streamText,
+              15,
+              text,
+              false);
+    }
+    if (document != null) {
+      LinearLayout c = card(body);
+      copy(c, "SOHBETE EKLİ BELGE", 10, accent, true);
+      copy(c, document.name, 14, text, true);
+      copy(c, "Soruyla ilgili sınırlı metin bölümü kullanılır.", 11, muted, false);
+      add(
+          c,
+          button(
+              "Belgeyi sohbetten çıkar",
+              false,
+              () -> {
+                document = null;
+                render();
+              }));
+    }
+  }
+
+  private void compose() {
+    LinearLayout area = col();
+    area.setPadding(dp(16), dp(8), dp(16), dp(4));
+    LinearLayout input = row();
+    composer = field("Adaş'a bir şey sor…", draft, 700);
+    composer.setMaxLines(4);
+    composer.setMinLines(1);
+    composer.setContentDescription("Adaş'a mesaj");
+    weight(input, composer);
+    Button send =
+        button(
+            busy ? "Durdur" : "Gönder",
+            true,
+            () -> {
+              if (busy) {
+                stopWork();
+                return;
+              }
+              send();
+            });
+    LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(dp(90), -2);
+    p.leftMargin = dp(8);
+    input.addView(send, p);
+    add(area, input);
+    LinearLayout tools = row();
+    voiceButton =
+        new HoldButton(
+            this,
+            this::startSpeech,
+            this::finishSpeech,
+            () -> {
+              if (recording) finishSpeech();
+              else startSpeech();
+            });
+    voiceButton.setText(R.string.status_0);
+    voiceButton.setTextSize(13);
+    voiceButton.setAllCaps(false);
+    voiceButton.setTextColor(accent);
+    voiceButton.setMinHeight(dp(48));
+    voiceButton.setPadding(dp(10), dp(8), dp(10), dp(8));
+    voiceButton.setBackground(shape(surface, 15));
+    weight(tools, voiceButton);
+    Button say =
+        button(
+            "Seslendir",
+            false,
+            () -> {
+              List<Store.Row> ms = db.messages();
+              for (int i = ms.size() - 1; i >= 0; i--)
+                if (ms.get(i).role.equals("assistant")) {
+                  speak(ms.get(i).body);
+                  return;
+                }
+              info("Önce bir cevap oluştur.");
+            });
+    weight(tools, say);
+    add(area, tools);
+    add(root, area);
+  }
+
+  private void send() {
+    if (recording) {
+      info("Önce ses kaydını bitir.");
+      return;
+    }
+    if (busy) return;
+    String q = composer.getText().toString().trim();
+    if (q.isEmpty()) return;
+    if (!hasModel()) {
+      info("Ayarlar'dan ücretsiz modeli indir veya GGUF dosyası seç.");
+      page = 4;
+      render();
+      return;
+    }
+    String prompt =
+        Prompt.build(
+            db.messages(),
+            db.memories(),
+            q,
+            document == null ? "" : Prompt.relevant(document.text, q));
+    db.message("user", q);
+    draft = "";
+    composer.setText(R.string.status_1);
+    busy = true;
+    modelJob = false;
+    cancel.set(false);
+    streamText = "";
+    NativeBridge.reset();
+    render();
+    bottom();
+    String path = modelPath();
+    worker.execute(
+        () -> {
+          try {
+            byte[] bytes =
+                NativeBridge.generate(
+                    path,
+                    prompt.getBytes(StandardCharsets.UTF_8),
+                    part -> {
+                      String value = new String(part, StandardCharsets.UTF_8);
+                      ui.post(
+                          () -> {
+                            if (isDestroyed()) return;
+                            streamText = value;
+                            if (live != null) {
+                              live.setText(value);
+                              if (follow) bottom();
+                            }
+                          });
+                    });
+            String answer = new String(bytes, StandardCharsets.UTF_8).trim();
+            if (cancel.get())
+              answer = answer.isEmpty() ? "Yanıt durduruldu." : answer + "\n\n[Yanıt durduruldu.]";
+            if (answer.isEmpty())
+              answer =
+                  "Model metin üretmedi. Model dosyasının Qwen2.5 Instruct uyumunu kontrol et.";
+            final String result = answer;
+            db.message("assistant", result);
+            ui.post(
+                () -> {
+                  busy = false;
+                  if (isDestroyed()) return;
+                  streamText = "";
+                  render();
+                  bottom();
+                  if (prefs.getBoolean("speak", false) && !cancel.get()) speak(result);
+                });
+          } catch (Throwable e) {
+            ui.post(
+                () -> {
+                  busy = false;
+                  if (isDestroyed()) return;
+                  streamText = "";
+                  render();
+                  new AlertDialog.Builder(this)
+                      .setTitle("Adaş cevap oluşturamadı")
+                      .setMessage(error(e))
+                      .setPositiveButton("Tamam", null)
+                      .show();
+                });
+          }
+        });
+  }
+
+  private void bottom() {
+    if (page == 0 && scroll != null) scroll.post(() -> scroll.fullScroll(View.FOCUS_DOWN));
+  }
+
+  private void stopWork() {
+    cancel.set(true);
+    NativeBridge.stop();
+    operation = "Durduruluyor…";
+    if (status != null) status.setText(operation);
+    if (tts != null) tts.stop();
+    info("Durdurma isteği gönderildi.");
+  }
+
+  private void memories() {
+    copy(body, "Seni tanıyan, kontrolü sende kalan hafıza.", 17, text, true);
+    gap(body, 7);
+    copy(
+        body,
+        "Adaş kendiliğinden bilgi kaydetmez. Buraya eklediğin bilgiler sorulara cevap verirken"
+            + " kullanılabilir.",
+        13,
+        muted,
+        false);
+    gap(body, 14);
+    add(body, button("+ Hafıza ekle", true, () -> memoryDialog(null)));
+    gap(body, 16);
+    List<Store.Row> rows = db.memories();
+    if (rows.isEmpty())
+      copy(
+          card(body),
+          "Henüz kayıt yok. Örneğin ilgi alanlarını veya tercihlerini ekleyebilirsin.",
+          14,
+          muted,
+          false);
+    for (Store.Row r : rows) {
+      LinearLayout c = card(body);
+      copy(c, r.title, 17, text, true);
+      gap(c, 7);
+      copy(c, r.body, 14, muted, false);
+      gap(c, 10);
+      LinearLayout actions = row();
+      weight(actions, button("Düzenle", false, () -> memoryDialog(r)));
+      weight(
+          actions,
+          button(
+              "Sil",
+              false,
+              () ->
+                  confirm(
+                      "Hafıza silinsin mi?",
+                      r.title
+                          + "\n"
+                          + "Bu bilgi bundan sonraki sorulara eklenmeyecek. Eski sohbetlerdeki"
+                          + " kopyaları ayrıca yönetebilirsin.",
+                      () -> {
+                        db.removeMemory(r.id);
+                        render();
+                      })));
+      add(c, actions);
+    }
+    copy(
+        body,
+        "Son 100 hafıza gösterilir. Sorulara sınırlı sayıda kısa hafıza eklenir.",
+        11,
+        muted,
+        false);
+  }
+
+  private void memoryDialog(Store.Row r) {
+    LinearLayout form = col();
+    form.setPadding(dp(20), dp(10), dp(20), dp(10));
+    EditText title = field("Başlık", r == null ? "" : r.title, 80),
+        value = field("Adaş neyi hatırlasın?", r == null ? "" : r.body, 1000);
+    add(form, title);
+    gap(form, 10);
+    add(form, value);
+    AlertDialog d =
+        new AlertDialog.Builder(this)
+            .setTitle(r == null ? "Hafıza ekle" : "Hafızayı düzenle")
+            .setView(form)
+            .setNegativeButton("Vazgeç", null)
+            .setPositiveButton("Kaydet", null)
+            .create();
+    d.setOnShowListener(
+        v ->
+            d.getButton(-1)
+                .setOnClickListener(
+                    w -> {
+                      String a = title.getText().toString().trim(),
+                          b = value.getText().toString().trim();
+                      if (a.isEmpty() || b.isEmpty()) {
+                        info("Başlık ve bilgi gerekli.");
+                        return;
+                      }
+                      db.saveMemory(r == null ? 0 : r.id, a, b);
+                      d.dismiss();
+                      render();
+                    }));
+    d.show();
+  }
+
+  private String date(long time) {
+    return new SimpleDateFormat("dd MMM yyyy · HH:mm", TR).format(new Date(time));
+  }
+
+  private void tasks() {
+    copy(body, "Aklında tutmak zorunda değilsin.", 23, text, true);
+    gap(body, 8);
+    copy(
+        body,
+        "Görevlerini kaydet; Adaş zamanı yaklaşınca cihaz bildirimiyle hatırlatsın.",
+        14,
+        muted,
+        false);
+    gap(body, 14);
+    add(body, button("+ Görev ve hatırlatma", true, () -> taskDialog(null)));
+    gap(body, 12);
+    NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+    boolean enabled =
+        nm.areNotificationsEnabled()
+            && (Build.VERSION.SDK_INT < 33
+                || checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+                    == PackageManager.PERMISSION_GRANTED);
+    LinearLayout note = card(body);
+    copy(note, enabled ? "Bildirimler açık" : "Bildirim izni gerekli", 14, accent, true);
+    copy(
+        note,
+        "Hatırlatmalar yaklaşık zamanda ulaşır. Xiaomi pil kısıtları ve zorla durdurma gecikmeye"
+            + " neden olabilir.",
+        12,
+        muted,
+        false);
+    if (!enabled) add(note, button("Bildirim iznini aç", false, this::notificationPermission));
+    List<Store.Row> rows = db.tasks();
+    if (rows.isEmpty())
+      copy(
+          card(body),
+          "İlk görevini ekle. Görevler internet olmadan da saklanır.",
+          14,
+          muted,
+          false);
+    for (Store.Row r : rows) {
+      LinearLayout c = card(body);
+      copy(
+          c,
+          r.done
+              ? "✓ TAMAMLANDI"
+              : r.time < System.currentTimeMillis() ? "ZAMANI GELDİ" : "YAKLAŞAN",
+          10,
+          r.done ? muted : accent,
+          true);
+      gap(c, 7);
+      copy(c, r.title, 18, text, true);
+      copy(c, date(r.time), 12, muted, false);
+      gap(c, 8);
+      LinearLayout actions = row();
+      weight(
+          actions,
+          button(
+              r.done ? "Geri aç" : "Tamamlandı",
+              false,
+              () -> {
+                db.done(r.id, !r.done);
+                if (!r.done) ReminderReceiver.cancel(this, r.id);
+                else ReminderReceiver.schedule(this, r.id, r.time);
+                render();
+              }));
+      weight(actions, button("Düzenle", false, () -> taskDialog(r)));
+      weight(
+          actions,
+          button(
+              "Sil",
+              false,
+              () ->
+                  confirm(
+                      "Görev silinsin mi?",
+                      r.title + "\nHatırlatması da iptal edilecek.",
+                      () -> {
+                        ReminderReceiver.cancel(this, r.id);
+                        db.removeTask(r.id);
+                        render();
+                      })));
+      add(c, actions);
+    }
+    copy(
+        body,
+        "Son 100 görev listelenir; hatırlatma planlaması tüm bekleyen görevleri kapsar.",
+        11,
+        muted,
+        false);
+  }
+
+  private void taskDialog(Store.Row r) {
+    LinearLayout form = col();
+    form.setPadding(dp(20), dp(8), dp(20), dp(8));
+    EditText title = field("Görev adı", r == null ? "" : r.title, 200);
+    add(form, title);
+    gap(form, 14);
+    Calendar selected = Calendar.getInstance();
+    selected.setTimeInMillis(r == null ? System.currentTimeMillis() + 3600000 : r.time);
+    selected.set(Calendar.SECOND, 0);
+    selected.set(Calendar.MILLISECOND, 0);
+    Button when = button(date(selected.getTimeInMillis()), false, () -> {});
+    when.setOnClickListener(
+        v ->
+            new DatePickerDialog(
+                    this,
+                    (picker, y, m, d) -> {
+                      selected.set(y, m, d);
+                      new TimePickerDialog(
+                              this,
+                              (clock, h, min) -> {
+                                selected.set(Calendar.HOUR_OF_DAY, h);
+                                selected.set(Calendar.MINUTE, min);
+                                when.setText(date(selected.getTimeInMillis()));
+                              },
+                              selected.get(Calendar.HOUR_OF_DAY),
+                              selected.get(Calendar.MINUTE),
+                              true)
+                          .show();
+                    },
+                    selected.get(Calendar.YEAR),
+                    selected.get(Calendar.MONTH),
+                    selected.get(Calendar.DAY_OF_MONTH))
+                .show());
+    add(form, when);
+    AlertDialog d =
+        new AlertDialog.Builder(this)
+            .setTitle(r == null ? "Yeni görev" : "Görevi düzenle")
+            .setView(form)
+            .setNegativeButton("Vazgeç", null)
+            .setPositiveButton("Kaydet", null)
+            .create();
+    d.setOnShowListener(
+        v ->
+            d.getButton(-1)
+                .setOnClickListener(
+                    w -> {
+                      String name = title.getText().toString().trim();
+                      if (name.isEmpty()) {
+                        info("Görev adı gerekli.");
+                        return;
+                      }
+                      if (selected.getTimeInMillis() <= System.currentTimeMillis()) {
+                        info("Gelecekte bir tarih ve saat seç.");
+                        return;
+                      }
+                      long id = db.saveTask(r == null ? 0 : r.id, name, selected.getTimeInMillis());
+                      if (r == null || !r.done)
+                        ReminderReceiver.schedule(this, id, selected.getTimeInMillis());
+                      d.dismiss();
+                      render();
+                    }));
+    d.show();
+  }
+
+  private void notificationPermission() {
+    if (Build.VERSION.SDK_INT >= 33
+        && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+            != PackageManager.PERMISSION_GRANTED)
+      requestPermissions(new String[] {Manifest.permission.POST_NOTIFICATIONS}, 11);
+    else
+      startActivity(
+          new Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+              .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, getPackageName()));
+  }
+
+  private void documents() {
+    copy(body, "Dosyalarınla birlikte düşün.", 25, text, true);
+    gap(body, 9);
+    copy(
+        body,
+        "PDF, Word (.docx), Excel (.xlsx) ve metin dosyalarını cihazında incele. Dosyaların"
+            + " sunucuya gönderilmez.",
+        14,
+        muted,
+        false);
+    gap(body, 15);
+    add(
+        body,
+        button(
+            "+ Belge seç",
+            true,
+            () -> {
+              if (busy) {
+                info("Önce devam eden işlemi bitir.");
+                return;
+              }
+              Intent i =
+                  new Intent(Intent.ACTION_OPEN_DOCUMENT)
+                      .setType("*/*")
+                      .addCategory(Intent.CATEGORY_OPENABLE);
+              i.putExtra(
+                  Intent.EXTRA_MIME_TYPES,
+                  new String[] {
+                    "application/pdf",
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    "text/plain"
+                  });
+              startActivityForResult(i, 21);
+            }));
+    gap(body, 14);
+    LinearLayout limits = card(body);
+    copy(limits, "Kapsamı bilerek incele", 16, text, true);
+    gap(limits, 7);
+    copy(
+        limits,
+        "En fazla 10 MB. Taranmış PDF'lerde OCR yoktur. Excel formülleri çalıştırılmaz; kayıtlı"
+            + " değerler okunur. Uzun belgelerden soruyla ilgili sınırlı bölüm seçilir.",
+        13,
+        muted,
+        false);
+    if (busy && modelJob) {
+      status = copy(card(body), operation, 14, accent, false);
+    }
+    if (document != null) {
+      LinearLayout c = card(body);
+      copy(c, document.name, 19, text, true);
+      gap(c, 8);
+      copy(c, document.coverage, 12, muted, false);
+      gap(c, 12);
+      copy(c, document.text.length() + " karakter çıkarıldı", 11, accent, true);
+      gap(c, 10);
+      copy(c, Prompt.cut(document.text, 1800), 13, text, false);
+      gap(c, 14);
+      add(
+          c,
+          button(
+              "Bu belge hakkında Adaş'a sor",
+              true,
+              () -> {
+                page = 0;
+                render();
+                composer.setText(R.string.status_2);
+              }));
+    }
+  }
+
+  private void settings() {
+    LinearLayout model = card(body);
+    copy(model, "ADAŞ'IN YEREL MODELİ", 10, accent, true);
+    gap(model, 9);
+    copy(model, "Qwen2.5 · 1.5B Instruct", 21, text, true);
+    gap(model, 7);
+    copy(
+        model,
+        "Ücretsiz · Q4_K_M · yaklaşık 1,1 GB\n"
+            + "Xiaomi 12T Pro / 12 GB RAM hedefi\n"
+            + "Sohbet cihazda çalışır; API anahtarı gerekmez.",
+        13,
+        muted,
+        false);
+    gap(model, 10);
+    if (hasModel()) {
+      File f = new File(modelPath());
+      copy(model, "Seçili GGUF · " + f.length() / 1048576 + " MB", 13, accent, true);
+      copy(model, "Dosyanın model uyumu ilk sohbette denetlenir.", 11, muted, false);
+    } else copy(model, "Henüz model seçilmedi", 13, muted, false);
+    gap(model, 12);
+    add(
+        model,
+        button(
+            "Ücretsiz modeli indir",
+            true,
+            () -> {
+              if (busy) {
+                info("Önce devam eden işlemi bitir.");
+                return;
+              }
+              confirm(
+                  "Yerel model indirilsin mi?",
+                  "Hugging Face üzerindeki resmî Qwen deposundan yaklaşık 1,1 GB indirilecek."
+                      + " Ücretli API yoktur; bağlantı tarifendeki veri kullanılır. Wi-Fi ve en az"
+                      + " 2 GB boş alan önerilir. İndirme boyunca uygulamayı açık tut.",
+                  () -> modelAction(null));
+            }));
+    gap(model, 8);
+    add(
+        model,
+        button(
+            "İndirilmiş GGUF dosyasını seç",
+            false,
+            () -> {
+              if (busy) {
+                info("Önce devam eden işlemi bitir.");
+                return;
+              }
+              confirm(
+                  "Model dosyası seç",
+                  "Güvenilir kaynaktan Qwen2.5-1.5B-Instruct Q4_K_M GGUF dosyasını seç. Dosya"
+                      + " uygulama alanına kopyalanır; kaynağı silinmez. Uyumsuz modeller"
+                      + " çalışmayabilir.",
+                  () ->
+                      startActivityForResult(
+                          new Intent(Intent.ACTION_OPEN_DOCUMENT)
+                              .setType("*/*")
+                              .addCategory(Intent.CATEGORY_OPENABLE),
+                          22));
+            }));
+    if (busy && modelJob) {
+      gap(model, 10);
+      status = copy(model, operation, 13, accent, false);
+      add(model, button("İşlemi durdur", false, this::stopWork));
+    }
+    LinearLayout voiceCard = card(body);
+    copy(voiceCard, "Türkçe çevrimdışı bas-konuş", 18, text, true);
+    gap(voiceCard, 8);
+    copy(
+        voiceCard,
+        "Whisper tiny çok dilli · yaklaşık 75 MB. Ses telefonda çözülür; 30 saniyeye kadar kayıt."
+            + " Model yoksa yalnızca cihazın çevrimdışı servisi denenir.",
+        13,
+        muted,
+        false);
+    gap(voiceCard, 10);
+    String voicePath = prefs.getString("voiceModel", "");
+    copy(
+        voiceCard,
+        !voicePath.isEmpty() && new File(voicePath).isFile()
+            ? "Yerel ses modeli seçili"
+            : "Yerel ses modeli henüz kurulmadı",
+        12,
+        accent,
+        true);
+    add(
+        voiceCard,
+        button(
+            "Ücretsiz ses modelini indir",
+            false,
+            () -> {
+              if (busy) {
+                info("Önce devam eden işlemi bitir.");
+                return;
+              }
+              confirm(
+                  "Ses modeli indirilsin mi?",
+                  "Hugging Face ggerganov/whisper.cpp deposundan ggml-tiny.bin yaklaşık 75 MB"
+                      + " indirilecek. Ücretli servis kullanılmaz.",
+                  () -> modelAction(null, true));
+            }));
+    gap(voiceCard, 8);
+    add(
+        voiceCard,
+        button(
+            "İndirilmiş ggml-tiny.bin seç",
+            false,
+            () -> {
+              if (busy) return;
+              startActivityForResult(
+                  new Intent(Intent.ACTION_OPEN_DOCUMENT)
+                      .setType("*/*")
+                      .addCategory(Intent.CATEGORY_OPENABLE),
+                  23);
+            }));
+    LinearLayout view = card(body);
+    copy(view, "Sana göre görünüm", 18, text, true);
+    gap(view, 10);
+    add(
+        view,
+        button(
+            light ? "Koyu temaya geç" : "Açık temaya geç",
+            false,
+            () -> {
+              light = !light;
+              prefs.edit().putBoolean("light", light).apply();
+              render();
+            }));
+    gap(view, 8);
+    boolean speech = prefs.getBoolean("speak", false);
+    add(
+        view,
+        button(
+            speech ? "Otomatik sesli cevap: açık" : "Otomatik sesli cevap: kapalı",
+            false,
+            () -> {
+              prefs.edit().putBoolean("speak", !speech).apply();
+              render();
+            }));
+    add(
+        view,
+        button(
+            "Sesi durdur",
+            false,
+            () -> {
+              if (tts != null) tts.stop();
+            }));
+    LinearLayout privacy = card(body);
+    copy(privacy, "Kontrol sende", 18, text, true);
+    gap(privacy, 8);
+    copy(
+        privacy,
+        "Adaş dosya silemez, ödeme yapamaz, mesaj gönderemez veya sistem ayarlarını değiştiremez."
+            + " Kritik işlemler için bağlı bir araç yoktur. Hafıza, görev ve sohbet silme yalnızca"
+            + " açık onayla yapılır.",
+        13,
+        muted,
+        false);
+    gap(privacy, 12);
+    add(
+        privacy,
+        button(
+            "Sohbet geçmişini sil",
+            false,
+            () -> {
+              if (busy) {
+                info("Önce devam eden işlemi bitir.");
+                return;
+              }
+              confirm(
+                  "Sohbet geçmişi silinsin mi?",
+                  "Tüm sohbet mesajları silinecek. Hafıza ve görevler korunacak. Bu işlem geri"
+                      + " alınamaz.",
+                  () -> {
+                    db.clearChat();
+                    info("Sohbet geçmişi silindi.");
+                    render();
+                  });
+            }));
+    gap(privacy, 8);
+    add(privacy, button("Model ve yarım dosyaları yönet", false, this::manageModels));
+    LinearLayout about = card(body);
+    copy(about, "NOVA AI 1.0 · Adaş", 17, text, true);
+    copy(
+        about,
+        "Kişisel ve ücretsiz Android sürümü\n"
+            + "Yerel motor: llama.cpp b6800 (MIT)\n"
+            + "Önerilen model: Qwen2.5-1.5B-Instruct (Apache-2.0)\n"
+            + "PDF: PDFBox Android (Apache-2.0)\n"
+            + "Android 8+; Whisper ses modeliyle çevrimdışı bas-konuş. Alternatif sistem tanıması"
+            + " Android 12+ ve cihaz desteği gerektirir.",
+        12,
+        muted,
+        false);
+    gap(about, 8);
+    copy(
+        about,
+        "Adaş hata yapabilir. Önemli bilgileri kaynaklarıyla kontrol et. Hız, pil ve sıcaklık"
+            + " gerçek cihazda değişir.",
+        12,
+        muted,
+        false);
+  }
+
+  private void modelAction(Uri uri) {
+    modelAction(uri, false);
+  }
+
+  private void modelAction(Uri uri, boolean voice) {
+    busy = true;
+    modelJob = true;
+    cancel.set(false);
+    operation = "Model hazırlanıyor…";
+    render();
+    worker.execute(
+        () -> {
+          try {
+            File ready =
+                uri == null
+                    ? Models.download(this, cancel, value -> progress(value), voice)
+                    : Models.imported(this, uri, cancel, value -> progress(value), voice);
+            prefs.edit().putString(voice ? "voiceModel" : "model", ready.getAbsolutePath()).apply();
+            ui.post(
+                () -> {
+                  busy = false;
+                  modelJob = false;
+                  if (isDestroyed()) return;
+                  render();
+                  info("Model dosyası hazır. Sohbet ekranından Adaş'a yazabilirsin.");
+                });
+          } catch (Exception e) {
+            ui.post(
+                () -> {
+                  busy = false;
+                  modelJob = false;
+                  if (isDestroyed()) return;
+                  render();
+                  new AlertDialog.Builder(this)
+                      .setTitle("Model hazırlanamadı")
+                      .setMessage(
+                          error(e)
+                              + "\n"
+                              + "Yarım dosyalar kendiliğinden silinmez; model yönetiminden onayla"
+                              + " temizleyebilirsin.")
+                      .setPositiveButton("Tamam", null)
+                      .show();
+                });
+          }
+        });
+  }
+
+  private void progress(String message) {
+    ui.post(
+        () -> {
+          operation = message;
+          if (!isDestroyed() && status != null) status.setText(message);
+        });
+  }
+
+  private void manageModels() {
+    if (busy) {
+      info("Önce devam eden işlemi bitir.");
+      return;
+    }
+    File[] files = Models.folder(this).listFiles();
+    if (files == null || files.length == 0) {
+      info("Henüz model dosyası yok.");
+      return;
+    }
+    String[] choices = new String[files.length];
+    for (int i = 0; i < files.length; i++)
+      choices[i] = files[i].getName() + " · " + files[i].length() / 1048576 + " MB";
+    new AlertDialog.Builder(this)
+        .setTitle("Silinecek dosyayı seç")
+        .setItems(
+            choices,
+            (d, i) -> {
+              File file = files[i];
+              confirm(
+                  "Bu model dosyası silinsin mi?",
+                  choices[i]
+                      + "\n"
+                      + "Yalnızca uygulama içindeki bu kopya silinecek. Seçili modelse yeniden"
+                      + " model kurman gerekir.",
+                  () -> {
+                    worker.execute(
+                        () -> {
+                          NativeBridge.release();
+                          boolean removed = file.delete();
+                          ui.post(
+                              () -> {
+                                if (removed
+                                    && prefs
+                                        .getString("voiceModel", "")
+                                        .equals(file.getAbsolutePath()))
+                                  prefs.edit().remove("voiceModel").apply();
+                                if (removed && modelPath().equals(file.getAbsolutePath()))
+                                  prefs.edit().remove("model").apply();
+                                if (!isDestroyed()) {
+                                  info(removed ? "Seçilen dosya silindi." : "Dosya silinemedi.");
+                                  render();
+                                }
+                              });
+                        });
+                  });
+            })
+        .setNegativeButton("Vazgeç", null)
+        .show();
+  }
+
+  @Override
+  protected void onActivityResult(int request, int result, Intent data) {
+    super.onActivityResult(request, result, data);
+    if (result != RESULT_OK || data == null || data.getData() == null) return;
+    Uri uri = data.getData();
+    if (request == 22 || request == 23) {
+      modelAction(uri, request == 23);
+      return;
+    }
+    if (request == 21) {
+      if (busy) return;
+      busy = true;
+      modelJob = true;
+      operation = "Belge cihazda okunuyor…";
+      render();
+      worker.execute(
+          () -> {
+            try {
+              Documents.Result found = Documents.read(this, uri);
+              ui.post(
+                  () -> {
+                    busy = false;
+                    modelJob = false;
+                    if (isDestroyed()) return;
+                    document = found;
+                    render();
+                  });
+            } catch (Exception e) {
+              ui.post(
+                  () -> {
+                    busy = false;
+                    modelJob = false;
+                    if (isDestroyed()) return;
+                    render();
+                    new AlertDialog.Builder(this)
+                        .setTitle("Belge okunamadı")
+                        .setMessage(error(e))
+                        .setPositiveButton("Tamam", null)
+                        .show();
+                  });
+            }
+          });
+    }
+  }
+
+  private void finishSpeech() {
+    if (recording && localRecording) {
+      recorder.stop();
+      if (voiceButton != null) voiceButton.setText(R.string.status_3);
+    } else if (recording && recognizer != null) {
+      recognizer.stopListening();
+      if (voiceButton != null) voiceButton.setText(R.string.status_3);
+    }
+  }
+
+  private void startSpeech() {
+    if (busy || recording) return;
+    if (checkSelfPermission(Manifest.permission.RECORD_AUDIO)
+        != PackageManager.PERMISSION_GRANTED) {
+      requestPermissions(new String[] {Manifest.permission.RECORD_AUDIO}, 12);
+      return;
+    }
+    String voicePath = prefs.getString("voiceModel", "");
+    if (!voicePath.isEmpty() && new File(voicePath).isFile()) {
+      recording = true;
+      localRecording = true;
+      NativeBridge.reset();
+      voiceButton.setText(R.string.status_4);
+      recorder.start(
+          this,
+          new VoiceRecorder.Result() {
+            public void error(String message) {
+              ui.post(
+                  () -> {
+                    recording = false;
+                    localRecording = false;
+                    if (isDestroyed()) return;
+                    if (voiceButton != null) voiceButton.setText(R.string.status_0);
+                    info(message);
+                  });
+            }
+
+            public void done(float[] samples) {
+              ui.post(
+                  () -> {
+                    recording = false;
+                    localRecording = false;
+                    if (isDestroyed()) return;
+                    busy = true;
+                    modelJob = true;
+                    operation = "Ses cihazda Türkçe metne çevriliyor…";
+                    if (voiceButton != null) voiceButton.setText(R.string.status_3);
+                    worker.execute(
+                        () -> {
+                          try {
+                            byte[] decoded = NativeBridge.transcribe(voicePath, samples);
+                            String value = new String(decoded, StandardCharsets.UTF_8).trim();
+                            ui.post(
+                                () -> {
+                                  busy = false;
+                                  modelJob = false;
+                                  if (isDestroyed()) return;
+                                  if (composer != null) composer.setText(Prompt.cut(value, 700));
+                                  if (voiceButton != null) voiceButton.setText(R.string.status_0);
+                                  info("Metni kontrol edip Gönder'e bas.");
+                                });
+                          } catch (Throwable e) {
+                            ui.post(
+                                () -> {
+                                  busy = false;
+                                  modelJob = false;
+                                  if (isDestroyed()) return;
+                                  if (voiceButton != null) voiceButton.setText(R.string.status_0);
+                                  info(MainActivity.this.error(e));
+                                });
+                          }
+                        });
+                  });
+            }
+          });
+      return;
+    }
+    if (Build.VERSION.SDK_INT < 31 || !SpeechRecognizer.isOnDeviceRecognitionAvailable(this)) {
+      info(
+          "Bu cihazda çevrimdışı konuşma tanıma servisi hazır değil. Android dil/ses paketini"
+              + " kontrol et; metinle devam edebilirsin. Bulut servisine geçilmeyecek.");
+      return;
+    }
+    if (recognizer == null) {
+      recognizer = SpeechRecognizer.createOnDeviceSpeechRecognizer(this);
+      recognizer.setRecognitionListener(this);
+    }
+    Intent i =
+        new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+            .putExtra(
+                RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            .putExtra(RecognizerIntent.EXTRA_LANGUAGE, "tr-TR")
+            .putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
+            .putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
+    recording = true;
+    voiceButton.setText(R.string.status_5);
+    recognizer.startListening(i);
+  }
+
+  private void speak(String value) {
+    if (!ttsReady) {
+      info("Cihaz ses motoru henüz hazır değil.");
+      return;
+    }
+    Set<Voice> voices = tts.getVoices();
+    Voice chosen = null;
+    if (voices != null)
+      for (Voice voice : voices)
+        if (voice.getLocale().getLanguage().equals("tr")
+            && !voice.isNetworkConnectionRequired()
+            && !voice.getFeatures().contains(TextToSpeech.Engine.KEY_FEATURE_NOT_INSTALLED)) {
+          chosen = voice;
+          break;
+        }
+    if (chosen == null) {
+      new AlertDialog.Builder(this)
+          .setTitle("Çevrimdışı Türkçe ses bulunamadı")
+          .setMessage(
+              "Android metin okuma ayarlarından Türkçe çevrimdışı ses paketini kur. NOVA ücretli"
+                  + " veya bulut sesine geçmez.")
+          .setPositiveButton("Tamam", null)
+          .show();
+      return;
+    }
+    if (tts.setVoice(chosen) != TextToSpeech.SUCCESS) {
+      info("Çevrimdışı Türkçe ses etkinleştirilemedi.");
+      return;
+    }
+    tts.speak(
+        Prompt.cut(value, TextToSpeech.getMaxSpeechInputLength()),
+        TextToSpeech.QUEUE_FLUSH,
+        null,
+        "adas-answer");
+  }
+
+  @Override
+  public void onRequestPermissionsResult(int request, String[] permissions, int[] grants) {
+    super.onRequestPermissionsResult(request, permissions, grants);
+    if (request == 11) {
+      ReminderReceiver.all(this);
+      render();
+    }
+    if (request == 12)
+      info(
+          grants.length > 0 && grants[0] == PackageManager.PERMISSION_GRANTED
+              ? "İzin verildi. Konuşmak için düğmeye tekrar basılı tut."
+              : "Mikrofon izni verilmedi; metinle devam edebilirsin.");
+  }
+
+  public void onReadyForSpeech(Bundle b) {}
+
+  public void onBeginningOfSpeech() {}
+
+  public void onRmsChanged(float f) {}
+
+  public void onBufferReceived(byte[] b) {}
+
+  public void onEndOfSpeech() {
+    recording = false;
+    if (voiceButton != null) voiceButton.setText(R.string.status_3);
+  }
+
+  public void onError(int code) {
+    recording = false;
+    if (voiceButton != null) voiceButton.setText(R.string.status_0);
+    info(
+        "Çevrimdışı ses çözümlenemedi ("
+            + code
+            + "). Türkçe dil paketi ve cihaz desteğini kontrol et.");
+  }
+
+  public void onResults(Bundle results) {
+    recording = false;
+    ArrayList<String> values = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+    if (values != null && !values.isEmpty() && composer != null) {
+      composer.setText(Prompt.cut(values.get(0), 700));
+      composer.setSelection(composer.length());
+    }
+    if (voiceButton != null) voiceButton.setText(R.string.status_0);
+  }
+
+  public void onPartialResults(Bundle b) {}
+
+  public void onEvent(int t, Bundle b) {}
+}

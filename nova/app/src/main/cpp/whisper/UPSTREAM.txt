@@ -1,0 +1,4 @@
+https://github.com/ggml-org/whisper.cpp
+tag v1.7.6
+commit a8d002cfd879315632a579e73f0148d06959de36
+MIT license. CPU encoder/decoder compiled against bundled GGML.

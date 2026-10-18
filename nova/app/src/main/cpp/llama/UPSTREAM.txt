@@ -1,0 +1,4 @@
+https://github.com/ggml-org/llama.cpp
+tag b6800
+commit 0398752dd450dfabdd1b9e289f6364c2600f6ab5
+MIT license; copied CPU inference source, no model weights.
