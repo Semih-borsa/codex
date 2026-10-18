@@ -39,6 +39,11 @@ public final class MainActivity extends Activity implements RecognitionListener 
   private boolean localRecording;
   private SpeechRecognizer recognizer;
   private TextToSpeech tts;
+  private final Conversation conversation = new Conversation();
+  private boolean foreground;
+  private String activeUtterance = "";
+  private WeatherQuery pendingWeather;
+  private boolean lastWeather;
   private int bg, surface, text, muted, accent, line;
   private static final Locale TR = new Locale("tr", "TR");
 
@@ -59,6 +64,36 @@ public final class MainActivity extends Activity implements RecognitionListener 
             result -> {
               ttsReady = result == TextToSpeech.SUCCESS;
             });
+    tts.setOnUtteranceProgressListener(
+        new UtteranceProgressListener() {
+          public void onStart(String id) {}
+
+          public void onDone(String id) {
+            ui.post(
+                () -> {
+                  if (!id.equals(activeUtterance)) return;
+                  activeUtterance = "";
+                  int token = conversation.session();
+                  if (conversation.canListen(token))
+                    ui.postDelayed(
+                        () -> {
+                          if (foreground && page == 0 && conversation.canListen(token))
+                            startSpeech();
+                        },
+                        500);
+                });
+          }
+
+          public void onError(String id) {
+            ui.post(
+                () -> {
+                  if (id.equals(activeUtterance)) {
+                    stopConversation(false);
+                    info("Sesli cevap okunamadı; konuşma durduruldu.");
+                  }
+                });
+          }
+        });
     ReminderReceiver.all(this);
     render();
   }
@@ -71,7 +106,15 @@ public final class MainActivity extends Activity implements RecognitionListener 
   }
 
   @Override
+  protected void onResume() {
+    super.onResume();
+    foreground = true;
+  }
+
+  @Override
   protected void onPause() {
+    foreground = false;
+    stopConversation(false);
     if (recording) {
       recorder.cancel();
       if (recognizer != null) recognizer.cancel();
@@ -83,6 +126,8 @@ public final class MainActivity extends Activity implements RecognitionListener 
 
   @Override
   protected void onDestroy() {
+    conversation.stop();
+    activeUtterance = "";
     cancel.set(true);
     recorder.cancel();
     NativeBridge.stop();
@@ -276,7 +321,7 @@ public final class MainActivity extends Activity implements RecognitionListener 
         text,
         true);
     weight(head, title);
-    TextView dot = label("● YEREL", 10, 0xFF37BAA3, true);
+    TextView dot = label("● KİŞİSEL", 10, 0xFF37BAA3, true);
     head.addView(dot);
     add(root, head);
     scroll = new ScrollView(this);
@@ -325,6 +370,7 @@ public final class MainActivity extends Activity implements RecognitionListener 
       item.setContentDescription(names[i]);
       item.setOnClickListener(
           v -> {
+            if (conversation.active()) stopConversation(false);
             if (recording) {
               info("Önce ses kaydını bitir.");
               return;
@@ -371,7 +417,7 @@ public final class MainActivity extends Activity implements RecognitionListener 
           muted,
           false);
       gap(hero, 22);
-      copy(hero, "Kişisel  ·  Çevrimdışı  ·  Ücretsiz", 11, accent, true);
+      copy(hero, "Kişisel  ·  Ücretsiz  ·  Cihazında", 11, accent, true);
       if (!hasModel()) {
         LinearLayout setup = card(body);
         copy(setup, "Önce Adaş'ın modelini kuralım", 17, text, true);
@@ -426,7 +472,11 @@ public final class MainActivity extends Activity implements RecognitionListener 
       live =
           copy(
               c,
-              streamText.isEmpty() ? "Model ilk açılışta biraz zaman alabilir." : streamText,
+              streamText.isEmpty()
+                  ? (lastWeather
+                      ? "Ücretsiz hava tahmini kaynağına bağlanılıyor. İnternet gerekir."
+                      : "Model ilk açılışta biraz zaman alabilir.")
+                  : streamText,
               15,
               text,
               false);
@@ -473,22 +523,8 @@ public final class MainActivity extends Activity implements RecognitionListener 
     input.addView(send, p);
     add(area, input);
     LinearLayout tools = row();
-    voiceButton =
-        new HoldButton(
-            this,
-            this::startSpeech,
-            this::finishSpeech,
-            () -> {
-              if (recording) finishSpeech();
-              else startSpeech();
-            });
-    voiceButton.setText(R.string.status_0);
-    voiceButton.setTextSize(13);
-    voiceButton.setAllCaps(false);
-    voiceButton.setTextColor(accent);
-    voiceButton.setMinHeight(dp(48));
-    voiceButton.setPadding(dp(10), dp(8), dp(10), dp(8));
-    voiceButton.setBackground(shape(surface, 15));
+    voiceButton = button(conversationLabel(), false, this::toggleConversation);
+    voiceButton.setContentDescription("Sesli sohbeti başlat veya bitir");
     weight(tools, voiceButton);
     Button say =
         button(
@@ -509,25 +545,34 @@ public final class MainActivity extends Activity implements RecognitionListener 
   }
 
   private void send() {
-    if (recording) {
-      info("Önce ses kaydını bitir.");
-      return;
-    }
-    if (busy) return;
+    if (recording || busy) return;
     String q = composer.getText().toString().trim();
     if (q.isEmpty()) return;
-    if (!hasModel()) {
-      info("Ayarlar'dan ücretsiz modeli indir veya GGUF dosyası seç.");
+    List<Store.Row> history = db.messages();
+    WeatherQuery weather = null;
+    if (WeatherQuery.matches(q) || (lastWeather && WeatherQuery.followup(q)))
+      weather = WeatherQuery.parse(q, prefs.getString("weatherCity", ""));
+    else if (pendingWeather != null && !WeatherQuery.normalize(q).matches("vazgec|iptal|bosver")) {
+      weather = new WeatherQuery(Prompt.cut(q, 60), pendingWeather.day);
+      pendingWeather = null;
+    }
+    boolean decline =
+        pendingWeather != null && WeatherQuery.normalize(q).matches("vazgec|iptal|bosver");
+    if (decline) {
+      pendingWeather = null;
+      weather = null;
+    }
+    String currentInfo =
+        decline ? "Tamam, hava durumu sorgusunu iptal ettim." : AnswerQuality.currentInfo(q);
+    if (weather == null && currentInfo == null && !hasModel()) {
+      stopConversation(false);
+      info(
+          "Yerel modeli kurmadan genel sohbet yapılamaz. Hava durumu şehir adıyla model olmadan da"
+              + " çalışır.");
       page = 4;
       render();
       return;
     }
-    String prompt =
-        Prompt.build(
-            db.messages(),
-            db.memories(),
-            q,
-            document == null ? "" : Prompt.relevant(document.text, q));
     db.message("user", q);
     draft = "";
     composer.setText(R.string.status_1);
@@ -535,61 +580,213 @@ public final class MainActivity extends Activity implements RecognitionListener 
     modelJob = false;
     cancel.set(false);
     streamText = "";
+    activeUtterance = "";
+    if (tts != null) tts.stop();
     NativeBridge.reset();
+    conversation.move(conversation.session(), Conversation.State.THINKING);
+    lastWeather = weather != null;
     render();
     bottom();
+    if (weather != null && weather.city.isEmpty()) {
+      pendingWeather = weather;
+      lastWeather = true;
+      completeAnswer("Hangi şehir için hava durumunu öğrenmek istiyorsun?", "notice");
+      return;
+    }
+    final WeatherQuery request = weather;
+    lastWeather = weather != null;
+    String prompt =
+        Prompt.build(
+            history, db.memories(), q, document == null ? "" : Prompt.relevant(document.text, q));
     String path = modelPath();
     worker.execute(
         () -> {
           try {
-            byte[] bytes =
-                NativeBridge.generate(
-                    path,
-                    prompt.getBytes(StandardCharsets.UTF_8),
-                    part -> {
-                      String value = new String(part, StandardCharsets.UTF_8);
-                      ui.post(
-                          () -> {
-                            if (isDestroyed()) return;
-                            streamText = value;
-                            if (live != null) {
-                              live.setText(value);
-                              if (follow) bottom();
-                            }
-                          });
-                    });
-            String answer = new String(bytes, StandardCharsets.UTF_8).trim();
-            if (cancel.get())
-              answer = answer.isEmpty() ? "Yanıt durduruldu." : answer + "\n\n[Yanıt durduruldu.]";
-            if (answer.isEmpty())
-              answer =
-                  "Model metin üretmedi. Model dosyasının Qwen2.5 Instruct uyumunu kontrol et.";
-            final String result = answer;
-            db.message("assistant", result);
-            ui.post(
-                () -> {
-                  busy = false;
-                  if (isDestroyed()) return;
-                  streamText = "";
-                  render();
-                  bottom();
-                  if (prefs.getBoolean("speak", false) && !cancel.get()) speak(result);
-                });
+            if (request != null) {
+              try {
+                Weather.Result found = Weather.get(request);
+                if (!cancel.get()) prefs.edit().putString("weatherCity", found.city).apply();
+                completeAnswer(found.answer, "tool");
+              } catch (Exception e) {
+                completeAnswer(
+                    "Hava durumu kaynağına ulaşamadım: "
+                        + error(e)
+                        + " İnternet bağlantısını ve şehir adını kontrol et. Güncel sıcaklık veya"
+                        + " tahmin uydurmayacağım.",
+                    "notice");
+              }
+              return;
+            }
+            if (currentInfo != null) {
+              completeAnswer(currentInfo, "notice");
+              return;
+            }
+            String answer = generate(path, prompt);
+            boolean bad = AnswerQuality.retry(answer, history, q);
+            if (bad && !cancel.get()) {
+              NativeBridge.reset();
+              streamText = "";
+              String fresh =
+                  Prompt.build(
+                      Collections.emptyList(),
+                      db.memories(),
+                      q,
+                      document == null ? "" : Prompt.relevant(document.text, q));
+              answer = generate(path, fresh);
+              bad = AnswerQuality.retry(answer, history, q);
+            }
+            if (bad && !cancel.get()) {
+              completeAnswer(
+                  "Bu soruya güvenilir ve ilgili bir cevap üretemedim. Aynı cevabı tekrar"
+                      + " sunmayacağım. Soruyu daha dar bir konuya ayırabiliriz; küçük yerel"
+                      + " modelin anlama kapasitesi sınırlı.",
+                  "notice");
+              return;
+            }
+            completeAnswer(answer, "assistant");
           } catch (Throwable e) {
             ui.post(
                 () -> {
                   busy = false;
-                  if (isDestroyed()) return;
                   streamText = "";
+                  stopConversation(false);
+                  if (isDestroyed()) return;
                   render();
-                  new AlertDialog.Builder(this)
-                      .setTitle("Adaş cevap oluşturamadı")
-                      .setMessage(error(e))
-                      .setPositiveButton("Tamam", null)
-                      .show();
+                  if (foreground)
+                    new AlertDialog.Builder(this)
+                        .setTitle("Adaş cevap oluşturamadı")
+                        .setMessage(error(e))
+                        .setPositiveButton("Tamam", null)
+                        .show();
                 });
           }
         });
+  }
+
+  private String generate(String path, String prompt) {
+    byte[] bytes =
+        NativeBridge.generate(
+            path,
+            prompt.getBytes(StandardCharsets.UTF_8),
+            part -> {
+              String value = new String(part, StandardCharsets.UTF_8);
+              if (AnswerQuality.loop(value)) NativeBridge.stop();
+              ui.post(
+                  () -> {
+                    if (isDestroyed() || cancel.get()) return;
+                    streamText = value;
+                    if (live != null) {
+                      live.setText(value);
+                      if (follow) bottom();
+                    }
+                  });
+            });
+    String identity = new String(NativeBridge.modelInfo(), StandardCharsets.UTF_8);
+    prefs.edit().putString("modelInfo", identity).apply();
+    String normalized = identity.toLowerCase(Locale.ROOT);
+    if (!(normalized.contains("qwen2") || normalized.contains("qwen3"))
+        || !normalized.contains("instruct"))
+      throw new IllegalStateException(
+          "Seçili model bu sohbet profiliyle uyumlu değil: "
+              + identity
+              + ". Ayarlar'dan Qwen2.5-1.5B-Instruct Q4_K_M dosyasını kur. Dosyan silinmedi.");
+    return new String(bytes, StandardCharsets.UTF_8).trim();
+  }
+
+  private void completeAnswer(String answer, String role) {
+    if (!cancel.get()) db.message(role, answer);
+    ui.post(
+        () -> {
+          busy = false;
+          modelJob = false;
+          streamText = "";
+          if (isDestroyed()) return;
+          render();
+          bottom();
+          if (!cancel.get() && (conversation.active() || prefs.getBoolean("speak", false))) {
+            if (!speak(answer) && conversation.active()) stopConversation(false);
+          }
+        });
+  }
+
+  private String conversationLabel() {
+    if (!conversation.active()) return getString(R.string.status_5);
+    switch (conversation.state()) {
+      case LISTENING:
+        return getString(R.string.status_4);
+      case TRANSCRIBING:
+        return "Çözümleniyor · bitir";
+      case THINKING:
+        return "Düşünüyor · bitir";
+      default:
+        return "Konuşuyor · bitir";
+    }
+  }
+
+  private void refreshVoiceLabel() {
+    if (voiceButton != null) voiceButton.setText(conversationLabel());
+  }
+
+  private void toggleConversation() {
+    if (conversation.active()) {
+      stopConversation(true);
+      return;
+    }
+    if (busy) {
+      info("Önce devam eden işlemi bitir.");
+      return;
+    }
+    if (!ttsReady) {
+      info("Ses motoru hazırlanıyor. Biraz sonra tekrar dene.");
+      return;
+    }
+    if (offlineVoice() == null) {
+      info("Karşılıklı konuşma için Android'de çevrimdışı Türkçe ses paketini kurmalısın.");
+      return;
+    }
+    if (checkSelfPermission(Manifest.permission.RECORD_AUDIO)
+        != PackageManager.PERMISSION_GRANTED) {
+      requestPermissions(new String[] {Manifest.permission.RECORD_AUDIO}, 12);
+      return;
+    }
+    cancel.set(false);
+    conversation.start();
+    startSpeech();
+    refreshVoiceLabel();
+  }
+
+  private void stopConversation(boolean user) {
+    boolean active = conversation.active();
+    conversation.stop();
+    activeUtterance = "";
+    if (active) {
+      recorder.cancel();
+      if (recognizer != null) recognizer.cancel();
+      recording = false;
+      localRecording = false;
+      if (tts != null) tts.stop();
+      if (busy) {
+        cancel.set(true);
+        NativeBridge.stop();
+      }
+    }
+    refreshVoiceLabel();
+    if (user) info("Sesli sohbet bitti; mikrofon kapalı.");
+  }
+
+  private void acceptedSpeech(String value) {
+    if (isDestroyed() || !foreground || page != 0) return;
+    String recognized = Prompt.cut(value.trim(), 700);
+    if (recognized.isEmpty()) {
+      stopConversation(false);
+      info("Konuşma anlaşılamadı; yeniden başlatabilirsin.");
+      return;
+    }
+    if (composer != null) {
+      composer.setText(recognized);
+      composer.setSelection(composer.length());
+    }
+    if (conversation.active()) send();
   }
 
   private void bottom() {
@@ -597,6 +794,7 @@ public final class MainActivity extends Activity implements RecognitionListener 
   }
 
   private void stopWork() {
+    stopConversation(false);
     cancel.set(true);
     NativeBridge.stop();
     operation = "Durduruluyor…";
@@ -935,7 +1133,7 @@ public final class MainActivity extends Activity implements RecognitionListener 
     LinearLayout model = card(body);
     copy(model, "ADAŞ'IN YEREL MODELİ", 10, accent, true);
     gap(model, 9);
-    copy(model, "Qwen2.5 · 1.5B Instruct", 21, text, true);
+    copy(model, "Önerilen: Qwen2.5 · 1.5B Instruct", 21, text, true);
     gap(model, 7);
     copy(
         model,
@@ -949,6 +1147,14 @@ public final class MainActivity extends Activity implements RecognitionListener 
     if (hasModel()) {
       File f = new File(modelPath());
       copy(model, "Seçili GGUF · " + f.length() / 1048576 + " MB", 13, accent, true);
+      copy(
+          model,
+          prefs.getString(
+              "modelInfo",
+              "Model kimliği ilk çalıştırmada doğrulanacak. Şu an yalnızca dosya seçili."),
+          12,
+          muted,
+          false);
       copy(model, "Dosyanın model uyumu ilk sohbette denetlenir.", 11, muted, false);
     } else copy(model, "Henüz model seçilmedi", 13, muted, false);
     gap(model, 12);
@@ -1047,6 +1253,40 @@ public final class MainActivity extends Activity implements RecognitionListener 
                       .addCategory(Intent.CATEGORY_OPENABLE),
                   23);
             }));
+    LinearLayout weatherCard = card(body);
+    copy(weatherCard, "Güncel hava durumu", 18, text, true);
+    copy(
+        weatherCard,
+        "Şehir: "
+            + prefs.getString("weatherCity", "Henüz seçilmedi")
+            + "\n"
+            + "Open-Meteo ücretsiz kişisel kullanım. Yalnızca sorunca internetten şehir ve tahmin"
+            + " alınır; GPS veya sohbet geçmişi gönderilmez.",
+        13,
+        muted,
+        false);
+    add(
+        weatherCard,
+        button(
+            "Hava durumu şehrimi değiştir",
+            false,
+            () -> {
+              EditText city = field("Örneğin İstanbul", prefs.getString("weatherCity", ""), 60);
+              new AlertDialog.Builder(this)
+                  .setTitle("Hava durumu şehri")
+                  .setView(city)
+                  .setNegativeButton("Vazgeç", null)
+                  .setPositiveButton(
+                      "Kaydet",
+                      (d, w) -> {
+                        prefs
+                            .edit()
+                            .putString("weatherCity", city.getText().toString().trim())
+                            .apply();
+                        render();
+                      })
+                  .show();
+            }));
     LinearLayout view = card(body);
     copy(view, "Sana göre görünüm", 18, text, true);
     gap(view, 10);
@@ -1114,7 +1354,7 @@ public final class MainActivity extends Activity implements RecognitionListener 
     gap(privacy, 8);
     add(privacy, button("Model ve yarım dosyaları yönet", false, this::manageModels));
     LinearLayout about = card(body);
-    copy(about, "NOVA AI 1.0 · Adaş", 17, text, true);
+    copy(about, "NOVA AI 1.1 · Adaş", 17, text, true);
     copy(
         about,
         "Kişisel ve ücretsiz Android sürümü\n"
@@ -1154,6 +1394,7 @@ public final class MainActivity extends Activity implements RecognitionListener 
                     ? Models.download(this, cancel, value -> progress(value), voice)
                     : Models.imported(this, uri, cancel, value -> progress(value), voice);
             prefs.edit().putString(voice ? "voiceModel" : "model", ready.getAbsolutePath()).apply();
+            if (!voice) prefs.edit().remove("modelInfo").apply();
             ui.post(
                 () -> {
                   busy = false;
@@ -1298,7 +1539,8 @@ public final class MainActivity extends Activity implements RecognitionListener 
   }
 
   private void startSpeech() {
-    if (busy || recording) return;
+    if (busy || recording || !foreground || page != 0) return;
+    conversation.move(conversation.session(), Conversation.State.LISTENING);
     if (checkSelfPermission(Manifest.permission.RECORD_AUDIO)
         != PackageManager.PERMISSION_GRANTED) {
       requestPermissions(new String[] {Manifest.permission.RECORD_AUDIO}, 12);
@@ -1309,7 +1551,7 @@ public final class MainActivity extends Activity implements RecognitionListener 
       recording = true;
       localRecording = true;
       NativeBridge.reset();
-      voiceButton.setText(R.string.status_4);
+      refreshVoiceLabel();
       recorder.start(
           this,
           new VoiceRecorder.Result() {
@@ -1320,7 +1562,9 @@ public final class MainActivity extends Activity implements RecognitionListener 
                     localRecording = false;
                     if (isDestroyed()) return;
                     if (voiceButton != null) voiceButton.setText(R.string.status_0);
-                    info(message);
+                    boolean report = conversation.active() && foreground;
+                    stopConversation(false);
+                    if (report) info(message);
                   });
             }
 
@@ -1333,6 +1577,8 @@ public final class MainActivity extends Activity implements RecognitionListener 
                     busy = true;
                     modelJob = true;
                     operation = "Ses cihazda Türkçe metne çevriliyor…";
+                    conversation.move(conversation.session(), Conversation.State.TRANSCRIBING);
+                    refreshVoiceLabel();
                     if (voiceButton != null) voiceButton.setText(R.string.status_3);
                     worker.execute(
                         () -> {
@@ -1344,9 +1590,8 @@ public final class MainActivity extends Activity implements RecognitionListener 
                                   busy = false;
                                   modelJob = false;
                                   if (isDestroyed()) return;
-                                  if (composer != null) composer.setText(Prompt.cut(value, 700));
-                                  if (voiceButton != null) voiceButton.setText(R.string.status_0);
-                                  info("Metni kontrol edip Gönder'e bas.");
+                                  if (conversation.active()) acceptedSpeech(value);
+                                  refreshVoiceLabel();
                                 });
                           } catch (Throwable e) {
                             ui.post(
@@ -1355,16 +1600,19 @@ public final class MainActivity extends Activity implements RecognitionListener 
                                   modelJob = false;
                                   if (isDestroyed()) return;
                                   if (voiceButton != null) voiceButton.setText(R.string.status_0);
-                                  info(MainActivity.this.error(e));
+                                  stopConversation(false);
+                                  if (foreground && !cancel.get()) info(MainActivity.this.error(e));
                                 });
                           }
                         });
                   });
             }
-          });
+          },
+          conversation.active());
       return;
     }
     if (Build.VERSION.SDK_INT < 31 || !SpeechRecognizer.isOnDeviceRecognitionAvailable(this)) {
+      stopConversation(false);
       info(
           "Bu cihazda çevrimdışı konuşma tanıma servisi hazır değil. Android dil/ses paketini"
               + " kontrol et; metinle devam edebilirsin. Bulut servisine geçilmeyecek.");
@@ -1382,44 +1630,50 @@ public final class MainActivity extends Activity implements RecognitionListener 
             .putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
             .putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
     recording = true;
-    voiceButton.setText(R.string.status_5);
+    refreshVoiceLabel();
     recognizer.startListening(i);
   }
 
-  private void speak(String value) {
-    if (!ttsReady) {
-      info("Cihaz ses motoru henüz hazır değil.");
-      return;
-    }
+  private Voice offlineVoice() {
+    if (!ttsReady || tts == null) return null;
     Set<Voice> voices = tts.getVoices();
-    Voice chosen = null;
     if (voices != null)
       for (Voice voice : voices)
         if (voice.getLocale().getLanguage().equals("tr")
             && !voice.isNetworkConnectionRequired()
-            && !voice.getFeatures().contains(TextToSpeech.Engine.KEY_FEATURE_NOT_INSTALLED)) {
-          chosen = voice;
-          break;
-        }
-    if (chosen == null) {
-      new AlertDialog.Builder(this)
-          .setTitle("Çevrimdışı Türkçe ses bulunamadı")
-          .setMessage(
-              "Android metin okuma ayarlarından Türkçe çevrimdışı ses paketini kur. NOVA ücretli"
-                  + " veya bulut sesine geçmez.")
-          .setPositiveButton("Tamam", null)
-          .show();
-      return;
+            && (voice.getFeatures() == null
+                || !voice.getFeatures().contains(TextToSpeech.Engine.KEY_FEATURE_NOT_INSTALLED)))
+          return voice;
+    return null;
+  }
+
+  private boolean speak(String value) {
+    Voice selected = offlineVoice();
+    if (selected == null) {
+      info(
+          "Çevrimdışı Türkçe ses bulunamadı. Android metin okuma ayarlarından Türkçe ses paketini"
+              + " kur.");
+      return false;
     }
-    if (tts.setVoice(chosen) != TextToSpeech.SUCCESS) {
-      info("Çevrimdışı Türkçe ses etkinleştirilemedi.");
-      return;
+    if (tts.setVoice(selected) != TextToSpeech.SUCCESS) {
+      info("Türkçe ses etkinleştirilemedi.");
+      return false;
     }
-    tts.speak(
-        Prompt.cut(value, TextToSpeech.getMaxSpeechInputLength()),
-        TextToSpeech.QUEUE_FLUSH,
-        null,
-        "adas-answer");
+    conversation.move(conversation.session(), Conversation.State.SPEAKING);
+    refreshVoiceLabel();
+    activeUtterance = "adas-" + conversation.session() + "-" + System.nanoTime();
+    String spoken = value.split("\n\nKaynak:", 2)[0].replaceAll("[*#`]", "");
+    int result =
+        tts.speak(
+            Prompt.cut(spoken, TextToSpeech.getMaxSpeechInputLength()),
+            TextToSpeech.QUEUE_FLUSH,
+            null,
+            activeUtterance);
+    if (result != TextToSpeech.SUCCESS) {
+      activeUtterance = "";
+      return false;
+    }
+    return true;
   }
 
   @Override
@@ -1432,7 +1686,7 @@ public final class MainActivity extends Activity implements RecognitionListener 
     if (request == 12)
       info(
           grants.length > 0 && grants[0] == PackageManager.PERMISSION_GRANTED
-              ? "İzin verildi. Konuşmak için düğmeye tekrar basılı tut."
+              ? "İzin verildi. Sesli sohbet düğmesine tekrar dokun."
               : "Mikrofon izni verilmedi; metinle devam edebilirsin.");
   }
 
@@ -1446,10 +1700,16 @@ public final class MainActivity extends Activity implements RecognitionListener 
 
   public void onEndOfSpeech() {
     recording = false;
-    if (voiceButton != null) voiceButton.setText(R.string.status_3);
+    conversation.move(conversation.session(), Conversation.State.TRANSCRIBING);
+    refreshVoiceLabel();
   }
 
   public void onError(int code) {
+    if (!conversation.active()) {
+      recording = false;
+      return;
+    }
+    stopConversation(false);
     recording = false;
     if (voiceButton != null) voiceButton.setText(R.string.status_0);
     info(
@@ -1461,11 +1721,9 @@ public final class MainActivity extends Activity implements RecognitionListener 
   public void onResults(Bundle results) {
     recording = false;
     ArrayList<String> values = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
-    if (values != null && !values.isEmpty() && composer != null) {
-      composer.setText(Prompt.cut(values.get(0), 700));
-      composer.setSelection(composer.length());
-    }
-    if (voiceButton != null) voiceButton.setText(R.string.status_0);
+    if (conversation.active() && values != null && !values.isEmpty()) acceptedSpeech(values.get(0));
+    else if (values == null || values.isEmpty()) stopConversation(false);
+    refreshVoiceLabel();
   }
 
   public void onPartialResults(Bundle b) {}

@@ -90,3 +90,7 @@ Premium açık tema: zemin `#F7F8FC`, yüzey `#FFFFFF`, ana metin `#172033`, vur
 ## Henüz doğrulanmayan uygulama gereksinimleri
 
 Yerel motor Android ARM64 ve x86_64 için Java/JNI ile bağlanmıştır. Gerçek Qwen/Whisper model dosyalarının indirilmesi ve fiziksel Xiaomi 12T Pro testleri henüz tamamlanmamıştır. Windows derleme/testi de ayrıca yapılacaktır. Bu belge hedef mimariyi belirler; hazır APK, test edilmiş hız veya doğruluk iddiası değildir.
+
+## v1.1 uygulama güncellemesi
+
+Sesli sohbet artık tanınan sözü otomatik gönderir, cevap seslendirilince yeniden dinler; durdurma ve arka plana geçiş oturumu kapatır. Genel modelin güncel hava durumunu bilmediği durum ayrıldı: ücretsiz, anahtarsız Open-Meteo/GeoNames sorgusu yalnızca kullanıcı hava sorunca çalışır. Bu özellik internet ister; yerel sohbet ve hafıza çevrimdışı kalır. Canlı servis ve fiziksel Xiaomi ses kalitesi henüz doğrulanmadı; ayrıntılar `nova/docs/VALIDATION.md`.

@@ -13,6 +13,8 @@ final class NativeBridge {
 
   static native byte[] transcribe(String path, float[] audio);
 
+  static native byte[] modelInfo();
+
   static native void reset();
 
   static native void stop();

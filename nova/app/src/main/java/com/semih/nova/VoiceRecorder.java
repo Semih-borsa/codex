@@ -27,6 +27,10 @@ final class VoiceRecorder {
   }
 
   void start(Context c, Result result) {
+    start(c, result, false);
+  }
+
+  void start(Context c, Result result, boolean automatic) {
     if (c.checkSelfPermission(Manifest.permission.RECORD_AUDIO)
         != PackageManager.PERMISSION_GRANTED) {
       result.error("Mikrofon izni gerekli.");
@@ -54,12 +58,16 @@ final class VoiceRecorder {
                 float[] samples = new float[480000];
                 short[] buffer = new short[1024];
                 int count = 0;
+                SpeechBoundary boundary = new SpeechBoundary();
                 rec.startRecording();
                 while (recording.get() && count < samples.length) {
                   int n = rec.read(buffer, 0, Math.min(buffer.length, samples.length - count));
                   if (n < 0) throw new IOException("Mikrofon okuma hatası: " + n);
                   for (int i = 0; i < n; i++) samples[count++] = buffer[i] / 32768f;
+                  if (automatic && boundary.update(buffer, n)) break;
                 }
+                if (automatic && !boundary.heard())
+                  throw new IOException("Konuşma algılanmadı; sesli sohbet durduruldu.");
                 if (count < 8000) throw new IOException("En az yarım saniye konuş.");
                 if (discard.get()) throw new IOException("Ses kaydı iptal edildi.");
                 result.done(java.util.Arrays.copyOf(samples, count));

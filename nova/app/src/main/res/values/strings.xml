@@ -1,8 +1,8 @@
 <resources>
-    <string name="status_0">Basılı tut · konuş</string>
+    <string name="status_0">Sesli sohbet</string>
     <string name="status_1"></string>
     <string name="status_2">Bu belgenin seçili bölümünü özetle ve kaynaklarını belirt.</string>
     <string name="status_3">Ses çözümleniyor…</string>
-    <string name="status_4">● Dinliyorum · en fazla 30 sn</string>
-    <string name="status_5">● Dinliyorum · bırakınca bitir</string>
+    <string name="status_4">● Dinliyorum · bitir</string>
+    <string name="status_5">Sesli sohbet</string>
 </resources>

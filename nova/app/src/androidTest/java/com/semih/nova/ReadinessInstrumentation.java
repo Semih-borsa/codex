@@ -146,6 +146,83 @@ public final class ReadinessInstrumentation extends Instrumentation {
       } catch (IllegalStateException expected) {
         check(true, "Whisper invalid model rejected");
       }
+      java.time.LocalDate today = java.time.LocalDate.now(java.time.ZoneId.of("Europe/Istanbul"));
+      String forecast =
+          "{\"timezone\":\"Europe/Istanbul\",\"daily\":{\"time\":[\""
+              + today
+              + "\",\""
+              + today.plusDays(1)
+              + "\"],\"temperature_2m_max\":[18,26],\"temperature_2m_min\":[8,14],\"weather_code\":[0,3],\"precipitation_probability_max\":[10,20]}}";
+      final String geodata =
+          "{\"results\":[{\"name\":\"İstanbul\",\"country_code\":\"TR\",\"country\":\"Türkiye\",\"latitude\":41,\"longitude\":29}]}";
+      Weather.Result weather =
+          Weather.get(
+              new WeatherQuery("İstanbul", 1),
+              url -> url.contains("geocoding") ? geodata : forecast);
+      check(
+          weather.answer.contains("26") && weather.answer.contains("14"),
+          "Tomorrow weather uses tomorrow values from source fixture");
+      check(
+          weather.answer.contains("kapalı") && weather.answer.contains("yüzde 20"),
+          "Weather description and rain probability");
+      check(
+          weather.answer.contains("Open-Meteo")
+              && weather.answer.contains(
+                  today
+                      .plusDays(1)
+                      .format(
+                          java.time.format.DateTimeFormatter.ofPattern(
+                              "d MMMM yyyy", new Locale("tr")))),
+          "Weather date and provenance");
+      try {
+        Weather.get(
+            new WeatherQuery("İstanbul", 1),
+            url -> url.contains("geocoding") ? geodata : forecast.replace("[18,26]", "[18,null]"));
+        throw new AssertionError("Missing temperature fabricated");
+      } catch (IOException expected) {
+        check(true, "Missing weather data rejected");
+      }
+      MainActivity activity =
+          (MainActivity)
+              startActivitySync(
+                  new Intent(c, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+      Store voiceFixture = new Store(c, "voice-readiness-" + System.currentTimeMillis() + ".db");
+      runOnMainSync(
+          () -> {
+            try {
+              java.lang.reflect.Field dbField = MainActivity.class.getDeclaredField("db");
+              dbField.setAccessible(true);
+              Store old = (Store) dbField.get(activity);
+              dbField.set(activity, voiceFixture);
+              old.close();
+              java.lang.reflect.Field prefsField = MainActivity.class.getDeclaredField("prefs");
+              prefsField.setAccessible(true);
+              prefsField.set(
+                  activity,
+                  c.getSharedPreferences(
+                      "voice-readiness-" + System.currentTimeMillis(), Context.MODE_PRIVATE));
+              java.lang.reflect.Field convField =
+                  MainActivity.class.getDeclaredField("conversation");
+              convField.setAccessible(true);
+              ((Conversation) convField.get(activity)).start();
+              Bundle spoken = new Bundle();
+              spoken.putStringArrayList(
+                  android.speech.SpeechRecognizer.RESULTS_RECOGNITION,
+                  new ArrayList<>(Collections.singletonList("Yarın hava nasıl?")));
+              activity.onResults(spoken);
+            } catch (Exception e) {
+              throw new RuntimeException(e);
+            }
+          });
+      waitForIdleSync();
+      check(
+          voiceFixture.messages().size() == 2
+              && voiceFixture.messages().get(0).body.equals("Yarın hava nasıl?"),
+          "Recognized speech automatically sends without pressing Send");
+      check(
+          voiceFixture.messages().get(1).body.contains("Hangi şehir"),
+          "Weather without city asks instead of model hallucination");
+      runOnMainSync(activity::finish);
       NativeBridge.release();
       AtomicBoolean cancelled = new AtomicBoolean(true);
       File partial = file("cancelled.part");

@@ -1,3 +1,15 @@
+# v1.1.0 · Konuya uygun cevaplar ve sesli sohbet
+
+`testDebugUnitTest`, `lintDebug`, `assembleDebug`, `assembleDebugAndroidTest` başarılı; 19 JVM testi, 0 hata/başarısız/atlanan. Lint 0 hata/uyarı. Android kontrol sayısı 24: önceki 18'e ek olarak yarının hava verisi, hava açıklaması/yağış olasılığı, tarih ve kaynak, eksik sıcaklığı reddetme, tanınan sesi Gönder düğmesine basmadan gönderme ve şehir eksikken şehir sorma.
+
+Sesli yanıt sonrası dinleme, durdurulan/eski oturumun mikrofonu açamaması, 1,4 saniyelik duraklama, salt sessizlik ve kısa tıklamayı konuşma saymama JVM senaryolarıyla doğrulandı. Tanınan sesin uygulamada otomatik gönderilmesi gerçek Activity + tanıma sonucu callback'iyle, ayrı test veritabanında doğrulandı. Bu bir fiziksel mikrofon/TTS/Whisper konuşma kalitesi veya tam akustik döngü testi değildir.
+
+Open-Meteo geocoding ve forecast HTTPS istekleri bu bulut ağından 403 ile engellendi. Hava verisi çözümleme ve gün seçimi, açıkça test için oluşturulmuş JSON yanıtlarıyla denetlendi; canlı API uçtan uca doğrulanmadı. Uygulama bağlantı hatasında hava uydurmaz. Gerçek Qwen ağırlıkları da indirilemedi; tekrar kontrolü ve örnekleme düzeltmesi gerçek modelde Türkçe anlama kalitesinin ölçüldüğü anlamına gelmez. Xiaomi üzerinde canlı hava ve karşılıklı sesli konuşma doğrulaması hâlâ gerekir.
+
+Aynı uygulama kimliği ve imza ile güncelleme yapılır; veri şeması değişmedi, eski model dosyaları otomatik silinmez veya yeniden indirilmez. APK/source ZIP/sağlama toplamları yayından sonra uzak depo kopyasında karşılaştırılır.
+
+---
+
 # NOVA AI · Doğrulama
 
 Bu belge tamamlanan kontrollerin sonuçlarıyla yayın öncesi güncellenir. APK'nın kurulması, büyük modelin gerçek cihazda Türkçe cevap kalitesinin doğrulanması anlamına gelmez.
@@ -19,3 +31,5 @@ Yerel `libnova.so` ve `libc++_shared.so` ELF PT_LOAD segmentleri iki ABI için d
 Bulut başlangıç talimatları `cloud-environment-onboarding:setup` ile ortam taslağındaki `start_skill` alanına kaydedildi. Bu kayıt çalışan ortamı yeniden başlatmaz veya yayımlamaz; kalıcı bulut ortamı güncellemesi için Ortam ayarlarında taslağı gözden geçirip kaydet/yayımla gerekir. Yeni bir bulut görevinde geri yükleme ayrıca test edilmedi.
 
 Gerçek arayüz kontrolleri geçti: hafıza ekleme, silme onayını iptal ederek kaydı koruma, görev ekleme/tamamlama/yeniden açma, model indirme onayını iptal etme, açık/koyu tema, belge ekranı ve süreç yeniden başlatıldıktan sonra hafıza/görevlerin korunması. Görseller `docs/screenshots` altındadır. Emülatör açılırken yazılım emülasyonu nedeniyle bir System UI yanıt vermiyor penceresi görüldü; Bekle ile devam edilip uygulama akışları tamamlandı. Bu durum fiziksel telefon performans ölçümü değildir.
+
+Emülatör arayüzünde v1.1 Sesli sohbet düğmesi, model olmadan yazılı hava sorusunda şehir isteme ve hava şehri ayar ekranını iptal etme geçti. Hava/soru ekranı `docs/screenshots/weather-city-v11.png` altında. Bu görsel canlı tahmin kanıtı değildir.

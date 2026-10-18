@@ -11,6 +11,8 @@ static std::atomic<bool> stopped{false};
 static std::mutex engineMutex;
 static llama_model *model=nullptr;
 static std::string activePath;
+static whisper_context *voiceModel=nullptr;
+static std::string voicePath;
 static void fail(JNIEnv *e,const char *m){e->ThrowNew(e->FindClass("java/lang/IllegalStateException"),m);}
 extern "C" JNIEXPORT void JNICALL Java_com_semih_nova_NativeBridge_reset(JNIEnv*,jclass){stopped=false;}
 extern "C" JNIEXPORT void JNICALL Java_com_semih_nova_NativeBridge_stop(JNIEnv*,jclass){stopped=true;}
@@ -35,7 +37,7 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_com_semih_nova_NativeBridge_generat
  for(int i=0;i<n&&!stopped;i+=256){auto batch=llama_batch_get_one(tokens.data()+i,std::min(256,n-i));if(llama_decode(ctx.get(),batch)!=0){fail(e,"Model girdisi işlenemedi.");return nullptr;}}
  auto scp=llama_sampler_chain_default_params();
  std::unique_ptr<llama_sampler,decltype(&llama_sampler_free)> sampler(llama_sampler_chain_init(scp),llama_sampler_free);
- llama_sampler_chain_add(sampler.get(),llama_sampler_init_top_k(40));llama_sampler_chain_add(sampler.get(),llama_sampler_init_top_p(.9f,1));llama_sampler_chain_add(sampler.get(),llama_sampler_init_temp(.65f));llama_sampler_chain_add(sampler.get(),llama_sampler_init_dist(LLAMA_DEFAULT_SEED));
+ llama_sampler_chain_add(sampler.get(),llama_sampler_init_penalties(96,1.15f,.10f,0.0f));llama_sampler_chain_add(sampler.get(),llama_sampler_init_top_k(40));llama_sampler_chain_add(sampler.get(),llama_sampler_init_top_p(.9f,1));llama_sampler_chain_add(sampler.get(),llama_sampler_init_temp(.65f));llama_sampler_chain_add(sampler.get(),llama_sampler_init_dist(LLAMA_DEFAULT_SEED));
  jclass cls=e->GetObjectClass(listener);jmethodID method=e->GetMethodID(cls,"onBytes","([B)V");std::string output;
  for(int i=0;i<256&&!stopped;i++){
   llama_token token=llama_sampler_sample(sampler.get(),ctx.get(),-1);if(llama_vocab_is_eog(vocab,token))break;
@@ -46,19 +48,24 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_com_semih_nova_NativeBridge_generat
  }
  jbyteArray result=e->NewByteArray(output.size());e->SetByteArrayRegion(result,0,output.size(),reinterpret_cast<const jbyte*>(output.data()));return result;
 }
-extern "C" JNIEXPORT void JNICALL Java_com_semih_nova_NativeBridge_release(JNIEnv*,jclass){std::lock_guard<std::mutex> guard(engineMutex);if(model){llama_model_free(model);model=nullptr;activePath.clear();}}
+extern "C" JNIEXPORT void JNICALL Java_com_semih_nova_NativeBridge_release(JNIEnv*,jclass){std::lock_guard<std::mutex> guard(engineMutex);if(model){llama_model_free(model);model=nullptr;activePath.clear();}if(voiceModel){whisper_free(voiceModel);voiceModel=nullptr;voicePath.clear();}}
 
 extern "C" JNIEXPORT jbyteArray JNICALL Java_com_semih_nova_NativeBridge_transcribe(JNIEnv *e,jclass,jstring path,jfloatArray audio){
  std::lock_guard<std::mutex> guard(engineMutex);
- if(model){llama_model_free(model);model=nullptr;activePath.clear();}
  const char *p=e->GetStringUTFChars(path,nullptr);std::string filename(p);e->ReleaseStringUTFChars(path,p);
  auto params=whisper_context_default_params();params.use_gpu=false;
- std::unique_ptr<whisper_context,decltype(&whisper_free)> context(whisper_init_from_file_with_params(filename.c_str(),params),whisper_free);
+ if(!voiceModel||voicePath!=filename){if(voiceModel)whisper_free(voiceModel);voiceModel=whisper_init_from_file_with_params(filename.c_str(),params);voicePath=filename;}
+ auto *context=voiceModel;
  if(!context){fail(e,"Yerel ses modeli açılamadı.");return nullptr;}
  int count=e->GetArrayLength(audio);if(count<8000||count>480000){fail(e,"Ses kaydı 0,5–30 saniye olmalı.");return nullptr;}
  std::vector<float> samples(count);e->GetFloatArrayRegion(audio,0,count,samples.data());
  auto fp=whisper_full_default_params(WHISPER_SAMPLING_GREEDY);fp.language="tr";fp.translate=false;fp.n_threads=4;fp.no_context=true;fp.single_segment=true;fp.print_realtime=false;fp.print_progress=false;fp.print_timestamps=false;fp.suppress_blank=true;fp.abort_callback=[](void*){return stopped.load();};
- if(whisper_full(context.get(),fp,samples.data(),count)!=0){fail(e,stopped?"Ses çözümleme durduruldu.":"Ses çözümlenemedi.");return nullptr;}
- std::string output;for(int i=0;i<whisper_full_n_segments(context.get());i++)output+=whisper_full_get_segment_text(context.get(),i);
+ if(whisper_full(context,fp,samples.data(),count)!=0){fail(e,stopped?"Ses çözümleme durduruldu.":"Ses çözümlenemedi.");return nullptr;}
+ std::string output;for(int i=0;i<whisper_full_n_segments(context);i++)output+=whisper_full_get_segment_text(context,i);
  jbyteArray result=e->NewByteArray(output.size());e->SetByteArrayRegion(result,0,output.size(),reinterpret_cast<const jbyte*>(output.data()));return result;
+}
+extern "C" JNIEXPORT jbyteArray JNICALL Java_com_semih_nova_NativeBridge_modelInfo(JNIEnv *e,jclass){
+ std::lock_guard<std::mutex> guard(engineMutex);std::string text;
+ if(model){char name[512]={0},arch[128]={0};llama_model_meta_val_str(model,"general.name",name,sizeof(name));llama_model_meta_val_str(model,"general.architecture",arch,sizeof(arch));text=std::string(name)+"\nMimari: "+arch;}
+ jbyteArray out=e->NewByteArray(text.size());e->SetByteArrayRegion(out,0,text.size(),reinterpret_cast<const jbyte*>(text.data()));return out;
 }
