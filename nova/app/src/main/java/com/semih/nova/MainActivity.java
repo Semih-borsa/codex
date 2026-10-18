@@ -4,18 +4,22 @@ import android.Manifest;
 import android.app.*;
 import android.content.*;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.graphics.*;
 import android.graphics.drawable.*;
 import android.net.Uri;
 import android.os.*;
+import android.provider.ContactsContract;
 import android.speech.*;
 import android.speech.tts.*;
 import android.text.InputFilter;
+import android.text.util.Linkify;
 import android.view.*;
 import android.widget.*;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.text.*;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -44,6 +48,8 @@ public final class MainActivity extends Activity implements RecognitionListener 
   private String activeUtterance = "";
   private WeatherQuery pendingWeather;
   private boolean lastWeather;
+  private String lastResearchQuery = "";
+  private EditText messageRecipient;
   private int bg, surface, text, muted, accent, line;
   private static final Locale TR = new Locale("tr", "TR");
 
@@ -109,6 +115,7 @@ public final class MainActivity extends Activity implements RecognitionListener 
   protected void onResume() {
     super.onResume();
     foreground = true;
+    ReminderReceiver.all(this);
   }
 
   @Override
@@ -464,6 +471,7 @@ public final class MainActivity extends Activity implements RecognitionListener 
       gap(c, 8);
       TextView value = copy(c, m.body, 15, text, false);
       value.setTextIsSelectable(true);
+      if (m.role.equals("tool")) Linkify.addLinks(value, Linkify.WEB_URLS);
     }
     if (busy && !modelJob) {
       LinearLayout c = card(body);
@@ -496,6 +504,156 @@ public final class MainActivity extends Activity implements RecognitionListener 
                 render();
               }));
     }
+  }
+
+  private ScrollView dialogContent(View form) {
+    ScrollView content = new ScrollView(this);
+    content.addView(form);
+    return content;
+  }
+
+  private void messageDraft(MessageDraft seed) {
+    LinearLayout form = col();
+    form.setPadding(dp(20), dp(8), dp(20), dp(8));
+    if (!seed.hint.isEmpty())
+      copy(form, "Kişi ipucu: " + seed.hint + ". Doğru numarayı sen seç.", 13, muted, false);
+    EditText target = field("Alıcı telefon numarası (+90…)", seed.recipient, 40);
+    target.setInputType(android.text.InputType.TYPE_CLASS_PHONE);
+    messageRecipient = target;
+    add(form, target);
+    add(
+        form,
+        button(
+            "Rehberden numara seç",
+            false,
+            () -> {
+              try {
+                startActivityForResult(
+                    new Intent(
+                        Intent.ACTION_PICK, ContactsContract.CommonDataKinds.Phone.CONTENT_URI),
+                    31);
+              } catch (ActivityNotFoundException e) {
+                info("Kişi seçici yok; numarayı elle yaz.");
+              }
+            }));
+    EditText content = field("Mesaj metni", seed.body, 2000);
+    content.setMinLines(3);
+    add(form, content);
+    Spinner channel = new Spinner(this);
+    ArrayAdapter<String> adapter =
+        new ArrayAdapter<>(
+            this,
+            android.R.layout.simple_spinner_item,
+            new String[] {"WhatsApp (internet)", "SMS (operatör ücreti olabilir)"});
+    adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+    channel.setAdapter(adapter);
+    channel.setSelection(seed.whatsapp ? 0 : 1);
+    add(form, channel);
+    CheckBox sms = new CheckBox(this);
+    sms.setText(R.string.sms_cost_consent);
+    sms.setTextColor(text);
+    add(form, sms);
+    channel.setOnItemSelectedListener(
+        new AdapterView.OnItemSelectedListener() {
+          public void onNothingSelected(AdapterView<?> p) {}
+
+          public void onItemSelected(AdapterView<?> p, View v, int pos, long id) {
+            sms.setVisibility(pos == 1 ? View.VISIBLE : View.GONE);
+            sms.setChecked(false);
+          }
+        });
+    copy(
+        form,
+        "Adaş otomatik mesaj göndermez. Önce önizleme, sonra onay; son Gönder işlemi WhatsApp/SMS"
+            + " uygulamasında sende.",
+        12,
+        muted,
+        false);
+    AlertDialog editor =
+        new AlertDialog.Builder(this)
+            .setTitle("Mesaj taslağı")
+            .setView(dialogContent(form))
+            .setNegativeButton("Vazgeç", null)
+            .setPositiveButton("Önizle", null)
+            .create();
+    editor.setOnDismissListener(
+        d -> {
+          if (messageRecipient == target) messageRecipient = null;
+        });
+    editor.setOnShowListener(
+        d ->
+            editor
+                .getButton(-1)
+                .setOnClickListener(
+                    v -> {
+                      MessageDraft snapshot = new MessageDraft();
+                      snapshot.recipient = target.getText().toString().trim();
+                      snapshot.body = content.getText().toString().trim();
+                      snapshot.whatsapp = channel.getSelectedItemPosition() == 0;
+                      if (!snapshot.whatsapp && !sms.isChecked()) {
+                        info(
+                            "SMS için olası operatör ücretini onaylamalısın. Ücretsiz seçenek için"
+                                + " WhatsApp seç.");
+                        return;
+                      }
+                      try {
+                        String preview = snapshot.preview();
+                        new AlertDialog.Builder(this)
+                            .setTitle("Alıcı ve metni kontrol et")
+                            .setMessage(preview)
+                            .setNegativeButton("Geri dön", null)
+                            .setPositiveButton(
+                                "Onayla ve aç",
+                                (dialog, w) -> {
+                                  try {
+                                    Intent intent = MessageIntents.build(snapshot);
+                                    try {
+                                      startActivity(intent);
+                                    } catch (ActivityNotFoundException absent) {
+                                      if (!snapshot.whatsapp) throw absent;
+                                      startActivity(intent.setPackage("com.whatsapp.w4b"));
+                                    }
+                                    editor.dismiss();
+                                    db.message(
+                                        "notice",
+                                        "Taslak ekranı açıldı. Mesajın gönderildiğini doğrulayamam;"
+                                            + " son Gönder işlemi ilgili uygulamada sende.");
+                                    render();
+                                  } catch (ActivityNotFoundException e) {
+                                    info(
+                                        "İlgili mesaj uygulaması kurulu değil. Mesaj"
+                                            + " gönderilmedi.");
+                                  } catch (RuntimeException e) {
+                                    info("Taslak açılamadı: " + error(e));
+                                  }
+                                })
+                            .show();
+                      } catch (IllegalArgumentException e) {
+                        info(e.getMessage());
+                      }
+                    }));
+    editor.show();
+  }
+
+  private void researchDialog() {
+    EditText topic = field("Araştırılacak konu", "", 200);
+    new AlertDialog.Builder(this)
+        .setTitle("Kaynaklı araştırma")
+        .setMessage("Konu DuckDuckGo ve Wikipedia'ya gönderilir. Özel bilgilerini yazma.")
+        .setView(topic)
+        .setNegativeButton("Vazgeç", null)
+        .setPositiveButton(
+            "Araştır",
+            (d, w) -> {
+              if (busy) {
+                info("Önce devam eden işlemi bitir.");
+                return;
+              }
+              composer.setText(
+                  getString(R.string.research_command, topic.getText().toString().trim()));
+              send();
+            })
+        .show();
   }
 
   private void compose() {
@@ -541,6 +699,46 @@ public final class MainActivity extends Activity implements RecognitionListener 
             });
     weight(tools, say);
     add(area, tools);
+    LinearLayout actions = row();
+    weight(
+        actions,
+        button(
+            "Hatırlat",
+            false,
+            () -> {
+              stopConversation(false);
+              taskDialog(null);
+            }));
+    weight(
+        actions,
+        button(
+            "Mesaj",
+            false,
+            () -> {
+              stopConversation(false);
+              messageDraft(new MessageDraft());
+            }));
+    weight(actions, button("Araştır", false, this::researchDialog));
+    add(area, actions);
+    if (!lastResearchQuery.isEmpty())
+      add(
+          area,
+          button(
+              "Kaynakları tarayıcıda ara ↗",
+              false,
+              () -> {
+                try {
+                  startActivity(
+                      new Intent(
+                          Intent.ACTION_VIEW,
+                          Uri.parse("https://duckduckgo.com/")
+                              .buildUpon()
+                              .appendQueryParameter("q", lastResearchQuery)
+                              .build()));
+                } catch (ActivityNotFoundException e) {
+                  info("Tarayıcı bulunamadı.");
+                }
+              }));
     add(root, area);
   }
 
@@ -548,6 +746,27 @@ public final class MainActivity extends Activity implements RecognitionListener 
     if (recording || busy) return;
     String q = composer.getText().toString().trim();
     if (q.isEmpty()) return;
+    if (ReminderDraft.matches(q) || MessageDraft.matches(q)) {
+      stopConversation(false);
+      pendingWeather = null;
+      lastWeather = false;
+      db.message("user", q);
+      boolean reminder = !MessageDraft.matches(q) && ReminderDraft.matches(q);
+      db.message(
+          "notice",
+          reminder
+              ? "Hatırlatma henüz kaydedilmedi. Tarih, saat ve sesli okuma seçimini onayla."
+              : "Mesaj gönderilmedi. Alıcıyı ve metni önizle; yalnızca taslak açılabilir.");
+      draft = "";
+      composer.setText(R.string.status_1);
+      render();
+      bottom();
+      if (reminder) taskDialog(null, ReminderDraft.parse(q, ZonedDateTime.now()));
+      else messageDraft(MessageDraft.parse(q));
+      return;
+    }
+    final String research = Research.matches(q) ? Research.query(q) : null;
+    if (research != null) pendingWeather = null;
     List<Store.Row> history = db.messages();
     WeatherQuery weather = null;
     if (WeatherQuery.matches(q) || (lastWeather && WeatherQuery.followup(q)))
@@ -564,7 +783,7 @@ public final class MainActivity extends Activity implements RecognitionListener 
     }
     String currentInfo =
         decline ? "Tamam, hava durumu sorgusunu iptal ettim." : AnswerQuality.currentInfo(q);
-    if (weather == null && currentInfo == null && !hasModel()) {
+    if (research == null && weather == null && currentInfo == null && !hasModel()) {
       stopConversation(false);
       info(
           "Yerel modeli kurmadan genel sohbet yapılamaz. Hava durumu şehir adıyla model olmadan da"
@@ -579,7 +798,8 @@ public final class MainActivity extends Activity implements RecognitionListener 
     busy = true;
     modelJob = false;
     cancel.set(false);
-    streamText = "";
+    streamText =
+        research == null ? "" : "Web ve Wikipedia kaynaklarına bağlanılıyor. İnternet gerekir.";
     activeUtterance = "";
     if (tts != null) tts.stop();
     NativeBridge.reset();
@@ -591,6 +811,19 @@ public final class MainActivity extends Activity implements RecognitionListener 
       pendingWeather = weather;
       lastWeather = true;
       completeAnswer("Hangi şehir için hava durumunu öğrenmek istiyorsun?", "notice");
+      return;
+    }
+    if (research != null) {
+      lastResearchQuery = research;
+      lastWeather = false;
+      worker.execute(
+          () -> {
+            try {
+              completeAnswer(Research.find(research), "tool");
+            } catch (Exception e) {
+              completeAnswer("Araştırma tamamlanamadı: " + error(e), "notice");
+            }
+          });
       return;
     }
     final WeatherQuery request = weather;
@@ -704,7 +937,11 @@ public final class MainActivity extends Activity implements RecognitionListener 
           render();
           bottom();
           if (!cancel.get() && (conversation.active() || prefs.getBoolean("speak", false))) {
-            if (!speak(answer) && conversation.active()) stopConversation(false);
+            if (!speak(
+                    role.equals("tool") && answer.startsWith("Araştırma:")
+                        ? Prompt.cut(answer.replaceAll("https://\\S+", ""), 1200)
+                        : answer)
+                && conversation.active()) stopConversation(false);
           }
         });
   }
@@ -913,16 +1150,45 @@ public final class MainActivity extends Activity implements RecognitionListener 
             && (Build.VERSION.SDK_INT < 33
                 || checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
                     == PackageManager.PERMISSION_GRANTED);
+    NotificationChannel reminders = nm.getNotificationChannel(ReminderReceiver.CHANNEL);
+    enabled =
+        enabled
+            && (reminders == null
+                || reminders.getImportance() != NotificationManager.IMPORTANCE_NONE);
     LinearLayout note = card(body);
     copy(note, enabled ? "Bildirimler açık" : "Bildirim izni gerekli", 14, accent, true);
     copy(
         note,
-        "Hatırlatmalar yaklaşık zamanda ulaşır. Xiaomi pil kısıtları ve zorla durdurma gecikmeye"
-            + " neden olabilir.",
+        "Sesli görevler, çevrimdışı Türkçe ses kuruluysa okunur. Sessiz mod ve Rahatsız Etmeyin"
+            + " korunur. Xiaomi pil kısıtları veya zorla durdurma hatırlatmayı engelleyebilir.",
         12,
         muted,
         false);
     if (!enabled) add(note, button("Bildirim iznini aç", false, this::notificationPermission));
+    AlarmManager alarm = getSystemService(AlarmManager.class);
+    boolean exact = Build.VERSION.SDK_INT < 31 || alarm.canScheduleExactAlarms();
+    copy(
+        note,
+        exact ? "Kesin zamanlama izni açık" : "Kesin zamanlama izni kapalı: uyarılar gecikebilir.",
+        12,
+        muted,
+        false);
+    if (!exact)
+      add(
+          note,
+          button(
+              "Kesin zamanlama iznini incele",
+              false,
+              () -> {
+                try {
+                  startActivity(
+                      new Intent(
+                          android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,
+                          Uri.parse("package:" + getPackageName())));
+                } catch (ActivityNotFoundException e) {
+                  info("Bu cihazda izin ekranı bulunamadı.");
+                }
+              }));
     List<Store.Row> rows = db.tasks();
     if (rows.isEmpty())
       copy(
@@ -943,7 +1209,7 @@ public final class MainActivity extends Activity implements RecognitionListener 
           true);
       gap(c, 7);
       copy(c, r.title, 18, text, true);
-      copy(c, date(r.time), 12, muted, false);
+      copy(c, date(r.time) + (r.audible ? " · Sesli + bildirim" : " · Bildirim"), 12, muted, false);
       gap(c, 8);
       LinearLayout actions = row();
       weight(
@@ -983,16 +1249,39 @@ public final class MainActivity extends Activity implements RecognitionListener 
   }
 
   private void taskDialog(Store.Row r) {
+    taskDialog(r, null);
+  }
+
+  private void taskDialog(Store.Row r, ReminderDraft parsed) {
     LinearLayout form = col();
     form.setPadding(dp(20), dp(8), dp(20), dp(8));
-    EditText title = field("Görev adı", r == null ? "" : r.title, 200);
+    EditText title =
+        field("Görev adı", r == null ? (parsed == null ? "" : parsed.title) : r.title, 200);
     add(form, title);
+    if (parsed != null && !parsed.issue.isEmpty()) copy(form, parsed.issue, 13, muted, false);
+    CheckBox audible = new CheckBox(this);
+    audible.setText(R.string.audible_consent);
+    audible.setTextColor(text);
+    audible.setChecked(r != null ? r.audible : parsed != null && parsed.audible);
+    add(form, audible);
+    copy(
+        form,
+        "Saat dilimi: "
+            + java.time.ZoneId.systemDefault().getId()
+            + ". Bildirim ve ses motoru izinlerini Görevler'den kontrol et.",
+        12,
+        muted,
+        false);
     gap(form, 14);
+    boolean[] chosen = {r != null || parsed == null || parsed.due != null};
     Calendar selected = Calendar.getInstance();
     selected.setTimeInMillis(r == null ? System.currentTimeMillis() + 3600000 : r.time);
+    if (parsed != null && parsed.due != null)
+      selected.setTimeInMillis(parsed.due.toInstant().toEpochMilli());
     selected.set(Calendar.SECOND, 0);
     selected.set(Calendar.MILLISECOND, 0);
-    Button when = button(date(selected.getTimeInMillis()), false, () -> {});
+    Button when =
+        button(chosen[0] ? date(selected.getTimeInMillis()) : "Tarih ve saat seç", false, () -> {});
     when.setOnClickListener(
         v ->
             new DatePickerDialog(
@@ -1004,6 +1293,7 @@ public final class MainActivity extends Activity implements RecognitionListener 
                               (clock, h, min) -> {
                                 selected.set(Calendar.HOUR_OF_DAY, h);
                                 selected.set(Calendar.MINUTE, min);
+                                chosen[0] = true;
                                 when.setText(date(selected.getTimeInMillis()));
                               },
                               selected.get(Calendar.HOUR_OF_DAY),
@@ -1018,10 +1308,13 @@ public final class MainActivity extends Activity implements RecognitionListener 
     add(form, when);
     AlertDialog d =
         new AlertDialog.Builder(this)
-            .setTitle(r == null ? "Yeni görev" : "Görevi düzenle")
-            .setView(form)
+            .setTitle(
+                parsed != null
+                    ? "Hatırlatmayı onayla"
+                    : r == null ? "Yeni görev" : "Görevi düzenle")
+            .setView(dialogContent(form))
             .setNegativeButton("Vazgeç", null)
-            .setPositiveButton("Kaydet", null)
+            .setPositiveButton(parsed != null ? "Onayla ve kaydet" : "Kaydet", null)
             .create();
     d.setOnShowListener(
         v ->
@@ -1033,11 +1326,16 @@ public final class MainActivity extends Activity implements RecognitionListener 
                         info("Görev adı gerekli.");
                         return;
                       }
-                      if (selected.getTimeInMillis() <= System.currentTimeMillis()) {
+                      if (!chosen[0] || selected.getTimeInMillis() <= System.currentTimeMillis()) {
                         info("Gelecekte bir tarih ve saat seç.");
                         return;
                       }
-                      long id = db.saveTask(r == null ? 0 : r.id, name, selected.getTimeInMillis());
+                      long id =
+                          db.saveTask(
+                              r == null ? 0 : r.id,
+                              name,
+                              selected.getTimeInMillis(),
+                              audible.isChecked());
                       if (r == null || !r.done)
                         ReminderReceiver.schedule(this, id, selected.getTimeInMillis());
                       d.dismiss();
@@ -1324,9 +1622,9 @@ public final class MainActivity extends Activity implements RecognitionListener 
     gap(privacy, 8);
     copy(
         privacy,
-        "Adaş dosya silemez, ödeme yapamaz, mesaj gönderemez veya sistem ayarlarını değiştiremez."
-            + " Kritik işlemler için bağlı bir araç yoktur. Hafıza, görev ve sohbet silme yalnızca"
-            + " açık onayla yapılır.",
+        "Adaş ödeme yapamaz ve sistem ayarlarını değiştiremez. Silme işlemleri onay ister. Mesajlar"
+            + " yalnızca onaylı taslak olarak açılır; son Gönder işlemi sende. Kritik işlemler için"
+            + " bağlı bir araç yoktur. Hafıza, görev ve sohbet silme yalnızca açık onayla yapılır.",
         13,
         muted,
         false);
@@ -1354,7 +1652,7 @@ public final class MainActivity extends Activity implements RecognitionListener 
     gap(privacy, 8);
     add(privacy, button("Model ve yarım dosyaları yönet", false, this::manageModels));
     LinearLayout about = card(body);
-    copy(about, "NOVA AI 1.1 · Adaş", 17, text, true);
+    copy(about, "NOVA AI 1.2 · Adaş", 17, text, true);
     copy(
         about,
         "Kişisel ve ücretsiz Android sürümü\n"
@@ -1488,6 +1786,24 @@ public final class MainActivity extends Activity implements RecognitionListener 
     super.onActivityResult(request, result, data);
     if (result != RESULT_OK || data == null || data.getData() == null) return;
     Uri uri = data.getData();
+    if (request == 31) {
+      if (messageRecipient != null) {
+        try (Cursor contact =
+            getContentResolver()
+                .query(
+                    uri,
+                    new String[] {ContactsContract.CommonDataKinds.Phone.NUMBER},
+                    null,
+                    null,
+                    null)) {
+          if (contact != null && contact.moveToFirst())
+            messageRecipient.setText(contact.getString(0));
+        } catch (Exception e) {
+          info("Seçilen kişinin numarası okunamadı: " + error(e));
+        }
+      }
+      return;
+    }
     if (request == 22 || request == 23) {
       modelAction(uri, request == 23);
       return;
@@ -1636,15 +1952,7 @@ public final class MainActivity extends Activity implements RecognitionListener 
 
   private Voice offlineVoice() {
     if (!ttsReady || tts == null) return null;
-    Set<Voice> voices = tts.getVoices();
-    if (voices != null)
-      for (Voice voice : voices)
-        if (voice.getLocale().getLanguage().equals("tr")
-            && !voice.isNetworkConnectionRequired()
-            && (voice.getFeatures() == null
-                || !voice.getFeatures().contains(TextToSpeech.Engine.KEY_FEATURE_NOT_INSTALLED)))
-          return voice;
-    return null;
+    return OfflineSpeech.find(tts);
   }
 
   private boolean speak(String value) {

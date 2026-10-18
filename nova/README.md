@@ -1,8 +1,19 @@
-# NOVA AI 1.1 · Adaş
+# NOVA AI 1.2 · Adaş
 
 Yalnızca kişisel kullanım için, ücretli API veya abonelik gerektirmeyen Android uygulaması. Adaş, Qwen2.5-1.5B-Instruct Q4_K_M GGUF modelini **telefonun işlemcisinde** çalıştırır. Snapdragon 8+ Gen 1 / Xiaomi 12T Pro / 12 GB RAM hedeflenmiştir; gerçek cihazda hız ve kalite ölçümü henüz yapılmadı.
 
 ![Adaş koyu tema](docs/screenshots/home-dark.png)
+
+## v1.2 · Çok işlevli asistan
+
+Uygulamayı **kaldırmadan APK'yı güncelle**. Aynı imza ve uygulama kimliği kullanılır. Sohbetler, hafıza, modeller ve görevler korunur; eski görevler kendiliğinden sesli olmaz. [NOVA-Adas-1.2.0.apk](https://github.com/Semih-borsa/codex/blob/main/downloads/NOVA-Adas-1.2.0.apk).
+
+- **Konuşarak hatırlat:** “On beş dakika sonra su içmeyi sesli hatırlat”, “Yarın saat 15.00 faturayı hatırlat”. Tarih, saat, görev ve sesli okuma seçimi düzenlenebilir önizlemeye gelir. **Onayla ve kaydet** olmadan görev oluşturulmaz. Belirsiz/geçersiz/geçmiş zaman için tarih/saat seçmen istenir. Tarih seçimi cihazın saat dilimine göredir; aylık/yinelenen hatırlatma henüz yoktur.
+- **Zamanı gelince sesli uyar:** Görevde sesli okumayı seç. Kurulu çevrimdışı Türkçe Android TTS sesi kullanılır; Qwen veya Whisper'ın açık olması gerekmez. Bildirimde **Sesli oku** ve okuma sırasında **Sesi durdur** bulunur. Ekran kilitliyken ses çevrede duyulabilir; yalnızca onaylı sesli görevler okunur. Sessiz mod, alarm sesi sıfır veya Rahatsız Etmeyin varken ses açılmaz. Bildirim korunur. Yeniden başlatma sonrası 10 dakikadan eski görevler kendiliğinden okunmaz.
+- **İzinleri kontrol et:** Görevler ekranında bildirim izni ve Android 12+ kesin zamanlama izni durumu gösterilir. İzin ekranı ancak sen düğmeye dokununca açılır; ayarı sen yaparsın. Kesin izin yoksa yaklaşık alarm kullanılır. Xiaomi pil kısıtları, zorla durdurma, cihazın kapalı olması veya ses paketinin eksikliği teslimi/okumayı engelleyebilir; saniyesi saniyesine garanti verilmez. Telefonun Android sürümünde kilit ekranı ve pil kısıtlarıyla gerçek test gerekir.
+- **Güvenli mesaj taslağı:** “+90 555 123 45 67 mesaj gönder: Yarın görüşelim”. WhatsApp varsayılandır. Numara elle girilir veya yalnızca seçtiğin kişinin numarası rehber seçicisinden alınır; tüm rehber izni yoktur. Alıcı/metin düzenlenir → **Önizle** → **Onayla ve aç** → WhatsApp/SMS içinde son **Gönder** işlemini sen yaparsın. Adaş göndermez, gönderildiğini iddia etmez. WhatsApp Business alternatifi desteklenir. İlgili uygulama yoksa hata gösterilir. Kişi adı tek başına gönderim adresi sayılmaz. Mesaj düzenleme onayı iptal edilirse veya ekran yeniden oluşturulursa mesaj açılmaz.
+- **Ücretsiz kullanım sınırı:** Ücretli AI API'si veya abonelik yoktur. WhatsApp internetini kullanır. **SMS operatör tarifene göre ücretli olabilir**; bu nedenle varsayılan değildir ve ek ücret uyarısını onaylamadan taslak bile açılmaz. Sıfır ücret hedefi için SMS kullanma; Wi-Fi ile WhatsApp seç.
+- **Kaynaklı araştırma:** “Güneş enerjisi araştır” veya sohbetin **Araştır** düğmesi. Sorgu internet üzerinden DuckDuckGo ve Türkçe Wikipedia'ya gönderilir; özel bilgi yazma. En fazla 5 web arama özeti ve 2 Wikipedia giriş metni, tıklanabilir kaynaklar ve sorgu zamanı gösterilir. Web sayfalarının tamamı okunmaz; sonuçlar otomatik doğrulanmış analiz sayılmaz. Kaynaklara erişilemezse bilgi uydurulmaz; **Kaynakları tarayıcıda ara** seçeneği bulunur. Genel sohbetten farklı olarak internet gerekir; yerel model kurulmadan da çalışır. Araştırma metni görev veya mesaj çalıştıramaz.
 
 ## v1.1 güncellemesi
 
@@ -38,11 +49,11 @@ Kurulum, motorlar ve modeller ücretsizdir. İnternet/veri tarifesi, elektrik ve
 
 ## Güvenlik sınırı
 
-Adaş'ın dosya silme, ödeme, dışarıya mesaj gönderme veya kritik sistem ayarlarını değiştirme aracı yoktur. Model çıktısı yalnızca metindir; görevleri/hafızayı kendiliğinden değiştirmez. Uygulama içindeki silme işlemleri seçilen veriyi gösteren ayrı onay gerektirir. Yarım model dosyaları kendiliğinden temizlenmez; **Model ve yarım dosyaları yönet** ekranından tek tek onayla silinir. Orijinal seçilen belgeler/model dosyaları silinmez.
+Adaş otomatik ödeme yapamaz, dışarıya mesaj gönderemez ve kritik sistem ayarlarını değiştiremez. Mesaj özelliği yalnızca yukarıdaki onaylı taslak akışıdır; gerçek gönderim kullanıcıdadır. Model çıktısı yalnızca metindir; görevleri/hafızayı kendiliğinden değiştirmez. Uygulama içindeki silme işlemleri seçilen veriyi gösteren ayrı onay gerektirir. Yarım model dosyaları kendiliğinden temizlenmez; **Model ve yarım dosyaları yönet** ekranından tek tek onayla silinir. Orijinal seçilen belgeler/model dosyaları silinmez.
 
-Veriler uygulamanın özel alanında tutulur. Otomatik Android bulut yedeği ve cihaz aktarımı kapalıdır. Veritabanı ayrıca uygulama düzeyinde şifrelenmiş değildir; cihaz ekran kilidini kullan. Uygulamada hesap, sunucu veya API anahtarı yoktur. İnternet izni kullanıcı tarafından başlatılan model indirmeleri ve hava sorusuna karşılık Open-Meteo/GeoNames sorguları içindir. Genel sohbet, belge, hafıza ve ses üçüncü taraf yapay zekâ API'lerine gönderilmez. Uygulamayı kaldırmak yerel verileri Android tarafından siler; ilk sürümde dışa aktarma/yedekleme ekranı bulunmaz.
+Veriler uygulamanın özel alanında tutulur. Otomatik Android bulut yedeği ve cihaz aktarımı kapalıdır. Veritabanı ayrıca uygulama düzeyinde şifrelenmiş değildir; cihaz ekran kilidini kullan. Uygulamada hesap, sunucu veya API anahtarı yoktur. İnternet izni kullanıcı tarafından başlatılan model indirmeleri, hava sorusuna karşılık Open-Meteo/GeoNames sorguları ve açık araştırma komutuyla DuckDuckGo/Wikipedia sorguları içindir. Genel sohbet, belge, hafıza ve ses üçüncü taraf yapay zekâ API'lerine gönderilmez. Uygulamayı kaldırmak yerel verileri Android tarafından siler; ilk sürümde dışa aktarma/yedekleme ekranı bulunmaz.
 
-Hatırlatmalar kesin zaman alarmı değildir; Android Doze/Xiaomi pil kısıtları ve zorla durdurma bildirimleri geciktirebilir. Mikrofon/bildirim izinleri yalnızca ilgili kullanıcı işlemi sırasında istenir. Bildirim içeriği kilit ekranında özel olarak işaretlenir.
+Kesin zamanlama izni varsa kesin alarm, yoksa yaklaşık alarm kullanılır; Android Doze/Xiaomi pil kısıtları ve zorla durdurma yine bildirimleri geciktirebilir. Sesli okuma, süreli ön plan servisi ve en fazla 45 saniyelik işlemci uyanık tutma kilidi kullanır; sürekli dinleme veya sürekli arka plan servisi yoktur. Mikrofon/bildirim izinleri yalnızca ilgili kullanıcı işlemi sırasında istenir. Bildirim içeriği kilit ekranında özel olarak işaretlenir.
 
 ## Android Studio
 
@@ -58,6 +69,7 @@ Komut satırı: `./gradlew testDebugUnitTest lintDebug assembleDebug assembleDeb
 - whisper.cpp v1.7.6, `a8d002cfd879315632a579e73f0148d06959de36`, MIT. Kaynak ve lisans: `app/src/main/cpp/whisper`. Birlikte derlenen GGML CPU arka ucu kullanılır.
 - Qwen2.5-1.5B-Instruct, Apache-2.0; model ağırlıkları ayrı indirilir.
 - Whisper tiny çok dilli, MIT; model ağırlıkları ayrı indirilir.
+- jsoup 1.18.3, MIT; arama sonucu HTML çözümleme. Wikipedia giriş metinleri CC BY-SA, kaynak bağlantıları sonuçlarda gösterilir.
 - PDFBox Android 2.0.27.0 / Apache PDFBox, Apache-2.0; şifreli PDF desteği kapsam dışıdır, Bouncy Castle bağımlılıkları bu kişisel sürümde alınmaz.
 
 Doğrulama kapsamı ve sınırlar: [docs/VALIDATION.md](docs/VALIDATION.md).

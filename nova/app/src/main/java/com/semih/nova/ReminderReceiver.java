@@ -1,9 +1,7 @@
 package com.semih.nova;
 
-import android.Manifest;
 import android.app.*;
 import android.content.*;
-import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.os.Build;
 
@@ -19,16 +17,23 @@ public final class ReminderReceiver extends BroadcastReceiver {
   }
 
   static void schedule(Context c, long id, long when) {
-    ((AlarmManager) c.getSystemService(Context.ALARM_SERVICE))
-        .setAndAllowWhileIdle(
-            AlarmManager.RTC_WAKEUP,
-            Math.max(when, System.currentTimeMillis() + 1000),
-            alarm(c, id));
+    AlarmManager manager = c.getSystemService(AlarmManager.class);
+    long due = Math.max(when, System.currentTimeMillis() + 1000);
+    if (Build.VERSION.SDK_INT < 31 || manager.canScheduleExactAlarms()) {
+      try {
+        manager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, due, alarm(c, id));
+        return;
+      } catch (SecurityException denied) {
+      }
+    }
+    manager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, due, alarm(c, id));
   }
 
   static void cancel(Context c, long id) {
     ((AlarmManager) c.getSystemService(Context.ALARM_SERVICE)).cancel(alarm(c, id));
     ((NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE)).cancel((int) id);
+    ((NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE))
+        .cancel("task", (int) id);
   }
 
   static void all(Context c) {
@@ -49,37 +54,12 @@ public final class ReminderReceiver extends BroadcastReceiver {
     long id = intent.getLongExtra("id", -1);
     try (Store db = new Store(c)) {
       Store.Row task = db.task(id);
-      if (task == null || task.done) return;
+      if (task == null || task.done || task.notified) return;
       if (task.time > System.currentTimeMillis() + 1000) {
         schedule(c, id, task.time);
         return;
       }
-      NotificationManager nm =
-          (NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE);
-      nm.createNotificationChannel(
-          new NotificationChannel(
-              CHANNEL, "Adaş görev hatırlatmaları", NotificationManager.IMPORTANCE_HIGH));
-      if (Build.VERSION.SDK_INT >= 33
-          && c.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
-              != PackageManager.PERMISSION_GRANTED) return;
-      if (!nm.areNotificationsEnabled()) return;
-      PendingIntent open =
-          PendingIntent.getActivity(
-              c,
-              0,
-              new Intent(c, MainActivity.class).putExtra("tasks", true),
-              PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-      nm.notify(
-          (int) id,
-          new Notification.Builder(c, CHANNEL)
-              .setSmallIcon(com.semih.nova.R.drawable.ic_nova)
-              .setContentTitle("🔔 Adaş hatırlatması")
-              .setContentText(task.title)
-              .setStyle(new Notification.BigTextStyle().bigText(task.title))
-              .setVisibility(Notification.VISIBILITY_PRIVATE)
-              .setAutoCancel(true)
-              .setContentIntent(open)
-              .build());
+      if (!ReminderDelivery.deliver(c, task)) return;
       ContentValues v = new ContentValues();
       v.put("notified", 1);
       db.getWritableDatabase().update("tasks", v, "id=?", new String[] {"" + id});

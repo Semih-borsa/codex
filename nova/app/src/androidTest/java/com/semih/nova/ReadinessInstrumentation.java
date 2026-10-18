@@ -48,6 +48,158 @@ public final class ReadinessInstrumentation extends Instrumentation {
     return f;
   }
 
+  private void checkTools(Context c) throws Exception {
+    String legacy = "upgrade-readiness-" + System.currentTimeMillis() + ".db";
+    try (android.database.sqlite.SQLiteDatabase old = c.openOrCreateDatabase(legacy, 0, null)) {
+      old.execSQL(
+          "CREATE TABLE tasks(id INTEGER PRIMARY KEY,title TEXT NOT NULL,due INTEGER NOT NULL,done"
+              + " INTEGER NOT NULL DEFAULT 0,notified INTEGER NOT NULL DEFAULT 0)");
+      old.execSQL(
+          "CREATE TABLE messages(id INTEGER PRIMARY KEY,role TEXT NOT NULL,body TEXT NOT"
+              + " NULL,created INTEGER NOT NULL)");
+      old.execSQL(
+          "CREATE TABLE memories(id INTEGER PRIMARY KEY,title TEXT NOT NULL,body TEXT NOT NULL)");
+      old.execSQL("CREATE INDEX task_due ON tasks(done,due)");
+      old.execSQL("INSERT INTO tasks(id,title,due) VALUES(1,'Eski görev',1800000000000)");
+      old.execSQL("INSERT INTO messages(role,body,created) VALUES('user','Korunan geçmiş',1)");
+      old.setVersion(1);
+    }
+    try (Store upgraded = new Store(c, legacy)) {
+      check(
+          upgraded.task(1).title.equals("Eski görev") && !upgraded.task(1).audible,
+          "Schema 1 to 2 preserves old task with speech disabled");
+      check(upgraded.messages().get(0).body.equals("Korunan geçmiş"), "Upgrade preserves chat");
+      upgraded.saveTask(1, "Eski görev", 1800000000000L, true);
+    }
+    try (Store upgraded = new Store(c, legacy)) {
+      check(upgraded.task(1).audible, "Audible opt-in persists across reopening");
+      upgraded.saveTask(1, "Düzenlenen görev", 1800000000000L);
+      check(upgraded.task(1).audible, "Editing old task API preserves audible setting");
+    }
+    MessageDraft draft = new MessageDraft();
+    draft.recipient = "05551234567";
+    draft.body = "Merhaba & yarın?";
+    Intent whatsapp = MessageIntents.build(draft);
+    check(
+        Intent.ACTION_VIEW.equals(whatsapp.getAction())
+            && "com.whatsapp".equals(whatsapp.getPackage())
+            && "wa.me".equals(whatsapp.getData().getHost())
+            && "Merhaba & yarın?".equals(whatsapp.getData().getQueryParameter("text")),
+        "WhatsApp draft intent safely encodes recipient and body without sending");
+    draft.whatsapp = false;
+    Intent sms = MessageIntents.build(draft);
+    check(
+        Intent.ACTION_SENDTO.equals(sms.getAction())
+            && "smsto".equals(sms.getData().getScheme())
+            && draft.body.equals(sms.getStringExtra("sms_body")),
+        "SMS intent only opens editor; never sent by tests");
+    String[] permissions =
+        c.getPackageManager()
+            .getPackageInfo(c.getPackageName(), android.content.pm.PackageManager.GET_PERMISSIONS)
+            .requestedPermissions;
+    check(
+        !Arrays.asList(permissions).contains("android.permission.SEND_SMS")
+            && !Arrays.asList(permissions).contains("android.permission.READ_CONTACTS"),
+        "No SMS sending or full contacts permission");
+    final List<String> requested = new ArrayList<>();
+    String answer =
+        Research.find(
+            "Güneş enerjisi",
+            url -> {
+              requested.add(url);
+              if (url.contains("duckduckgo"))
+                return "<div class='result'><a class='result__a'"
+                    + " href='https://example.org/solar'>Güneş</a><div"
+                    + " class='result__snippet'>Arama özeti</div></div>";
+              if (url.contains("list=search")) return "{\"query\":{\"search\":[{\"pageid\":42}]}}";
+              return "{\"query\":{\"pages\":{\"42\":{\"title\":\"Güneş"
+                  + " enerjisi\",\"extract\":\"Denetim için ansiklopedi girişi.\"}}}}";
+            });
+    check(
+        answer.contains("Arama özeti")
+            && answer.contains("https://example.org/solar")
+            && answer.contains("https://tr.wikipedia.org/?curid=42")
+            && answer.contains("tamamı okunmadı"),
+        "Research labels source excerpts and coverage from fixtures");
+    check(
+        requested.size() == 3
+            && requested.stream().noneMatch(url -> url.startsWith("https://example.org")),
+        "Research never follows arbitrary result URLs");
+    try {
+      Research.find(
+          "konu",
+          url -> {
+            throw new IOException("Offline fixture");
+          });
+      throw new AssertionError("Fabricated offline research");
+    } catch (IOException expected) {
+      check(true, "Research offline returns error instead of fabricated sources");
+    }
+    Store.Row notice = new Store.Row();
+    notice.id = 880001;
+    notice.time = System.currentTimeMillis();
+    notice.title = "Tanılama bildirimi";
+    notice.audible = false;
+    check(ReminderDelivery.deliver(c, notice), "Reminder notification delivery with permission");
+    android.service.notification.StatusBarNotification[] active =
+        c.getSystemService(NotificationManager.class).getActiveNotifications();
+    boolean found = false;
+    for (android.service.notification.StatusBarNotification n : active)
+      if ("task".equals(n.getTag()) && n.getId() == 880001)
+        found =
+            n.getNotification().visibility == Notification.VISIBILITY_PRIVATE
+                && n.getNotification().actions == null;
+    check(found, "Plain reminder stays private and has no speech action");
+    // Older audible tasks must show an explicit read action but must not auto-speak on reboot.
+    notice.id = 880002;
+    notice.audible = true;
+    notice.time = System.currentTimeMillis() - 11 * 60 * 1000;
+    check(ReminderDelivery.deliver(c, notice), "Overdue audible reminder still notifies");
+    active = c.getSystemService(NotificationManager.class).getActiveNotifications();
+    found = false;
+    for (android.service.notification.StatusBarNotification n : active)
+      if ("task".equals(n.getTag()) && n.getId() == 880002)
+        found =
+            n.getNotification().actions != null
+                && n.getNotification().actions[0].title.toString().equals("Sesli oku");
+    check(found, "Audible reminder includes user-triggered read action");
+    check(
+        !c.getPackageManager()
+            .getServiceInfo(new ComponentName(c, ReminderSpeechService.class), 0)
+            .exported,
+        "Spoken reminder service cannot be started directly by external apps");
+    runOnMainSync(
+        () ->
+            c.startForegroundService(
+                new Intent(c, ReminderSpeechService.class)
+                    .putExtra("id", 880003L)
+                    .putExtra("text", "Tanılama sesli uyarısı")));
+    boolean serviceNotice = false;
+    for (int i = 0; i < 20 && !serviceNotice; i++) {
+      Thread.sleep(250);
+      for (android.service.notification.StatusBarNotification n :
+          c.getSystemService(NotificationManager.class).getActiveNotifications())
+        if (n.getId() == ReminderSpeechService.ID || "speech_status".equals(n.getTag()))
+          serviceNotice = true;
+    }
+    check(
+        serviceNotice,
+        "Spoken reminder starts foreground service or reports offline voice unavailable");
+    runOnMainSync(
+        () ->
+            c.startService(
+                new Intent(c, ReminderSpeechService.class).setAction(ReminderSpeechService.STOP)));
+    boolean stopped = false;
+    for (int i = 0; i < 20 && !stopped; i++) {
+      Thread.sleep(250);
+      stopped = true;
+      for (android.service.notification.StatusBarNotification n :
+          c.getSystemService(NotificationManager.class).getActiveNotifications())
+        if (n.getId() == ReminderSpeechService.ID && n.getTag() == null) stopped = false;
+    }
+    check(stopped, "Stop speech removes foreground notification without completing tasks");
+  }
+
   @Override
   public void onStart() {
     Bundle result = new Bundle();
@@ -71,6 +223,7 @@ public final class ReadinessInstrumentation extends Instrumentation {
         check(db.memories().get(0).id == memory, "SQLite survives reopen");
         check(db.tasks().get(0).id == task, "Task survives reopen");
       }
+      checkTools(c);
       File doc =
           zip(
               "sample.docx",
@@ -135,9 +288,13 @@ public final class ReadinessInstrumentation extends Instrumentation {
       NativeBridge.reset();
       byte[] generated =
           NativeBridge.generate(
-              tiny.getPath(), "Merhaba".getBytes(StandardCharsets.UTF_8), bytes -> {});
+              tiny.getPath(),
+              "Merhaba".getBytes(StandardCharsets.UTF_8),
+              bytes -> {
+                if (bytes.length > 0) NativeBridge.stop();
+              });
       check(
-          generated != null,
+          generated != null && generated.length > 0,
           "Native CPU token inference (untrained diagnostic fixture; not Turkish quality)");
       NativeBridge.reset();
       try {
@@ -222,6 +379,48 @@ public final class ReadinessInstrumentation extends Instrumentation {
       check(
           voiceFixture.messages().get(1).body.contains("Hangi şehir"),
           "Weather without city asks instead of model hallucination");
+      runOnMainSync(
+          () -> {
+            try {
+              java.lang.reflect.Field conv = MainActivity.class.getDeclaredField("conversation");
+              conv.setAccessible(true);
+              ((Conversation) conv.get(activity)).start();
+            } catch (Exception e) {
+              throw new RuntimeException(e);
+            }
+            Bundle command = new Bundle();
+            command.putStringArrayList(
+                android.speech.SpeechRecognizer.RESULTS_RECOGNITION,
+                new ArrayList<>(
+                    Collections.singletonList("Yarın saat 15 faturayı sesli hatırlat")));
+            activity.onResults(command);
+          });
+      waitForIdleSync();
+      check(
+          voiceFixture.tasks().isEmpty(),
+          "Spoken reminder stays a draft until explicit confirmation");
+      check(
+          voiceFixture
+              .messages()
+              .get(voiceFixture.messages().size() - 1)
+              .body
+              .contains("henüz kaydedilmedi"),
+          "Reminder approval notice is honest");
+      runOnMainSync(
+          () -> {
+            try {
+              java.lang.reflect.Field input = MainActivity.class.getDeclaredField("composer");
+              input.setAccessible(true);
+              check(
+                  ((android.widget.EditText) input.get(activity)).length() == 0,
+                  "Spoken reminder clears composer to avoid duplicate submission");
+            } catch (Exception e) {
+              throw new RuntimeException(e);
+            }
+          });
+      sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK);
+      waitForIdleSync();
+      check(voiceFixture.tasks().isEmpty(), "Cancelling reminder preview preserves task database");
       runOnMainSync(activity::finish);
       NativeBridge.release();
       AtomicBoolean cancelled = new AtomicBoolean(true);

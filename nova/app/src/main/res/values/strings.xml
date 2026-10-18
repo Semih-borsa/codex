@@ -5,4 +5,7 @@
     <string name="status_3">Ses çözümleniyor…</string>
     <string name="status_4">● Dinliyorum · bitir</string>
     <string name="status_5">Sesli sohbet</string>
+    <string name="sms_cost_consent">SMS\'in operatör tarifeme göre ücretli olabileceğini biliyorum.</string>
+    <string name="audible_consent">Zamanı gelince sesli oku (kilitliyken de duyulabilir)</string>
+    <string name="research_command">%1$s araştır</string>
 </resources>

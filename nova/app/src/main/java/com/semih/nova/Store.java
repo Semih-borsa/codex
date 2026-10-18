@@ -11,7 +11,7 @@ final class Store extends SQLiteOpenHelper {
   }
 
   Store(Context c, String name) {
-    super(c, name, null, 1);
+    super(c, name, null, 2);
   }
 
   public void onCreate(SQLiteDatabase d) {
@@ -22,18 +22,19 @@ final class Store extends SQLiteOpenHelper {
         "CREATE TABLE memories(id INTEGER PRIMARY KEY,title TEXT NOT NULL,body TEXT NOT NULL)");
     d.execSQL(
         "CREATE TABLE tasks(id INTEGER PRIMARY KEY,title TEXT NOT NULL,due INTEGER NOT NULL,done"
-            + " INTEGER NOT NULL DEFAULT 0,notified INTEGER NOT NULL DEFAULT 0)");
+            + " INTEGER NOT NULL DEFAULT 0,notified INTEGER NOT NULL DEFAULT 0,audible INTEGER NOT"
+            + " NULL DEFAULT 0)");
     d.execSQL("CREATE INDEX task_due ON tasks(done,due)");
   }
 
   public void onUpgrade(SQLiteDatabase d, int old, int next) {
-    throw new IllegalStateException("Desteklenmeyen veritabanı sürümü");
+    if (old < 2) d.execSQL("ALTER TABLE tasks ADD COLUMN audible INTEGER NOT NULL DEFAULT 0");
   }
 
   static final class Row {
     long id, time;
     String title, body, role;
-    boolean done;
+    boolean done, audible, notified;
   }
 
   List<Row> messages() {
@@ -95,13 +96,17 @@ final class Store extends SQLiteOpenHelper {
     List<Row> out = new ArrayList<>();
     try (Cursor c =
         getReadableDatabase()
-            .rawQuery("SELECT id,title,due,done FROM tasks ORDER BY done,due LIMIT 100", null)) {
+            .rawQuery(
+                "SELECT id,title,due,done,audible,notified FROM tasks ORDER BY done,due LIMIT 100",
+                null)) {
       while (c.moveToNext()) {
         Row r = new Row();
         r.id = c.getLong(0);
         r.title = c.getString(1);
         r.time = c.getLong(2);
         r.done = c.getInt(3) != 0;
+        r.audible = c.getInt(4) != 0;
+        r.notified = c.getInt(5) != 0;
         out.add(r);
       }
     }
@@ -111,22 +116,32 @@ final class Store extends SQLiteOpenHelper {
   Row task(long id) {
     try (Cursor c =
         getReadableDatabase()
-            .rawQuery("SELECT id,title,due,done FROM tasks WHERE id=?", new String[] {"" + id})) {
+            .rawQuery(
+                "SELECT id,title,due,done,audible,notified FROM tasks WHERE id=?",
+                new String[] {"" + id})) {
       if (!c.moveToFirst()) return null;
       Row r = new Row();
       r.id = c.getLong(0);
       r.title = c.getString(1);
       r.time = c.getLong(2);
       r.done = c.getInt(3) != 0;
+      r.audible = c.getInt(4) != 0;
+      r.notified = c.getInt(5) != 0;
       return r;
     }
   }
 
   long saveTask(long id, String title, long due) {
+    Row old = id > 0 ? task(id) : null;
+    return saveTask(id, title, due, old != null && old.audible);
+  }
+
+  long saveTask(long id, String title, long due, boolean audible) {
     ContentValues v = new ContentValues();
     v.put("title", title);
     v.put("due", due);
     v.put("notified", 0);
+    v.put("audible", audible ? 1 : 0);
     if (id > 0) {
       getWritableDatabase().update("tasks", v, "id=?", new String[] {"" + id});
       return id;
@@ -137,6 +152,7 @@ final class Store extends SQLiteOpenHelper {
   void done(long id, boolean done) {
     ContentValues v = new ContentValues();
     v.put("done", done ? 1 : 0);
+    if (!done) v.put("notified", 0);
     getWritableDatabase().update("tasks", v, "id=?", new String[] {"" + id});
   }
 

@@ -42,7 +42,7 @@ final class AnswerQuality {
     if (s.matches("(?s).*\\b(dolar|euro|altin|borsa)\\b.*")
         && s.matches("(?s).*\\b(kac|fiyat|fiyati)\\b.*"))
       return "Canlı fiyat bağlantım yok. Güncel fiyatı uydurmayacağım; güvenilir bir piyasa"
-                 + " kaynağından kontrol etmelisin.";
+          + " kaynağından kontrol etmelisin.";
     if (s.matches("(?s).*\\b(guncel|anlik|bugunku|son dakika)\\b.*")
         && (s.contains("haber") || s.contains("dolar") || s.contains("kur") || s.contains("borsa")))
       return "Bu konuda doğrulanmış güncel veri bağlantım yok. Canlı fiyat veya haber"

@@ -94,3 +94,8 @@ Yerel motor Android ARM64 ve x86_64 için Java/JNI ile bağlanmıştır. Gerçek
 ## v1.1 uygulama güncellemesi
 
 Sesli sohbet artık tanınan sözü otomatik gönderir, cevap seslendirilince yeniden dinler; durdurma ve arka plana geçiş oturumu kapatır. Genel modelin güncel hava durumunu bilmediği durum ayrıldı: ücretsiz, anahtarsız Open-Meteo/GeoNames sorgusu yalnızca kullanıcı hava sorunca çalışır. Bu özellik internet ister; yerel sohbet ve hafıza çevrimdışı kalır. Canlı servis ve fiziksel Xiaomi ses kalitesi henüz doğrulanmadı; ayrıntılar `nova/docs/VALIDATION.md`.
+
+
+## NOVA / Adaş 1.2 uygulama durumu
+
+Kişisel Android sürümüne konuşmadan onaylı hatırlatma taslağı, seçime bağlı zamanlı sesli uyarı, son gönderimi kullanıcıda kalan WhatsApp/SMS taslakları ve DuckDuckGo/Wikipedia kaynaklı sınırlı araştırma eklendi. Ücretli AI API'si yoktur; SMS operatör tarifesine göre ücret doğurabilir ve varsayılan değildir. [Güncel kurulum ve kapsam](../nova/README.md), [testler ve fiziksel cihaz sınırları](../nova/docs/VALIDATION.md). Windows EXE henüz kapsamda değildir.
