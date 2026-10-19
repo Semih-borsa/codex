@@ -727,4 +727,58 @@ public class RosterTest {
       }
     }
   }
+
+  @Test
+  public void leaveEndingBeforeOwnTurnNeverCreatesWeekendPriority() {
+    State s = people(5);
+    s.leaves.add(new Leave("p4", ALL, mon, mon.plusDays(6), "Senelik İzin"));
+    for (int i = 0; i < 5; i++) {
+      Week w = generate(s, mon.plusWeeks(i));
+      assertEquals("p" + i, weekendPerson(w));
+      assertTrue(w.debts.isEmpty());
+      approve(s, w);
+    }
+  }
+
+  @Test
+  public void reportOverSeveralWeekendsButBeforeOwnTurnDoesNotSkipQueue() {
+    State s = people(5);
+    s.leaves.add(new Leave("p3", ALL, mon, mon.plusDays(13), "Rapor"));
+    for (int i = 0; i < 4; i++) {
+      Week w = generate(s, mon.plusWeeks(i));
+      assertEquals("p" + i, weekendPerson(w));
+      assertTrue(w.debts.isEmpty());
+      approve(s, w);
+    }
+  }
+
+  @Test
+  public void onlyActuallySkippedPersonReturnsBeforeRegularQueue() {
+    State s = people(5);
+    s.leaves.add(new Leave("p0", ALL, mon, mon.plusDays(9), "Rapor"));
+    s.leaves.add(new Leave("p4", ALL, mon, mon.plusDays(9), "Senelik İzin"));
+    Week first = generate(s, mon);
+    assertEquals("p1", weekendPerson(first));
+    assertEquals(1, first.debts.size());
+    assertEquals("p0", first.debts.get(0).person);
+    approve(s, first);
+    Week returned = generate(s, mon.plusWeeks(1));
+    assertEquals("p0", weekendPerson(returned));
+    assertTrue(returned.debts.isEmpty());
+    approve(s, returned);
+    assertEquals("p2", weekendPerson(generate(s, mon.plusWeeks(2))));
+  }
+
+  @Test
+  public void skippedTurnWaitsForEndThenRegularQueueContinuesUnconsumed() {
+    State s = people(5);
+    s.leaves.add(new Leave("p0", ALL, mon, mon.plusDays(13), "Rapor"));
+    String[] expected = {"p1", "p2", "p0", "p3", "p4"};
+    for (int i = 0; i < expected.length; i++) {
+      Week w = generate(s, mon.plusWeeks(i));
+      assertEquals(expected[i], weekendPerson(w));
+      assertTrue(validate(s, w).isEmpty());
+      approve(s, w);
+    }
+  }
 }

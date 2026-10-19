@@ -6,6 +6,10 @@
 
 Android 8.0 ve üzeri. Önceki sürümlerden biri kuruluysa **uygulamayı kaldırmadan** 1.7 APK'sını açarak güncelleyin. Aynı paket adı ve imza kullanılır; eski kayıtlar okunur. Kaldırmak veya uygulama verilerini silmek kayıtları siler.
 
+## Hafta sonu dönüş önceliği
+
+İzin veya raporun bitmesi tek başına öncelik oluşturmaz. Personelin hafta sonu sırası mazeret süresinde henüz gelmediyse normal sırası korunur. Sırası gelmiş, mazereti nedeniyle atlanmış ve sonraki kişi atanmışsa, mazereti bittikten sonraki ilk uygun hafta sonu önceliklidir. Sonrasında normal döngü kaldığı yerden devam eder. Örnek: sıra A/B/C/D/E; A raporlu olduğu için B atanır, A dönünce A atanır, ardından C devam eder. E aynı dönemde izinden dönse bile henüz sırası atlanmadıysa öne geçmez.
+
 ## 1.7 yenilikleri
 
 **Mazeret → Mazeret / Kısıt Ekle** ile aynı personele birden fazla bağımsız kayıt ekleyebilirsiniz. Birini düzenlemek veya silmek diğerlerini kaldırmaz. **Her Hafta Tekrarla** seçeneğinde Pazartesi–Pazar arasından birden fazla gün işaretlenebilir. Örneğin aynı kişiye Her Pazartesi/Her Çarşamba Şube kısıtı, ayrıca Her Cuma tüm yerler için ayrı kısıt eklenebilir.

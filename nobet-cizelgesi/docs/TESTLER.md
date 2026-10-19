@@ -1,11 +1,15 @@
 # Doğrulama — Nöbet Çizelgesi 1.7 / 19 Ekim 2026
 
 - JDK 17.0.17, Android SDK 35, build-tools 35.0.0, Gradle 8.9, AGP 8.7.3.
-- `testDebugUnitTest`: **54 test, 0 başarısız, 0 atlanan**.
+- `testDebugUnitTest`: **58 test, 0 başarısız, 0 atlanan**.
 - `lintDebug`: **sorun bulunmadı**.
 - APK ve Android test APK derlemeleri başarılı.
 - Android 11 / API 30 x86_64 emülatöründe önceki sürüm üzerine `adb install -r` ile 1.7 güncellemesi başarılı.
 - Android test çalıştırıcısı: **28 kontrol geçti, 0 başarısız**.
+
+## Hafta sonu dönüş önceliği doğrulaması
+
+Dört ek test geçti: (1) kendi sırası gelmeden izni biten kişi öne geçmez; (2) birden fazla hafta sonu raporlu olsa da sırası henüz gelmeyen kişi normal sırada kalır; (3) aynı anda izinden dönen iki kişiden yalnız sırası gerçekten atlanmış olan öncelik kazanır; (4) mazeret devam ederken sonraki personeller atanır, bitince bekleyen kişi gelir, ardından normal sıra kaldığı yerden sürer. Bu davranış mevcut 1.7 APK'sında zaten uygulanır; uygulama kodu/APK değiştirilmedi. Kaynak ZIP ve belgeler güncellendi. Önceki APK'nın 28 Android kontrol sonucu geçerlidir.
 
 ## 1.7 kontrolleri
 
