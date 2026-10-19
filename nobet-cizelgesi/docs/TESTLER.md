@@ -1,11 +1,17 @@
-# Doğrulama — Nöbet Çizelgesi 1.6 / 19 Ekim 2026
+# Doğrulama — Nöbet Çizelgesi 1.7 / 19 Ekim 2026
 
 - JDK 17.0.17, Android SDK 35, build-tools 35.0.0, Gradle 8.9, AGP 8.7.3.
-- `testDebugUnitTest`: **47 test, 0 başarısız, 0 atlanan**.
+- `testDebugUnitTest`: **54 test, 0 başarısız, 0 atlanan**.
 - `lintDebug`: **sorun bulunmadı**.
 - APK ve Android test APK derlemeleri başarılı.
-- Android 11 / API 30 x86_64 emülatöründe önceki sürüm üzerine `adb install -r` ile 1.6 güncellemesi başarılı.
-- Android test çalıştırıcısı: **25 kontrol geçti, 0 başarısız**.
+- Android 11 / API 30 x86_64 emülatöründe önceki sürüm üzerine `adb install -r` ile 1.7 güncellemesi başarılı.
+- Android test çalıştırıcısı: **28 kontrol geçti, 0 başarısız**.
+
+## 1.7 kontrolleri
+
+Haftalık Pazartesi/Çarşamba kısıtının 12 haftalık tekrarları, seçilmeyen günlerin serbestliği, başlangıç/bitişin dahil olması, tek yer kısıtının başka yeri engellememesi ve aynı personelin birden fazla kısıtının birleşimi test edildi. Bir kısıtı silmek diğerlerini kaldırmaz. 8 haftalık otomatik dağıtım ve elle atama doğrulaması tekrar günlerini denetler. Hafta sonu kısıtı bitince bekleyen nöbet önceliği sürer. Geçersiz tekrar maskeleri reddedilir.
+
+Android: aynı kişiye ait süresiz ve bitiş tarihli haftalık kayıtlar ile tarihli rapor diske yazılıp yeniden okundu. Eski JSON'da tekrar günleri yoksa mazeret tüm tarih aralığında çalışmaya devam eder. Diyalogda haftalık moda geçiş ve Pazartesi/Çarşamba günlerini birlikte seçme doğrulandı.
 
 ## 1.6 kontrolleri
 

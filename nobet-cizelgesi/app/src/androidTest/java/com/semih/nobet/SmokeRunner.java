@@ -653,6 +653,105 @@ public class SmokeRunner extends Instrumentation {
             runOnMainSync(activity::finish);
           }
         });
+    check(
+        "Multiple recurring and dated constraints survive storage independently",
+        () -> {
+          State sample = new State();
+          sample.people.add(new Person("weekly", "Deneme"));
+          sample.leaves.add(new Leave("weekly", BRANCH, mon, LocalDate.MAX, "Haftalık", 5));
+          sample.leaves.add(new Leave("weekly", WORK, mon, mon.plusWeeks(4), "Haftalık", 2));
+          sample.leaves.add(new Leave("weekly", ALL, mon.plusDays(4), mon.plusDays(4), "Rapor"));
+          Store isolatedStore = new Store(context);
+          isolatedStore.save(sample);
+          State restored = isolatedStore.load();
+          truth(restored.leaves.size() == 3 && restored.leaves.get(0).end.equals(LocalDate.MAX));
+          truth(!available(restored, "weekly", BRANCH, mon.plusWeeks(10)));
+          truth(available(restored, "weekly", WORK, mon.plusWeeks(10)));
+          truth(!available(restored, "weekly", WORK, mon.plusDays(1)));
+          truth(!available(restored, "weekly", BRANCH, mon.plusDays(4)));
+          restored.leaves.remove(0);
+          truth(
+              restored.leaves.size() == 2 && !available(restored, "weekly", WORK, mon.plusDays(1)));
+        });
+    check(
+        "Legacy constraints without recurrence retain every date in their range",
+        () -> {
+          State sample = new State();
+          sample.people.add(new Person("legacy", "Deneme"));
+          sample.leaves.add(new Leave("legacy", ALL, mon, mon.plusDays(6), "Rapor"));
+          org.json.JSONObject json = new org.json.JSONObject(Store.encode(sample));
+          json.getJSONArray("leaves").getJSONObject(0).remove("days");
+          State restored = Store.decode(json.toString());
+          truth(restored.leaves.get(0).days == 0);
+          for (int i = 0; i < 7; i++) truth(!available(restored, "legacy", WORK, mon.plusDays(i)));
+          truth(available(restored, "legacy", WORK, mon.plusDays(7)));
+        });
+    check(
+        "Weekly restriction dialog exposes selectable recurring weekdays",
+        () -> {
+          Activity activity =
+              startActivitySync(
+                  new Intent(target, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+          android.app.AlertDialog[] dialog = new android.app.AlertDialog[1];
+          try {
+            waitForIdleSync();
+            runOnMainSync(
+                () -> {
+                  try {
+                    State sample = new State();
+                    sample.people.add(new Person("dialog", "Deneme Personel"));
+                    java.lang.reflect.Field field = MainActivity.class.getDeclaredField("state");
+                    field.setAccessible(true);
+                    field.set(activity, sample);
+                    java.lang.reflect.Method method =
+                        MainActivity.class.getDeclaredMethod(
+                            "leaveDialog",
+                            Leave.class,
+                            String.class,
+                            LocalDate.class,
+                            LocalDate.class,
+                            String.class);
+                    method.setAccessible(true);
+                    dialog[0] =
+                        (android.app.AlertDialog)
+                            method.invoke(activity, null, ALL, mon, mon.plusDays(6), "Rapor");
+                  } catch (ReflectiveOperationException e) {
+                    throw new AssertionError(e);
+                  }
+                });
+            waitForIdleSync();
+            runOnMainSync(
+                () -> {
+                  android.view.View root = dialog[0].getWindow().getDecorView();
+                  android.widget.CheckBox weekly =
+                      (android.widget.CheckBox) root.findViewWithTag("leave-weekly");
+                  truth(weekly != null && !weekly.isChecked());
+                  weekly.performClick();
+                  truth(weekly.isChecked());
+                  android.widget.CheckBox monday =
+                      (android.widget.CheckBox) root.findViewWithTag("leave-day-0");
+                  android.widget.CheckBox wednesday =
+                      (android.widget.CheckBox) root.findViewWithTag("leave-day-2");
+                  truth(
+                      ((android.view.View) monday.getParent()).getVisibility()
+                          == android.view.View.VISIBLE);
+                  monday.performClick();
+                  wednesday.performClick();
+                  truth(monday.isChecked() && wednesday.isChecked());
+                  truth(
+                      !((android.widget.CheckBox) root.findViewWithTag("leave-day-6")).isChecked());
+                  android.widget.CheckBox hasEnd =
+                      (android.widget.CheckBox) findText(root, "Bitiş Tarihi Olsun");
+                  truth(hasEnd != null && !hasEnd.isChecked());
+                });
+          } finally {
+            runOnMainSync(
+                () -> {
+                  if (dialog[0] != null) dialog[0].dismiss();
+                  activity.finish();
+                });
+          }
+        });
     Bundle result = new Bundle();
     result.putInt("passed", passed);
     result.putInt("failed", failed);

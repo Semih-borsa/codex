@@ -1,1 +1,1 @@
-<resources><string name="starts">Başlangıç: %1$s</string><string name="ends">Bitiş: %1$s</string><string name="limit_value">%1$d</string><string name="auto_place">Otomatik Dağıtıma Dahil Et</string></resources>
+<resources><string name="starts">Başlangıç: %1$s</string><string name="ends">Bitiş: %1$s</string><string name="limit_value">%1$d</string><string name="auto_place">Otomatik Dağıtıma Dahil Et</string><string name="weekly_repeat">Her Hafta Tekrarla</string><string name="each_weekday">Her %1$s</string><string name="has_end">Bitiş Tarihi Olsun</string></resources>

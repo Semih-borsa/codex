@@ -618,10 +618,11 @@ public final class MainActivity extends Activity {
   private void leaves() {
     heading("Mazeret Ve Kısıtlar");
     note(
-        "Senelik izin, rapor ve genel mazeretler tüm görev yerlerinde atamayı engeller. Yalnız"
-            + " seçtiğiniz yere ait kısıt da girebilirsiniz. Başlangıç ve bitiş günleri dahildir.");
+        "Aynı personele birden fazla mazeret veya kısıt ekleyebilirsiniz. Tarih aralığı ya da her"
+            + " hafta tekrarlanan günler seçin. Genel mazeret tüm yerleri, yer kısıtı yalnız"
+            + " seçtiğiniz yeri engeller.");
     action(
-        "+ Tarihli Mazeret / Kısıt Ekle",
+        "+ Mazeret / Kısıt Ekle",
         () -> leaveDialog(null, ALL, selected, selected.plusDays(6), "Senelik izin"));
     for (Leave l : state.leaves) {
       TextView t =
@@ -630,9 +631,7 @@ public final class MainActivity extends Activity {
                   + " • "
                   + l.reason
                   + "\n"
-                  + l.start.format(shortDate)
-                  + " – "
-                  + l.end.format(shortDate)
+                  + leavePeriod(l)
                   + " • "
                   + state.placeName(l.place),
               16,
@@ -693,7 +692,20 @@ public final class MainActivity extends Activity {
     return s;
   }
 
-  private void leaveDialog(
+  private String leavePeriod(Leave leave) {
+    String period =
+        leave.start.format(shortDate)
+            + " – "
+            + (leave.end.equals(LocalDate.MAX) ? "Süresiz" : leave.end.format(shortDate));
+    if (leave.days == 0) return period;
+    String[] names = {"Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"};
+    List<String> selectedDays = new ArrayList<>();
+    for (int i = 0; i < 7; i++)
+      if ((leave.days & (1 << i)) != 0) selectedDays.add("Her " + names[i]);
+    return String.join(", ", selectedDays) + "\n" + period;
+  }
+
+  private AlertDialog leaveDialog(
       Leave existing, String place, LocalDate start, LocalDate end, String reason) {
     List<Person> list =
         state.people.stream()
@@ -701,7 +713,7 @@ public final class MainActivity extends Activity {
             .collect(java.util.stream.Collectors.toList());
     if (list.isEmpty()) {
       toast("Önce personel ekleyin.");
-      return;
+      return null;
     }
     LinearLayout box = new LinearLayout(this);
     box.setPadding(dp(20), dp(8), dp(20), dp(8));
@@ -743,12 +755,67 @@ public final class MainActivity extends Activity {
                   dates[1] = d;
                   to.setText(getString(R.string.ends, d.format(shortDate)));
                 }));
+    CheckBox weekly = new CheckBox(this);
+    weekly.setText(R.string.weekly_repeat);
+    weekly.setTextColor(ink);
+    weekly.setTag("leave-weekly");
+    weekly.setChecked(existing != null && existing.days != 0);
+    box.addView(weekly);
+    LinearLayout dayChoices = new LinearLayout(this);
+    dayChoices.setOrientation(LinearLayout.VERTICAL);
+    CheckBox[] weekdays = new CheckBox[7];
+    String[] dayNames = {"Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"};
+    for (int i = 0; i < 7; i++) {
+      weekdays[i] = new CheckBox(this);
+      weekdays[i].setText(getString(R.string.each_weekday, dayNames[i]));
+      weekdays[i].setTextColor(ink);
+      weekdays[i].setTag("leave-day-" + i);
+      weekdays[i].setChecked(existing != null && (existing.days & (1 << i)) != 0);
+      dayChoices.addView(weekdays[i]);
+    }
+    box.addView(dayChoices);
     box.addView(from);
+    CheckBox hasEnd = new CheckBox(this);
+    hasEnd.setText(R.string.has_end);
+    hasEnd.setTextColor(ink);
+    hasEnd.setChecked(existing != null && !existing.end.equals(LocalDate.MAX));
+    box.addView(hasEnd);
     box.addView(to);
+    Runnable updateMode =
+        () -> {
+          dayChoices.setVisibility(weekly.isChecked() ? View.VISIBLE : View.GONE);
+          hasEnd.setVisibility(weekly.isChecked() ? View.VISIBLE : View.GONE);
+          to.setVisibility(!weekly.isChecked() || hasEnd.isChecked() ? View.VISIBLE : View.GONE);
+        };
+    weekly.setOnCheckedChangeListener(
+        (view, checked) -> {
+          if (existing == null && checked) {
+            dates[0] = LocalDate.now();
+            dates[1] = dates[0].plusDays(6);
+            from.setText(getString(R.string.starts, dates[0].format(shortDate)));
+            to.setText(getString(R.string.ends, dates[1].format(shortDate)));
+            if (type.getSelectedItemPosition() < 3) type.setSelection(2);
+          } else if (!checked && dates[1].equals(LocalDate.MAX)) {
+            dates[1] = dates[0].plusDays(6);
+            to.setText(getString(R.string.ends, dates[1].format(shortDate)));
+          }
+          updateMode.run();
+        });
+    hasEnd.setOnCheckedChangeListener(
+        (view, checked) -> {
+          if (checked && dates[1].equals(LocalDate.MAX)) {
+            dates[1] = dates[0].plusDays(6);
+            to.setText(getString(R.string.ends, dates[1].format(shortDate)));
+          }
+          updateMode.run();
+        });
+    updateMode.run();
+    ScrollView fields = new ScrollView(this);
+    fields.addView(box);
     AlertDialog dialog =
         new AlertDialog.Builder(this)
-            .setTitle("Tarihli Mazeret")
-            .setView(box)
+            .setTitle("Mazeret / Kısıt")
+            .setView(fields)
             .setNegativeButton("Vazgeç", null)
             .setPositiveButton("Teyit Et", null)
             .create();
@@ -758,7 +825,16 @@ public final class MainActivity extends Activity {
                 .getButton(-1)
                 .setOnClickListener(
                     v -> {
-                      if (dates[1].isBefore(dates[0])) {
+                      int mask = 0;
+                      if (weekly.isChecked())
+                        for (int i = 0; i < 7; i++) if (weekdays[i].isChecked()) mask |= 1 << i;
+                      if (weekly.isChecked() && mask == 0) {
+                        toast("En az bir tekrar günü seçin.");
+                        return;
+                      }
+                      LocalDate until =
+                          weekly.isChecked() && !hasEnd.isChecked() ? LocalDate.MAX : dates[1];
+                      if (until.isBefore(dates[0])) {
                         toast("Bitiş tarihi başlangıçtan önce olamaz.");
                         return;
                       }
@@ -766,13 +842,12 @@ public final class MainActivity extends Activity {
                       int t = type.getSelectedItemPosition();
                       String target = t >= 3 ? locations.get(t - 3).id : ALL;
                       String label = type.getSelectedItem().toString();
+                      Leave newLeave = new Leave(person, target, dates[0], until, label, mask);
                       confirm(
                           "Mazereti Kaydet",
                           state.name(person)
                               + "\n"
-                              + dates[0].format(shortDate)
-                              + " – "
-                              + dates[1].format(shortDate)
+                              + leavePeriod(newLeave)
                               + "\n"
                               + state.placeName(target)
                               + " için atanmayacak.\n"
@@ -784,11 +859,11 @@ public final class MainActivity extends Activity {
                               for (Week wk : state.weeks)
                                 for (Debt debt : wk.debts)
                                   if (debt.person.equals(existing.person)
-                                      && debt.end.equals(existing.end)) debt.end = dates[1];
+                                      && debt.end.equals(existing.end))
+                                    debt.end = LocalDate.now().minusDays(1);
                             }
-                            Leave l = new Leave(person, target, dates[0], dates[1], label);
-                            state.leaves.add(l);
-                            removeConflicts(l);
+                            state.leaves.add(newLeave);
+                            removeConflicts(newLeave);
                             if (save()) {
                               dialog.dismiss();
                               draft = null;
@@ -798,6 +873,7 @@ public final class MainActivity extends Activity {
                           });
                     }));
     dialog.show();
+    return dialog;
   }
 
   private void removeConflicts(Leave l) {

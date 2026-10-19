@@ -61,7 +61,8 @@ final class Store {
               .put("place", l.place)
               .put("start", l.start)
               .put("end", l.end)
-              .put("reason", l.reason));
+              .put("reason", l.reason)
+              .put("days", l.days));
     for (Week w : s.weeks) {
       JSONArray duties = new JSONArray(), debts = new JSONArray();
       for (Duty d : w.duties)
@@ -123,7 +124,8 @@ final class Store {
               j.getString("place"),
               LocalDate.parse(j.getString("start")),
               LocalDate.parse(j.getString("end")),
-              j.getString("reason")));
+              j.getString("reason"),
+              j.optInt("days", 0)));
     }
     for (int i = 0; i < weeks.length(); i++) {
       JSONObject j = weeks.getJSONObject(i);

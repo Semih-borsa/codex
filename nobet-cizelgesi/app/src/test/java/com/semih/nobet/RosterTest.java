@@ -638,4 +638,93 @@ public class RosterTest {
       assertEquals(0, s.rotationRevision);
     }
   }
+
+  @Test
+  public void weeklyDaysRepeatWithoutBlockingOtherDays() {
+    Leave l = new Leave("p0", ALL, mon, LocalDate.MAX, "Haftalık Kısıt", 5);
+    for (int week = 0; week < 12; week++) {
+      assertTrue(l.blocks("p0", WORK, mon.plusWeeks(week)));
+      assertTrue(l.blocks("p0", BRANCH, mon.plusWeeks(week).plusDays(2)));
+      assertFalse(l.blocks("p0", WORK, mon.plusWeeks(week).plusDays(1)));
+      assertFalse(l.blocks("p1", WORK, mon.plusWeeks(week)));
+    }
+  }
+
+  @Test
+  public void weeklyDateRangeIsInclusive() {
+    Leave l = new Leave("p0", BRANCH, mon.plusWeeks(1), mon.plusWeeks(2), "Kısıt", 1);
+    assertFalse(l.blocks("p0", BRANCH, mon));
+    assertTrue(l.blocks("p0", BRANCH, mon.plusWeeks(1)));
+    assertTrue(l.blocks("p0", BRANCH, mon.plusWeeks(2)));
+    assertFalse(l.blocks("p0", BRANCH, mon.plusWeeks(3)));
+    assertFalse(l.blocks("p0", WORK, mon.plusWeeks(1)));
+  }
+
+  @Test
+  public void multipleRestrictionsForOnePersonAccumulateIndependently() {
+    State s = people(5);
+    Leave a = new Leave("p0", BRANCH, mon, LocalDate.MAX, "Şube", 1);
+    Leave b = new Leave("p0", WORK, mon, LocalDate.MAX, "İşyeri", 4);
+    Leave c = new Leave("p0", ALL, mon.plusDays(4), mon.plusDays(4), "Rapor");
+    s.leaves.addAll(Arrays.asList(a, b, c));
+    assertFalse(available(s, "p0", BRANCH, mon));
+    assertTrue(available(s, "p0", WORK, mon));
+    assertFalse(available(s, "p0", WORK, mon.plusDays(2)));
+    assertTrue(available(s, "p0", BRANCH, mon.plusDays(2)));
+    assertFalse(available(s, "p0", BRANCH, mon.plusDays(4)));
+    assertFalse(available(s, "p0", WORK, mon.plusDays(4)));
+    s.leaves.remove(a);
+    assertTrue(available(s, "p0", BRANCH, mon));
+    assertFalse(available(s, "p0", WORK, mon.plusDays(2)));
+    assertEquals(2, s.leaves.size());
+  }
+
+  @Test
+  public void generatedWeeksRespectRecurringRestrictions() {
+    State s = people(5);
+    Leave a = new Leave("p0", ALL, mon, LocalDate.MAX, "Haftalık", 5);
+    Leave b = new Leave("p1", BRANCH, mon, LocalDate.MAX, "Haftalık", 10);
+    s.leaves.addAll(Arrays.asList(a, b));
+    for (int i = 0; i < 8; i++) {
+      Week w = generate(s, mon.plusWeeks(i));
+      for (Duty d : w.duties) {
+        assertFalse(a.blocks(d.person, d.place, d.date));
+        assertFalse(b.blocks(d.person, d.place, d.date));
+      }
+      assertTrue(validate(s, w).isEmpty());
+      approve(s, w);
+    }
+  }
+
+  @Test
+  public void manualAssignmentsCannotOverrideRecurringRestriction() {
+    State s = people(5);
+    s.leaves.add(new Leave("p0", ALL, mon, LocalDate.MAX, "Haftalık", 1));
+    Week w = new Week(mon);
+    w.duties.add(new Duty(mon, WORK, "p0"));
+    assertFalse(validate(s, w).isEmpty());
+  }
+
+  @Test
+  public void weekendWeeklyRestrictionKeepsOwedTurnAfterEnd() {
+    State s = people(5);
+    s.leaves.add(new Leave("p0", ALL, mon, mon.plusDays(6), "Haftalık", 32));
+    Week first = generate(s, mon);
+    assertEquals("p1", weekendPerson(first));
+    approve(s, first);
+    Week next = generate(s, mon.plusWeeks(1));
+    assertEquals("p0", weekendPerson(next));
+    assertTrue(validate(s, next).isEmpty());
+  }
+
+  @Test
+  public void invalidRecurringMaskIsRejected() {
+    for (int days : new int[] {-1, 128, 255}) {
+      try {
+        new Leave("p0", ALL, mon, LocalDate.MAX, "Haftalık", days);
+        fail("Invalid mask accepted");
+      } catch (IllegalArgumentException expected) {
+      }
+    }
+  }
 }

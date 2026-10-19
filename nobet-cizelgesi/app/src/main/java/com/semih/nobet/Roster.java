@@ -39,8 +39,16 @@ public final class Roster {
   public static final class Leave {
     public String person, place, reason;
     public LocalDate start, end;
+    public int days; // 0: dated leave; otherwise Monday=bit 0 ... Sunday=bit 6.
 
     public Leave(String person, String place, LocalDate start, LocalDate end, String reason) {
+      this(person, place, start, end, reason, 0);
+    }
+
+    public Leave(
+        String person, String place, LocalDate start, LocalDate end, String reason, int days) {
+      if (days < 0 || days > 127) throw new IllegalArgumentException("Geçersiz tekrar günleri.");
+      this.days = days;
       if (end.isBefore(start))
         throw new IllegalArgumentException("Bitiş başlangıçtan önce olamaz.");
       this.person = person;
@@ -54,7 +62,8 @@ public final class Roster {
       return person.equals(p)
           && (place.equals(ALL) || place.equals(where))
           && !date.isBefore(start)
-          && !date.isAfter(end);
+          && !date.isAfter(end)
+          && (days == 0 || (days & (1 << (date.getDayOfWeek().getValue() - 1))) != 0);
     }
   }
 

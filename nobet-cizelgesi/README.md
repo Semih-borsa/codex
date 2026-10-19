@@ -1,12 +1,20 @@
-# Nöbet Çizelgesi 1.6 — Android
+# Nöbet Çizelgesi 1.7 — Android
 
 Çevrimdışı personel, görev yeri, mazeret ve haftalık nöbet planlama uygulaması.
 
-[APK 1.6 indir](../downloads/NobetCizelgesi-1.6.apk) · [Android Studio ZIP](../downloads/NobetCizelgesi-Android-Studio.zip) · [Test sonuçları](docs/TESTLER.md)
+[APK 1.7 indir](../downloads/NobetCizelgesi-1.7.apk) · [Android Studio ZIP](../downloads/NobetCizelgesi-Android-Studio.zip) · [Test sonuçları](docs/TESTLER.md)
 
-Android 8.0 ve üzeri. Önceki sürümlerden biri kuruluysa **uygulamayı kaldırmadan** 1.6 APK'sını açarak güncelleyin. Aynı paket adı ve imza kullanılır; eski kayıtlar okunur. Kaldırmak veya uygulama verilerini silmek kayıtları siler.
+Android 8.0 ve üzeri. Önceki sürümlerden biri kuruluysa **uygulamayı kaldırmadan** 1.7 APK'sını açarak güncelleyin. Aynı paket adı ve imza kullanılır; eski kayıtlar okunur. Kaldırmak veya uygulama verilerini silmek kayıtları siler.
 
-## 1.6 yenilikleri
+## 1.7 yenilikleri
+
+**Mazeret → Mazeret / Kısıt Ekle** ile aynı personele birden fazla bağımsız kayıt ekleyebilirsiniz. Birini düzenlemek veya silmek diğerlerini kaldırmaz. **Her Hafta Tekrarla** seçeneğinde Pazartesi–Pazar arasından birden fazla gün işaretlenebilir. Örneğin aynı kişiye Her Pazartesi/Her Çarşamba Şube kısıtı, ayrıca Her Cuma tüm yerler için ayrı kısıt eklenebilir.
+
+Haftalık kısıtta başlangıç tarihi geçerlidir; yeni kayıtta bugündür. **Bitiş Tarihi Olsun** kapalıysa süresiz sürer; açıkken seçilen bitiş dahil uygulanır. Tekrar günleri boş bırakılamaz. Seçilmeyen günler başka mazeret yoksa serbesttir. Genel mazeret tüm görev yerlerini, yalnız belirli yere ait kısıt o yeri engeller. Otomatik/manuel atamalar tüm kısıtların birleşimini denetler.
+
+Onaydan önce kişi, günler, tarih aralığı ve görev yeri gösterilir. Yalnız yeni kuralla çakışan kayıtlar kaldırılır; boşalan yerler ayrıca düzenlenebilir veya öneri üretilebilir. Düzenleme/silme sonrasında diğer kısıtlar ve bekleyen nöbet hakları korunur. Eski tarihli mazeretler güncellemede tarih aralığındaki her gün için geçerli kalır.
+
+## Yukarı / aşağı taşıma
 
 **Ayarlar → Hafta Sonu Nöbet Sırası** bölümündeki **↑ / ↓** düğmeleri personelleri birer sıra taşır. İsim silmek veya yeniden eklemek gerekmez. Birkaç taşıma yapıp **Sırayı Kaydet** ile önizlemeyi onaylayın. **Sıra Değişikliklerini İptal Et** kaydedilmemiş taşımaları geri alır. İlk kişinin yukarı, son kişinin aşağı düğmesi kapalıdır. Personele dokunarak doğrudan sıra numarası seçme de korunur.
 
