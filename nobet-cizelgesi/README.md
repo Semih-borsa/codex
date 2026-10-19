@@ -1,12 +1,18 @@
-# Nöbet Çizelgesi 1.3 — Android
+# Nöbet Çizelgesi 1.4 — Android
 
 Çevrimdışı personel, görev yeri, mazeret ve haftalık nöbet planlama uygulaması.
 
-[APK 1.3 indir](../downloads/NobetCizelgesi-1.3.apk) · [Android Studio ZIP](../downloads/NobetCizelgesi-Android-Studio.zip) · [Test sonuçları](docs/TESTLER.md)
+[APK 1.4 indir](../downloads/NobetCizelgesi-1.4.apk) · [Android Studio ZIP](../downloads/NobetCizelgesi-Android-Studio.zip) · [Test sonuçları](docs/TESTLER.md)
 
-Android 8.0 ve üzeri. Önceki sürümlerden biri kuruluysa **uygulamayı kaldırmadan** 1.3 APK'sını açarak güncelleyin. Aynı paket adı ve imza kullanılır; eski kayıtlar okunur. Kaldırmak veya uygulama verilerini silmek kayıtları siler.
+Android 8.0 ve üzeri. Önceki sürümlerden biri kuruluysa **uygulamayı kaldırmadan** 1.4 APK'sını açarak güncelleyin. Aynı paket adı ve imza kullanılır; eski kayıtlar okunur. Kaldırmak veya uygulama verilerini silmek kayıtları siler.
 
-## 1.3 yenilikleri
+## 1.4 yenilikleri
+
+İstatistik ekranında **İstatistikleri PDF Olarak Paylaş** düğmesi bulunur. PDF yalnız tabloları içerir; açıklama, özet veya imza alanı eklenmez. Bugün Ve Öncesi / Gelecek Atamalar ayrımı tablo başlığında korunur. Gelecek atama yoksa gelecek tablosu oluşturulmaz. Personeller Türkçe alfabetik sırada, tüm şubeler sizin verdiğiniz adla gösterilir. Çizelgede gizlenen şubeler istatistik PDF'sinde de sayılmaya devam eder.
+
+Uzun adlar satıra bölünür; çok personel/şube varsa tablo ek sayfalara devam eder. Her sayfada sütun başlıkları ve personel adları tekrarlanır. Boşluklar tablo boyutuna göre sınırlıdır. PDF'yi Android paylaşım ekranından WhatsApp'a veya başka bir uygulamaya aktarabilirsiniz. İstatistik ekranındaki açıklama paragrafları da kaldırıldı.
+
+## 1.3 düzeni
 
 - İstatistik başlıklarındaki A/B/C harfleri kaldırıldı. **Personel, Hafta İçi, Hafta Sonu** ve verdiğiniz şube adları gösterilir.
 - Tablo ekran genişliğine sığar; yatay kaydırma gerekmez. Çok sayıda şube varsa okunabilir sütun grupları alt alta devam eder. Hücre boşlukları azaltıldı, uzun adlar satıra bölünür.

@@ -92,6 +92,135 @@ final class PdfExport {
     return out;
   }
 
+  static List<String> statisticsLabels(State s) {
+    List<String> labels = new ArrayList<>(Arrays.asList("Hafta İçi", "Hafta Sonu"));
+    for (Place place : statisticPlaces(s))
+      labels.add(place.name + (place.deleted ? " (Silindi)" : ""));
+    return labels;
+  }
+
+  static File createStatistics(Context context, State s, LocalDate today) throws IOException {
+    File dir = new File(context.getCacheDir(), "pdf");
+    if (!dir.exists() && !dir.mkdirs()) throw new IOException();
+    File[] old = dir.listFiles();
+    if (old != null)
+      for (File f : old)
+        if (f.lastModified() < System.currentTimeMillis() - 7L * 86400000) f.delete();
+    File out =
+        new File(
+            dir,
+            "Istatistik_"
+                + today.toString().replace("-", "_")
+                + "_"
+                + System.currentTimeMillis()
+                + ".pdf");
+    List<String> labels = statisticsLabels(s);
+    PdfDocument document = new PdfDocument();
+    int number = 0;
+    try {
+      for (boolean future : new boolean[] {false, true}) {
+        List<StatRow> rows = statistics(s, today, future);
+        boolean any = false;
+        for (StatRow row : rows) for (long count : row.counts) if (count > 0) any = true;
+        if (future && !any) continue;
+        for (int first = 0; first < labels.size(); first += 4) {
+          int end = Math.min(first + 4, labels.size());
+          int width = 220 + (end - first) * 110;
+          for (int start = 0; start < Math.max(1, rows.size()); start += 18) {
+            int stop = Math.min(start + 18, rows.size());
+            Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            paint.setTextSize(11);
+            paint.setTypeface(Typeface.DEFAULT_BOLD);
+            List<List<String>> headers = new ArrayList<>();
+            headers.add(wrap("Personel", paint, 204));
+            int headerHeight = 28;
+            for (int col = first; col < end; col++) {
+              List<String> lines = wrap(labels.get(col), paint, 94);
+              headers.add(lines);
+              headerHeight = Math.max(headerHeight, lines.size() * 14 + 12);
+            }
+            paint.setTypeface(Typeface.DEFAULT);
+            List<List<String>> names = new ArrayList<>();
+            int height = 24 + headerHeight;
+            for (int row = start; row < stop; row++) {
+              Person person = rows.get(row).person;
+              List<String> lines =
+                  wrap(person.name + (person.active ? "" : " · Pasif"), paint, 204);
+              names.add(lines);
+              height += Math.max(26, lines.size() * 14 + 10);
+            }
+            PdfDocument.Page page =
+                document.startPage(
+                    new PdfDocument.PageInfo.Builder(width + 24, height + 24, ++number).create());
+            Canvas canvas = page.getCanvas();
+            // The period is a table band; no introduction, explanations, signatures or footer.
+            paint.setColor(Color.rgb(42, 111, 177));
+            canvas.drawRect(12, 12, 12 + width, 12 + 24 + headerHeight, paint);
+            paint.setColor(Color.WHITE);
+            paint.setTypeface(Typeface.DEFAULT_BOLD);
+            canvas.drawText(future ? "Gelecek Atamalar" : "Bugün Ve Öncesi", 20, 29, paint);
+            int x = 20;
+            for (int col = 0; col < headers.size(); col++) {
+              drawLines(canvas, paint, headers.get(col), x, 52);
+              x += col == 0 ? 220 : 110;
+            }
+            int y = 36 + headerHeight;
+            paint.setTypeface(Typeface.DEFAULT);
+            for (int row = start; row < stop; row++) {
+              List<String> lines = names.get(row - start);
+              int rowHeight = Math.max(26, lines.size() * 14 + 10);
+              paint.setColor((row - start) % 2 == 0 ? Color.rgb(237, 245, 253) : Color.WHITE);
+              canvas.drawRect(12, y, 12 + width, y + rowHeight, paint);
+              paint.setColor(Color.rgb(16, 35, 57));
+              drawLines(canvas, paint, lines, 20, y + 17);
+              for (int col = first; col < end; col++) {
+                String value = Long.toString(rows.get(row).counts[col]);
+                canvas.drawText(
+                    value,
+                    12 + 220 + (col - first) * 110 + (110 - paint.measureText(value)) / 2,
+                    y + 17,
+                    paint);
+              }
+              y += rowHeight;
+            }
+            document.finishPage(page);
+          }
+        }
+      }
+      try (FileOutputStream stream = new FileOutputStream(out)) {
+        document.writeTo(stream);
+      }
+    } finally {
+      document.close();
+    }
+    return out;
+  }
+
+  private static List<String> wrap(String value, Paint paint, int width) {
+    List<String> lines = new ArrayList<>();
+    String remaining = value;
+    while (!remaining.isEmpty()) {
+      int count = paint.breakText(remaining, true, width, null);
+      count = Math.max(1, count);
+      if (count < remaining.length()) {
+        int space = remaining.lastIndexOf(' ', count);
+        if (space > 0) count = space;
+      }
+      lines.add(remaining.substring(0, count));
+      remaining = remaining.substring(count).trim();
+    }
+    if (lines.isEmpty()) lines.add("");
+    return lines;
+  }
+
+  private static void drawLines(
+      Canvas canvas, Paint paint, List<String> lines, int x, int baseline) {
+    for (String line : lines) {
+      canvas.drawText(line, x, baseline, paint);
+      baseline += 14;
+    }
+  }
+
   private static String titleDay(String text) {
     int start = text.indexOf("• ") + 2;
     return text.substring(0, start)
@@ -117,7 +246,7 @@ final class PdfExport {
             .setType("application/pdf")
             .putExtra(Intent.EXTRA_STREAM, u)
             .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-    i.setClipData(ClipData.newRawUri("Haftalık nöbet PDF", u));
+    i.setClipData(ClipData.newRawUri("Nöbet Çizelgesi PDF", u));
     ctx.startActivity(Intent.createChooser(i, "PDF Paylaş • WhatsApp veya Başka Uygulama"));
   }
 }

@@ -337,6 +337,11 @@ public class SmokeRunner extends Instrumentation {
                   truth(findText(activity.getWindow().getDecorView(), "Personel") != null);
                   truth(findText(activity.getWindow().getDecorView(), "Hafta İçi") != null);
                   truth(findText(activity.getWindow().getDecorView(), "Hafta Sonu") != null);
+                  truth(
+                      findText(
+                              activity.getWindow().getDecorView(),
+                              "İstatistikleri PDF Olarak Paylaş")
+                          != null);
                 });
           } finally {
             runOnMainSync(activity::finish);
@@ -464,6 +469,75 @@ public class SmokeRunner extends Instrumentation {
           } finally {
             runOnMainSync(activity::finish);
           }
+        });
+    check(
+        "Statistics PDF renders empty table without explanatory text",
+        () -> {
+          File pdf = PdfExport.createStatistics(context, new State(), mon);
+          try (ParcelFileDescriptor fd =
+                  ParcelFileDescriptor.open(pdf, ParcelFileDescriptor.MODE_READ_ONLY);
+              PdfRenderer renderer = new PdfRenderer(fd)) {
+            truth(renderer.getPageCount() == 1);
+            try (PdfRenderer.Page page = renderer.openPage(0)) {
+              truth(page.getHeight() < 120);
+              android.graphics.Bitmap bitmap =
+                  android.graphics.Bitmap.createBitmap(
+                      page.getWidth(), page.getHeight(), android.graphics.Bitmap.Config.ARGB_8888);
+              page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
+              bitmap.recycle();
+            }
+          }
+        });
+    check(
+        "Statistics PDF paginates people branches and periods including hidden branches",
+        () -> {
+          State sample = new State();
+          for (int i = 0; i < 19; i++)
+            sample.people.add(new Person("pdf" + i, "Deneme Uzun Personel Adı " + i));
+          for (int i = 2; i < 7; i++)
+            sample.places.add(new Place("pdfplace" + i, "Uzun İsimli Yeni Görev Yeri " + i, 31, 1));
+          sample.hiddenPlaces.add(BRANCH);
+          Week saved = new Week(mon);
+          saved.duties.add(new Duty(mon, WORK, "pdf0"));
+          saved.duties.add(new Duty(mon.plusDays(1), BRANCH, "pdf1"));
+          sample.weeks.add(saved);
+          truth(PdfExport.statisticsLabels(sample).size() == 8);
+          truth(statistics(sample, mon, false).stream().mapToLong(row -> row.counts[0]).sum() == 1);
+          truth(statistics(sample, mon, true).stream().mapToLong(row -> row.counts[2]).sum() == 1);
+          File pdf = PdfExport.createStatistics(context, sample, mon);
+          try (ParcelFileDescriptor fd =
+                  ParcelFileDescriptor.open(pdf, ParcelFileDescriptor.MODE_READ_ONLY);
+              PdfRenderer renderer = new PdfRenderer(fd)) {
+            truth(renderer.getPageCount() == 8);
+            for (int i = 0; i < renderer.getPageCount(); i++) {
+              try (PdfRenderer.Page page = renderer.openPage(i)) {
+                android.graphics.Bitmap bitmap =
+                    android.graphics.Bitmap.createBitmap(
+                        page.getWidth(),
+                        page.getHeight(),
+                        android.graphics.Bitmap.Config.ARGB_8888);
+                page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
+                bitmap.recycle();
+              }
+            }
+          }
+        });
+    check(
+        "Statistics PDF sharing URI is readable and read only",
+        () -> {
+          File pdf = PdfExport.createStatistics(target, s, mon);
+          android.net.Uri uri =
+              android.net.Uri.parse("content://com.semih.nobet.pdf/" + pdf.getName());
+          try (InputStream stream = target.getContentResolver().openInputStream(uri)) {
+            truth(stream.read() == '%');
+          }
+          boolean rejected = false;
+          try {
+            target.getContentResolver().openFileDescriptor(uri, "w");
+          } catch (FileNotFoundException expected) {
+            rejected = true;
+          }
+          truth(rejected);
         });
     Bundle result = new Bundle();
     result.putInt("passed", passed);
