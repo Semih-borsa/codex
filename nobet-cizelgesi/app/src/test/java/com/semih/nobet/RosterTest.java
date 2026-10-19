@@ -159,12 +159,12 @@ public class RosterTest {
   }
 
   @Test
-  public void pastEditInvalidatesLaterWeeks() {
+  public void pastEditPreservesLaterWeeks() {
     State s = people(5);
     approve(s, generate(s, mon));
     approve(s, generate(s, mon.plusWeeks(1)));
     approve(s, generate(s, mon));
-    assertEquals(1, s.weeks.size());
+    assertEquals(2, s.weeks.size());
   }
 
   @Test
@@ -239,6 +239,182 @@ public class RosterTest {
     } catch (IllegalArgumentException expected) {
       assertTrue(expected.getMessage().contains("mazereti"));
     }
+  }
+
+  @Test
+  public void renamedPlaceKeepsHistoryAndStatistics() {
+    State s = people(5);
+    Week w = generate(s, mon);
+    approve(s, w);
+    long[] before = totals(s, "p0", WORK, mon.plusDays(6));
+    s.place(WORK).name = "Merkez";
+    assertEquals("Merkez", s.placeName(WORK));
+    assertArrayEquals(before, totals(s, "p0", WORK, mon.plusDays(6)));
+    assertTrue(validate(s, w).isEmpty());
+  }
+
+  @Test
+  public void extraBranchAssignedWithNoConflicts() {
+    State s = people(5);
+    s.places.add(new Place("new", "Ek Bina", 31, 1));
+    Week w = generate(s, mon);
+    assertEquals(17, expectedSlots(s));
+    assertEquals(5, w.duties.stream().filter(d -> d.place.equals("new")).count());
+    assertTrue(validate(s, w).isEmpty());
+  }
+
+  @Test
+  public void extraPlaceHonorsDaysAndGlobalLeave() {
+    State s = people(5);
+    s.places.add(new Place("new", "Ek Bina", 5, 1));
+    s.leaves.add(new Leave("p2", ALL, mon, mon.plusDays(6), "Rapor"));
+    Week w = generate(s, mon);
+    assertFalse(w.duties.stream().anyMatch(d -> d.person.equals("p2")));
+    assertTrue(
+        w.duties.stream()
+            .filter(d -> d.place.equals("new"))
+            .allMatch(d -> d.date.equals(mon) || d.date.equals(mon.plusDays(2))));
+    assertTrue(validate(s, w).isEmpty());
+  }
+
+  @Test
+  public void manualPlaceDoesNotAutoAssign() {
+    State s = people(5);
+    Place p = new Place("new", "Ek", 127, 0);
+    p.automatic = false;
+    s.places.add(p);
+    assertFalse(generate(s, mon).duties.stream().anyMatch(d -> d.place.equals("new")));
+  }
+
+  @Test
+  public void savedRevisionUpdatesCountsWithoutDuplicatingOrLosingWeeks() {
+    State s = people(5);
+    Week w = generate(s, mon);
+    approve(s, w);
+    approve(s, generate(s, mon.plusWeeks(1)));
+    Duty d =
+        w.duties.stream().filter(x -> !weekend(x.date) && x.place.equals(WORK)).findFirst().get();
+    long before = totals(s, d.person, WORK, mon.plusWeeks(3))[0];
+    Week edit = copy(w);
+    edit.duties.removeIf(x -> x.date.equals(d.date) && x.place.equals(WORK));
+    approve(s, edit);
+    assertEquals(before - 1, totals(s, d.person, WORK, mon.plusWeeks(3))[0]);
+    assertEquals(2, s.weeks.size());
+    approve(s, edit);
+    assertEquals(before - 1, totals(s, d.person, WORK, mon.plusWeeks(3))[0]);
+    assertEquals(2, s.weeks.size());
+  }
+
+  @Test
+  public void newBranchWeekendCannotUseRestingPersonOnThursday() {
+    State s = people(5);
+    s.places.add(new Place("new", "Ek", 127, 0));
+    Week w = generate(s, mon);
+    String id = weekendPerson(w);
+    assertFalse(
+        w.duties.stream().anyMatch(d -> d.person.equals(id) && d.date.equals(mon.plusDays(3))));
+  }
+
+  @Test
+  public void pendingTurnFromEditedOlderWeekSurvivesLaterSavedWeek() {
+    State s = people(5);
+    Week old = generate(s, mon);
+    approve(s, old);
+    approve(s, generate(s, mon.plusWeeks(1)));
+    old.duties.removeIf(d -> weekend(d.date) && d.place.equals(WORK));
+    old.debts.add(new Debt("p0", mon.plusDays(6)));
+    assertEquals("p0", weekendPerson(generate(s, mon.plusWeeks(2))));
+    assertEquals(2, s.weeks.size());
+  }
+
+  @Test
+  public void reassignmentChangesBothPersonnelCounts() {
+    State s = people(5);
+    Week w = generate(s, mon);
+    approve(s, w);
+    Duty d =
+        w.duties.stream().filter(x -> x.date.equals(mon) && x.place.equals(WORK)).findFirst().get();
+    Person replacement =
+        s.people.stream()
+            .filter(
+                p ->
+                    !p.id.equals(d.person)
+                        && w.duties.stream()
+                            .noneMatch(x -> x.date.equals(mon) && x.person.equals(p.id)))
+            .findFirst()
+            .get();
+    long old = totals(s, d.person, WORK, mon.plusDays(6))[0],
+        other = totals(s, replacement.id, WORK, mon.plusDays(6))[0];
+    Week revised = copy(w);
+    revised.duties.removeIf(x -> x.date.equals(mon) && x.place.equals(WORK));
+    revised.duties.add(new Duty(mon, WORK, replacement.id));
+    approve(s, revised);
+    assertEquals(old - 1, totals(s, d.person, WORK, mon.plusDays(6))[0]);
+    assertEquals(other + 1, totals(s, replacement.id, WORK, mon.plusDays(6))[0]);
+  }
+
+  @Test
+  public void secondBranchAssignmentNeedsExplicitException() {
+    State s = people(5);
+    Week w = generate(s, mon);
+    Duty first = w.duties.stream().filter(d -> d.place.equals(BRANCH)).findFirst().get();
+    Person person = s.people.stream().filter(p -> p.id.equals(first.person)).findFirst().get();
+    LocalDate target = null;
+    for (int day = 0; day < 5; day++) {
+      LocalDate d = mon.plusDays(day);
+      if (!d.equals(first.date) && free(s, w, person, BRANCH, d)) {
+        target = d;
+        break;
+      }
+    }
+    assertNotNull(target);
+    LocalDate date = target;
+    w.duties.removeIf(d -> d.place.equals(BRANCH) && d.date.equals(date));
+    w.duties.add(new Duty(date, BRANCH, person.id));
+    assertTrue(validate(s, w).stream().anyMatch(e -> e.contains("haftalık sınırı")));
+    w.limitOverrides.add(BRANCH + "|" + person.id);
+    assertTrue(validate(s, w).isEmpty());
+    approve(s, w);
+    assertEquals(2, totals(s, person.id, BRANCH, mon.plusDays(6))[0]);
+    assertTrue(copy(w).limitOverrides.contains(BRANCH + "|" + person.id));
+  }
+
+  @Test
+  public void manualExceptionDoesNotDisableLeaveOrDoubleDutyChecks() {
+    State s = people(5);
+    Week w = generate(s, mon);
+    String id = weekendPerson(w);
+    w.limitOverrides.add(BRANCH + "|" + id);
+    w.duties.add(new Duty(mon.plusDays(3), BRANCH, id));
+    assertFalse(validate(s, w).isEmpty());
+  }
+
+  @Test
+  public void statisticRowsAreTurkishAlphabetical() {
+    State s = new State();
+    String[] names = {"Zeynep", "Ömer", "İpek", "Işık", "Çağrı", "Ali"};
+    for (int i = 0; i < names.length; i++) s.people.add(new Person("p" + i, names[i]));
+    List<StatRow> rows = statistics(s, mon, false);
+    assertArrayEquals(
+        new String[] {"Ali", "Çağrı", "Işık", "İpek", "Ömer", "Zeynep"},
+        rows.stream().map(r -> r.person.name).toArray(String[]::new));
+  }
+
+  @Test
+  public void statisticTableSeparatesWorkdaysWeekendsAndNamedBranches() {
+    State s = people(1);
+    s.place(BRANCH).name = "Merkez Şube";
+    s.places.add(new Place("new", "Ek Şube", 31, 0));
+    Week w = new Week(mon);
+    w.duties.add(new Duty(mon, WORK, "p0"));
+    w.duties.add(new Duty(mon.plusDays(5), WORK, "p0"));
+    w.duties.add(new Duty(mon.plusDays(1), BRANCH, "p0"));
+    w.duties.add(new Duty(mon.plusDays(2), "new", "p0"));
+    s.weeks.add(w);
+    assertArrayEquals(new long[] {1, 1, 1, 1}, statistics(s, mon.plusDays(6), false).get(0).counts);
+    assertEquals("Merkez Şube", statisticPlaces(s).get(0).name);
+    assertEquals("Ek Şube", statisticPlaces(s).get(1).name);
+    assertArrayEquals(new long[] {0, 1, 1, 1}, statistics(s, mon, true).get(0).counts);
   }
 
   @Test

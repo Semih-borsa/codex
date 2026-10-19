@@ -17,7 +17,8 @@ final class Store {
   }
 
   State load() throws Exception {
-    if (!file.getBaseFile().exists()) return new State();
+    if (!file.getBaseFile().exists() && !new File(file.getBaseFile().getPath() + ".bak").exists())
+      return new State();
     return decode(new String(file.readFully(), StandardCharsets.UTF_8));
   }
 
@@ -35,8 +36,18 @@ final class Store {
   }
 
   static String encode(State s) throws JSONException {
-    JSONObject root = new JSONObject().put("version", 1);
+    JSONObject root = new JSONObject().put("version", 2);
     JSONArray people = new JSONArray(), leaves = new JSONArray(), weeks = new JSONArray();
+    JSONArray places = new JSONArray();
+    for (Place p : s.places)
+      places.put(
+          new JSONObject()
+              .put("id", p.id)
+              .put("name", p.name)
+              .put("days", p.days)
+              .put("limit", p.limit)
+              .put("automatic", p.automatic));
+    root.put("places", places);
     for (Person p : s.people)
       people.put(new JSONObject().put("id", p.id).put("name", p.name).put("active", p.active));
     for (Leave l : s.leaves)
@@ -58,15 +69,30 @@ final class Store {
               .put("monday", w.monday)
               .put("cursor", w.cursor)
               .put("duties", duties)
-              .put("debts", debts));
+              .put("debts", debts)
+              .put("limitOverrides", new JSONArray(w.limitOverrides)));
     }
     return root.put("people", people).put("leaves", leaves).put("weeks", weeks).toString();
   }
 
   static State decode(String json) throws JSONException {
     JSONObject root = new JSONObject(json);
-    if (root.getInt("version") != 1) throw new JSONException("Desteklenmeyen veri sürümü");
+    if (root.getInt("version") != 1 && root.getInt("version") != 2)
+      throw new JSONException("Desteklenmeyen veri sürümü");
     State s = new State();
+    JSONArray locations = root.optJSONArray("places");
+    if (locations != null) {
+      s.places.clear();
+      for (int i = 0; i < locations.length(); i++) {
+        JSONObject j = locations.getJSONObject(i);
+        Place place =
+            new Place(j.getString("id"), j.getString("name"), j.getInt("days"), j.getInt("limit"));
+        place.automatic = j.optBoolean("automatic", true);
+        s.places.add(place);
+      }
+      s.place(WORK);
+      s.place(BRANCH);
+    }
     JSONArray people = root.getJSONArray("people"),
         leaves = root.getJSONArray("leaves"),
         weeks = root.getJSONArray("weeks");
@@ -90,6 +116,9 @@ final class Store {
       JSONObject j = weeks.getJSONObject(i);
       Week w = new Week(LocalDate.parse(j.getString("monday")));
       w.cursor = j.getString("cursor");
+      JSONArray overrides = j.optJSONArray("limitOverrides");
+      if (overrides != null)
+        for (int n = 0; n < overrides.length(); n++) w.limitOverrides.add(overrides.getString(n));
       JSONArray ds = j.getJSONArray("duties"), bs = j.getJSONArray("debts");
       for (int n = 0; n < ds.length(); n++) {
         JSONObject d = ds.getJSONObject(n);

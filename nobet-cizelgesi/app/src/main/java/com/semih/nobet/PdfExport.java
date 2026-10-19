@@ -17,7 +17,7 @@ final class PdfExport {
         .filter(d -> d.date.equals(date) && d.place.equals(place))
         .map(d -> s.name(d.person))
         .findFirst()
-        .orElse(place.equals(BRANCH) && weekend(date) ? "—" : "BOŞ");
+        .orElse("—");
   }
 
   static File create(Context context, State s, Week w) throws IOException {
@@ -37,68 +37,51 @@ final class PdfExport {
                 + ".pdf");
     PdfDocument pdf = new PdfDocument();
     try {
-      PdfDocument.Page page = pdf.startPage(new PdfDocument.PageInfo.Builder(842, 595, 1).create());
-      Canvas c = page.getCanvas();
-      Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
-      p.setColor(Color.rgb(16, 35, 57));
-      p.setTextSize(26);
-      p.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
-      c.drawText("NÖBET ÇİZELGESİ", 36, 52, p);
-      p.setTextSize(13);
-      p.setTypeface(Typeface.DEFAULT);
-      DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd.MM.yyyy");
-      c.drawText(
-          w.monday.format(fmt)
-              + " – "
-              + w.monday.plusDays(6).format(fmt)
-              + "  |  Onaylı haftalık çizelge",
-          36,
-          77,
-          p);
-      p.setColor(Color.rgb(31, 90, 137));
-      c.drawRect(36, 98, 806, 131, p);
-      p.setColor(Color.WHITE);
-      p.setTypeface(Typeface.DEFAULT_BOLD);
-      p.setTextSize(12);
-      c.drawText("TARİH / GÜN", 48, 119, p);
-      c.drawText("İŞYERİ", 270, 119, p);
-      c.drawText("ŞUBE", 515, 119, p);
-      DateTimeFormatter day = DateTimeFormatter.ofPattern("dd.MM • EEEE", new Locale("tr", "TR"));
-      for (int i = 0; i < 7; i++) {
-        LocalDate date = w.monday.plusDays(i);
-        int y = 132 + i * 43;
-        p.setColor(i % 2 == 0 ? Color.rgb(240, 246, 249) : Color.WHITE);
-        c.drawRect(36, y, 806, y + 42, p);
+      int pages = (s.places.size() + 2) / 3;
+      for (int part = 0; part < pages; part++) {
+        List<Place> locations = s.places.subList(part * 3, Math.min(s.places.size(), part * 3 + 3));
+        int columnWidth = 570 / locations.size();
+        PdfDocument.Page page =
+            pdf.startPage(new PdfDocument.PageInfo.Builder(842, 595, part + 1).create());
+        Canvas c = page.getCanvas();
+        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
         p.setColor(Color.rgb(16, 35, 57));
+        p.setTextSize(26);
+        p.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
+        c.drawText("NÖBET ÇİZELGESİ", 36, 52, p);
+        p.setTextSize(13);
         p.setTypeface(Typeface.DEFAULT);
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+        c.drawText(w.monday.format(fmt) + " – " + w.monday.plusDays(6).format(fmt), 36, 77, p);
+        p.setColor(Color.rgb(31, 90, 137));
+        c.drawRect(36, 98, 806, 131, p);
+        p.setColor(Color.WHITE);
+        p.setTypeface(Typeface.DEFAULT_BOLD);
         p.setTextSize(12);
-        c.drawText(date.format(day), 48, y + 26, p);
-        fit(c, p, person(s, w, date, WORK), 270, y + 26, 225);
-        fit(c, p, person(s, w, date, BRANCH), 515, y + 26, 270);
+        c.drawText("TARİH / GÜN", 48, 119, p);
+        for (int col = 0; col < locations.size(); col++)
+          fit(c, p, locations.get(col).name, 238 + col * columnWidth, 119, columnWidth - 12);
+        DateTimeFormatter day = DateTimeFormatter.ofPattern("dd.MM • EEEE", new Locale("tr", "TR"));
+        for (int i = 0; i < 7; i++) {
+          LocalDate date = w.monday.plusDays(i);
+          int y = 132 + i * 43;
+          p.setColor(i % 2 == 0 ? Color.rgb(240, 246, 249) : Color.WHITE);
+          c.drawRect(36, y, 806, y + 42, p);
+          p.setColor(Color.rgb(16, 35, 57));
+          p.setTypeface(Typeface.DEFAULT);
+          p.setTextSize(12);
+          c.drawText(date.format(day), 48, y + 26, p);
+          for (int col = 0; col < locations.size(); col++)
+            fit(
+                c,
+                p,
+                person(s, w, date, locations.get(col).id),
+                238 + col * columnWidth,
+                y + 26,
+                columnWidth - 12);
+        }
+        pdf.finishPage(page);
       }
-      p.setTextSize(11);
-      p.setColor(Color.DKGRAY);
-      c.drawText(
-          "Hafta sonu aynı personel • Hafta sonu nöbetçisi perşembe/cuma iki yerde de izinli.",
-          36,
-          460,
-          p);
-      c.drawText(
-          "Şube: kişi başı haftada en fazla 1 gün • Tarihli mazeretler atama dışında tutulur.",
-          36,
-          480,
-          p);
-      c.drawText(
-          "BOŞ görünen alanlar tamamlanmamıştır. Mazeret nedenleri bu PDF'te paylaşılmaz.",
-          36,
-          500,
-          p);
-      c.drawText(
-          "Hazırlayan: ____________________                  Onaylayan: ____________________",
-          36,
-          548,
-          p);
-      pdf.finishPage(page);
       try (FileOutputStream stream = new FileOutputStream(out)) {
         pdf.writeTo(stream);
       }

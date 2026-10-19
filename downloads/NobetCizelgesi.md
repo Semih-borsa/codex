@@ -1,12 +1,13 @@
-# Nöbet Çizelgesi 1.0
+# Nöbet Çizelgesi 1.1
 
-- [APK indir](NobetCizelgesi.apk)
+- [APK 1.1 indir](NobetCizelgesi-1.1.apk)
+- [Güncel APK bağlantısı](NobetCizelgesi.apk)
 - [Android Studio kaynak ZIP](NobetCizelgesi-Android-Studio.zip)
-- [Kullanım ve kurallar](../nobet-cizelgesi/README.md)
-- [Telefonlar arası ortak kullanım planı](../nobet-cizelgesi/docs/ORTAK-KULLANIM.md)
+- [Kullanım ve yeni özellikler](../nobet-cizelgesi/README.md)
+- [Test sonuçları](../nobet-cizelgesi/docs/TESTLER.md)
 
-GitHub dosya sayfasında **Download raw file** ile indirin. Android 8.0 ve üzeri gerekir. APK debug imzalıdır; Play Store yayını değildir.
+Android 8.0 ve üzeri. GitHub dosya sayfasında **Download raw file** ile indirin. 1.0 kuruluysa kaldırmadan APK üzerinden güncelleyin; aynı imza korunur. APK debug imzalıdır, Play Store yayını değildir.
 
-İlk açılışta personelleri ekleyin. Otomatik dağıtım önerisi veya boş manuel çizelge açın. İzin/rapor tarihlerini girip atamaları onaylayın. Hafta sonu nöbetçisi perşembe/cuma iki yerde de izinlidir. Görünüm düğmesiyle açık/koyu kurumsal temayı seçin. PDF'i paylaş düğmesinden WhatsApp'a gönderebilirsiniz.
+Ayarlar'dan yer adlarını değiştirip yeni şube ekleyin. Kaydedilmiş haftayı düzenleyip değişiklikleri kaydedin; istatistikler yeniden hesaplanır. İstatistik tablosunda A personel (alfabetik), B hafta içi, C hafta sonu, D ilk şube adı; ek yerler E/F/... sütunlarındadır. Tekrar şube ataması tarihli teyit ister. PDF'de alt açıklama ve imza alanı yoktur; atanmayan alan — gösterilir.
 
-Bu sürüm çevrimdışıdır. Diğer telefonlara güncellemeler otomatik yansımaz. Canlı eşitleme ve yönetici hesapları için ortak sunucu bağlantısı ayrıca kurulmalıdır. Uygulamayı kaldırmak veya verilerini silmek kayıtları siler; PDF veri yedeği değildir.
+Bu sürüm cihazda çalışır; canlı eşitleme ve yönetici hesapları etkin değildir. Uygulamayı kaldırmak/verilerini silmek kayıtları siler; PDF veri yedeği değildir.

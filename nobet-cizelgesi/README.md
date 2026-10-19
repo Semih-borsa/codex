@@ -1,47 +1,49 @@
-# Nöbet Çizelgesi — Android
+# Nöbet Çizelgesi 1.1 — Android
 
-İşyeri ve şube nöbetlerini çevrimdışı planlar. Personel ekleme/pasife alma, otomatik dağıtım, sıfırdan manuel çizelge, onay, tarihli izin/rapor, hafta sonu sırası, istatistik ve PDF paylaşımı.
+Çevrimdışı personel, görev yeri, mazeret ve haftalık nöbet planlama uygulaması.
 
-[APK indir](../downloads/NobetCizelgesi.apk) · [Android Studio kaynak ZIP](../downloads/NobetCizelgesi-Android-Studio.zip)
+[APK 1.1 indir](../downloads/NobetCizelgesi-1.1.apk) · [Android Studio ZIP](../downloads/NobetCizelgesi-Android-Studio.zip) · [Test sonuçları](docs/TESTLER.md)
 
-Android 8.0 ve üzeri. APK'yı indirip açın; tarayıcınız için “Bilinmeyen uygulama yükleme” izni gerekebilir. İlk açılışta **Personel** bölümüne isimleri girin; hazır isim veya kişisel veri içermez. Her telefonda veriler ayrıdır; çok kullanıcılı eşzamanlama yoktur.
+Android 8.0 ve üzeri. 1.0 kuruluysa **uygulamayı kaldırmadan** 1.1 APK'sını açarak güncelleyin. Aynı paket adı ve imza kullanılır; eski kayıtlar okunur. Kaldırmak veya uygulama verilerini silmek kayıtları siler.
 
-Üstteki **Görünüm** düğmesiyle Sistem/Açık/Koyu temayı seçebilirsiniz. Kurumsal lacivert palet kullanılır; seçim cihazda hatırlanır.
+## 1.1 yenilikleri
+
+- **Ayarlar:** İşyeri/Şube adları değiştirilebilir. Yeni görev yeri/şube eklenebilir; çalışma günleri, kişi başı haftalık üst sınırı (0=sınırsız) ve otomatik/yalnız manuel dağıtım seçilebilir. En fazla 20 yer desteklenir. İlk iki yerin ana döngü ve hafta içi kuralları korunur, adları serbesttir.
+- Yer kimliği sabittir: ad değişse de geçmiş nöbetler, mazeret bağlantıları ve sayımlar korunur. Çizelge/PDF/istatistikler yeni adı gösterir.
+- Açık temanın düğmeleri **mavi zemin/beyaz yazı**; bilgi bildirimleri uygulama içinde aynı renklerde gösterilir. Açık/koyu/sistem seçimi hatırlanır.
+- Kaydedilmiş haftada **Kaydedilmiş listeyi düzenle** veya gün/yer alanına dokunun. Düzenlemeyi **Değişiklikleri kaydet** ile onaylayın. Yalnız o hafta değiştirilir; diğer haftalar silinmez. Sayımlar güncel kayıtlardan hesaplanır; tekrar kaydetmek mükerrer sayım üretmez.
+- Otomatik dağıtım şubede kişi başı haftalık sınırı korur. Elle aynı kişiye ikinci görev verildiğinde önceki atama tarihleri gösterilir ve **Tekrar atamak istiyor musun?** onayı istenir. Onay yalnız bu haftanın ilgili kişi/yer sınırı için istisnadır; mazereti, perşembe/cuma dinlenmesini veya aynı gün iki yer yasağını kaldırmaz. İstisna kaydedilir ve yeniden açınca korunur.
+- PDF yalnız başlık, tarih aralığı ve çizelge içerir. “Onaylı haftalık çizelge”, alt açıklamalar ve hazırlayan/onaylayan alanları kaldırıldı. Atama olmayan hücreler **—** gösterilir. Yeni yerler dahil edilir; 3'ten fazla yerde PDF ek sayfalara bölünür.
 
 ## Kullanım
 
-1. Personelleri hafta sonu başlangıç sırasına göre ekleyin. Ekleme sonrası çıkarma, geçmişi silmeden pasife alma şeklindedir. İstatistikler korunur; bugün/gelecek atamaları kaldırılır. Yeniden etkinleştirme mümkündür.
-2. **Mazeret** → senelik izin/rapor/diğer genel mazeret girin. Başlangıç ve bitiş dahil her iki yerde atamayı engeller. Yalnız bir yer için kısıt gerekiyorsa “Yalnız şube/işyeri kısıtı” seçin. Düzenlenebilir/silinebilir.
-3. **Çizelge** → hafta seçin → “Otomatik dağıtım öner”. İşyeri her gün 1 kişi; şube hafta içi 1 kişi, kişi başı haftada en fazla 1 şube günü. Cumartesi ve pazar aynı işyeri nöbetçisi. Bu kişi aynı haftanın perşembe/cuma günleri iki yerde de izinlidir.
-4. İsterseniz **“Boş çizelge aç • manuel oluştur”** ile sıfırdan başlayın. Gün/yer alanına dokunarak kişi seçin veya boş bırakın. Otomatik öneri de düzenlenebilir. Manuel listede önce hafta sonunu seçmek perşembe/cuma izinlerinin yerleşmesini kolaylaştırır. Çakışma halinde atama reddedilir; çakışan alanı önce boşaltın.
-5. Şubeye o hafta gitmeyecek kişiyi “Bu hafta şubeye gitmeyecek personel” ile teyit ederek hariç tutun. Uygulama bu kişiyi şubeye atamaz, işyeri uygunluğu sürer.
-6. Hafta sonu nöbetçisini atlamak için **mazeret bitiş tarihini** seçip onaylayın. Ya da cumartesi/pazar alanına dokunup devralacak kişiyi seçin ve devredenin mazeret bitişini girin. Perşembe/cuma izinleri yeniden hesaplanır. Döngüde atlanan kişi, bitiş tarihinden sonraki ilk uygun hafta sonuna öncelikli gelir; iki günün de uygun olması gerekir. Birden çok bekleyen kişi varsa aynı hafta sonuna hepsi atanamaz: bitiş tarihi en erken olan uygun kişi önceliklidir, diğerlerinin hakkı korunur ve uyarı gösterilir. Elle devralma normal öneriyi de yerinden ediyorsa o kişinin sırası da bekleyenler listesinde tutulur.
-7. **Dağıtımı onayla ve kaydet**. Öneri otomatik kaydedilmez; atama kuralları ve boş kalan alanlar teyit edilir. Uygun personel yoksa kural ihlal edilmez; alan BOŞ kalır ve uyarılır.
-8. Onaylı haftada **PDF oluştur ve paylaş** → WhatsApp veya istediğiniz uygulamayı seçin. PDF A4 yataydır, 7 günü ve iki yeri gösterir; mazeret nedenlerini paylaşmaz. Otomatik mesaj göndermez; alıcıyı siz seçersiniz.
+1. **Personel:** İsimleri ilk hafta sonu sırasına göre ekleyin. Personel çıkarma pasife alma şeklindedir; geçmişi korunur, bugün/gelecek atamaları kaldırılır. Yeniden etkinleştirebilirsiniz.
+2. **Ayarlar:** Yer adlarını ve yeni şubeleri tanımlayın. Yeni yer eklemek eski haftalara kendiliğinden personel yazmaz; ilgili haftayı düzenleyin veya yeni öneri üretin.
+3. **Mazeret:** Senelik izin/rapor/genel mazeret, başlangıç ve bitiş dahil **tüm yerlerde** atamayı engeller. İsterseniz yalnız seçtiğiniz yere kısıt girin. Mazeret eklenince yalnız çakışan atamalar kaldırılır; diğer haftaların çakışmayan kayıtları korunur. Boşalan günler ayrıca düzenlenebilir veya yeniden dağıtılabilir.
+4. **Çizelge:** Hafta seçin → otomatik öneri veya boş manuel çizelge açın. Ana yerde her gün bir kişi; varsayılan şubede hafta içi kişi başı bir gün. Yeni yerlerde ayarladığınız gün/sınırlar kullanılır. Uygun kişi yoksa zorla atama yapılmaz; eksik günler bildirilir ve kayıttan önce teyit edilir.
+5. Cumartesi+pazar ana yerde aynı kişidir. Bu kişi aynı haftanın perşembe/cuma günleri **tüm yerlerde** dinlenir. Manuel listede önce hafta sonunu seçmek kolaylık sağlar. Çakışan eski alanı önce boşaltın.
+6. Hafta sonunu atlamak veya devretmek için mazeret bitiş tarihini girin. Atlanan kişi bitişten sonraki ilk uygun hafta sonuna önceliklidir. Birden çok bekleyen varsa en erken mazereti biten uygun kişi önceliklidir; diğerlerinin sırası korunur. Sonradan eski hafta düzenlense de bekleyen haklar, geçmiş kayıtlar üzerinden takip edilir.
+7. Onaylı haftada **PDF oluştur ve paylaş** → WhatsApp veya başka uygulamayı seçin. Alıcıyı siz belirlersiniz; otomatik mesaj gönderilmez.
 
-## Sıra ve istatistikler
+## İstatistik tablosu
 
-Hafta sonu sırayla döner. Mazeret dönüşleri normal döngünün arasına öncelikli girer. Hafta içi işyeri yükü önceki onaylı haftalardaki nöbet sayılarıyla dengelenir. Şube atamaları kişilerin uygun günlerini dikkate alan aramayla oluşturulur; mümkünse 5 kişinin her birine bir gün verilir. 4 uygun kişiyle 5 şube günü ve kişi başı en fazla 1 gün aynı anda sağlanamaz; eksik gün ve gitmeyen personel açıkça belirtilir. 5'ten fazla personelde haftada yalnız 5 şube yeri vardır; geçmiş sayılar denge için kullanılır.
+Personeller Türkçe alfabetik sıradadır. A: Personel, B: ana yerin hafta içi nöbet günleri, C: ana yerin hafta sonu nöbet günleri, D: verdiğiniz adla ilk şube, E/F/...: eklediğiniz diğer görev yerleri. Şube sütunları o yerdeki toplam nöbet günleridir. Cumartesi+pazar 2 gündür, sıra açısından 1 bloktur. Tüm sütunlar için tablo yatay kaydırılabilir.
 
-İstatistikler personel ve yer bazında hafta içi/hafta sonu nöbet **günlerini** sayar. Cumartesi+pazar 2 gündür, sıra açısından 1 bloktur. Bugün ve öncesindeki onaylı atamalar ile gelecek atamalar ayrıdır. Fiili gelmeyen/değişen görevleri çizelgede düzeltin; uygulama devam takibi veya saat ölçümü yapmaz.
+Bugün ve öncesindeki onaylı atamalar ile gelecek atamalar ayrı tablolardadır. Taslaklar sayılmaz. Fiilen gerçekleşmeyen görevleri kaydedilmiş çizelgede düzeltin; uygulama devam/saat ölçümü yapmaz.
 
-Geçmiş bir haftanın yeniden onaylanması, o haftadan sonraki planları siler; döngü tutarlılığı için yeniden oluşturup onaylamanız gerekir. Mazeret eklenirken çakışan atamalar kaldırılır ve etkilenen ilk haftadan sonraki planlar açık onayla temizlenir. Bu davranış onay pencerelerinde belirtilir. Aynı hafta tekrar kaydedildiğinde istatistikler iki kez sayılmaz.
+## Gizlilik ve ortak kullanım
 
-## Veri ve gizlilik
-
-İnternet izni ve reklam yoktur. Kayıtlar uygulamanın özel alanında atomik dosya güncellemesiyle tutulur; otomatik bulut yedeği kapalıdır. PDF yalnız paylaşım için geçici önbelleğe yazılır; diğer uygulamalara yalnız seçilen PDF için okuma yetkisi verilir. Verileri silmek/uygulamayı kaldırmak geçmişi siler. PDF paylaşımı kayıtların yedeği değildir. APK güncellemesinde kaldırıp yeniden kurmak yerine aynı imzalı APK üzerinden güncelleyin.
+İnternet izni, reklam veya kişisel veri günlüğü yoktur. Veriler cihazın özel alanında atomik dosya güncellemesiyle tutulur; otomatik bulut yedeği kapalıdır. PDF yalnız kullanıcı paylaşımıyla seçilen uygulamaya okunabilir URI üzerinden verilir. PDF kayıtların yedeği değildir. Telefonlar kendi yerel verilerini tutar; **canlı eşitleme ve yönetici hesapları bu sürümde yoktur**. Kabul edilen yetki düzeni [ORTAK-KULLANIM.md](docs/ORTAK-KULLANIM.md) içindedir.
 
 ## Derleme
 
-JDK 17, Android SDK platform 35, build-tools 35.0.0 ve Gradle 8.9 (doğrulamalı wrapper) gerekir. Android Studio'da bu klasörü açın; `local.properties` dosyasında yerel SDK yolunu tanımlayın. Kaynak ZIP; kişisel kayıt, SDK veya imza anahtarı içermez.
+JDK 17, Android SDK 35, build-tools 35.0.0. Android Studio'da bu klasörü açın, `local.properties` dosyasında SDK yolunu tanımlayın. Gradle 8.9 wrapper SHA-256 doğrulamalıdır.
 
 ```sh
 ./gradlew testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest
 ```
 
-Windows: `gradlew.bat ...`. APK: `app/build/outputs/apk/debug/app-debug.apk`. Bu teslim doğrudan kurulabilen **debug imzalı** APK'dır; Play Store sürümü değildir. Sonraki güncellemelerde aynı imza gerekir; özel anahtar repoya eklenmez.
-
-Android cihaz/emülatör üzerinde depolama, PDF ve açılış testleri:
+Windows: `gradlew.bat ...`. APK: `app/build/outputs/apk/debug/app-debug.apk`. Bu teslim doğrudan kurulabilen debug imzalı APK'dır; Play Store yayını değildir. İmza anahtarı ZIP'e/repoya eklenmez; sonraki güncellemelerde aynı anahtar gerekir.
 
 ```sh
 adb install -r app/build/outputs/apk/debug/app-debug.apk
@@ -49,4 +51,4 @@ adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
 adb shell am instrument -w com.semih.nobet.test/com.semih.nobet.SmokeRunner
 ```
 
-Testler kayıt/PDF kontrollerinde ayrı bir dizin kullanır; uygulamanın mevcut personel kayıtlarına yazmaz.
+Depolama/PDF testleri ayrı dizin kullanır; uygulamanın mevcut personel kayıtlarına yazmaz.
