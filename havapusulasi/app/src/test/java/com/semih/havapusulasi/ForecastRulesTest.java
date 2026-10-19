@@ -158,4 +158,29 @@ public class ForecastRulesTest {
         new Forecast("Europe/Berlin", at, Arrays.asList(previous, actual), Collections.emptyList());
     assertEquals(7.0, f.current(at).temperature, 0);
   }
+
+  @Test
+  public void lastRefreshIsExactEvenInSameMinute() {
+    long at = Instant.parse("2026-10-19T08:47:20Z").toEpochMilli();
+    assertEquals(
+        "Son yenileme: 11:47", sample(at).lastUpdated(at + 5000, ZoneId.of("Europe/Istanbul")));
+    assertEquals(
+        "Son yenileme: 11:47",
+        sample(at).lastUpdated(at + 2 * 3600_000L, ZoneId.of("Europe/Istanbul")));
+  }
+
+  @Test
+  public void previousDayIncludesDateAcrossMidnight() {
+    long at = Instant.parse("2026-10-18T20:59:00Z").toEpochMilli();
+    assertEquals(
+        "Son yenileme: 18 Eki 23:59",
+        sample(at).lastUpdated(at + 2 * 60_000L, ZoneId.of("Europe/Istanbul")));
+  }
+
+  @Test
+  public void refreshClockUsesPhoneZoneRatherThanForecastZone() {
+    long at = Instant.parse("2026-10-19T08:47:00Z").toEpochMilli();
+    assertEquals("Son yenileme: 08:47", sample(at).lastUpdated(at, ZoneId.of("UTC")));
+    assertEquals("Son yenileme: 11:47", sample(at).lastUpdated(at, ZoneId.of("Europe/Istanbul")));
+  }
 }

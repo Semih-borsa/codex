@@ -1,4 +1,17 @@
-# Test sonuçları — HavaPusulası 1.0.1
+# Test sonuçları — HavaPusulası 1.0.2
+
+## 1.0.2 — yenileme saati ve otomatik widget
+
+- Temurin JDK 21 / Gradle 8.9 / SDK 35 derlemesi, debug APK ve test APK başarılı; lint 0 sorun.
+- 28 birim testi, 0 hata. Aynı dakika içinde gerçek HH:mm, zaman ilerlese de indirme saatinin sabit kalması, önceki günün tarihinin eklenmesi ve telefon saat dilimi kapsandı.
+- Android 11 ve Android 15 üzerinde güncellemeyle kurulum ve **33’er instrumentation kontrolü** geçti. API 35 bu turda çevrimdışı mod anahtarıyla çalıştırılmadı; önceki çevrimdışı sonuçlar aşağıda korunur.
+- RemoteViews gerçek View olarak açılıp sıcaklık ve son başarılı indirme saati doğrulandı. Widget varlığına göre otomatik yenileme varsayılanı ve açıkça kapatma tercihi test edildi.
+- Android 11 gerçek kurulumda MainActivity açıldıktan sonra JobScheduler kaydında kalıcı iş 7104, 30 dakika aralık / 5 dakika esneklik ve ölçülmeyen ağ koşulu gözlendi. Emülatörün ağı doğrulanmış bağlantı sağlamadığından iş ağ koşulunu bekliyordu; bu kayıt canlı veri indirme başarısı değildir.
+- APK imzası önceki sürümle aynı, versionCode 3. Başarısız güncellemede son başarılı önbellek korunur; widget çizimi indirme tarihini değiştirmez.
+
+Kayıtlar: `test-kayitlari/refresh-clock30.log`, `refresh-clock35.log`. Fiziksel Xiaomi, başarılı canlı API indirmesi ve Android'in tam periyodik teslimi doğrulanmış değildir. Gerçek yeniden başlatma/uzun süreli Doze testi bu turda tekrarlanmadı.
+
+## 1.0.1 kayıtları
 
 1.0.1 doğrulaması: 25 birim testi, lint (0 sorun), debug APK ve test APK derlemesi başarılı. Android 11 üzerinde güncellemeyle kurulum ve 32 instrumentation kontrolü yeniden geçti. APK imzası 1.0.0 ile aynı; versionCode 2. Gerçek Android 11 arayüzünde açık/koyu seçimleri, süreç yeniden başlatılınca koyu modun korunması ve ana ekran widget’ında gün/tarih gösterimi doğrulandı. Tarih telefonun yerel dil ve saat ayarını izler. Aşağıdaki API 35, gerçek reboot ve alarm sonuçları 1.0.0 temel sürümünün kayıtlarıdır; bu küçük arayüz güncellemesinde o aşamalar yeniden çalıştırılmadı.
 

@@ -81,10 +81,25 @@ public final class WeatherWidget extends AppWidgetProvider {
     String age =
         city == null
             ? "Seçilen şehir yok; Şehir düğmesinden seç."
-            : f == null ? "Henüz indirilmiş tahmin yok" : f.status(now);
+            : f == null
+                ? "Henüz indirilmiş tahmin yok"
+                : f.lastUpdated(now, java.time.ZoneId.systemDefault())
+                    + (f.upcoming(now, 1).isEmpty()
+                        ? "\nTahmin süresi doldu"
+                        : now < f.downloaded
+                            ? "\nCihaz saati değişmiş"
+                            : f.stale(now) ? "\nEski kayıt" : "");
     views.setTextViewText(R.id.widget_age, age);
-    views.setTextViewText(
-        R.id.widget_state, state.isEmpty() ? "Open-Meteo • Saatlik model tahmini" : state);
+    String automatic =
+        !RefreshJob.enabled(c)
+            ? "Otomatik kapalı • Ayarlar’dan aç"
+            : "Otomatik: "
+                + SyncPolicy.minutes(DailyReminder.prefs(c).getInt("refreshMinutes", 30))
+                + " dk"
+                + (DailyReminder.prefs(c).getBoolean("wifiOnly", true)
+                    ? " • Yalnızca Wi-Fi"
+                    : " • İnternet");
+    views.setTextViewText(R.id.widget_state, state.isEmpty() ? automatic : state);
     views.setContentDescription(
         R.id.widget_root,
         (city == null ? "Şehir seç" : city.label())
@@ -95,7 +110,7 @@ public final class WeatherWidget extends AppWidgetProvider {
             + ". "
             + age
             + ". "
-            + state);
+            + (state.isEmpty() ? automatic : state));
     Intent open =
         new Intent(c, MainActivity.class)
             .putExtra("cityId", city == null ? 0 : city.id)

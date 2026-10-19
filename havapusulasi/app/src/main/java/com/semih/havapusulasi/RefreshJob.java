@@ -21,10 +21,15 @@ public final class RefreshJob extends JobService {
     }
   }
 
+  static boolean enabled(Context c) {
+    // Respect an explicit opt-out; installed widgets otherwise refresh automatically.
+    return DailyReminder.prefs(c).getBoolean("background", WeatherWidget.ids(c).length > 0);
+  }
+
   static void configure(Context c) {
     JobScheduler jobs = c.getSystemService(JobScheduler.class);
     android.content.SharedPreferences p = DailyReminder.prefs(c);
-    if (!p.getBoolean("background", false)) {
+    if (!enabled(c)) {
       jobs.cancel(ID);
       return;
     }
@@ -101,13 +106,10 @@ public final class RefreshJob extends JobService {
                       DailyReminder.prefs(this).getLong("selected", 0),
                       WeatherWidget.cityIds(this));
             for (City city : cities) {
-              if (run.stopped.get()
-                  || widget == 0 && !DailyReminder.prefs(this).getBoolean("background", false))
-                break;
+              if (run.stopped.get() || widget == 0 && !enabled(this)) break;
               try {
                 String raw = WeatherApi.fetch(WeatherApi.forecastUrl(city));
-                if (!run.stopped.get()
-                    && (widget > 0 || DailyReminder.prefs(this).getBoolean("background", false))) {
+                if (!run.stopped.get() && (widget > 0 || enabled(this))) {
                   store.save(city.id, raw, System.currentTimeMillis());
                   updated++;
                   consecutiveFailures = 0;
@@ -145,9 +147,9 @@ public final class RefreshJob extends JobService {
     if (run != null) {
       run.stopped.set(true);
       if (run.widget > 0)
-        WeatherWidget.state(this, run.widget, "Yenileme durduruldu; yeniden dene.");
+        WeatherWidget.state(this, run.widget, "Yenileme ertelendi; bağlantı/Android bekleniyor.");
     }
-    return false;
+    return run != null && (run.widget > 0 ? WeatherWidget.owns(this, run.widget) : enabled(this));
   }
 
   public void onDestroy() {

@@ -299,6 +299,10 @@ public final class WeatherInstrumentation extends Instrumentation {
       check(
           DailyReminder.prefs(isolated).getLong("nextAlarm", 0) > now,
           "Timezone change replans using device clock");
+      DailyReminder.prefs(isolated).edit().remove("background").commit();
+      check(
+          RefreshJob.enabled(isolated) == (WeatherWidget.ids(isolated).length > 0),
+          "Installed widgets enable automatic updates unless explicitly opted out");
       DailyReminder.prefs(isolated).edit().putBoolean("background", true).commit();
       RefreshJob.configure(isolated);
       JobInfo job = c.getSystemService(JobScheduler.class).getPendingJob(RefreshJob.ID);
@@ -327,8 +331,9 @@ public final class WeatherInstrumentation extends Instrumentation {
                 WeatherWidget.views(c, 991, sampleCity, f, now, "", false);
             View freshView = fresh.apply(c, new FrameLayout(c));
             check(
-                text(freshView, "22°") && text(freshView, "Kaydedilmiş tahmin"),
-                "Widget RemoteViews shows temperature and cache age");
+                text(freshView, "22°")
+                    && text(freshView, f.lastUpdated(now, java.time.ZoneId.systemDefault())),
+                "Widget RemoteViews shows exact last successful refresh time");
             android.widget.RemoteViews expired =
                 WeatherWidget.views(c, 991, sampleCity, f, now + 10 * 86400_000L, "", true);
             View expiredView = expired.apply(c, new FrameLayout(c));

@@ -603,7 +603,12 @@ public final class MainActivity extends Activity {
   private void settings() {
     LinearLayout theme = card(body);
     copy(theme, "TEMA · AÇIK / KOYU", 11, accent, true);
-    copy(theme, "Açık, koyu veya telefonun sistem temasını seç. Tercihin sonraki açılışta korunur.", 13, muted, false);
+    copy(
+        theme,
+        "Açık, koyu veya telefonun sistem temasını seç. Tercihin sonraki açılışta korunur.",
+        13,
+        muted,
+        false);
     gap(theme, 8);
     LinearLayout themes = row();
     for (String name : new String[] {"system", "light", "dark"})
@@ -762,8 +767,8 @@ public final class MainActivity extends Activity {
     copy(
         sync,
         "30 dakika, 1 saat veya 3 saat aralık seçebilirsin. Android pil tasarrufu/Doze nedeniyle"
-            + " tam saat garantisi vermez; widget verinin yaşını gösterir. Kayıtlı şehirler"
-            + " yenilenir, iki ardışık bağlantı hatasında sonraki döngü beklenir.",
+            + " tam saat garantisi vermez; widget son başarılı yenileme saatini gösterir. Kayıtlı"
+            + " şehirler yenilenir, iki ardışık bağlantı hatasında sonraki döngü beklenir.",
         13,
         muted,
         false);
@@ -788,6 +793,7 @@ public final class MainActivity extends Activity {
         (b, on) -> {
           prefs.edit().putBoolean("wifiOnly", on).apply();
           RefreshJob.configure(this);
+          WeatherWidget.updateAll(this);
         });
     add(sync, wifi);
     copy(
@@ -801,11 +807,12 @@ public final class MainActivity extends Activity {
     Switch background = new Switch(this);
     background.setTextColor(text);
     background.setText(R.string.background_refresh);
-    background.setChecked(prefs.getBoolean("background", false));
+    background.setChecked(RefreshJob.enabled(this));
     background.setOnCheckedChangeListener(
         (b, on) -> {
           prefs.edit().putBoolean("background", on).apply();
           RefreshJob.configure(this);
+          WeatherWidget.updateAll(this);
         });
     add(sync, background);
     long attempt = prefs.getLong("backgroundAttempt", 0);
@@ -826,8 +833,8 @@ public final class MainActivity extends Activity {
     copy(widget, "Ana ekran widget’ı", 19, text, true);
     copy(
         widget,
-        "Sıcaklık, yağış ve kaydın yaşı uygulamayı açmadan görünür. Her widget için ayrı şehir"
-            + " seçebilir veya uygulamadaki seçimi izleyebilirsin. Yenile düğmesi internet"
+        "Sıcaklık, yağış ve son yenileme saati uygulamayı açmadan görünür. Her widget için ayrı"
+            + " şehir seçebilir veya uygulamadaki seçimi izleyebilirsin. Yenile düğmesi internet"
             + " üzerinden yalnızca o şehri ister; Şehir düğmesi seçimi değiştirir.",
         13,
         muted,
@@ -855,9 +862,9 @@ public final class MainActivity extends Activity {
             }));
     copy(
         widget,
-        "Otomatik yeni veri için arka plan yenilemeyi ayrıca aç. Widget'ın kendi yarım saatlik"
-            + " ekran yenilemesi yalnızca kayıtlı veriyi gösterir; kapalı ayardan gizlice internet"
-            + " açılmaz.",
+        "Widget ekliyse otomatik yenileme varsayılan açıktır. Daha önce kapattıysan kapalı"
+            + " kalır; yukarıdaki anahtardan açabilirsin. Yalnızca Wi-Fi açıksa mobil veride"
+            + " bekler. Widget yenilense bile son yenileme saati ancak yeni veri inince değişir.",
         12,
         muted,
         false);

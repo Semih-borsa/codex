@@ -76,16 +76,19 @@ final class Forecast {
     return now < downloaded || now - downloaded > STALE;
   }
 
+  String lastUpdated(long now, ZoneId deviceZone) {
+    ZonedDateTime saved = Instant.ofEpochMilli(downloaded).atZone(deviceZone);
+    boolean today =
+        saved.toLocalDate().equals(Instant.ofEpochMilli(now).atZone(deviceZone).toLocalDate());
+    return "Son yenileme: "
+        + saved.format(DateTimeFormatter.ofPattern(today ? "HH:mm" : "d MMM HH:mm", TR));
+  }
+
   String status(long now) {
-    if (upcoming(now, 1).isEmpty()) return "Tahmin süresi doldu • İnternete bağlanıp yenile";
-    if (now < downloaded) return "Cihaz saati değişmiş • Kaydı yenile";
-    long minutes = (now - downloaded) / 60_000;
-    return (stale(now) ? "Eski kayıt • " : "Kaydedilmiş tahmin • ")
-        + (minutes < 1
-            ? "az önce"
-            : minutes < 60
-                ? minutes + " dk önce"
-                : minutes < 1440 ? minutes / 60 + " sa önce" : minutes / 1440 + " gün önce");
+    String stamp = lastUpdated(now, ZoneId.systemDefault());
+    if (upcoming(now, 1).isEmpty()) return "Tahmin süresi doldu • " + stamp;
+    if (now < downloaded) return "Cihaz saati değişmiş • " + stamp;
+    return (stale(now) ? "Eski kayıt • " : "Kaydedilmiş tahmin • ") + stamp;
   }
 
   String time(long at) {
