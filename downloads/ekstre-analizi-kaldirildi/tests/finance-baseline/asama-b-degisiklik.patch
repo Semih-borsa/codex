@@ -1,0 +1,549 @@
+--- App.before-phase-b.jsx
++++ App.jsx
+@@ -388,15 +388,113 @@
+   return yerelTarihOku(tarihAnahtari) ? maasDonemKey(tarihAnahtari,donemGun).key : null;
+ }
+ 
+-function kartToplamBorcHesapla(kart,islemler,kartOdemeleri,donemKey,donemGun) {
+-  const toplam=islemler.filter(i=>i.tip==='gider' && i.kategori===kart.isim && maasDonemKey(i.tarih,donemGun).key===donemKey)
+-    .reduce((n,i)=>paraTopla(n,i.donemIci||0,i.provizyon||0),0);
+-  const ekstreKey=kart.ekstreDonemKey || kartEkstreDoneminiBul(kart,donemGun) || donemKey;
+-  const odenen=kartOdemeleri.filter(o=>String(o.kartId)===String(kart.id) && (o.ekstreDonemKey||o.donemKey)===ekstreKey).reduce((n,o)=>paraTopla(n,o.tutar),0);
+-  return paraTopla(toplam,Math.max(0,paraTopla(kart.ekstre||0,-odenen)));
++// Kimlikler isimden bağımsızdır; eski kayıtlar yalnız tek kesin aday varsa okunur.
++function kartKimligi() {
++  return globalThis.crypto?.randomUUID?.() || `kart-${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
++}
++function kartKayitlari(kart,islemler,kartlar=[kart]) {
++  const tekAd=kartlar.filter(k=>k.isim===kart.isim).length===1;
++  return islemler.filter(i=>i.tip==='gider'&&(i.kartHarcama||i.donemIci!=null||i.provizyon!=null)
++    &&(i.kartId!=null?String(i.kartId)===String(kart.id):tekAd&&i.kategori===kart.isim));
++}
++function kartSonDurum(kart,islemler,tarih,kartlar=[kart]) {
++  const adaylar=kartKayitlari(kart,islemler,kartlar).flatMap(i=>{
++    const gecmis=Object.entries(i.kartDurumGecmisi||{}).filter(([t])=>t<=tarih).map(([t,d])=>({...d,tarih:t,kayit:i}));
++    if(i.tarih<=tarih&&yerelTarihOku(i.tarih))gecmis.push({donemIci:Number(i.donemIci)||0,provizyon:Number(i.provizyon)||0,tarih:i.tarih,kayit:i});
++    return gecmis;
++  }).sort((a,b)=>b.tarih.localeCompare(a.tarih));
++  if(!adaylar.length)return null;
++  const ayni=adaylar.filter(a=>a.tarih===adaylar[0].tarih);
++  if(new Set(ayni.map(a=>String(a.kayit.id))).size>1)return null;
++  return adaylar[0];
++}
++function kartEkstreKayitlari(kart) {
++  if(Array.isArray(kart.ekstreler)&&kart.ekstreler.length)return kart.ekstreler;
++  if(!tutarGecerli(kart.ekstre,true))return [];
++  return [{id:null,tutar:paraOku(kart.ekstre),eskiAnahtar:kart.ekstreDonemKey||null,
++    hesapKesimTarihi:kart.ekstreHesapKesimTarihi||kart.hesapKesimTarihi||null,
++    sonOdemeTarihi:kart.ekstreSonOdemeTarihi||kart.sonOdemeTarihi||null,
++    kayitTarihi:kart.ekstreKayitTarihi||null,dogrulandi:false}];
++}
++function kartEkstreOdemesiMi(o,kart,e) {
++  if(String(o.kartId)!==String(kart.id))return false;
++  if(o.ekstreId!=null)return e.id!=null&&String(o.ekstreId)===String(e.id);
++  const tum=kartEkstreKayitlari(kart),key=o.ekstreDonemKey||o.donemKey;
++  if(key&&e.eskiAnahtar)return key===e.eskiAnahtar&&tum.filter(x=>x.eskiAnahtar===key).length===1;
++  const kesinVade=!!o.sonOdemeTarihi&&o.sonOdemeTarihi===e.sonOdemeTarihi&&tum.filter(x=>x.sonOdemeTarihi===o.sonOdemeTarihi).length===1;
++  if(o.ekstreDonemKey) {
++    // Eski uygulama ekstre kimliği yerine vadenin maaş dönemi anahtarını yazabiliyordu.
++    const parcalar=String(o.ekstreDonemKey).match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
++    return !e.eskiAnahtar&&kesinVade&&!!parcalar&&tamSayiGecerli(parcalar[3],1,28)&&maasDonemKey(e.sonOdemeTarihi,Number(parcalar[3])).key===o.ekstreDonemKey;
++  }
++  return kesinVade;
++}
++function kartEkstreBakiyeleri(kart,odemeler,tarih='9999-12-31') {
++  return kartEkstreKayitlari(kart).map(e=>({...e,kalan:Math.max(0,paraTopla(e.tutar,
++    -odemeler.filter(o=>o.tarih<=tarih&&kartEkstreOdemesiMi(o,kart,e)).reduce((s,o)=>paraTopla(s,o.tutar),0)))}));
++}
++function kartAktifEkstreKalani(kart,odemeler) {
++  const kesim=kart.hesapKesimTarihi||null,vade=kart.sonOdemeTarihi||null;
++  const tum=kartEkstreBakiyeleri(kart,odemeler);
++  const aday=tum.filter(e=>e.hesapKesimTarihi===kesim&&e.sonOdemeTarihi===vade);
++  return aday.length===1?aday[0].kalan:0;
++}
++function kartEkstreleriKoru(kart,tarih) {
++  if(Array.isArray(kart.ekstreler)&&kart.ekstreler.length)return kart;
++  const ekstreler=kartEkstreKayitlari(kart).filter(e=>e.tutar>0).map(e=>({...e,id:kartKimligi(),kartId:kart.id,
++    // Bu tarih eski ekstrenin kesim tarihi değildir; yalnız kaydın arşive alındığı gündür.
++    kayitTarihi:e.kayitTarihi||tarih,kaynak:'eski_kayit'}));
++  return ekstreler.length?{...kart,ekstreler,aktifEkstreId:ekstreler[0].id}:kart;
++}
++function kartEkstreGuncelle(kart,kalan,odemeler,tarih) {
++  const kesim=yerelTarihOku(kart.hesapKesimTarihi)?kart.hesapKesimTarihi:null;
++  const vade=yerelTarihOku(kart.sonOdemeTarihi)?kart.sonOdemeTarihi:null;
++  if(kesim&&kesim>tarih&&kalan>0)throw new Error('Gelecekteki kesim tarihi için kesilmiş ekstre oluşturulamaz.');
++  const eski=Array.isArray(kart.ekstreler)?kart.ekstreler:[];
++  const ayni=eski.filter(e=>e.hesapKesimTarihi===kesim&&e.sonOdemeTarihi===vade);
++  if(ayni.length>1)throw new Error('Aynı tarihler için birden fazla ekstre var; otomatik birleştirme yapılmadı.');
++  if(ayni.length) {
++    const e=ayni[0],beklenen=kartEkstreBakiyeleri(kart,odemeler).find(x=>x.id===e.id).kalan;
++    if(paraKurus(beklenen)!==paraKurus(kalan))throw new Error('Kesilmiş ekstre tutarı değiştirilemez. Yeni ekstre için Ayarlar’dan yeni kesim ve vade tarihlerini kaydet. Ödeme için Ödendi düğmesini kullan.');
++    return {...kart,aktifEkstreId:e.id,ekstre:e.tutar,ekstreDonemKey:e.eskiAnahtar||`ekstre-id:${e.id}`};
++  }
++  let taban=kart;
++  const eskiVade=kart.ekstreSonOdemeTarihi||kart.sonOdemeTarihi||null;
++  if(!eski.length&&Number(kart.ekstre)>0&&eskiVade!==vade)taban=kartEkstreleriKoru(kart,tarih);
++  const ekstreler=taban.ekstreler||[];
++  // İlk doğrulama kalan tutarı ve yalnız kesin eski anahtarla bağlı ödemeleri saklar.
++  const eskiOdenen=!ekstreler.length?kartEkstreKayitlari(kart).reduce((s,e)=>paraTopla(s,
++    odemeler.filter(o=>kartEkstreOdemesiMi(o,kart,e)).reduce((n,o)=>paraTopla(n,o.tutar),0)),0):0;
++  if(kalan===0&&eskiOdenen===0)return {...taban,ekstre:0};
++  const id=kartKimligi(),e={id,kartId:kart.id,tutar:paraTopla(kalan,eskiOdenen),hesapKesimTarihi:kesim,sonOdemeTarihi:vade,
++    kayitTarihi:tarih,dogrulandi:true,kaynak:'kullanici_dogrulamasi',eskiAnahtar:!ekstreler.length?(kart.ekstreDonemKey||null):null};
++  return {...taban,ekstreler:[...ekstreler,e],aktifEkstreId:id,ekstre:e.tutar,ekstreDonemKey:e.eskiAnahtar||`ekstre-id:${id}`,
++    ekstreSonOdemeTarihi:vade||'',ekstreHesapKesimTarihi:kesim||'',ekstreKayitTarihi:tarih};
++}
++function kartBorcDurumu(kart,islemler,odemeler,donemKey,gun,kartlar=[kart],ozetler={},bugun=yerelTarihAnahtari()) {
++  const [y,a,g]=String(donemKey).split('-').map(Number);
++  const ilk=yerelTarihAnahtari(new Date(y,a,g)),son=yerelTarihAnahtari(new Date(y,a+1,g-1));
++  const gecmis=son<bugun,tarih=gecmis?son:bugun;
++  const arsiv=ozetler[donemKey]?.[String(kart.id)];
++  if(gecmis&&arsiv?.dogrulandi===true&&arsiv.kapsam==='ekstre_donem_ici_provizyon'&&tutarGecerli(arsiv.toplam,true))return {...arsiv,biliniyor:true,stokBiliniyor:true,ekstreBiliniyor:true,karsilastirilabilir:true,kayit:null};
++  const durum=kartSonDurum(kart,islemler,tarih,kartlar);
++  const ekstreler=kartEkstreBakiyeleri(kart,odemeler,tarih).filter(e=>!gecmis||(e.id!=null&&e.kayitTarihi&&e.kayitTarihi<=son));
++  const ekstre=ekstreler.reduce((s,e)=>paraTopla(s,e.kalan),0);
++  const donemIci=durum?.donemIci||0,provizyon=durum?.provizyon||0;
++  const kayitlar=kartKayitlari(kart,islemler,kartlar);
++  const belirsiz=(kayitlar.some(i=>i.tarih<=tarih)||islemler.some(i=>i.kartHarcama&&i.kartId==null&&i.kategori===kart.isim&&i.tarih<=tarih))&&!durum;
++  const biliniyor=!belirsiz&&(!!durum||ekstreler.length>0);
++  const stokBiliniyor=!!durum,ekstreBiliniyor=ekstreler.length>0;
++  const karsilastirilabilir=biliniyor&&stokBiliniyor&&ekstreBiliniyor&&!gecmis;
++  return {stokBiliniyor,ekstreBiliniyor,toplam:paraTopla(donemIci,provizyon,ekstre),donemIci,provizyon,ekstre,biliniyor,karsilastirilabilir,
++    tarih:durum?.tarih||tarih,kayit:durum?.kayit||null,ekstreler,ilk,son};
++}
++function kartToplamBorcHesapla(kart,islemler,kartOdemeleri,donemKey,donemGun,ozetler={},kartlar=[kart],hazirDurum=null) {
++  const durum=hazirDurum||kartBorcDurumu(kart,islemler,kartOdemeleri,donemKey,donemGun,kartlar,ozetler);
++  return durum.biliniyor?durum.toplam:null;
+ }
+ function kartBorcDegisimi(toplam,onceki) {
+-  if(!onceki || !tutarGecerli(onceki.toplam,true))return null;
++  if(!onceki || onceki.dogrulandi!==true || onceki.kapsam!=='ekstre_donem_ici_provizyon' || !tutarGecerli(toplam,true) || !tutarGecerli(onceki.toplam,true))return null;
+   const fark=paraTopla(toplam,-Number(onceki.toplam));
+   return {fark,oran:Number(onceki.toplam)>0?fark/Number(onceki.toplam)*100:fark===0?0:null,yon:fark<0?'azalis':fark>0?'artis':'ayni'};
+ }
+@@ -437,8 +535,11 @@
+     aktarimlar[gun] = paraTopla(aktarimlar[gun] || 0,tutar);
+   }));
+   if (ekstreAktarimi > 0) aktarimlar[tarih] = paraTopla(aktarimlar[tarih] || 0,ekstreAktarimi);
++  const durumGecmisi={...(ilk?.kartDurumGecmisi||{})};
++  if(ilk&&yerelTarihOku(ilk.tarih)&&!durumGecmisi[ilk.tarih])durumGecmisi[ilk.tarih]={donemIci:Number(ilk.donemIci)||0,provizyon:Number(ilk.provizyon)||0};
++  if(yerelTarihOku(tarih))durumGecmisi[tarih]={donemIci:Number(alanlar.donemIci)||0,provizyon:Number(alanlar.provizyon)||0};
+   return {
+-    ...(ilk || {}), ...alanlar, tip: "gider", kartHarcama: true,
++    ...(ilk || {}), ...alanlar, tip: "gider", kartHarcama: true, kartDurumGecmisi:durumGecmisi,
+     tutar: yeniToplam, tarih, kartGunlukDelta: delta,
+     kartGunBaslangicToplam: ilk ? (ilk.kartGunBaslangicToplam ?? eskiToplam) : yeniToplam,
+     kartGunBaslangicTarih: ilk?.kartGunBaslangicTarih || ilk?.tarih || tarih,
+@@ -446,6 +547,16 @@
+   };
+ }
+ 
++function kartBorcGirdisi(islemler,kartlar,kategori,alanlar,tarih) {
++  const aday=kartlar.filter(k=>k.isim===kategori);
++  if(aday.length!==1)throw new Error('Kart adı belirsiz; kayıtlar otomatik eşleştirilmedi.');
++  if(tarih!==yerelTarihAnahtari())throw new Error('Banka borcu gözlemi bugünün tarihiyle girilmeli; geçmiş dönem değiştirilmedi.');
++  const k=aday[0],durum=kartSonDurum(k,islemler,tarih,kartlar);
++  if(kartKayitlari(k,islemler,kartlar).length&&!durum)throw new Error('Aynı gün birden fazla kart kaydı var; otomatik birleştirme yapılmadı.');
++  const eski=durum?.kayit;
++  const yeni=kartKaydiniGuncelle(eski?[eski]:[],{...alanlar,id:eski?.id??kartKimligi(),kategori,kartId:k.id},tarih);
++  return eski?islemler.map(i=>String(i.id)===String(eski.id)?yeni:i):[...islemler,yeni];
++}
+ function kartAnalizHareketleri(kayit) {
+   if (!kayit.kartHarcama) return [];
+   if (kayit.kartGunlukHareketler && typeof kayit.kartGunlukHareketler === "object") {
+@@ -575,7 +686,7 @@
+ 
+ function islemKaynagi(i) {
+   if(krediOdemeKaydiMi(i))return 'Kredi taksiti · nakit çıkışı';
+-  if(i.kartEkstreOdeme || i.kaynak==='ekstre_odemesi' || i.kartId!=null) return 'Ekstre ödemesi · nakit çıkışı';
++  if(i.kartEkstreOdeme || i.kaynak==='ekstre_odemesi') return 'Ekstre ödemesi · nakit çıkışı';
+   if(i.kartHarcama || i.kartGunlukKayit) return 'Kart borcu / güncellemesi';
+   if(devirIslemiMi(i)) return 'Dönem devri · açılış bakiyesi';
+   if(i.sabitId!=null) return 'Sabit gider';
+@@ -778,6 +889,19 @@
+         if(key==='ft_islemler'&&kayit.kaynak==='kredi_taksiti'&&(kayit.tip!=='gider'||kayit.krediId==null||!['string','number'].includes(typeof kayit.krediId)||String(kayit.krediId)===''||!tamSayiGecerli(kayit.taksitNo,1,1200)))throw new Error('Kredi ödeme bağlantısı geçersiz.');
+         if (key === "ft_odemeler" && kayit.odendi != null && typeof kayit.odendi !== "boolean") throw new Error("Ödeme durumu geçersiz.");
+         if (key === "ft_kartlar" && typeof kayit.isim !== "string") throw new Error("Kart adı geçersiz.");
++        if(key==='ft_kartlar'&&kayit.ekstreler!=null) {
++          if(!Array.isArray(kayit.ekstreler))throw new Error('Ekstre arşivi liste olmalı.');
++          const ekstreIds=new Set();
++          kayit.ekstreler.forEach(e=>{
++            if(!nesneMi(e)||!['string','number'].includes(typeof e.id)||String(e.id)===''||ekstreIds.has(String(e.id))||String(e.kartId)!==String(kayit.id)||!tutarGecerli(e.tutar,true)||typeof e.dogrulandi!=='boolean')throw new Error('Ekstre kimliği veya tutarı geçersiz.');
++            ekstreIds.add(String(e.id));
++            for(const t of ['hesapKesimTarihi','sonOdemeTarihi','kayitTarihi'])if(e[t]!=null&&!yerelTarihOku(e[t]))throw new Error('Ekstre tarihi geçersiz.');
++            if(e.hesapKesimTarihi&&e.sonOdemeTarihi&&e.sonOdemeTarihi<e.hesapKesimTarihi)throw new Error('Ekstre vadesi kesimden önce olamaz.');
++          });
++          if(kayit.aktifEkstreId!=null&&!ekstreIds.has(String(kayit.aktifEkstreId)))throw new Error('Aktif ekstre bağlantısı eksik.');
++        }
++        if(key==='ft_kart_odemeleri'&&kayit.ekstreId!=null&&(!['string','number'].includes(typeof kayit.ekstreId)||String(kayit.ekstreId)===''))throw new Error('Ödeme ekstre kimliği geçersiz.');
++        if(kayit.kartDurumGecmisi!=null&&(!nesneMi(kayit.kartDurumGecmisi)||Object.entries(kayit.kartDurumGecmisi).some(([t,d])=>!yerelTarihOku(t)||!nesneMi(d)||!tutarGecerli(d.donemIci,true)||!tutarGecerli(d.provizyon,true))))throw new Error('Kart borcu gözlem geçmişi geçersiz.');
+         if (key === "ft_hizli_sablonlar" && kayit.tip!=null && !["gelir","gider"].includes(kayit.tip)) throw new Error("Hızlı işlem türü geçersiz.");
+         if (key === "ft_hizli_sablonlar" && typeof kayit.kategori !== "string") throw new Error("Şablon kategorisi geçersiz.");
+         if (key === "ft_tekrarlayan" && (!tamSayiGecerli(kayit.gun, 1, 31) || typeof kayit.aktif !== "boolean")) throw new Error("Sabit gider günü/durumu geçersiz.");
+@@ -815,6 +939,9 @@
+     if (["ft_zamlar", "ft_enflasyon"].includes(key) && Object.values(value).some(v => v !== "" && (!Number.isFinite(sayisalOku(v)) || sayisalOku(v) <= -100 || sayisalOku(v) > 10000))) throw new Error("Oran kaydı geçersiz.");
+     if (key === "ft_sabit_log" && Object.values(value).some(v => typeof v !== "boolean")) throw new Error("Sabit gider günlüğü geçersiz.");
+     if(key==='ft_kart_borc_ozetleri' && (!nesneMi(value)||Object.values(value).some(d=>!nesneMi(d)||Object.values(d).some(k=>!nesneMi(k)||!tutarGecerli(k.toplam,true)||!yerelTarihOku(k.tarih)))))throw new Error('Kart borcu dönem geçmişi geçersiz.');
++    if(key==='ft_kart_borc_ozetleri')for(const [donem,kartlar] of Object.entries(value))for(const [id,k] of Object.entries(kartlar))if(k.dogrulandi===true) {
++      if(k.kapsam!=='ekstre_donem_ici_provizyon'||String(k.kartId)!==id||!['donemIci','provizyon','ekstre'].every(a=>tutarGecerli(k[a],true))||paraKurus(k.toplam)!==paraKurus(paraTopla(k.donemIci,k.provizyon,k.ekstre))||maasDonemKey(k.tarih,Number(donem.split('-')[2])).key!==donem)throw new Error('Doğrulanmış kart dönem özeti tutarsız.');
++    }
+     if (key === "ft_donem_devir_log" && (!nesneMi(value) || Object.values(value).some(v => !nesneMi(v) || !tutarGecerli(v.tutar,true) || !yerelTarihOku(v.tarih)))) throw new Error("Dönem devri kaydı geçersiz.");
+     if (key === "ft_son_bildirim_planlama" && value !== null && !nesneMi(value)) throw new Error("Bildirim kaydı geçersiz.");
+     if (key === "ft_bildirim_ayarlari" && value.saatler != null && (!Array.isArray(value.saatler) || value.saatler.length < 1 || value.saatler.length > 3 || value.saatler.some(s => typeof s !== "string" || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(s)))) throw new Error("Bildirim saatleri geçersiz.");
+@@ -842,6 +969,10 @@
+ }
+ // Yalnız açık kredi ödeme bağlarını doğrular; manuel kayıtları eşleştirmez.
+ function yedekBaglariniDogrula(data) {
++  if(Array.isArray(data.ft_kartlar)&&Array.isArray(data.ft_kart_odemeleri))for(const o of data.ft_kart_odemeleri.filter(o=>o.ekstreId!=null)) {
++    const k=data.ft_kartlar.find(k=>String(k.id)===String(o.kartId));
++    if(!k?.ekstreler?.some(e=>String(e.id)===String(o.ekstreId)))throw new Error('Kart ekstre ödeme bağlantısı eksik; yedek uygulanmadı.');
++  }
+   const rows=data.ft_islemler,loans=data.ft_krediler;
+   if(rows===undefined||loans===undefined)return;
+   if(!Array.isArray(rows)||!Array.isArray(loans))throw new Error('İşlem veya kredi listesi bozuk; yükleme başlatılmadı.');
+@@ -860,7 +991,7 @@
+ function yedegiGuvenleYaz(data, storage = window.localStorage) {
+   const temiz=yedekVerisiniDogrula({format:'finora-v2',data});
+   if(!yedekKapsami(temiz).tam)throw new Error('İşlem listesi eksik; kısmi paket tam geri yükleme yapamaz.');
+-  yedekBaglariniDogrula({...temiz,ft_krediler:temiz.ft_krediler??JSON.parse(storage.getItem('ft_krediler')||'[]')});
++  yedekBaglariniDogrula({...temiz,ft_krediler:temiz.ft_krediler??JSON.parse(storage.getItem('ft_krediler')||'[]'),ft_kartlar:temiz.ft_kartlar??JSON.parse(storage.getItem('ft_kartlar')||'[]'),ft_kart_odemeleri:temiz.ft_kart_odemeleri??JSON.parse(storage.getItem('ft_kart_odemeleri')||'[]')});
+   const onceki={};
+   for(let i=0;i<storage.length;i++) {const k=storage.key(i);if(k?.startsWith('ft_'))onceki[k]=storage.getItem(k);}
+   const yeni = Object.fromEntries(Object.entries(temiz).map(([k, v]) => [k, JSON.stringify(v)]));
+@@ -1269,7 +1400,8 @@
+       const di = paraOku(hizliForm.donemIci) || 0;
+       const pr = paraOku(hizliForm.provizyon) || 0;
+       if (di === 0 && pr === 0) return;
+-      setIslemler(p => [...p, { id: Date.now(), tip: "gider", kategori: hizliForm.kategori, tutar: paraTopla(di, pr), donemIci: di, provizyon: pr, kartHarcama: true, aciklama: hizliForm.aciklama, tarih: hizliForm.tarih, kartGunBaslangicToplam: paraTopla(di, pr), kartGunBaslangicTarih: hizliForm.tarih, kartGunlukDelta: 0, kartGunlukHareketler: {} }]);
++      let yeni;try{yeni=kartBorcGirdisi(islemler,kartlar,hizliForm.kategori,{donemIci:di,provizyon:pr,aciklama:hizliForm.aciklama},hizliForm.tarih);}catch(e){return formHatasi(e.message);}
++      if(setIslemler(yeni)===false)return;
+     } else {
+       if (!hizliForm.tutar) return;
+       setIslemler(p => [...p, { ...hizliForm, id: Date.now(), tutar: paraOku(hizliForm.tutar), donemIci: undefined, provizyon: undefined }]);
+@@ -1302,10 +1434,7 @@
+     if (donemOffset === 0) return kayit;
+     return new Date(kayit.tarih) <= secilenDonem.bitis ? kayit : null;
+   };
+-  const kartEkstreAnahtari = (kart) => kart?.ekstreDonemKey || kartEkstreDoneminiBul(kart,donemGun) || aktifDonem;
+-  const kartEkstreOdemeToplami = (kart) => (kartOdemeleri || [])
+-    .filter(o => String(o.kartId) === String(kart.id) && (o.ekstreDonemKey || o.donemKey) === kartEkstreAnahtari(kart))
+-    .reduce((s, o) => paraTopla(s, (Number(o.tutar) || 0)), 0);
++  const kartEkstreOdemeToplami=(kart)=>(kartOdemeleri||[]).filter(o=>kartEkstreKayitlari(kart).some(e=>kartEkstreOdemesiMi(o,kart,e))).reduce((s,o)=>paraTopla(s,o.tutar),0);
+   const kartOdemeEkle = () => {
+     if (!kartOdemeModal || !yerelTarihOku(kartOdemeTarih)) return;
+     const kart = kartOdemeModal;
+@@ -1319,14 +1448,16 @@
+     }
+     const guncelKart = kartlar.find(k => String(k.id) === String(kart.id));
+     if (!guncelKart) return;
+-    const tutar = Math.max(0, paraTopla(guncelKart.ekstre || 0, -kartEkstreOdemeToplami(guncelKart)));
+-    if (tutar <= 0) { toast("Bu ekstrenin ödenecek tutarı kalmadı", "uyari"); return; }
+-    if (!odemeOnayi(`${kart.isim} ekstresi`, tutar)) return;
+-    if (setKartOdemeleri(p => [...p, {
+-      id: sablonKimligi(), kartId: kart.id, kartAdi: kart.isim, tutar,
+-      tarih: kartOdemeTarih, odemeDonemKey, ekstreDonemKey: kartEkstreAnahtari(guncelKart),
+-      sonOdemeTarihi: guncelKart.sonOdemeTarihi || "",
+-    }]) === false) return;
++    const tarih=yerelTarihAnahtari();
++    const korunmus=kartEkstreleriKoru(guncelKart,tarih);
++    const bekleyen=kartEkstreBakiyeleri(korunmus,kartOdemeleri).filter(e=>e.kalan>0);
++    const tutar=bekleyen.reduce((n,e)=>paraTopla(n,e.kalan),0);
++    if(tutar<=0){toast('Bu ekstrenin ödenecek tutarı kalmadı','uyari');return;}
++    if(!odemeOnayi(`${kart.isim} ekstresi`,tutar))return;
++    try{localStorage.setItem('ft_auto_backup_kart_islem_oncesi_v1',JSON.stringify(yerelYedekPaketi()));}catch{return formHatasi('Güvenlik kopyası alınamadı; ödeme kaydedilmedi.');}
++    if(setKartlar(p=>p.map(k=>String(k.id)===String(kart.id)?korunmus:k))===false)return;
++    if(setKartOdemeleri(p=>[...p,...bekleyen.map(e=>({id:sablonKimligi(),kartId:kart.id,kartAdi:kart.isim,tutar:e.kalan,
++      tarih:kartOdemeTarih,odemeDonemKey,ekstreId:e.id,ekstreDonemKey:e.eskiAnahtar||`ekstre-id:${e.id}`,sonOdemeTarihi:e.sonOdemeTarihi||''}))])===false)return;
+     setKartOdemeModal(null);
+     toast(`${kart.isim} ekstresi ödendi`);
+   };
+@@ -1373,7 +1504,7 @@
+     return Object.values(map).filter(d => d.sira <= buSira).map(d => ({ ...d, net: d.gelir - d.gider })).sort((a, b) => a.sira - b.sira).slice(-6);
+   }, [islemler, odemeler, kartOdemeleri, donemGun, secilenDonem]);
+   const buDonemIslemler = islemler.filter(i => maasDonemKey(i.tarih, donemGun).key === aktifDonem);
+-  const bakiyeOzeti = donemBakiyeHesapla({islemler,odemeler,kartlar,kartOdemeleri,krediler,bakiyeHesapModu,
++  const bakiyeOzeti = donemBakiyeHesapla({islemler,odemeler,kartlar,kartOdemeleri,krediler,kartBorcOzetleri,donemGun,bakiyeHesapModu,
+     ilk:yerelTarihAnahtari(secilenDonem.baslangic),son:yerelTarihAnahtari(secilenDonem.bitis)});
+   const buAyBirikim=bakiyeOzeti.birikim, buAyDevir=bakiyeOzeti.devir, buAyGelir=bakiyeOzeti.gelir;
+   const buAyGider=bakiyeOzeti.harcama, toplamGider=buAyGider, sabitGider=0;
+@@ -1686,16 +1817,14 @@
+       {/* Kredi Kartı Özeti */}
+       {kartlar && kartlar.length > 0 && (() => {
+         const kartOzetleri = turkceAdaGoreSirala(kartlar).map(k => {
+-          const kartIslemleri = buDonemIslemler.filter(i => i.tip === "gider" && i.kategori === k.isim);
+-          const prov = kartIslemleri.reduce((s, i) => paraTopla(s, (Number(i.provizyon) || 0)), 0);
+-          const donem = kartIslemleri.reduce((s, i) => paraTopla(s, (Number(i.donemIci) || 0)), 0);
+-          const ekstreBuDonemde = kartEkstreDoneminiBul(k,donemGun) === aktifDonem;
+-          const kalanEkstre = Math.max(0,paraTopla(k.ekstre || 0,-kartEkstreOdemeToplami(k)));
+-          const ekstre = ekstreBuDonemde ? kalanEkstre : 0;
+-          const digerEkstre = ekstreBuDonemde ? 0 : kalanEkstre;
+-          const guncelBorc = donem + prov;
+-          const sonEkstreOdeme = (kartOdemeleri || []).filter(o => String(o.kartId) === String(k.id) && (o.ekstreDonemKey || o.donemKey) === kartEkstreAnahtari(k)).sort((a,b) => String(b.tarih).localeCompare(String(a.tarih)))[0] || null;
+-          return { ...k, ...kartDonemTarihleriniBul(k), ekstreToplam: Number(k.ekstre) || 0, ekstreOdenen: kartEkstreOdemeToplami(k), ekstre, digerEkstre, ekstreBuDonemde, prov, donem, guncelBorc, sonEkstreOdeme, islemler: kartIslemleri };
++          const durum=kartBorcDurumu(k,islemler,kartOdemeleri,aktifDonem,donemGun,kartlar,kartBorcOzetleri);
++          const kartIslemleri=durum.kayit?[durum.kayit]:[];
++          const prov=durum.provizyon||0,donem=durum.donemIci||0;
++          const ilgiliEkstreler=(durum.ekstreler||[]).filter(e=>yerelTarihOku(e.sonOdemeTarihi)&&kartEkstreDoneminiBul({sonOdemeTarihi:e.sonOdemeTarihi},donemGun)===aktifDonem);
++          const ekstreBuDonemde=ilgiliEkstreler.length>0;
++          const ekstre=ilgiliEkstreler.reduce((n,e)=>paraTopla(n,e.kalan),0),digerEkstre=paraTopla(durum.ekstre||0,-ekstre);
++          const sonEkstreOdeme=(kartOdemeleri||[]).filter(o=>String(o.kartId)===String(k.id)&&o.tarih<=yerelTarihAnahtari(secilenDonem.bitis)&&o.tarih<=gununTarihi).sort((a,b)=>String(b.tarih).localeCompare(String(a.tarih)))[0]||null;
++          return {...k,...kartDonemTarihleriniBul(k),durum,ekstreToplam:Number(k.ekstre)||0,ekstreOdenen:kartEkstreOdemeToplami(k),ekstre,digerEkstre,ekstreBuDonemde,prov,donem,guncelBorc:paraTopla(donem,prov),sonEkstreOdeme,islemler:kartIslemleri};
+         });
+         const toplamEkstre = kartOzetleri.reduce((s, k) => paraTopla(s, k.ekstre), 0);
+         const toplamGuncelBorc = kartOzetleri.reduce((s, k) => paraTopla(s, k.guncelBorc), 0);
+@@ -1727,13 +1856,13 @@
+               const sonOdeme = k.sonOdeme;
+               const oncekiDonem=maasDonemiBul(yerelTarihAnahtari(takvimGunuEkle(secilenDonem.baslangic,-1)),donemGun);
+               const oncekiBorc=kartBorcOzetleri[oncekiDonem.key]?.[String(k.id)];
+-              const toplamBorc=paraTopla(k.ekstre,k.digerEkstre,k.donem,k.prov);
++              const toplamBorc=kartToplamBorcHesapla(k,islemler,kartOdemeleri,aktifDonem,donemGun,kartBorcOzetleri,kartlar,k.durum);
+               return (
+                 <article className="home-credit-card credit-tile" key={k.id}>
+                   <div className="credit-tile-heading"><div><KartMarkaRozeti isim={k.isim}/><h3>{k.isim}</h3></div><span className="credit-type">KREDİ KARTI</span></div>
+-                  <div className="credit-total"><span>Toplam kart borcu · provizyon dahil</span><div className="credit-total-row"><Money value={toplamBorc} size={27}/><KartBorcDegisimi toplam={toplamBorc} onceki={oncekiBorc}/></div></div>
++                  <div className="credit-total"><span>{k.durum.stokBiliniyor&&k.durum.ekstreBiliniyor?'Toplam kart borcu · provizyon dahil':'Bilinen kart borcu · eksik geçmiş olabilir'}</span><div className="credit-total-row">{k.durum.biliniyor?<Money value={toplamBorc} size={27}/>:<span>Geçmiş veri yok / belirsiz kayıt</span>}<KartBorcDegisimi toplam={k.durum.karsilastirilabilir?toplamBorc:null} onceki={oncekiBorc}/></div></div>
+                   <div className="credit-buckets">
+-                    {[["Ekstre borcu",k.ekstre],["Dönem içi",k.donem],["Provizyon",k.prov]].map(([label,value])=><div key={label}><span>{label}</span><Money value={value} size={14}/></div>)}
++                    {[["Ekstre borcu",k.ekstre],["Dönem içi",k.donem],["Provizyon",k.prov]].map(([label,value])=><div key={label}><span>{label}</span>{(label==='Ekstre borcu'?k.durum.ekstreBiliniyor:k.durum.stokBiliniyor)?<Money value={value} size={14}/>:<span>—</span>}</div>)}
+                   </div>
+                   {k.digerEkstre>0&&<p className="tools-note">Diğer döneme ait ödenmemiş ekstre: <strong>{fmtTL(k.digerEkstre)}</strong></p>}
+                   {!k.ekstreBuDonemde&&<p className="tools-note">Seçili dönem için kayıtlı ekstre yok.</p>}
+@@ -1742,7 +1871,7 @@
+                   <p className="tools-note">{k.bakiyedenDussun===false?'Dönem içi ve provizyon için bütçeden pay ayrılmıyor.':'Dönem içi ve provizyon için bütçeden pay ayrılıyor.'}</p>
+                   <div className="credit-actions">{donemOffset===0&&<Btn onClick={()=>{
+                     setKartDuzenle(k);
+-                    setKartDuzForm({donemIci:k.donem>0?String(k.donem):'',provizyon:k.prov>0?String(k.prov):'',ekstre:paraTopla(k.ekstre,k.digerEkstre)>0?String(paraTopla(k.ekstre,k.digerEkstre)):'',bakiyedenDussun:k.bakiyedenDussun!==false});
++                    setKartDuzForm({donemIci:k.donem>0?String(k.donem):'',provizyon:k.prov>0?String(k.prov):'',ekstre:kartAktifEkstreKalani(k,kartOdemeleri)>0?String(kartAktifEkstreKalani(k,kartOdemeleri)):'',bakiyedenDussun:k.bakiyedenDussun!==false});
+                   }}>Tutarları güncelle</Btn>}<button className="tools-button" disabled={paraTopla(k.ekstre,k.digerEkstre)<=0} onClick={()=>{setKartOdemeModal({...k,ekstre:paraTopla(k.ekstre,k.digerEkstre),odemeDuzenle:false});setKartOdemeTarih(yerelTarihAnahtari());}}>Ödendi olarak işaretle</button>{k.sonEkstreOdeme&&<button className="tools-button" onClick={()=>{setKartOdemeModal({...k,odemeDuzenle:true});setKartOdemeTarih(k.sonEkstreOdeme.tarih);}}>Ödeme tarihini düzenle</button>}</div>
+                 </article>
+               );
+@@ -1799,38 +1928,37 @@
+             </span>
+           </button>
+           <p className="tools-note">Bu ekran borç bilgisini günceller; ödeme kaydı oluşturmaz. Para çıkışını kaydetmek için karttaki “Ödendi olarak işaretle” düğmesini kullan.</p>
++          {kartDuzForm.hata&&<p role="alert" className="form-alert">{kartDuzForm.hata}</p>}
+           <Btn onClick={() => {
+             if (![kartDuzForm.donemIci, kartDuzForm.provizyon, kartDuzForm.ekstre].every(v => tutarGecerli(v || 0, true))) return formHatasi();
+             const di = paraOku(kartDuzForm.donemIci) || 0;
+             const pr = paraOku(kartDuzForm.provizyon) || 0;
+             const ekstreTutar = paraOku(kartDuzForm.ekstre) || 0;
+-            const hedefIds = (kartDuzenle.islemler || []).map(i => i.id);
+-            const bugun = yerelTarihAnahtari();
++            const bugun=yerelTarihAnahtari();
++            const mevcutKart=kartlar.find(k=>String(k.id)===String(kartDuzenle.id));
++            if(!mevcutKart)return;
++            const sonDurum=kartSonDurum(mevcutKart,islemler,bugun,kartlar);
++            if((kartKayitlari(mevcutKart,islemler,kartlar).length||islemler.some(i=>i.kartHarcama&&i.kartId==null&&i.kategori===mevcutKart.isim))&&!sonDurum)return formHatasi('Kart bağlantısı belirsiz; eski kayıtlar birleştirilmedi.');
++            let yeniKart;
++            try{yeniKart=kartEkstreGuncelle(mevcutKart,ekstreTutar,kartOdemeleri,bugun);localStorage.setItem('ft_auto_backup_kart_islem_oncesi_v1',JSON.stringify(yerelYedekPaketi()));}
++            catch(e){setKartDuzForm(p=>({...p,hata:e.message}));return formHatasi(e.message);}
++            const hedefIds=sonDurum?[sonDurum.kayit.id]:[];
+             if (setIslemler(p => {
+               const kayitlar = p.filter(i => hedefIds.includes(i.id));
+               const eskiToplam = kayitlar.reduce((s, k) => paraTopla(s, kartGuncelToplami(k)), 0);
+               const ekstreAktarimi = Math.min(
+                 Math.max(0, paraTopla(eskiToplam, -di, -pr)),
+-                Math.max(0, paraTopla(ekstreTutar, -paraTopla(kartDuzenle.ekstre || 0,kartDuzenle.digerEkstre || 0))),
++                Math.max(0, paraTopla(ekstreTutar, -kartAktifEkstreKalani(mevcutKart,kartOdemeleri))),
+               );
+               const yeni = kartKaydiniGuncelle(kayitlar, {
+-                id: kayitlar[0]?.id ?? Date.now(), kategori: kartDuzenle.isim,
++                id: kayitlar[0]?.id ?? kartKimligi(), kartId:mevcutKart.id, kategori: kartDuzenle.isim,
+                 donemIci: di, provizyon: pr,
+                 aciklama: kayitlar[0]?.aciklama || kartDuzenle.isim,
+               }, bugun, ekstreAktarimi);
+               // Sıfırlanan borçta günlük geçmişi koru.
+               return [...p.filter(i => !hedefIds.includes(i.id)), yeni];
+             }) === false) return;
+-            if (setKartlar(p => p.map(x => {
+-              if (String(x.id) !== String(kartDuzenle.id)) return x;
+-              const eskiTarih = x.ekstreSonOdemeTarihi || kartDuzenle.sonEkstreOdeme?.sonOdemeTarihi;
+-              const yeniEkstre = !!eskiTarih && eskiTarih !== (x.sonOdemeTarihi || "");
+-              const ekstreDonemKey = yeniEkstre ? `ekstre:${x.sonOdemeTarihi || aktifDonem}` : kartEkstreAnahtari(x);
+-              const odenen = yeniEkstre ? 0 : kartEkstreOdemeToplami(x);
+-              // Düzenleme alanı kalan borçtur; önceki ödeme yeniden düşülmez.
+-              return { ...x, ekstre: paraTopla(ekstreTutar,odenen), ekstreDonemKey,
+-                ekstreSonOdemeTarihi: x.sonOdemeTarihi || "", bakiyedenDussun: kartDuzForm.bakiyedenDussun };
+-            })) === false) return;
++            if(setKartlar(p=>p.map(x=>String(x.id)===String(mevcutKart.id)?{...yeniKart,bakiyedenDussun:kartDuzForm.bakiyedenDussun}:x))===false)return;
+             setKartDuzenle(null);
+             toast("Kart borcu güncellendi; ödeme kaydı oluşturulmadı");
+           }} style={{ width: "100%", padding: 12, marginTop: 8 }}>Kaydet</Btn>
+@@ -1974,7 +2102,7 @@
+   const kartIsimleri = new Set(kartlar.map(k => k.isim));
+   const dahilKartKayitlari = islemler.filter(i => {
+     if (i.tip !== 'gider' || !i.kartHarcama) return false;
+-    const kart = kartlar.find(k => k.isim === i.kategori);
++    const kart = kartlar.find(k => i.kartId!=null?String(k.id)===String(i.kartId):kartlar.filter(x=>x.isim===i.kategori).length===1&&k.isim===i.kategori);
+     if (!kart) return false;
+     return kart.bakiyedenDussun != null ? kart.bakiyedenDussun !== false
+       : bakiyeHesapModu === 'kartlar_dahil' || kartOdemeleri.some(o => String(o.kartId) === String(kart.id) && aralikta(o.tarih));
+@@ -1990,12 +2118,7 @@
+     }
+   });
+   // Kalan ekstre borcu ve bu dönemde yapılan ekstre ödemeleri bir kez sayılır.
+-  const kalanEkstre = kartlar.reduce((s,k) => {
+-    const odenen = kartOdemeleri.filter(o => String(o.kartId) === String(k.id)
+-      && (k.ekstreDonemKey ? (o.ekstreDonemKey || o.donemKey) === k.ekstreDonemKey : !k.sonOdemeTarihi || o.sonOdemeTarihi === k.sonOdemeTarihi))
+-      .reduce((n,o) => paraTopla(n,o.tutar),0);
+-    return paraTopla(s,Math.max(0,paraTopla(k.ekstre || 0,-odenen)));
+-  },0);
++  const kalanEkstre=kartlar.reduce((n,k)=>paraTopla(n,...kartEkstreBakiyeleri(k,kartOdemeleri,simdi).map(e=>e.kalan)),0);
+   const odenmisEkstre = kartOdemeleri.filter(o => aralikta(o.tarih) && o.tarih <= simdi).reduce((s,o) => paraTopla(s,o.tutar),0);
+   const ekstreGideri = paraTopla(kalanEkstre,odenmisEkstre);
+   // Bu dönem yapılan alışveriş sonradan ekstreye taşınırsa hem tabanda hem
+@@ -2015,8 +2138,18 @@
+   const degiskenGider = paraTopla(degiskenNormal,degiskenKart);
+   // İlk kart toplamı tek seferlik tabandır; yalnız sonraki artışlar günlük tahmine girer.
+   // Ekstreye aktarılmış açılış tutarını tekrar sayma.
+-  const kartAcilisGideri = dahilKartKayitlari.reduce((s,i) => {
++  const dahilKartStoklari=kartlar.flatMap(k=>{
++    const d=kartSonDurum(k,islemler,simdi,kartlar);
++    return d&&dahilKartKayitlari.some(i=>String(i.id)===String(d.kayit.id))?[d.kayit]:[];
++  });
++  const kartAcilisGideri = dahilKartStoklari.reduce((s,i) => {
+     const tarih = i.kartGunBaslangicTarih || i.tarih;
++    if(tarih<ilk) {
++      const k=kartlar.find(k=>i.kartId!=null?String(k.id)===String(i.kartId):k.isim===i.kategori);
++      const onceki=k&&kartSonDurum(k,islemler,yerelTarihAnahtari(takvimGunuEkle(ilk,-1)),kartlar);
++      const aktarim=Object.entries(i.kartEkstreAktarimlari||{}).filter(([t])=>aralikta(t)&&t<=simdi).reduce((n,[,v])=>paraTopla(n,v),0);
++      return paraTopla(s,Math.max(0,paraTopla(onceki?paraTopla(onceki.donemIci,onceki.provizyon):0,-aktarim)));
++    }
+     if (!aralikta(tarih) || tarih > simdi) return s;
+     const acilis = Math.max(0,Number(i.kartGunBaslangicToplam ?? kartGuncelToplami(i)) || 0);
+     const aktarilan = Object.entries(i.kartEkstreAktarimlari || {}).filter(([t]) => aralikta(t) && t <= simdi)
+@@ -2088,7 +2221,7 @@
+ function gunlukGiderHareketleri(islemler,odemeler,ilk,son,bugun=yerelTarihAnahtari(),kartOdemeleri=[],gorunum='harcama') {
+   return gunlukFinansHareketleri(islemler,odemeler,kartOdemeleri,ilk,son,bugun,gorunum).filter(i=>i.tip==='gider');
+ }
+-function donemBakiyeHesapla({islemler,odemeler=[],kartlar=[],kartOdemeleri=[],krediler=[],ilk,son,bugun=yerelTarihAnahtari(),bakiyeHesapModu='kartlar_dahil'}) {
++function donemBakiyeHesapla({islemler,odemeler=[],kartlar=[],kartOdemeleri=[],krediler=[],kartBorcOzetleri={},donemGun=15,ilk,son,bugun=yerelTarihAnahtari(),bakiyeHesapModu='kartlar_dahil'}) {
+   const nakit = gunlukFinansHareketleri(islemler,odemeler,kartOdemeleri,ilk,son,bugun,'nakit');
+   const harcamalar = gunlukFinansHareketleri(islemler,odemeler,kartOdemeleri,ilk,son,bugun,'harcama');
+   const topla = liste => liste.reduce((s,i)=>paraTopla(s,i.tutar),0);
+@@ -2108,19 +2241,19 @@
+       && !odemeler.some(o=>o.kaynak==='kredi_taksiti' && String(o.krediId)===String(k.id) && Number(o.taksitNo)===Number(t.no) && o.tarih<=son))
+       .map(t=>t.tutar)),0);
+   bekleyen=paraTopla(bekleyen,krediBekleyen);
+-  const ekstreBekleyen = kartlar.reduce((n,k)=>{
+-    if(k.sonOdemeTarihi && k.sonOdemeTarihi>son) return n;
+-    const odenen=kartOdemeleri.filter(o=>String(o.kartId)===String(k.id) && o.tarih<=son && o.tarih<=bugun
+-      && (k.ekstreDonemKey?(o.ekstreDonemKey||o.donemKey)===k.ekstreDonemKey:!k.sonOdemeTarihi||o.sonOdemeTarihi===k.sonOdemeTarihi)).reduce((a,o)=>paraTopla(a,o.tutar),0);
+-    // İleri tarihli ödeme zaten yukarıda planlandı; aynı borcu tekrar ayırma.
+-    const planli=kartOdemeleri.filter(o=>String(o.kartId)===String(k.id) && aralikta(o.tarih) && o.tarih>bugun
+-      && (k.ekstreDonemKey?(o.ekstreDonemKey||o.donemKey)===k.ekstreDonemKey:!k.sonOdemeTarihi||o.sonOdemeTarihi===k.sonOdemeTarihi)).reduce((a,o)=>paraTopla(a,o.tutar),0);
+-    return paraTopla(n,Math.max(0,paraTopla(k.ekstre||0,-odenen,-planli)));
++  const kartDonemKey=maasDonemKey(ilk,donemGun).key;
++  const kartDurumlari=kartlar.map(k=>({kart:k,durum:kartBorcDurumu(k,islemler,kartOdemeleri,kartDonemKey,donemGun,kartlar,kartBorcOzetleri,bugun)}));
++  const ekstreBekleyen=kartDurumlari.reduce((n,{kart:k,durum:d})=>{
++    if(!d.ekstreler&&d.dogrulandi===true)return paraTopla(n,d.ekstre||0);
++    const ekstreler=d.ekstreler||[];
++    return paraTopla(n,...ekstreler.filter(e=>!e.sonOdemeTarihi||e.sonOdemeTarihi<=son).map(e=>{
++      const planli=kartOdemeleri.filter(o=>o.tarih>bugun&&aralikta(o.tarih)&&kartEkstreOdemesiMi(o,k,e)).reduce((s,o)=>paraTopla(s,o.tutar),0);
++      return Math.max(0,paraTopla(e.kalan,-planli));
++    }));
+   },0);
+-  const kartAyrilan = topla(islemler.filter(i=>i.tip==='gider' && i.kartHarcama && aralikta(i.tarih) && i.tarih<=bugun && (()=>{
+-    const k=kartlar.find(k=>k.isim===i.kategori);
+-    return k && (k.bakiyedenDussun!=null?k.bakiyedenDussun!==false:bakiyeHesapModu==='kartlar_dahil');
+-  })()).map(i=>({...i,tutar:kartGuncelToplami(i)})));
++  const kartAyrilan=kartDurumlari.reduce((n,{kart:k,durum:d})=>
++    (k.bakiyedenDussun!=null?k.bakiyedenDussun!==false:bakiyeHesapModu==='kartlar_dahil')
++      ?paraTopla(n,d.donemIci||0,d.provizyon||0):n,0);
+   const gercekBakiye=paraTopla(gelir,devir,-nakitCikis);
+   const ayrilan=paraTopla(bekleyen,ekstreBekleyen,kartAyrilan);
+   return {gelir,devir,birikim,nakitCikis,harcama,bekleyen,krediBekleyen,ekstreBekleyen,kartAyrilan,ayrilan,gercekBakiye,odemelerSonrasi:paraTopla(gercekBakiye,-ayrilan)};
+@@ -2416,6 +2549,7 @@
+   }, [filtered, donemGun]);
+   const islemDuzenle = () => {
+     if (!duzenleHedef) return;
++    if(duzenleHedef.kartHarcama)return formHatasi('Kart borcunu Özet ekranındaki Tutarları güncelle ile değiştir; geçmiş gözlemler korunacak.');
+     if(krediOdemeKaydiMi(duzenleHedef))return formHatasi('Kredi ödemesini değiştirmek için Krediler ekranından geri alıp yeniden kaydet.');
+     if (duzenleHedef.kartEkstreOdeme) {
+       if (!tutarGecerli(duzenleForm.tutar) || !yerelTarihOku(duzenleForm.tarih)) return formHatasi();
+@@ -2451,7 +2585,8 @@
+       const di = paraOku(form.donemIci) || 0;
+       const pr = paraOku(form.provizyon) || 0;
+       if (di === 0 && pr === 0) return;
+-      setIslemler(p => [...p, { id: Date.now(), tip: "gider", kategori: form.kategori, tutar: paraTopla(di, pr), donemIci: di, provizyon: pr, kartHarcama: true, aciklama: form.aciklama, tarih: form.tarih, kartGunBaslangicToplam: paraTopla(di, pr), kartGunBaslangicTarih: form.tarih, kartGunlukDelta: 0, kartGunlukHareketler: {} }]);
++      let yeni;try{yeni=kartBorcGirdisi(islemler,kartlar,form.kategori,{donemIci:di,provizyon:pr,aciklama:form.aciklama},form.tarih);}catch(e){return formHatasi(e.message);}
++      if(setIslemler(yeni)===false)return;
+     } else {
+       if (!form.tutar) return;
+       setIslemler(p => [...p, { ...form, id: Date.now(), tutar: paraOku(form.tutar), donemIci: undefined, provizyon: undefined }]);
+@@ -2461,6 +2596,7 @@
+     toast("İşlem eklendi");
+   };
+   const islemSil = (hedef) => {
++    if(hedef.kartHarcama&&!window.confirm('Bu kartın borç gözlemi ve günlük geçmişi silinecek. Devam edilsin mi?'))return;
+     if(krediOdemeKaydiMi(hedef))return formHatasi('Bu ödemeyi Krediler ekranından geri al; bağlı taksit ve bakiye birlikte güncellenecek.');
+     if (hedef.kartEkstreOdeme) {
+       const kayit = kartOdemeleri.find(o => String(o.id) === String(hedef.kartOdemeId));
+@@ -2967,7 +3103,7 @@
+       yedekGuvenlikKopyasiOlustur();
+       const kapsam=yedekKapsami(data,bekleyenYedek);
+       if(!kapsam.tam)throw new Error(kapsam.uyari);
+-      yedekBaglariniDogrula({ft_krediler:[],...mevcut,...data});
++      yedekBaglariniDogrula({ft_krediler:[],ft_kartlar:[],ft_kart_odemeleri:[],...mevcut,...data});
+       yedegiGuvenleYaz(data);setBekleyenYedek(null);toast('Yedek geri yüklendi');setTimeout(()=>window.location.reload(),500);
+     }catch(e){const mesaj=e.message||'Yedek yüklenemedi; mevcut verilerin korundu.';setBekleyenYedek(p=>p?{...p,yuklemeHatasi:mesaj}:p);toast(mesaj,'hata');}
+   };
+@@ -3036,9 +3172,10 @@
+     const isim = kartIsim.trim();
+     if (!isim || !kartKesimTarihi || !kartSonOdemeTarihi) { toast("Kart adı, hesap kesim ve son ödeme tarihini seç", "uyari"); return; }
+     if (kartSonOdemeTarihi < kartKesimTarihi) { toast("Son ödeme tarihi hesap kesim tarihinden önce olamaz", "uyari"); return; }
++    if(kartlar.some(k=>k.isim===isim))return formHatasi('Bu kart adı zaten var; kartları ayırmak için farklı bir ad kullan.');
+     const donemKey = maasDonemKey(kartSonOdemeTarihi, parseInt(donemGun) || 15).key;
+     const yeniKart = {
+-      id: Date.now(), isim,
++      id: kartKimligi(), isim,
+       hesapKesimTarihi: kartKesimTarihi,
+       sonOdemeTarihi: kartSonOdemeTarihi,
+       donemTarihleri: { [donemKey]: { hesapKesimTarihi: kartKesimTarihi, sonOdemeTarihi: kartSonOdemeTarihi } },
+@@ -3052,8 +3189,10 @@
+   };
+ 
+   const kartSil = (kart) => {
++    if(!window.confirm(`${kart.isim} kartı kaldırılsın mı? Geçmiş işlemler, ekstre ve ödeme kayıtları silinmeyecek.`))return;
++    if(kartKayitlari(kart,islemler,kartlar).length||islemler.some(i=>i.kartHarcama&&i.kartId==null&&i.kategori===kart.isim)||kartOdemeleri.some(o=>String(o.kartId)===String(kart.id))||kartEkstreKayitlari(kart).some(e=>e.tutar>0))return formHatasi('Geçmişi veya borcu bulunan kart bu aşamada silinemez; kayıtlar korundu.');
+     setKartlar(p => p.filter(x => x.id !== kart.id));
+-    setKategoriler(k => ({ ...k, gider: (k.gider || []).filter(x => x !== kart.isim) }));
++    if(!kartlar.some(k=>String(k.id)!==String(kart.id)&&k.isim===kart.isim))setKategoriler(k => ({ ...k, gider: (k.gider || []).filter(x => x !== kart.isim) }));
+     setKartTarihTaslaklari(p => {
+       const yeni = { ...p };
+       delete yeni[kart.id];
+@@ -3081,15 +3220,16 @@
+     if (taslak.sonOdemeTarihi < taslak.hesapKesimTarihi) { toast("Son ödeme tarihi hesap kesim tarihinden önce olamaz", "uyari"); return; }
+     setKartlar(p => p.map(kayit => {
+       if (String(kayit.id) !== String(kart.id)) return kayit;
++      const korunmus=kartEkstreleriKoru(kayit,yerelTarihAnahtari());
+       const arsiv = { ...(kayit.donemTarihleri || {}) };
+       const arsivle = (hesapKesimTarihi, sonOdemeTarihi) => {
+         if (!sonOdemeTarihi || !yerelTarihOku(sonOdemeTarihi)) return;
+         const key = maasDonemKey(sonOdemeTarihi, parseInt(donemGun) || 15).key;
+-        arsiv[key] = { hesapKesimTarihi: hesapKesimTarihi || "", sonOdemeTarihi };
++        if(!arsiv[key])arsiv[key] = { hesapKesimTarihi: hesapKesimTarihi || "", sonOdemeTarihi };
+       };
+       arsivle(kayit.hesapKesimTarihi, kayit.sonOdemeTarihi);
+       arsivle(taslak.hesapKesimTarihi, taslak.sonOdemeTarihi);
+-      return { ...kayit, ...taslak, donemTarihleri: arsiv };
++      return { ...korunmus, ...taslak, donemTarihleri: arsiv };
+     }));
+     setKartTarihTaslaklari(p => {
+       const yeni = { ...p };
+@@ -4825,8 +4965,13 @@
+   useEffect(()=>{
+     const gun=Number(donemGun)||15,tarih=yerelTarihAnahtari(),donem=maasDonemKey(tarih,gun).key;
+     const mevcut=kartBorcOzetleri[donem]||{};
+-    const yeni=Object.fromEntries(kartlar.map(k=>[String(k.id),{toplam:kartToplamBorcHesapla(k,islemler,kartOdemeleri,donem,gun),tarih,isim:k.isim}]));
+-    if(Object.entries(yeni).every(([id,k])=>mevcut[id]?.toplam===k.toplam && mevcut[id]?.isim===k.isim))return;
++    const yeni=Object.fromEntries(kartlar.flatMap(k=>{
++      const d=kartBorcDurumu(k,islemler,kartOdemeleri,donem,gun,kartlar);
++      if(!d.karsilastirilabilir||mevcut[String(k.id)]?.tarih>tarih)return [];
++      return [[String(k.id),{toplam:d.toplam,donemIci:d.donemIci,provizyon:d.provizyon,ekstre:d.ekstre,
++        tarih,isim:k.isim,kartId:k.id,ekstreler:d.ekstreler,dogrulandi:true,kapsam:'ekstre_donem_ici_provizyon'}]];
++    }));
++    if(Object.entries(yeni).every(([id,k])=>JSON.stringify(mevcut[id])===JSON.stringify(k)))return;
+     setKartBorcOzetleri(p=>({...p,[donem]:{...(p[donem]||{}),...yeni}}));
+   },[islemler,kartlar,kartOdemeleri,donemGun,kartBorcOzetleri,bildirimYenileme]);
+ 

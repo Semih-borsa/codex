@@ -1,0 +1,42 @@
+{
+  "priorSha256": "4f46bce2bddb8ce38c197e38f08b023e6ca39790b86126af384626d232e05f2f",
+  "changedExistingDeclarations": [
+    "yerelYedekPaketi",
+    "YedekOnizleme",
+    "yedekVerisiniDogrula",
+    "yedegiGuvenleYaz",
+    "AyarlarTab"
+  ],
+  "newHelpers": [
+    "yedekKapsami",
+    "yedekEtkiHesapla",
+    "yedekGuvenlikKopyasiOlustur",
+    "yedekBaglariniDogrula"
+  ],
+  "financeAndStageAUnchanged": [
+    "krediOdemeKaydiMi",
+    "gunlukFinansHareketleri",
+    "donemBakiyeHesapla",
+    "donemSonuGiderTahmini",
+    "KredilerTab",
+    "Ozet",
+    "AnalizTab",
+    "donemDevriHesapla",
+    "useLocalStorage"
+  ],
+  "stylesUnchanged": true,
+  "copies": [
+    {
+      "path": "/workspace/codex/downloads/App.jsx",
+      "sha256": "76581666d90e2146047daa478e91bcb158ca9a22376a495e5e5d97f18865d6db"
+    },
+    {
+      "path": "/workspace/codex/downloads/finans-takip-bildirim/src/App.jsx",
+      "sha256": "76581666d90e2146047daa478e91bcb158ca9a22376a495e5e5d97f18865d6db"
+    },
+    {
+      "path": "/workspace/finans-upload/finans-takip/src/App.jsx",
+      "sha256": "76581666d90e2146047daa478e91bcb158ca9a22376a495e5e5d97f18865d6db"
+    }
+  ]
+}
