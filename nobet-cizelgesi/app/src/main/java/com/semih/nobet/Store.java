@@ -76,7 +76,8 @@ final class Store {
               .put("rotationRevision", w.rotationRevision)
               .put("duties", duties)
               .put("debts", debts)
-              .put("limitOverrides", new JSONArray(w.limitOverrides)));
+              .put("limitOverrides", new JSONArray(w.limitOverrides))
+              .put("simultaneousOverrides", new JSONArray(w.simultaneousOverrides)));
     }
     return root.put("people", people).put("leaves", leaves).put("weeks", weeks).toString();
   }
@@ -135,6 +136,10 @@ final class Store {
       JSONArray overrides = j.optJSONArray("limitOverrides");
       if (overrides != null)
         for (int n = 0; n < overrides.length(); n++) w.limitOverrides.add(overrides.getString(n));
+      JSONArray sameDay = j.optJSONArray("simultaneousOverrides");
+      if (sameDay != null)
+        for (int n = 0; n < sameDay.length(); n++)
+          w.simultaneousOverrides.add(sameDay.getString(n));
       JSONArray ds = j.getJSONArray("duties"), bs = j.getJSONArray("debts");
       for (int n = 0; n < ds.length(); n++) {
         JSONObject d = ds.getJSONObject(n);

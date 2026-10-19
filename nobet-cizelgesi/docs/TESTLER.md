@@ -1,11 +1,17 @@
-# Doğrulama — Nöbet Çizelgesi 1.9 / 19 Ekim 2026
+# Doğrulama — Nöbet Çizelgesi 1.10 / 19 Ekim 2026
 
 - JDK 17.0.17, Android SDK 35, build-tools 35.0.0, Gradle 8.9, AGP 8.7.3.
-- `testDebugUnitTest`: **60 test, 0 başarısız, 0 atlanan**.
+- `testDebugUnitTest`: **67 test, 0 başarısız, 0 atlanan**.
 - `lintDebug`: **sorun bulunmadı**.
 - APK ve Android test APK derlemeleri başarılı.
-- Android 11 / API 30 x86_64 emülatöründe önceki sürüm üzerine `adb install -r` ile 1.9 güncellemesi başarılı.
-- Android test çalıştırıcısı: **29 kontrol geçti, 0 başarısız**.
+- Android 11 / API 30 x86_64 emülatöründe önceki sürüm üzerine `adb install -r` ile 1.10 güncellemesi başarılı.
+- Android test çalıştırıcısı: **31 kontrol geçti, 0 başarısız**.
+
+## 1.10 kontrolleri
+
+Teyitsiz aynı gün çoklu görev reddi, teyitli iki şubeye izin, istisnanın kopyada korunması ve iki şubenin istatistikte ayrı sayılması test edildi. İstisna başka kişi/tarih/yere taşınamaz; üç yer için her ek çiftin teyidi gerekir. Teyit mazereti, haftalık gün kısıtını, Perşembe/Cuma dinlenmesini, aynı yerde çift slotu veya ayrı haftalık sınırı geçersiz kılmaz. Otomatik dağıtım çoklu görev üretmez.
+
+Android üzerinde aynı gün ve haftalık sınır uyarıları tek teyitte gösterildi. Vazgeçince taslak/orijinal değişmedi; onaydan sonra iki istisna da taslağa geçti, kayıtlı eski hafta kullanıcı kaydedene kadar değişmedi. Diske yazıp okuma istisnayı korur; alanı olmayan eski JSON otomatik yetki kazanmaz.
 
 ## 1.9 kontrolleri
 

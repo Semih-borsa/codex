@@ -95,6 +95,7 @@ public final class Roster {
     public List<Duty> duties = new ArrayList<>();
     public List<Debt> debts = new ArrayList<>();
     public Set<String> limitOverrides = new HashSet<>();
+    public Set<String> simultaneousOverrides = new HashSet<>();
     public List<String> warnings = new ArrayList<>();
 
     public Week(LocalDate monday) {
@@ -494,15 +495,27 @@ public final class Roster {
     return result;
   }
 
+  public static String simultaneousKey(LocalDate date, String person, String a, String b) {
+    return date + "|" + person + "|" + (a.compareTo(b) < 0 ? a + "|" + b : b + "|" + a);
+  }
+
   public static List<String> validate(State s, Week w) {
     List<String> errors = new ArrayList<>();
-    Set<String> slots = new HashSet<>(), persons = new HashSet<>();
+    Set<String> slots = new HashSet<>();
+    Map<String, List<String>> persons = new HashMap<>();
     Map<String, Integer> branch = new HashMap<>();
     for (Duty d : w.duties) {
       if (d.date.isBefore(w.monday) || d.date.isAfter(w.monday.plusDays(6)))
         errors.add("Hafta dışı tarih.");
       if (!slots.add(d.date + d.place)) errors.add("Aynı yerde birden fazla kişi.");
-      if (!persons.add(d.date + d.person)) errors.add("Aynı kişi aynı gün iki yerde.");
+      List<String> places =
+          persons.computeIfAbsent(d.date + "|" + d.person, key -> new ArrayList<>());
+      for (String other : places) {
+        if (!other.equals(d.place)
+            && !w.simultaneousOverrides.contains(simultaneousKey(d.date, d.person, other, d.place)))
+          errors.add(s.name(d.person) + " aynı gün farklı görev yerlerinde; teyit gerekli.");
+      }
+      places.add(d.place);
       if (rest(w, d.person, d.date))
         errors.add(s.name(d.person) + " hafta sonu nöbetinden önce perşembe/cuma izinli olmalı.");
       if (!available(s, d.person, d.place, d.date))
@@ -565,6 +578,7 @@ public final class Roster {
     for (Debt d : w.debts) c.debts.add(new Debt(d.person, d.end));
     c.warnings.addAll(w.warnings);
     c.limitOverrides.addAll(w.limitOverrides);
+    c.simultaneousOverrides.addAll(w.simultaneousOverrides);
     return c;
   }
 }

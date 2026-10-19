@@ -1,11 +1,13 @@
-# Nöbet Çizelgesi 1.9
+# Nöbet Çizelgesi 1.10
 
-- [APK 1.9 indir](NobetCizelgesi-1.9.apk)
+- [APK 1.10 indir](NobetCizelgesi-1.10.apk)
 - [Güncel APK](NobetCizelgesi.apk)
 - [Android Studio kaynak ZIP](NobetCizelgesi-Android-Studio.zip)
 - [Kullanım](../nobet-cizelgesi/README.md) · [Testler](../nobet-cizelgesi/docs/TESTLER.md)
 
 Android 8.0 ve üzeri. Mevcut uygulamayı **kaldırmadan** APK üzerinden güncelleyin; aynı imza korunur. APK debug imzalıdır.
+
+**Aynı gün farklı şubelere atama:** kalemden seçimde mevcut görev yerleri gösterilir; teyit verirseniz ek görev taslağa eklenir. Vazgeçerseniz değişmez. İstisna kayıtla korunur; mazeret/dinlenme kuralları sürer.
 
 **Kalemden seçim sonrası konum korunur:** personel seçince veya alanı boş bırakınca sayfa en üste dönmez.
 

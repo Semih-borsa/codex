@@ -916,6 +916,133 @@ public class SmokeRunner extends Instrumentation {
                 });
           }
         });
+    check(
+        "Confirmed simultaneous assignments survive storage and absent legacy field grants nothing",
+        () -> {
+          State sample = new State();
+          sample.people.add(new Person("multi", "Deneme"));
+          sample.places.add(new Place("multi-place", "Ek Şube", 31, 0));
+          Week w = new Week(mon);
+          w.duties.add(new Duty(mon, BRANCH, "multi"));
+          w.duties.add(new Duty(mon, "multi-place", "multi"));
+          w.simultaneousOverrides.add(simultaneousKey(mon, "multi", BRANCH, "multi-place"));
+          approve(sample, w);
+          Store isolatedStore = new Store(context);
+          isolatedStore.save(sample);
+          State restored = isolatedStore.load();
+          truth(restored.weeks.get(0).simultaneousOverrides.equals(w.simultaneousOverrides));
+          truth(validate(restored, restored.weeks.get(0)).isEmpty());
+          org.json.JSONObject legacy = new org.json.JSONObject(Store.encode(sample));
+          legacy.getJSONArray("weeks").getJSONObject(0).remove("simultaneousOverrides");
+          State noGrant = Store.decode(legacy.toString());
+          truth(noGrant.weeks.get(0).simultaneousOverrides.isEmpty());
+          truth(!validate(noGrant, noGrant.weeks.get(0)).isEmpty());
+        });
+    check(
+        "Manual simultaneous and weekly-limit confirmation can cancel or approve without changing"
+            + " saved week",
+        () -> {
+          Activity activity =
+              startActivitySync(
+                  new Intent(target, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+          android.app.AlertDialog[] dialog = new android.app.AlertDialog[1];
+          try {
+            waitForIdleSync();
+            runOnMainSync(
+                () -> {
+                  try {
+                    State sample = new State();
+                    sample.people.add(new Person("multi", "Deneme"));
+                    sample.places.add(new Place("multi-place", "Ek Şube", 31, 1));
+                    Week original = new Week(mon);
+                    original.duties.add(new Duty(mon, BRANCH, "multi"));
+                    original.duties.add(new Duty(mon.plusDays(1), "multi-place", "multi"));
+                    approve(sample, original);
+                    java.lang.reflect.Field stateField =
+                        MainActivity.class.getDeclaredField("state");
+                    stateField.setAccessible(true);
+                    stateField.set(activity, sample);
+                    java.lang.reflect.Field selectedField =
+                        MainActivity.class.getDeclaredField("selected");
+                    selectedField.setAccessible(true);
+                    selectedField.set(activity, mon);
+                    java.lang.reflect.Field draftField =
+                        MainActivity.class.getDeclaredField("draft");
+                    draftField.setAccessible(true);
+                    java.lang.reflect.Method render =
+                        MainActivity.class.getDeclaredMethod("render");
+                    render.setAccessible(true);
+                    render.invoke(activity);
+                    java.lang.reflect.Method apply =
+                        MainActivity.class.getDeclaredMethod(
+                            "applyManualChange", Week.class, java.util.List.class);
+                    apply.setAccessible(true);
+                    Week candidate = copy(original);
+                    Duty added = new Duty(mon, "multi-place", "multi");
+                    candidate.duties.add(added);
+                    dialog[0] =
+                        (android.app.AlertDialog)
+                            apply.invoke(activity, candidate, java.util.Arrays.asList(added));
+                    truth(dialog[0] != null && draftField.get(activity) == null);
+                    String message =
+                        ((android.widget.TextView) dialog[0].findViewById(android.R.id.message))
+                            .getText()
+                            .toString();
+                    truth(
+                        message.contains(sample.placeName(BRANCH))
+                            && message.contains("Ek Şube")
+                            && message.contains("Haftalık kişi sınırı"));
+                    dialog[0]
+                        .getButton(android.content.DialogInterface.BUTTON_NEGATIVE)
+                        .performClick();
+                    dialog[0] = null;
+                    truth(
+                        draftField.get(activity) == null
+                            && original.duties.size() == 2
+                            && original.simultaneousOverrides.isEmpty());
+                    dialog[0] =
+                        (android.app.AlertDialog)
+                            apply.invoke(activity, candidate, java.util.Arrays.asList(added));
+                    dialog[0]
+                        .getButton(android.content.DialogInterface.BUTTON_POSITIVE)
+                        .performClick();
+                    dialog[0] = null;
+                  } catch (ReflectiveOperationException e) {
+                    throw new AssertionError(e);
+                  }
+                });
+            waitForIdleSync();
+            runOnMainSync(
+                () -> {
+                  try {
+                    java.lang.reflect.Field draftField =
+                        MainActivity.class.getDeclaredField("draft");
+                    draftField.setAccessible(true);
+                    java.lang.reflect.Field stateField =
+                        MainActivity.class.getDeclaredField("state");
+                    stateField.setAccessible(true);
+                    Week approved = (Week) draftField.get(activity);
+                    State sample = (State) stateField.get(activity);
+                    truth(
+                        approved != null
+                            && approved.duties.size() == 3
+                            && !approved.simultaneousOverrides.isEmpty()
+                            && approved.limitOverrides.contains("multi-place|multi"));
+                    truth(
+                        validate(sample, approved).isEmpty()
+                            && sample.weeks.get(0).duties.size() == 2);
+                  } catch (ReflectiveOperationException e) {
+                    throw new AssertionError(e);
+                  }
+                });
+          } finally {
+            runOnMainSync(
+                () -> {
+                  if (dialog[0] != null) dialog[0].dismiss();
+                  activity.finish();
+                });
+          }
+        });
     Bundle result = new Bundle();
     result.putInt("passed", passed);
     result.putInt("failed", failed);

@@ -162,8 +162,8 @@ public final class MainActivity extends Activity {
             9000);
   }
 
-  private void confirm(String title, String message, Runnable r) {
-    new AlertDialog.Builder(this)
+  private AlertDialog confirm(String title, String message, Runnable r) {
+    return new AlertDialog.Builder(this)
         .setTitle(title)
         .setMessage(message)
         .setNegativeButton("Vazgeç", null)
@@ -1114,45 +1114,82 @@ public final class MainActivity extends Activity {
               edited.duties.removeIf(d -> d.date.equals(day) && d.place.equals(place));
               Person p = options.get(i);
               if (!p.id.isEmpty()) edited.duties.add(new Duty(day, place, p.id));
-              Runnable apply =
-                  () -> {
-                    List<String> invalid = validate(state, edited);
-                    if (!invalid.isEmpty()) {
-                      toast(String.join("\n", invalid));
-                      return;
-                    }
-                    edited.warnings.add(
-                        "Elle düzenleme: "
-                            + day.format(shortDate)
-                            + " "
-                            + state.placeName(place)
-                            + " → "
-                            + p.name);
-                    draft = edited;
-                    renderKeepingPosition();
-                  };
-              Place location = state.place(place);
-              List<String> assigned = new ArrayList<>();
-              for (Duty duty : edited.duties)
-                if (duty.place.equals(place) && duty.person.equals(p.id) && !duty.date.equals(day))
-                  assigned.add(duty.date.format(shortDate));
-              if (!p.id.isEmpty() && location.limit > 0 && assigned.size() >= location.limit) {
-                confirm(
-                    "Tekrar Atama Onayı",
-                    p.name
-                        + " daha önce "
-                        + String.join(", ", assigned)
-                        + " tarihinde "
-                        + location.name
-                        + " görevine atandı. Tekrar atamak istiyor musun?",
-                    () -> {
-                      edited.limitOverrides.add(place + "|" + p.id);
-                      apply.run();
-                    });
-              } else apply.run();
+              edited.warnings.add(
+                  "Elle düzenleme: "
+                      + day.format(shortDate)
+                      + " "
+                      + state.placeName(place)
+                      + " → "
+                      + p.name);
+              List<Duty> added = new ArrayList<>();
+              if (!p.id.isEmpty()) added.add(new Duty(day, place, p.id));
+              applyManualChange(edited, added);
             })
         .setNegativeButton("Vazgeç", null)
         .show();
+  }
+
+  private AlertDialog applyManualChange(Week edited, List<Duty> added) {
+    Set<String> messages = new LinkedHashSet<>();
+    boolean simultaneous = false, repeated = false;
+    for (Duty duty : added) {
+      List<String> otherPlaces = new ArrayList<>();
+      for (Duty other : edited.duties) {
+        if (other.date.equals(duty.date)
+            && other.person.equals(duty.person)
+            && !other.place.equals(duty.place)) {
+          otherPlaces.add(state.placeName(other.place));
+          edited.simultaneousOverrides.add(
+              simultaneousKey(duty.date, duty.person, other.place, duty.place));
+        }
+      }
+      if (!otherPlaces.isEmpty()) {
+        simultaneous = true;
+        messages.add(
+            state.name(duty.person)
+                + " • "
+                + duty.date.format(shortDate)
+                + "\nMevcut görev yerleri: "
+                + String.join(", ", otherPlaces)
+                + "\nEk atama: "
+                + state.placeName(duty.place));
+      }
+      Place location = state.place(duty.place);
+      List<String> previousDates = new ArrayList<>();
+      for (Duty other : edited.duties)
+        if (other.person.equals(duty.person)
+            && other.place.equals(duty.place)
+            && !other.date.equals(duty.date)) previousDates.add(other.date.format(shortDate));
+      if (location.limit > 0 && previousDates.size() >= location.limit) {
+        repeated = true;
+        edited.limitOverrides.add(duty.place + "|" + duty.person);
+        messages.add(
+            state.name(duty.person)
+                + " • "
+                + location.name
+                + "\nÖnceki atamalar: "
+                + String.join(", ", previousDates)
+                + "\nHaftalık kişi sınırı aşılacak.");
+      }
+    }
+    List<String> invalid = validate(state, edited);
+    if (!invalid.isEmpty()) {
+      toast(String.join("\n", invalid));
+      return null;
+    }
+    Runnable accept =
+        () -> {
+          draft = edited;
+          renderKeepingPosition();
+        };
+    if (simultaneous || repeated) {
+      return confirm(
+          simultaneous ? "Aynı Gün Atama Teyidi" : "Tekrar Atama Onayı",
+          String.join("\n\n", messages) + "\n\nBu atamayı yine de yapmak istiyor musun?",
+          accept);
+    }
+    accept.run();
+    return null;
   }
 
   private void replaceWeekend(Week original) {
@@ -1187,13 +1224,11 @@ public final class MainActivity extends Activity {
                 for (LocalDate day : weekendDays) manual.duties.add(new Duty(day, WORK, p.id));
                 manual.cursor = p.id;
                 manual.debts.removeIf(d -> d.person.equals(p.id));
-                List<String> errors = validate(state, manual);
-                if (!errors.isEmpty()) {
-                  toast(String.join("\n", errors) + " Perşembe/cuma alanlarını önce boşaltın.");
-                  return;
-                }
-                draft = manual;
-                renderKeepingPosition();
+                List<Duty> added = new ArrayList<>();
+                for (Duty duty : manual.duties)
+                  if (duty.place.equals(WORK) && duty.person.equals(p.id) && weekend(duty.date))
+                    added.add(duty);
+                applyManualChange(manual, added);
               })
           .setNegativeButton("Vazgeç", null)
           .show();

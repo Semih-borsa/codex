@@ -819,4 +819,112 @@ public class RosterTest {
       approve(s, w);
     }
   }
+
+  private State multiPlaceState() {
+    State s = people(5);
+    s.places.add(new Place("extra", "Ek Şube", 31, 0));
+    return s;
+  }
+
+  private Week twoPlaces(State s) {
+    Week w = new Week(mon);
+    w.duties.add(new Duty(mon, BRANCH, "p0"));
+    w.duties.add(new Duty(mon, "extra", "p0"));
+    return w;
+  }
+
+  @Test
+  public void sameDayBranchesRequireExplicitApproval() {
+    State s = multiPlaceState();
+    Week w = twoPlaces(s);
+    assertFalse(validate(s, w).isEmpty());
+    w.simultaneousOverrides.add(simultaneousKey(mon, "p0", BRANCH, "extra"));
+    assertTrue(validate(s, w).isEmpty());
+    assertEquals(w.simultaneousOverrides, copy(w).simultaneousOverrides);
+    approve(s, w);
+    StatRow row =
+        statistics(s, mon, false).stream().filter(r -> r.person.id.equals("p0")).findFirst().get();
+    assertEquals(1, row.counts[2]);
+    assertEquals(1, row.counts[3]);
+  }
+
+  @Test
+  public void sameDayApprovalCannotBeReusedForOtherDatesPeopleOrPlaces() {
+    State s = multiPlaceState();
+    s.places.add(new Place("third", "Üçüncü Şube", 31, 0));
+    for (int variant = 0; variant < 3; variant++) {
+      Week w = new Week(mon);
+      LocalDate date = variant == 0 ? mon.plusDays(1) : mon;
+      String person = variant == 1 ? "p1" : "p0", place = variant == 2 ? "third" : "extra";
+      w.duties.add(new Duty(date, BRANCH, person));
+      w.duties.add(new Duty(date, place, person));
+      w.simultaneousOverrides.add(simultaneousKey(mon, "p0", BRANCH, "extra"));
+      assertFalse(validate(s, w).isEmpty());
+    }
+  }
+
+  @Test
+  public void thirdBranchNeedsApprovalForEveryAdditionalPair() {
+    State s = multiPlaceState();
+    s.places.add(new Place("third", "Üçüncü Şube", 31, 0));
+    Week w = twoPlaces(s);
+    w.duties.add(new Duty(mon, "third", "p0"));
+    w.simultaneousOverrides.add(simultaneousKey(mon, "p0", BRANCH, "extra"));
+    assertFalse(validate(s, w).isEmpty());
+    w.simultaneousOverrides.add(simultaneousKey(mon, "p0", BRANCH, "third"));
+    assertFalse(validate(s, w).isEmpty());
+    w.simultaneousOverrides.add(simultaneousKey(mon, "p0", "extra", "third"));
+    assertTrue(validate(s, w).isEmpty());
+  }
+
+  @Test
+  public void sameDayApprovalCannotOverrideLeaveOrRecurringRestriction() {
+    State s = multiPlaceState();
+    Week w = twoPlaces(s);
+    w.simultaneousOverrides.add(simultaneousKey(mon, "p0", BRANCH, "extra"));
+    s.leaves.add(new Leave("p0", ALL, mon, mon, "Rapor"));
+    assertFalse(validate(s, w).isEmpty());
+    s.leaves.clear();
+    s.leaves.add(new Leave("p0", "extra", mon, LocalDate.MAX, "Haftalık Kısıt", 1));
+    assertFalse(validate(s, w).isEmpty());
+  }
+
+  @Test
+  public void sameDayApprovalDoesNotWaiveThursdayFridayRest() {
+    State s = multiPlaceState();
+    Week w = new Week(mon);
+    LocalDate thursday = mon.plusDays(3);
+    w.duties.add(new Duty(thursday, BRANCH, "p0"));
+    w.duties.add(new Duty(thursday, "extra", "p0"));
+    w.duties.add(new Duty(mon.plusDays(5), WORK, "p0"));
+    w.duties.add(new Duty(mon.plusDays(6), WORK, "p0"));
+    w.simultaneousOverrides.add(simultaneousKey(thursday, "p0", BRANCH, "extra"));
+    assertFalse(validate(s, w).isEmpty());
+  }
+
+  @Test
+  public void sameDayApprovalDoesNotAllowDuplicateSlotOrWaiveWeeklyLimit() {
+    State s = multiPlaceState();
+    Week w = twoPlaces(s);
+    w.simultaneousOverrides.add(simultaneousKey(mon, "p0", BRANCH, "extra"));
+    w.duties.add(new Duty(mon.plusDays(1), BRANCH, "p0"));
+    assertFalse(validate(s, w).isEmpty());
+    w.limitOverrides.add(BRANCH + "|p0");
+    assertTrue(validate(s, w).isEmpty());
+    w.duties.add(new Duty(mon, BRANCH, "p0"));
+    assertFalse(validate(s, w).isEmpty());
+  }
+
+  @Test
+  public void automaticGenerationNeverCreatesSimultaneousAssignments() {
+    State s = multiPlaceState();
+    Week old = twoPlaces(s);
+    old.simultaneousOverrides.add(simultaneousKey(mon, "p0", BRANCH, "extra"));
+    approve(s, old);
+    Week next = generate(s, mon.plusWeeks(1));
+    Set<String> seen = new HashSet<>();
+    for (Duty d : next.duties) assertTrue(seen.add(d.date + "|" + d.person));
+    assertTrue(next.simultaneousOverrides.isEmpty());
+    assertTrue(validate(s, next).isEmpty());
+  }
 }
