@@ -1,6 +1,6 @@
 # Cep Bütçem
 
-**Nöbet Çizelgesi 1.1:** görev yeri adlarını değiştirme, yeni şubeler, alfabetik istatistik tablosu, kayıtlı çizelgeyi düzenleme ve güncellenen sayımlar, teyitli tekrar şube ataması, sade PDF, açık/koyu kurumsal tema. [APK indir](downloads/NobetCizelgesi-1.1.apk) · [Android Studio ZIP](downloads/NobetCizelgesi-Android-Studio.zip) · [Kullanım](nobet-cizelgesi/README.md). Çevrimdışı çalışır; canlı telefon eşitlemesi bu sürümde yoktur.
+**Nöbet Çizelgesi 1.2:** şube silme/geri alma, tüm yerlerin çalışma günlerini düzenleme, çizelge/PDF şube görünürlüğü, açık kurumsal mavi, alfabetik istatistik tablosu, kayıtlı çizelgeyi düzenleme ve güncellenen sayımlar, teyitli tekrar şube ataması, sade PDF, açık/koyu kurumsal tema. [APK indir](downloads/NobetCizelgesi-1.2.apk) · [Android Studio ZIP](downloads/NobetCizelgesi-Android-Studio.zip) · [Kullanım](nobet-cizelgesi/README.md). Çevrimdışı çalışır; canlı telefon eşitlemesi bu sürümde yoktur.
 
 **HavaPusulası 1.1.0:** çoklu şehir, saatlik tahmin, çevrimdışı kayıt, seçilen saatte bildirim ve ana ekran widget’ı. İsteğe bağlı 30 dakika / 1 saat / 3 saat yenileme. [APK indir](downloads/HavaPusulasi-1.1.0.apk) · [Android Studio ZIP](downloads/HavaPusulasi-Android-Studio.zip) · [Türkçe kurulum ve test sınırları](havapusulasi/README.md). Ücretsiz kişisel kullanım; ilk tahmin için internet gerekir.
 

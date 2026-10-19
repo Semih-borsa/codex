@@ -1,13 +1,12 @@
-# Nöbet Çizelgesi 1.1
+# Nöbet Çizelgesi 1.2
 
-- [APK 1.1 indir](NobetCizelgesi-1.1.apk)
-- [Güncel APK bağlantısı](NobetCizelgesi.apk)
+- [APK 1.2 indir](NobetCizelgesi-1.2.apk)
+- [Güncel APK](NobetCizelgesi.apk)
 - [Android Studio kaynak ZIP](NobetCizelgesi-Android-Studio.zip)
-- [Kullanım ve yeni özellikler](../nobet-cizelgesi/README.md)
-- [Test sonuçları](../nobet-cizelgesi/docs/TESTLER.md)
+- [Kullanım](../nobet-cizelgesi/README.md) · [Testler](../nobet-cizelgesi/docs/TESTLER.md)
 
-Android 8.0 ve üzeri. GitHub dosya sayfasında **Download raw file** ile indirin. 1.0 kuruluysa kaldırmadan APK üzerinden güncelleyin; aynı imza korunur. APK debug imzalıdır, Play Store yayını değildir.
+Android 8.0 ve üzeri. Mevcut uygulamayı **kaldırmadan** APK üzerinden güncelleyin; aynı imza korunur. APK debug imzalıdır.
 
-Ayarlar'dan yer adlarını değiştirip yeni şube ekleyin. Kaydedilmiş haftayı düzenleyip değişiklikleri kaydedin; istatistikler yeniden hesaplanır. İstatistik tablosunda A personel (alfabetik), B hafta içi, C hafta sonu, D ilk şube adı; ek yerler E/F/... sütunlarındadır. Tekrar şube ataması tarihli teyit ister. PDF'de alt açıklama ve imza alanı yoktur; atanmayan alan — gösterilir.
+Ayarlar'dan eklenen şubeyi silebilir/geri alabilir, ilk iki yer dahil çalışma günlerini değiştirebilirsiniz. Geçmiş kayıtlar ve sayımlar korunur. Gün ayarları yeni dağıtımlarda kullanılır. Görünüm seçimi liste oluştururken sorulur: gizlenen şubeler yalnız çizelge/PDF'den çıkar; kayıt ve istatistikleri kalır. Mavi daha açık kurumsal tona güncellendi.
 
-Bu sürüm cihazda çalışır; canlı eşitleme ve yönetici hesapları etkin değildir. Uygulamayı kaldırmak/verilerini silmek kayıtları siler; PDF veri yedeği değildir.
+Canlı telefon eşitlemesi/yönetici hesapları bu sürümde etkin değildir. Uygulamayı kaldırmak/verilerini silmek kayıtları siler; PDF veri yedeği değildir.

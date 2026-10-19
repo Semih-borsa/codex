@@ -46,8 +46,10 @@ final class Store {
               .put("name", p.name)
               .put("days", p.days)
               .put("limit", p.limit)
-              .put("automatic", p.automatic));
+              .put("automatic", p.automatic)
+              .put("deleted", p.deleted));
     root.put("places", places);
+    root.put("hiddenPlaces", new JSONArray(s.hiddenPlaces));
     for (Person p : s.people)
       people.put(new JSONObject().put("id", p.id).put("name", p.name).put("active", p.active));
     for (Leave l : s.leaves)
@@ -80,6 +82,9 @@ final class Store {
     if (root.getInt("version") != 1 && root.getInt("version") != 2)
       throw new JSONException("Desteklenmeyen veri sürümü");
     State s = new State();
+    JSONArray hidden = root.optJSONArray("hiddenPlaces");
+    if (hidden != null)
+      for (int i = 0; i < hidden.length(); i++) s.hiddenPlaces.add(hidden.getString(i));
     JSONArray locations = root.optJSONArray("places");
     if (locations != null) {
       s.places.clear();
@@ -88,6 +93,7 @@ final class Store {
         Place place =
             new Place(j.getString("id"), j.getString("name"), j.getInt("days"), j.getInt("limit"));
         place.automatic = j.optBoolean("automatic", true);
+        place.deleted = j.optBoolean("deleted", false);
         s.places.add(place);
       }
       s.place(WORK);

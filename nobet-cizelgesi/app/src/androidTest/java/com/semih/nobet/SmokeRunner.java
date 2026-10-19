@@ -309,7 +309,7 @@ public class SmokeRunner extends Instrumentation {
                           && settings.getCurrentTextColor() == android.graphics.Color.WHITE);
                   truth(
                       settings.getBackgroundTintList().getDefaultColor()
-                          == android.graphics.Color.rgb(31, 90, 137));
+                          == android.graphics.Color.rgb(42, 111, 177));
                   settings.performClick();
                   truth(
                       findText(activity.getWindow().getDecorView(), "Ayarlar • Görev yerleri")
@@ -322,6 +322,78 @@ public class SmokeRunner extends Instrumentation {
           } finally {
             runOnMainSync(activity::finish);
           }
+        });
+    check(
+        "Original place day selections persist and drive generation",
+        () -> {
+          State custom = Store.decode(Store.encode(s));
+          custom.leaves.clear();
+          custom.place(WORK).days = 1;
+          custom.place(BRANCH).days = 96;
+          Store store = new Store(context);
+          store.save(custom);
+          State restored = store.load();
+          Week plan = generate(restored, mon.plusWeeks(1));
+          truth(restored.place(WORK).days == 1 && restored.place(BRANCH).days == 96);
+          truth(plan.duties.stream().filter(d -> d.place.equals(WORK)).count() == 1);
+          truth(
+              plan.duties.stream()
+                  .filter(d -> d.place.equals(BRANCH))
+                  .allMatch(d -> weekend(d.date)));
+          truth(validate(restored, plan).isEmpty());
+        });
+    check(
+        "Deleted place history and flags survive reopening",
+        () -> {
+          State custom = Store.decode(Store.encode(s));
+          custom.leaves.clear();
+          custom.places.add(new Place("archive", "Arşiv Şube", 31, 1));
+          custom.weeks.clear();
+          Week saved = new Week(mon);
+          saved.duties.add(new Duty(mon, "archive", "p0"));
+          saved.duties.add(new Duty(mon.plusDays(1), "archive", "p1"));
+          approve(custom, saved);
+          deletePlace(custom, "archive", mon);
+          Store store = new Store(context);
+          store.save(custom);
+          State restored = store.load();
+          truth(restored.place("archive").deleted && restored.weeks.get(0).duties.size() == 1);
+          truth(totals(restored, "p0", "archive", mon)[0] == 1);
+          truth(
+              generate(restored, mon.plusWeeks(1)).duties.stream()
+                  .noneMatch(d -> d.place.equals("archive")));
+        });
+    check(
+        "Hidden places persist without changing statistics or duties",
+        () -> {
+          State custom = Store.decode(Store.encode(s));
+          custom.hiddenPlaces.add(BRANCH);
+          Store store = new Store(context);
+          store.save(custom);
+          State restored = store.load();
+          truth(restored.hiddenPlaces.contains(BRANCH));
+          truth(displayPlaces(restored, restored.weeks.get(0)).size() == 1);
+          truth(restored.weeks.get(0).duties.size() == 12);
+          truth(statisticPlaces(restored).size() == 1);
+        });
+    check(
+        "Hidden PDF columns removed while records stay intact",
+        () -> {
+          State custom = Store.decode(Store.encode(s));
+          for (int i = 0; i < 4; i++) {
+            Place p = new Place("hidden" + i, "Gizli Şube " + i, 31, 1);
+            custom.places.add(p);
+            custom.hiddenPlaces.add(p.id);
+          }
+          custom.hiddenPlaces.add(BRANCH);
+          File pdf = PdfExport.create(context, custom, custom.weeks.get(0));
+          try (ParcelFileDescriptor fd =
+                  ParcelFileDescriptor.open(pdf, ParcelFileDescriptor.MODE_READ_ONLY);
+              PdfRenderer renderer = new PdfRenderer(fd)) {
+            truth(renderer.getPageCount() == 1);
+          }
+          truth(custom.weeks.get(0).duties.size() == 12);
+          truth(custom.places.size() == 6);
         });
     Bundle result = new Bundle();
     result.putInt("passed", passed);
