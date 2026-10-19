@@ -1,0 +1,14 @@
+<Window x:Class="Veresiye.Desktop.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="Veresiye Kesinti Pro" Width="1200" Height="780" MinWidth="850" MinHeight="550" Background="{DynamicResource Surface}" Foreground="{DynamicResource Ink}">
+ <Window.Resources>
+  <SolidColorBrush x:Key="Surface" Color="#F3F6FA"/><SolidColorBrush x:Key="Ink" Color="#17243B"/>
+  <Style TargetType="Button"><Setter Property="Padding" Value="18,10"/><Setter Property="Margin" Value="0,0,10,0"/></Style>
+  <Style TargetType="DataGrid"><Setter Property="IsReadOnly" Value="True"/><Setter Property="AutoGenerateColumns" Value="True"/><Setter Property="CanUserAddRows" Value="False"/><Setter Property="Background" Value="{DynamicResource Surface}"/><Setter Property="Foreground" Value="{DynamicResource Ink}"/><Setter Property="RowBackground" Value="{DynamicResource Surface}"/></Style>
+ </Window.Resources>
+ <Grid Margin="26"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+  <StackPanel><TextBlock Text="Veresiye Kesinti Pro" FontSize="30" FontWeight="SemiBold"/><TextBlock Text="Yerel Excel işleme • Kaynak dosya korunur" Margin="0,7,0,20"/></StackPanel>
+  <StackPanel Grid.Row="1" Orientation="Horizontal"><Button Content="Excel dosyası yükle" Click="Load"/><Button x:Name="ProcessButton" Content="Eşleştirmeyi başlat" IsEnabled="False" Click="Process"/><Button x:Name="ExportButton" Content="Excel'e aktar" IsEnabled="False" Click="Export"/><Button Content="Açık / koyu tema" Click="Theme"/></StackPanel>
+  <TextBlock x:Name="Summary" Grid.Row="2" Text="Başlamak için V3 Excel çalışma kitabını seçin." Margin="0,18" TextWrapping="Wrap"/>
+  <TabControl Grid.Row="3"><TabItem Header="Sayfa1"><DataGrid x:Name="PayrollGrid"/></TabItem><TabItem Header="Personel"><DataGrid x:Name="PersonnelGrid"/></TabItem><TabItem Header="Kesinti"><DataGrid x:Name="DeductionGrid"/></TabItem><TabItem Header="Sonuç önizlemesi"><DataGrid x:Name="ResultGrid"/></TabItem><TabItem Header="İrtibat sonuçları"><DataGrid x:Name="ContactGrid"/></TabItem><TabItem Header="Kontrol gerekenler"><DataGrid x:Name="IssueGrid"/></TabItem></TabControl>
+  <TextBlock Grid.Row="4" Margin="0,15,0,0" TextWrapping="Wrap" Text="Kontrol gereken kayıtlar kesin eşleşme sayılmaz. Banka çıktısındaki kalın satırlar kontrol edilmelidir. Veriler internete gönderilmez."/>
+ </Grid>
+</Window>

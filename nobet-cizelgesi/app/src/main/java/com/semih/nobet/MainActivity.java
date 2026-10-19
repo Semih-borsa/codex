@@ -1,0 +1,1187 @@
+package com.semih.nobet;
+
+import static com.semih.nobet.Roster.*;
+
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.DatePickerDialog;
+import android.content.*;
+import android.graphics.Color;
+import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
+import android.os.*;
+import android.view.*;
+import android.widget.*;
+import java.time.*;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+
+public final class MainActivity extends Activity {
+  private State state;
+  private Store store;
+  private LinearLayout root, body, tabs;
+  private LocalDate selected = monday(LocalDate.now());
+  private int screen = 0;
+  private TextView notice;
+  private String noticeText = "";
+  private int noticeToken;
+  private boolean failed = false;
+  private Week draft;
+  private int ink = Color.rgb(19, 38, 60),
+      teal = Color.rgb(31, 90, 137),
+      muted = Color.rgb(85, 105, 124),
+      surface = Color.rgb(242, 246, 250),
+      cardColor = Color.WHITE,
+      warningColor = Color.rgb(155, 83, 0);
+  private int themeMode;
+  private final DateTimeFormatter shortDate = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+
+  @Override
+  public void onCreate(Bundle b) {
+    themeMode = getSharedPreferences("appearance", 0).getInt("theme", 0);
+    boolean dark =
+        themeMode == 2
+            || (themeMode == 0
+                && (getResources().getConfiguration().uiMode
+                        & android.content.res.Configuration.UI_MODE_NIGHT_MASK)
+                    == android.content.res.Configuration.UI_MODE_NIGHT_YES);
+    setTheme(dark ? R.style.AppThemeDark : R.style.AppTheme);
+    if (dark) {
+      ink = Color.rgb(231, 238, 247);
+      teal = Color.rgb(137, 187, 235);
+      muted = Color.rgb(174, 189, 209);
+      surface = Color.rgb(16, 27, 43);
+      cardColor = Color.rgb(26, 42, 62);
+      warningColor = Color.rgb(255, 194, 112);
+    }
+    super.onCreate(b);
+    store = new Store(this);
+    try {
+      state = store.load();
+    } catch (Exception e) {
+      state = new State();
+      failed = true;
+    }
+    if (b != null) {
+      try {
+        if (b.containsKey("draft")) draft = Store.decode(b.getString("draft")).weeks.get(0);
+      } catch (Exception ignored) {
+      }
+      selected = LocalDate.parse(b.getString("week", selected.toString()));
+      screen = b.getInt("screen", 0);
+    }
+    render();
+    if (failed)
+      new AlertDialog.Builder(this)
+          .setTitle("Veriler okunamadı")
+          .setMessage(
+              "Kayıt dosyası açılamadı. Üzerine yazılmasını önlemek için düzenleme kapatıldı."
+                  + " Uygulama verilerini silmeyin.")
+          .setPositiveButton("Tamam", null)
+          .show();
+  }
+
+  @Override
+  public void onSaveInstanceState(Bundle b) {
+    super.onSaveInstanceState(b);
+    b.putString("week", selected.toString());
+    b.putInt("screen", screen);
+    if (draft != null)
+      try {
+        State temp = new State();
+        temp.weeks.add(draft);
+        b.putString("draft", Store.encode(temp));
+      } catch (Exception ignored) {
+      }
+  }
+
+  private int dp(float n) {
+    return (int) (getResources().getDisplayMetrics().density * n + .5f);
+  }
+
+  private TextView text(String str, int size, int color) {
+    TextView v = new TextView(this);
+    v.setText(str);
+    v.setTextSize(size);
+    v.setTextColor(color);
+    v.setPadding(0, dp(5), 0, dp(5));
+    return v;
+  }
+
+  private void heading(String s) {
+    TextView v = text(s, 22, ink);
+    v.setTypeface(null, Typeface.BOLD);
+    body.addView(v);
+  }
+
+  private void note(String s) {
+    body.addView(text(s, 14, muted));
+  }
+
+  private Button button(String s, Runnable action) {
+    Button b = new Button(this);
+    b.setText(s);
+    b.setTextSize(14);
+    b.setTextColor(Color.WHITE);
+    b.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(31, 90, 137)));
+    b.setAllCaps(false);
+    b.setOnClickListener(
+        v -> {
+          if (failed) {
+            toast("Kayıtlar okunamadığı için değişiklikler kapalı.");
+            return;
+          }
+          action.run();
+        });
+    return b;
+  }
+
+  private void action(String s, Runnable r) {
+    body.addView(button(s, r), new LinearLayout.LayoutParams(-1, dp(52)));
+  }
+
+  private void toast(String s) {
+    noticeText = s;
+    int token = ++noticeToken;
+    if (notice != null) {
+      notice.setText(s);
+      notice.setVisibility(View.VISIBLE);
+    }
+    new Handler(Looper.getMainLooper())
+        .postDelayed(
+            () -> {
+              if (token == noticeToken) {
+                noticeText = "";
+                if (notice != null) notice.setVisibility(View.GONE);
+              }
+            },
+            9000);
+  }
+
+  private void confirm(String title, String message, Runnable r) {
+    new AlertDialog.Builder(this)
+        .setTitle(title)
+        .setMessage(message)
+        .setNegativeButton("Vazgeç", null)
+        .setPositiveButton("Onayla", (d, w) -> r.run())
+        .show();
+  }
+
+  private boolean save() {
+    try {
+      store.save(state);
+      return true;
+    } catch (Exception e) {
+      failed = true;
+      toast("Kaydedilemedi. Verileri korumak için düzenleme durduruldu; uygulamayı yeniden açın.");
+      return false;
+    }
+  }
+
+  private Week saved() {
+    return state.weeks.stream().filter(w -> w.monday.equals(selected)).findFirst().orElse(null);
+  }
+
+  private String range() {
+    return selected.format(shortDate) + " – " + selected.plusDays(6).format(shortDate);
+  }
+
+  private void render() {
+    root = new LinearLayout(this);
+    root.setOrientation(LinearLayout.VERTICAL);
+    root.setBackgroundColor(surface);
+    root.setPadding(dp(18), dp(12), dp(18), dp(8));
+    root.setOnApplyWindowInsetsListener(
+        (v, insets) -> {
+          root.setPadding(
+              dp(18),
+              dp(12) + insets.getSystemWindowInsetTop(),
+              dp(18),
+              dp(8) + insets.getSystemWindowInsetBottom());
+          return insets;
+        });
+    TextView logo = text("Nöbet Çizelgesi", 27, ink);
+    logo.setTypeface(null, Typeface.BOLD);
+    root.addView(logo);
+    root.addView(text("Planla • Onayla • Adil dağıt", 13, muted));
+    root.addView(
+        button(
+            "Görünüm: " + (themeMode == 0 ? "Sistem" : themeMode == 1 ? "Açık" : "Koyu"),
+            () ->
+                new AlertDialog.Builder(this)
+                    .setTitle("Kurumsal renk teması")
+                    .setSingleChoiceItems(
+                        new String[] {"Sistem teması", "Açık • Lacivert", "Koyu • Lacivert"},
+                        themeMode,
+                        (dialog, which) -> {
+                          getSharedPreferences("appearance", 0)
+                              .edit()
+                              .putInt("theme", which)
+                              .apply();
+                          dialog.dismiss();
+                          recreate();
+                        })
+                    .setNegativeButton("Vazgeç", null)
+                    .show()));
+    tabs = new LinearLayout(this);
+    String[] titles = {"Çizelge", "Personel", "Mazeret", "İstatistik", "Ayarlar"};
+    for (int i = 0; i < titles.length; i++) {
+      final int idx = i;
+      Button b =
+          button(
+              titles[i],
+              () -> {
+                screen = idx;
+                render();
+              });
+      b.setTextSize(11);
+      b.setMinWidth(0);
+      b.setMinimumWidth(0);
+      b.setPadding(dp(3), 0, dp(3), 0);
+      if (i == screen) {
+        b.setTypeface(null, Typeface.BOLD);
+        b.setTextColor(Color.WHITE);
+      }
+      tabs.addView(b, new LinearLayout.LayoutParams(0, dp(52), 1));
+    }
+    root.addView(tabs);
+    ScrollView scroll = new ScrollView(this);
+    body = new LinearLayout(this);
+    body.setOrientation(LinearLayout.VERTICAL);
+    body.setPadding(0, dp(12), 0, dp(30));
+    scroll.setFillViewport(true);
+    scroll.addView(body);
+    root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1));
+    notice = text(noticeText, 14, Color.WHITE);
+    notice.setPadding(dp(12), dp(10), dp(12), dp(10));
+    GradientDrawable noticeBg = new GradientDrawable();
+    noticeBg.setColor(Color.rgb(31, 90, 137));
+    noticeBg.setCornerRadius(dp(12));
+    notice.setBackground(noticeBg);
+    notice.setVisibility(noticeText.isEmpty() ? View.GONE : View.VISIBLE);
+    root.addView(notice, new LinearLayout.LayoutParams(-1, -2));
+    setContentView(root);
+    if (screen == 0) program();
+    else if (screen == 1) people();
+    else if (screen == 2) leaves();
+    else if (screen == 3) stats();
+    else settings();
+  }
+
+  private void program() {
+    heading(range());
+    LinearLayout nav = new LinearLayout(this);
+    nav.addView(
+        button(
+            "‹ Önceki",
+            () -> {
+              selected = selected.minusWeeks(1);
+              draft = null;
+              render();
+            }),
+        new LinearLayout.LayoutParams(0, dp(52), 1));
+    nav.addView(
+        button(
+            "Hafta seç",
+            () ->
+                date(
+                    selected,
+                    d -> {
+                      selected = monday(d);
+                      draft = null;
+                      render();
+                    })),
+        new LinearLayout.LayoutParams(0, dp(52), 1));
+    nav.addView(
+        button(
+            "Sonraki ›",
+            () -> {
+              selected = selected.plusWeeks(1);
+              draft = null;
+              render();
+            }),
+        new LinearLayout.LayoutParams(0, dp(52), 1));
+    body.addView(nav);
+    note(
+        state.placeName(WORK)
+            + " her gün • "
+            + state.placeName(BRANCH)
+            + " hafta içi, kişi başı en fazla 1 gün. Hafta sonu aynı kişi; perşembe ve cuma tüm"
+            + " görev yerlerinde izinli. Diğer yerler Ayarlar bölümündeki gün ve sınırlarla"
+            + " planlanır.");
+    if (state.people.stream().noneMatch(p -> p.active)) {
+      note(
+          "Başlamak için Personel bölümüne 5 kişinin adını ekleyin. Sonradan ekleyebilir, pasife"
+              + " alabilir veya yeniden etkinleştirebilirsiniz.");
+      action(
+          "Personel ekle",
+          () -> {
+            screen = 1;
+            render();
+          });
+      return;
+    }
+    action(
+        "Otomatik dağıtım öner",
+        () -> {
+          try {
+            draft = generate(state, selected);
+            render();
+          } catch (IllegalArgumentException e) {
+            toast(e.getMessage());
+          }
+        });
+    action(
+        "Boş çizelge aç • manuel oluştur",
+        () ->
+            confirm(
+                "Manuel çizelge",
+                "Bu hafta için boş bir öneri açılacak. Mevcut kayıt, siz onaylayana kadar"
+                    + " değişmeyecek. Günlerdeki işyeri/şube alanlarına dokunarak personel seçin.",
+                () -> {
+                  draft = new Week(selected);
+                  Week previous =
+                      state.weeks.stream()
+                          .filter(x -> x.monday.isBefore(selected))
+                          .max(Comparator.comparing(x -> x.monday))
+                          .orElse(null);
+                  if (previous != null) {
+                    draft.cursor = previous.cursor;
+                    for (Debt d : previous.debts) draft.debts.add(new Debt(d.person, d.end));
+                  }
+                  draft.warnings.add(
+                      "Manuel çizelge: boş alanları ve mazeretleri kontrol ederek onaylayın.");
+                  render();
+                }));
+    Week w = draft != null ? draft : saved();
+    if (w == null) {
+      note("Bu hafta için henüz onaylı çizelge yok.");
+      return;
+    }
+    boolean preview = draft != null;
+    heading(preview ? "Onay bekleyen öneri" : "Onaylı çizelge");
+    if (!preview)
+      action(
+          "Kaydedilmiş listeyi düzenle",
+          () -> {
+            draft = copy(w);
+            render();
+            toast("Gün/yer alanlarına dokunup düzenleyin; ardından değişiklikleri kaydedin.");
+          });
+    LocalDate sat = selected.plusDays(5);
+    String weekendPerson = PdfExport.person(state, w, sat, WORK);
+    note("Hafta sonu: " + weekendPerson + "\nPerşembe/cuma dinlenme: " + weekendPerson);
+    DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd MMMM EEEE", new Locale("tr", "TR"));
+    for (int i = 0; i < 7; i++) {
+      LocalDate day = selected.plusDays(i);
+      LinearLayout card = new LinearLayout(this);
+      card.setOrientation(LinearLayout.VERTICAL);
+      card.setPadding(dp(14), dp(10), dp(14), dp(10));
+      GradientDrawable bg = new GradientDrawable();
+      bg.setColor(cardColor);
+      bg.setCornerRadius(dp(14));
+      card.setBackground(bg);
+      LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
+      lp.setMargins(0, dp(7), 0, dp(3));
+      body.addView(card, lp);
+      TextView dayTitle = text(day.format(fmt), 16, ink);
+      dayTitle.setTypeface(null, Typeface.BOLD);
+      card.addView(dayTitle);
+      for (Place location : state.places) {
+        String place = location.id;
+        if (!location.on(day)
+            && w.duties.stream().noneMatch(d -> d.date.equals(day) && d.place.equals(place)))
+          continue;
+        String label = location.name + ": " + PdfExport.person(state, w, day, place);
+        card.addView(button(label + "  ✎", () -> edit(day, place)));
+      }
+      if (day.getDayOfWeek().getValue() == 4 || day.getDayOfWeek().getValue() == 5)
+        card.addView(text("Dinlenme: " + weekendPerson, 13, muted));
+    }
+    for (String warning : w.warnings) body.addView(text("• " + warning, 14, warningColor));
+    if (preview) {
+      action(
+          saved() != null ? "Değişiklikleri kaydet" : "Dağıtımı onayla ve kaydet",
+          () -> approveDraft());
+      action(
+          "Öneriyi iptal et",
+          () -> {
+            draft = null;
+            render();
+          });
+    }
+    action("Hafta sonu nöbetçisini atla / mazeret gir", () -> skip(w));
+    action("Bu hafta " + state.placeName(BRANCH) + " muafiyeti", () -> branchExcuse());
+    if (!preview)
+      action(
+          "PDF oluştur ve paylaş",
+          () -> {
+            if (!validate(state, w).isEmpty()) {
+              toast("Çizelgede personel/mazeret çakışması var; yeniden dağıtın.");
+              return;
+            }
+            try {
+              PdfExport.share(this, PdfExport.create(this, state, w));
+            } catch (Exception e) {
+              toast("PDF oluşturulamadı veya paylaşım uygulaması bulunamadı.");
+            }
+          });
+    List<Debt> waiting = preview ? w.debts : pendingDebts(state, selected.plusWeeks(1));
+    if (!waiting.isEmpty()) {
+      heading("Bekleyen hafta sonu sırası");
+      for (Debt d : waiting)
+        note(
+            state.name(d.person)
+                + " • mazeret sonu "
+                + d.end.format(shortDate)
+                + " • ilk uygun hafta sonu öncelikli");
+    }
+    note(
+        "Onay, çizelge planını kaydeder. İstatistikte geçmiş/bugünkü nöbetler ile gelecek atamalar"
+            + " ayrı gösterilir. Gerçekleşmeyen nöbetleri çizelgede düzeltin.");
+  }
+
+  private void approveDraft() {
+    if (draft == null) return;
+    List<String> errors = validate(state, draft);
+    if (!errors.isEmpty()) {
+      toast(String.join("\n", errors));
+      return;
+    }
+    long missing = Math.max(0, expectedSlots(state) - draft.duties.size());
+    String msg =
+        state.placeName(WORK)
+            + " her gün, "
+            + state.placeName(BRANCH)
+            + " hafta içi kişi başı en fazla 1 gün; hafta sonu nöbetçisi perşembe/cuma tüm yerlerde"
+            + " izinli. Ek görev yerleri Ayarlardaki kurallarla atanır.\n\n"
+            + (missing > 0
+                ? missing + " boş nöbet alanı var. Eksik çizelge olarak kaydedilecek.\n\n"
+                : "")
+            + String.join("\n", draft.warnings);
+    if (state.weeks.stream().anyMatch(w -> w.monday.isAfter(selected)))
+      msg +=
+          "\n\n"
+              + "Yalnız bu hafta güncellenecek; diğer onaylı haftalar korunacak. İstatistikler"
+              + " güncel çizelgelerden yeniden hesaplanır.";
+    confirm(
+        "Dağıtımı teyit edin",
+        msg,
+        () -> {
+          try {
+            approve(state, draft);
+            if (save()) {
+              draft = null;
+              render();
+              toast("Çizelge onaylandı.");
+            }
+          } catch (IllegalArgumentException e) {
+            toast(e.getMessage());
+          }
+        });
+  }
+
+  private void people() {
+    heading("Personel");
+    note(
+        "Sıra, ilk hafta sonu döngüsünün sırasıdır. Pasife alınan kişi geçmiş kayıtlarda tutulur ve"
+            + " yeni atamalarda kullanılmaz.");
+    action("+ Personel ekle", () -> personDialog(null));
+    for (Person p : state.people) {
+      heading(p.name + (p.active ? "" : " · Pasif"));
+      LinearLayout row = new LinearLayout(this);
+      row.addView(button("Adı düzenle", () -> personDialog(p)));
+      row.addView(
+          button(
+              p.active ? "Personeli çıkar" : "Yeniden etkinleştir",
+              () ->
+                  confirm(
+                      "Personel durumu",
+                      p.active
+                          ? "Personel pasife alınacak; geçmişi korunacak. Bugün ve sonraki"
+                              + " atamaları kaldırılacak; yeniden dağıtım gerekecek."
+                          : "Personel yeniden atamalara katılacak.",
+                      () -> {
+                        p.active = !p.active;
+                        if (!p.active) {
+                          for (Week wk : state.weeks) {
+                            wk.duties.removeIf(
+                                d -> d.person.equals(p.id) && !d.date.isBefore(LocalDate.now()));
+                            wk.debts.removeIf(d -> d.person.equals(p.id));
+                          }
+                        }
+                        if (save()) {
+                          draft = null;
+                          render();
+                        }
+                      })));
+      body.addView(row);
+    }
+    note(
+        "Veriler yalnız bu cihazda tutulur. Uygulamanın kaldırılması veya verilerinin silinmesi"
+            + " kayıtları siler.");
+  }
+
+  private void personDialog(Person p) {
+    EditText input = new EditText(this);
+    input.setSingleLine(true);
+    input.setHint("Ad soyad");
+    if (p != null) input.setText(p.name);
+    AlertDialog dialog =
+        new AlertDialog.Builder(this)
+            .setTitle(p == null ? "Personel ekle" : "Adı düzenle")
+            .setView(input)
+            .setNegativeButton("Vazgeç", null)
+            .setPositiveButton("Kaydet", null)
+            .create();
+    dialog.setOnShowListener(
+        x ->
+            dialog
+                .getButton(-1)
+                .setOnClickListener(
+                    v -> {
+                      String name = input.getText().toString().trim().replaceAll("\\s+", " ");
+                      if (name.isEmpty() || name.length() > 60) {
+                        input.setError("1–60 karakter girin.");
+                        return;
+                      }
+                      if (state.people.stream()
+                          .anyMatch(person -> person != p && person.name.equalsIgnoreCase(name))) {
+                        input.setError("Bu isim zaten var; ayırt edici bir ad girin.");
+                        return;
+                      }
+                      if (p == null)
+                        state.people.add(new Person(UUID.randomUUID().toString(), name));
+                      else p.name = name;
+                      if (save()) {
+                        dialog.dismiss();
+                        draft = null;
+                        render();
+                      }
+                    }));
+    dialog.show();
+  }
+
+  private void leaves() {
+    heading("Mazeret ve kısıtlar");
+    note(
+        "Senelik izin, rapor ve genel mazeretler tüm görev yerlerinde atamayı engeller. Yalnız"
+            + " seçtiğiniz yere ait kısıt da girebilirsiniz. Başlangıç ve bitiş günleri dahildir.");
+    action(
+        "+ Tarihli mazeret / kısıt ekle",
+        () -> leaveDialog(null, ALL, selected, selected.plusDays(6), "Senelik izin"));
+    for (Leave l : state.leaves) {
+      TextView t =
+          text(
+              state.name(l.person)
+                  + " • "
+                  + l.reason
+                  + "\n"
+                  + l.start.format(shortDate)
+                  + " – "
+                  + l.end.format(shortDate)
+                  + " • "
+                  + state.placeName(l.place),
+              16,
+              ink);
+      body.addView(t);
+      LinearLayout row = new LinearLayout(this);
+      row.addView(button("Düzenle", () -> leaveDialog(l, l.place, l.start, l.end, l.reason)));
+      row.addView(
+          button(
+              "Sil",
+              () ->
+                  confirm(
+                      "Mazereti sil",
+                      "Bu mazeret kaldırılacak. Mevcut çizelgeleri yeniden üretmeden atamalar"
+                          + " değişmez.",
+                      () -> {
+                        state.leaves.remove(l);
+                        for (Week wk : state.weeks)
+                          for (Debt debt : wk.debts)
+                            if (debt.person.equals(l.person) && debt.end.equals(l.end))
+                              debt.end = LocalDate.now().minusDays(1);
+                        if (save()) {
+                          draft = null;
+                          render();
+                        }
+                      })));
+      body.addView(row);
+    }
+  }
+
+  private void date(LocalDate initial, java.util.function.Consumer<LocalDate> consumer) {
+    new DatePickerDialog(
+            this,
+            (v, y, m, d) -> consumer.accept(LocalDate.of(y, m + 1, d)),
+            initial.getYear(),
+            initial.getMonthValue() - 1,
+            initial.getDayOfMonth())
+        .show();
+  }
+
+  private void dateTitled(
+      String title, LocalDate initial, java.util.function.Consumer<LocalDate> consumer) {
+    DatePickerDialog picker =
+        new DatePickerDialog(
+            this,
+            (v, y, m, d) -> consumer.accept(LocalDate.of(y, m + 1, d)),
+            initial.getYear(),
+            initial.getMonthValue() - 1,
+            initial.getDayOfMonth());
+    picker.setTitle(title);
+    picker.show();
+  }
+
+  private Spinner spinner(String[] values) {
+    Spinner s = new Spinner(this);
+    s.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, values));
+    s.setMinimumHeight(dp(52));
+    return s;
+  }
+
+  private void leaveDialog(
+      Leave existing, String place, LocalDate start, LocalDate end, String reason) {
+    List<Person> list =
+        state.people.stream()
+            .filter(p -> p.active || existing != null && p.id.equals(existing.person))
+            .collect(java.util.stream.Collectors.toList());
+    if (list.isEmpty()) {
+      toast("Önce personel ekleyin.");
+      return;
+    }
+    LinearLayout box = new LinearLayout(this);
+    box.setPadding(dp(20), dp(8), dp(20), dp(8));
+    box.setOrientation(LinearLayout.VERTICAL);
+    Spinner who = spinner(list.stream().map(p -> p.name).toArray(String[]::new));
+    box.addView(who);
+    if (existing != null)
+      for (int i = 0; i < list.size(); i++)
+        if (list.get(i).id.equals(existing.person)) who.setSelection(i);
+    List<String> types = new ArrayList<>(Arrays.asList("Senelik izin", "Rapor", "Diğer mazeret"));
+    for (Place location : state.places) types.add("Yalnız " + location.name + " kısıtı");
+    Spinner type = spinner(types.toArray(new String[0]));
+    int index = reason.equals("Rapor") ? 1 : reason.equals("Senelik izin") ? 0 : 2;
+    if (!place.equals(ALL))
+      for (int i = 0; i < state.places.size(); i++)
+        if (state.places.get(i).id.equals(place)) index = 3 + i;
+    type.setSelection(index);
+    box.addView(type);
+    LocalDate[] dates = {start, end};
+    Button from = button("Başlangıç: " + start.format(shortDate), () -> {}),
+        to = button("Bitiş: " + end.format(shortDate), () -> {});
+    from.setOnClickListener(
+        v ->
+            date(
+                dates[0],
+                d -> {
+                  dates[0] = d;
+                  from.setText(getString(R.string.starts, d.format(shortDate)));
+                }));
+    to.setOnClickListener(
+        v ->
+            date(
+                dates[1],
+                d -> {
+                  dates[1] = d;
+                  to.setText(getString(R.string.ends, d.format(shortDate)));
+                }));
+    box.addView(from);
+    box.addView(to);
+    AlertDialog dialog =
+        new AlertDialog.Builder(this)
+            .setTitle("Tarihli mazeret")
+            .setView(box)
+            .setNegativeButton("Vazgeç", null)
+            .setPositiveButton("Teyit et", null)
+            .create();
+    dialog.setOnShowListener(
+        x ->
+            dialog
+                .getButton(-1)
+                .setOnClickListener(
+                    v -> {
+                      if (dates[1].isBefore(dates[0])) {
+                        toast("Bitiş tarihi başlangıçtan önce olamaz.");
+                        return;
+                      }
+                      String person = list.get(who.getSelectedItemPosition()).id;
+                      int t = type.getSelectedItemPosition();
+                      String target = t >= 3 ? state.places.get(t - 3).id : ALL;
+                      String label = type.getSelectedItem().toString();
+                      confirm(
+                          "Mazereti kaydet",
+                          state.name(person)
+                              + "\n"
+                              + dates[0].format(shortDate)
+                              + " – "
+                              + dates[1].format(shortDate)
+                              + "\n"
+                              + state.placeName(target)
+                              + " için atanmayacak.\n"
+                              + "Yalnız mazeretle çakışan atamalar kaldırılır; diğer haftalar"
+                              + " korunur. Yeniden dağıtım onayınızı ister.",
+                          () -> {
+                            if (existing != null) {
+                              state.leaves.remove(existing);
+                              for (Week wk : state.weeks)
+                                for (Debt debt : wk.debts)
+                                  if (debt.person.equals(existing.person)
+                                      && debt.end.equals(existing.end)) debt.end = dates[1];
+                            }
+                            Leave l = new Leave(person, target, dates[0], dates[1], label);
+                            state.leaves.add(l);
+                            removeConflicts(l);
+                            if (save()) {
+                              dialog.dismiss();
+                              draft = null;
+                              render();
+                              toast("Mazeret kaydedildi. Boşalan günler için dağıtım önerin.");
+                            }
+                          });
+                    }));
+    dialog.show();
+  }
+
+  private void removeConflicts(Leave l) {
+    for (Week w : state.weeks) {
+      boolean affectedWeekend =
+          w.duties.stream()
+              .anyMatch(
+                  d ->
+                      weekend(d.date)
+                          && d.place.equals(WORK)
+                          && l.blocks(d.person, d.place, d.date));
+      if (affectedWeekend) {
+        String id =
+            w.duties.stream()
+                .filter(
+                    d ->
+                        weekend(d.date)
+                            && d.place.equals(WORK)
+                            && l.blocks(d.person, d.place, d.date))
+                .map(d -> d.person)
+                .findFirst()
+                .orElse("");
+        w.duties.removeIf(d -> weekend(d.date) && d.person.equals(id) && d.place.equals(WORK));
+        if (w.debts.stream().noneMatch(d -> d.person.equals(id))) w.debts.add(new Debt(id, l.end));
+      }
+      w.duties.removeIf(d -> l.blocks(d.person, d.place, d.date));
+    }
+  }
+
+  private void branchExcuse() {
+    List<Person> list =
+        state.people.stream().filter(p -> p.active).collect(java.util.stream.Collectors.toList());
+    new AlertDialog.Builder(this)
+        .setTitle("Bu hafta şubeye gitmeyecek kişi")
+        .setItems(
+            list.stream().map(p -> p.name).toArray(String[]::new),
+            (d, i) ->
+                confirm(
+                    "Şube muafiyetini teyit edin",
+                    list.get(i).name
+                        + " "
+                        + range()
+                        + " haftasında şubeye hiç atanmayacak. İşyeri için uygunluğu devam eder."
+                        + " Yalnız çakışan şube atamaları"
+                        + " kaldırılır.",
+                    () -> {
+                      Leave leave =
+                          new Leave(
+                              list.get(i).id,
+                              BRANCH,
+                              selected,
+                              selected.plusDays(4),
+                              "Haftalık şube muafiyeti");
+                      state.leaves.add(leave);
+                      removeConflicts(leave);
+                      if (save()) {
+                        draft = generate(state, selected);
+                        render();
+                      }
+                    }))
+        .setNegativeButton("Vazgeç", null)
+        .show();
+  }
+
+  private void skip(Week w) {
+    String id =
+        w.duties.stream()
+            .filter(d -> d.date.equals(selected.plusDays(5)) && d.place.equals(WORK))
+            .map(d -> d.person)
+            .findFirst()
+            .orElse("");
+    if (id.isEmpty()) {
+      toast("Atlanacak hafta sonu nöbetçisi yok.");
+      return;
+    }
+    dateTitled(
+        "Mazeret bitiş tarihini seçin",
+        selected.plusDays(6),
+        end -> {
+          if (end.isBefore(selected.plusDays(5))) {
+            toast("Bitiş en az cumartesi olmalı.");
+            return;
+          }
+          confirm(
+              "Hafta sonu sırasını atla",
+              state.name(id)
+                  + " için "
+                  + selected.plusDays(5).format(shortDate)
+                  + " – "
+                  + end.format(shortDate)
+                  + " tüm görev yerlerinde mazeret kaydedilsin mi?\n"
+                  + "Mazeret bittikten sonraki ilk uygun hafta sonu öncelikli atanacak. Diğer"
+                  + " haftaların çakışmayan atamaları korunur.",
+              () -> {
+                Leave leave = new Leave(id, ALL, selected.plusDays(5), end, "Hafta sonu mazereti");
+                state.leaves.add(leave);
+                removeConflicts(leave);
+                if (save()) {
+                  draft = generate(state, selected);
+                  render();
+                }
+              });
+        });
+  }
+
+  private void edit(LocalDate day, String place) {
+    Week original = draft != null ? draft : saved();
+    if (original == null) return;
+    if (weekend(day) && place.equals(WORK)) {
+      replaceWeekend(original);
+      return;
+    }
+    Week edited = copy(original);
+    List<Person> options = new ArrayList<>();
+    options.add(new Person("", "BOŞ bırak"));
+    options.addAll(
+        state.people.stream().filter(p -> p.active).collect(java.util.stream.Collectors.toList()));
+    new AlertDialog.Builder(this)
+        .setTitle(day.format(shortDate) + " • " + state.placeName(place))
+        .setItems(
+            options.stream().map(p -> p.name).toArray(String[]::new),
+            (dialog, i) -> {
+              edited.duties.removeIf(d -> d.date.equals(day) && d.place.equals(place));
+              Person p = options.get(i);
+              if (!p.id.isEmpty()) edited.duties.add(new Duty(day, place, p.id));
+              Runnable apply =
+                  () -> {
+                    List<String> invalid = validate(state, edited);
+                    if (!invalid.isEmpty()) {
+                      toast(String.join("\n", invalid));
+                      return;
+                    }
+                    edited.warnings.add(
+                        "Elle düzenleme: "
+                            + day.format(shortDate)
+                            + " "
+                            + state.placeName(place)
+                            + " → "
+                            + p.name);
+                    draft = edited;
+                    render();
+                  };
+              Place location = state.place(place);
+              List<String> assigned = new ArrayList<>();
+              for (Duty duty : edited.duties)
+                if (duty.place.equals(place) && duty.person.equals(p.id) && !duty.date.equals(day))
+                  assigned.add(duty.date.format(shortDate));
+              if (!p.id.isEmpty() && location.limit > 0 && assigned.size() >= location.limit) {
+                confirm(
+                    "Tekrar atama onayı",
+                    p.name
+                        + " daha önce "
+                        + String.join(", ", assigned)
+                        + " tarihinde "
+                        + location.name
+                        + " görevine atandı. Tekrar atamak istiyor musun?",
+                    () -> {
+                      edited.limitOverrides.add(place + "|" + p.id);
+                      apply.run();
+                    });
+              } else apply.run();
+            })
+        .setNegativeButton("Vazgeç", null)
+        .show();
+  }
+
+  private void replaceWeekend(Week original) {
+    String old =
+        original.duties.stream()
+            .filter(d -> weekend(d.date) && d.place.equals(WORK))
+            .map(d -> d.person)
+            .findFirst()
+            .orElse("");
+    List<Person> options =
+        state.people.stream()
+            .filter(p -> p.active && !p.id.equals(old))
+            .collect(java.util.stream.Collectors.toList());
+    if (options.isEmpty()) {
+      toast("Başka aktif personel yok.");
+      return;
+    }
+    if (old.isEmpty()) {
+      new AlertDialog.Builder(this)
+          .setTitle("Cumartesi + pazar • manuel atama")
+          .setItems(
+              options.stream().map(p -> p.name).toArray(String[]::new),
+              (dialog, i) -> {
+                Week manual = copy(original);
+                Person p = options.get(i);
+                manual.duties.removeIf(d -> weekend(d.date) && d.place.equals(WORK));
+                manual.duties.add(new Duty(selected.plusDays(5), WORK, p.id));
+                manual.duties.add(new Duty(selected.plusDays(6), WORK, p.id));
+                manual.cursor = p.id;
+                manual.debts.removeIf(d -> d.person.equals(p.id));
+                List<String> errors = validate(state, manual);
+                if (!errors.isEmpty()) {
+                  toast(String.join("\n", errors) + " Perşembe/cuma alanlarını önce boşaltın.");
+                  return;
+                }
+                draft = manual;
+                render();
+              })
+          .setNegativeButton("Vazgeç", null)
+          .show();
+      return;
+    }
+    new AlertDialog.Builder(this)
+        .setTitle("Cumartesi + pazar devralacak kişi")
+        .setItems(
+            options.stream().map(p -> p.name).toArray(String[]::new),
+            (dialog, i) -> {
+              Person replacement = options.get(i);
+              if (!available(state, replacement.id, WORK, selected.plusDays(5))
+                  || !available(state, replacement.id, WORK, selected.plusDays(6))) {
+                toast("Seçilen kişinin hafta sonunda mazereti var.");
+                return;
+              }
+              dateTitled(
+                  "Devreden kişinin mazeret bitişi",
+                  selected.plusDays(6),
+                  end -> {
+                    if (end.isBefore(selected.plusDays(5))) {
+                      toast("Bitiş cumartesiden önce olamaz.");
+                      return;
+                    }
+                    confirm(
+                        "Hafta sonu değişimini teyit edin",
+                        state.name(old)
+                            + " yerine "
+                            + replacement.name
+                            + " iki gün atanacak. Devreden kişi için mazeret bitişi: "
+                            + end.format(shortDate)
+                            + ". İki yerde de mazeret kaydedilir. Perşembe/cuma izinleri ve hafta"
+                            + " içi atamalar yeniden hesaplanır. Diğer haftalar korunur; öneri"
+                            + " ayrıca onayınızı ister.",
+                        () -> {
+                          if (!old.isEmpty()) {
+                            Leave leave =
+                                new Leave(old, ALL, selected.plusDays(5), end, "Hafta sonu devri");
+                            state.leaves.add(leave);
+                            removeConflicts(leave);
+                          }
+                          if (save()) {
+                            try {
+                              draft = generate(state, selected, replacement.id);
+                              render();
+                            } catch (IllegalArgumentException e) {
+                              toast(e.getMessage());
+                            }
+                          }
+                        });
+                  });
+            })
+        .setNegativeButton("Vazgeç", null)
+        .show();
+  }
+
+  private void settings() {
+    heading("Ayarlar • Görev yerleri");
+    note(
+        "Yer adını değiştirmek geçmiş nöbetleri silmez. Çizelge, PDF ve istatistiklerde yeni ad"
+            + " görünür. İlk yer hafta sonu döngüsünü, ikinci yer mevcut hafta içi/kişi başı 1 gün"
+            + " kuralını korur.");
+    action("+ Yeni şube / görev yeri ekle", () -> placeDialog(null));
+    for (Place place : state.places) {
+      heading(place.name);
+      StringBuilder days = new StringBuilder();
+      String[] names = {"Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"};
+      for (int i = 0; i < 7; i++)
+        if ((place.days & (1 << i)) != 0) days.append(names[i]).append(" ");
+      note(
+          days
+              + " • Kişi başı haftalık: "
+              + (place.limit == 0 ? "Sınırsız" : place.limit)
+              + " • "
+              + (place.automatic ? "Otomatik dağıtım" : "Yalnız manuel"));
+      action("Adı / kuralları düzenle", () -> placeDialog(place));
+    }
+    note(
+        "Yeni bir yer eklendiğinde eski listelere kendiliğinden personel yazılmaz. Kaydedilmiş"
+            + " haftayı açıp yer alanlarına dokunarak düzenleyebilir veya yeni öneri"
+            + " oluşturabilirsiniz.");
+  }
+
+  private void placeDialog(Place current) {
+    if (current == null && state.places.size() >= 20) {
+      toast("En fazla 20 görev yeri eklenebilir.");
+      return;
+    }
+    LinearLayout box = new LinearLayout(this);
+    box.setOrientation(LinearLayout.VERTICAL);
+    box.setPadding(dp(20), dp(8), dp(20), dp(8));
+    EditText name = new EditText(this);
+    name.setSingleLine(true);
+    name.setHint("Görev yeri adı");
+    if (current != null) name.setText(current.name);
+    box.addView(name);
+    boolean fixed = current != null && (current.id.equals(WORK) || current.id.equals(BRANCH));
+    CheckBox[] days = new CheckBox[7];
+    String[] labels = {"Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"};
+    for (int i = 0; i < 7; i++) {
+      days[i] = new CheckBox(this);
+      days[i].setText(labels[i]);
+      days[i].setChecked(((current == null ? 31 : current.days) & (1 << i)) != 0);
+      days[i].setEnabled(!fixed);
+      box.addView(days[i]);
+    }
+    TextView limitLabel = text("Kişi başı haftalık üst sınır (0 = sınırsız)", 14, ink);
+    box.addView(limitLabel);
+    EditText limit = new EditText(this);
+    limit.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+    limit.setText(getString(R.string.limit_value, current == null ? 1 : current.limit));
+    limit.setEnabled(!fixed);
+    box.addView(limit);
+    CheckBox automatic = new CheckBox(this);
+    automatic.setText(R.string.auto_place);
+    automatic.setChecked(current == null || current.automatic);
+    automatic.setEnabled(!fixed);
+    box.addView(automatic);
+    ScrollView scroll = new ScrollView(this);
+    scroll.addView(box);
+    AlertDialog dialog =
+        new AlertDialog.Builder(this)
+            .setTitle(current == null ? "Yeni görev yeri" : "Görev yeri ayarları")
+            .setView(scroll)
+            .setNegativeButton("Vazgeç", null)
+            .setPositiveButton("Kaydet", null)
+            .create();
+    dialog.setOnShowListener(
+        x ->
+            dialog
+                .getButton(-1)
+                .setOnClickListener(
+                    v -> {
+                      String value = name.getText().toString().trim().replaceAll("\\s+", " ");
+                      if (value.isEmpty() || value.length() > 40) {
+                        name.setError("1–40 karakter girin.");
+                        return;
+                      }
+                      if (state.places.stream()
+                          .anyMatch(p -> p != current && p.name.equalsIgnoreCase(value))) {
+                        name.setError("Bu görev yeri adı zaten var.");
+                        return;
+                      }
+                      int mask = 0;
+                      for (int i = 0; i < 7; i++) if (days[i].isChecked()) mask |= 1 << i;
+                      int max;
+                      try {
+                        max = Integer.parseInt(limit.getText().toString());
+                        if (max < 0 || max > 7) throw new NumberFormatException();
+                      } catch (NumberFormatException e) {
+                        limit.setError("0–7 arasında girin.");
+                        return;
+                      }
+                      if (mask == 0) {
+                        toast("En az bir gün seçin.");
+                        return;
+                      }
+                      if (current == null) {
+                        Place p = new Place(UUID.randomUUID().toString(), value, mask, max);
+                        p.automatic = automatic.isChecked();
+                        state.places.add(p);
+                      } else {
+                        current.name = value;
+                        current.days = mask;
+                        current.limit = max;
+                        current.automatic = automatic.isChecked();
+                      }
+                      if (save()) {
+                        draft = null;
+                        dialog.dismiss();
+                        render();
+                        toast("Görev yeri kaydedildi; geçmiş nöbetler korundu.");
+                      }
+                    }));
+    dialog.show();
+  }
+
+  private void stats() {
+    heading("Nöbet istatistikleri");
+    note(
+        "Personeller Türkçe alfabetik sıralıdır. Hafta içi/hafta sonu sütunları "
+            + state.placeName(WORK)
+            + " içindir. Diğer görev yerleri kendi adlarıyla ayrı sütunlardadır. Yatay kaydırarak"
+            + " tüm şubeleri görebilirsiniz.");
+    note(
+        state.weeks.size()
+            + " onaylı hafta • "
+            + state.people.stream().filter(p -> p.active).count()
+            + " aktif personel");
+    heading("Bugün ve öncesi");
+    statisticsTable(false);
+    List<StatRow> planned = statistics(state, LocalDate.now(), true);
+    boolean any = false;
+    for (StatRow row : planned) for (long count : row.counts) if (count > 0) any = true;
+    if (any) {
+      heading("Gelecek atamalar");
+      statisticsTable(true);
+    }
+    note(
+        "Taslaklar sayılmaz. Kaydedilmiş listede değişiklikleri onayladığınızda sayılar otomatik"
+            + " güncellenir. Cumartesi+pazar 2 nöbet günüdür.");
+  }
+
+  private String columnName(int index) {
+    String value = "";
+    for (int n = index + 1; n > 0; n = (n - 1) / 26) value = (char) ('A' + (n - 1) % 26) + value;
+    return value;
+  }
+
+  private void statisticsTable(boolean future) {
+    List<String> labels = new ArrayList<>(Arrays.asList("Personel", "Hafta içi", "Hafta sonu"));
+    for (Place p : statisticPlaces(state)) labels.add(p.name);
+    TableLayout table = new TableLayout(this);
+    TableRow header = new TableRow(this);
+    for (int i = 0; i < labels.size(); i++)
+      header.addView(statCell(columnName(i) + "\n" + labels.get(i), i == 0, true, false));
+    table.addView(header);
+    int index = 0;
+    for (StatRow row : statistics(state, LocalDate.now(), future)) {
+      TableRow line = new TableRow(this);
+      boolean stripe = index++ % 2 != 0;
+      line.addView(
+          statCell(row.person.name + (row.person.active ? "" : " · Pasif"), true, false, stripe));
+      for (long count : row.counts)
+        line.addView(statCell(Long.toString(count), false, false, stripe));
+      table.addView(line);
+    }
+    HorizontalScrollView horizontal = new HorizontalScrollView(this);
+    horizontal.setHorizontalScrollBarEnabled(true);
+    horizontal.addView(table);
+    body.addView(horizontal, new LinearLayout.LayoutParams(-1, -2));
+  }
+
+  private TextView statCell(String value, boolean name, boolean header, boolean stripe) {
+    TextView cell = text(value, 14, header ? Color.WHITE : ink);
+    cell.setMinWidth(dp(name ? 180 : 115));
+    cell.setPadding(dp(12), dp(12), dp(12), dp(12));
+    cell.setGravity((name ? Gravity.START : Gravity.CENTER_HORIZONTAL) | Gravity.CENTER_VERTICAL);
+    cell.setBackgroundColor(header ? Color.rgb(31, 90, 137) : stripe ? surface : cardColor);
+    if (header) cell.setTypeface(null, Typeface.BOLD);
+    return cell;
+  }
+}
