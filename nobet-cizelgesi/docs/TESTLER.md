@@ -1,13 +1,19 @@
-# Doğrulama — Nöbet Çizelgesi 1.2 / 19 Ekim 2026
+# Doğrulama — Nöbet Çizelgesi 1.3 / 19 Ekim 2026
 
 - JDK 17.0.17, Android SDK 35, build-tools 35.0.0, Gradle 8.9, AGP 8.7.3.
 - `testDebugUnitTest`: **41 test, 0 başarısız, 0 atlanan**.
 - `lintDebug`: **sorun bulunmadı**.
 - APK ve Android test APK derlemeleri başarılı.
-- Android 11 / API 30 x86_64 emülatöründe önceki sürüm üzerine `adb install -r` ile 1.2 güncellemesi başarılı.
-- Android test çalıştırıcısı: **18 kontrol geçti, 0 başarısız**.
+- Android 11 / API 30 x86_64 emülatöründe önceki sürüm üzerine `adb install -r` ile 1.3 güncellemesi başarılı.
+- Android test çalıştırıcısı: **19 kontrol geçti, 0 başarısız**.
 
-## 1.2 kontrolleri
+## 1.3 kontrolleri
+
+20 görev yerli sentetik veride her şubenin istatistik başlığı bulundu; harfli başlıkların ve yatay kaydırma bileşeninin olmadığı doğrulandı. 280, 320, 360 ve 600 dp ölçümlerde tablo hücreleri sınırlar içinde kaldı. Sayımların ve Türkçe alfabetik sıranın mevcut motor testleri korundu.
+
+Kompakt 700 × 358 punto PDF Android PdfRenderer ile açılıp görüntülendi. Çok sayfalı dışa aktarım ve görünür/gizli yerlerin korunması da yeniden doğrulandı. Sabit başlıklarda Hafta İçi / Hafta Sonu yazımı kontrol edildi.
+
+## Önceki kontroller
 
 İlk ana yerin seçili hafta içi günleri, ilk şubeye hafta sonu günü seçilmesi, ana yerde yalnız cumartesi/yalnız pazar ataması, kapalı cumartesideki mazeretin açık pazarı engellememesi, yalnız pazarla bekleyen nöbet hakkının kapanması, tüm günler kapalıyken atama/döngü ilerlemesi olmaması test edildi.
 

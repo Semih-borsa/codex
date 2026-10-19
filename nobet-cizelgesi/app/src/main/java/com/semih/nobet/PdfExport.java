@@ -41,44 +41,44 @@ final class PdfExport {
       int pages = (shown.size() + 2) / 3;
       for (int part = 0; part < pages; part++) {
         List<Place> locations = shown.subList(part * 3, Math.min(shown.size(), part * 3 + 3));
-        int columnWidth = 570 / locations.size();
+        int columnWidth = 470 / locations.size();
         PdfDocument.Page page =
-            pdf.startPage(new PdfDocument.PageInfo.Builder(842, 595, part + 1).create());
+            pdf.startPage(new PdfDocument.PageInfo.Builder(700, 358, part + 1).create());
         Canvas c = page.getCanvas();
         Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
         p.setColor(Color.rgb(16, 35, 57));
-        p.setTextSize(26);
+        p.setTextSize(21);
         p.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
-        c.drawText("NÖBET ÇİZELGESİ", 36, 52, p);
+        c.drawText("Nöbet Çizelgesi", 18, 34, p);
         p.setTextSize(13);
         p.setTypeface(Typeface.DEFAULT);
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd.MM.yyyy");
-        c.drawText(w.monday.format(fmt) + " – " + w.monday.plusDays(6).format(fmt), 36, 77, p);
+        c.drawText(w.monday.format(fmt) + " – " + w.monday.plusDays(6).format(fmt), 18, 55, p);
         p.setColor(Color.rgb(42, 111, 177));
-        c.drawRect(36, 98, 806, 131, p);
+        c.drawRect(18, 70, 682, 100, p);
         p.setColor(Color.WHITE);
         p.setTypeface(Typeface.DEFAULT_BOLD);
         p.setTextSize(12);
-        c.drawText("TARİH / GÜN", 48, 119, p);
+        c.drawText("Tarih / Gün", 26, 90, p);
         for (int col = 0; col < locations.size(); col++)
-          fit(c, p, locations.get(col).name, 238 + col * columnWidth, 119, columnWidth - 12);
+          fit(c, p, locations.get(col).name, 208 + col * columnWidth, 90, columnWidth - 12);
         DateTimeFormatter day = DateTimeFormatter.ofPattern("dd.MM • EEEE", new Locale("tr", "TR"));
         for (int i = 0; i < 7; i++) {
           LocalDate date = w.monday.plusDays(i);
-          int y = 132 + i * 43;
+          int y = 101 + i * 34;
           p.setColor(i % 2 == 0 ? Color.rgb(240, 246, 249) : Color.WHITE);
-          c.drawRect(36, y, 806, y + 42, p);
+          c.drawRect(18, y, 682, y + 33, p);
           p.setColor(Color.rgb(16, 35, 57));
           p.setTypeface(Typeface.DEFAULT);
           p.setTextSize(12);
-          c.drawText(date.format(day), 48, y + 26, p);
+          c.drawText(titleDay(date.format(day)), 26, y + 22, p);
           for (int col = 0; col < locations.size(); col++)
             fit(
                 c,
                 p,
                 person(s, w, date, locations.get(col).id),
-                238 + col * columnWidth,
-                y + 26,
+                208 + col * columnWidth,
+                y + 22,
                 columnWidth - 12);
         }
         pdf.finishPage(page);
@@ -90,6 +90,13 @@ final class PdfExport {
       pdf.close();
     }
     return out;
+  }
+
+  private static String titleDay(String text) {
+    int start = text.indexOf("• ") + 2;
+    return text.substring(0, start)
+        + text.substring(start, start + 1).toUpperCase(new Locale("tr", "TR"))
+        + text.substring(start + 1);
   }
 
   private static void fit(Canvas c, Paint p, String text, int x, int y, int width) {
@@ -111,6 +118,6 @@ final class PdfExport {
             .putExtra(Intent.EXTRA_STREAM, u)
             .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
     i.setClipData(ClipData.newRawUri("Haftalık nöbet PDF", u));
-    ctx.startActivity(Intent.createChooser(i, "PDF paylaş • WhatsApp veya başka uygulama"));
+    ctx.startActivity(Intent.createChooser(i, "PDF Paylaş • WhatsApp veya Başka Uygulama"));
   }
 }
