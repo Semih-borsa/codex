@@ -82,6 +82,7 @@ public final class Roster {
   public static final class Week {
     public LocalDate monday;
     public String cursor = "";
+    public int rotationRevision = 0;
     public List<Duty> duties = new ArrayList<>();
     public List<Debt> debts = new ArrayList<>();
     public Set<String> limitOverrides = new HashSet<>();
@@ -94,6 +95,8 @@ public final class Roster {
 
   public static final class State {
     public Set<String> hiddenPlaces = new HashSet<>();
+    public List<String> weekendOrder = new ArrayList<>();
+    public int rotationRevision = 0;
     public List<Place> places =
         new ArrayList<>(
             Arrays.asList(new Place(WORK, WORK, 127, 0), new Place(BRANCH, BRANCH, 31, 1)));
@@ -225,12 +228,32 @@ public final class Roster {
     return list;
   }
 
+  public static List<Person> weekendOrder(State s) {
+    List<Person> result = new ArrayList<>();
+    Set<String> seen = new HashSet<>();
+    for (String id : s.weekendOrder)
+      for (Person p : s.people) if (p.id.equals(id) && seen.add(id)) result.add(p);
+    for (Person p : s.people) if (seen.add(p.id)) result.add(p);
+    return result;
+  }
+
+  public static void setWeekendOrder(State s, List<String> ids) {
+    Set<String> active = new HashSet<>();
+    for (Person p : s.people) if (p.active) active.add(p.id);
+    if (ids.size() != active.size() || !new HashSet<>(ids).equals(active))
+      throw new IllegalArgumentException("Her aktif personel sırada bir kez bulunmalı.");
+    s.weekendOrder = new ArrayList<>(ids);
+    for (Person p : weekendOrder(s)) if (!p.active) s.weekendOrder.add(p.id);
+    s.rotationRevision++;
+  }
+
   public static Week generate(State s, LocalDate date) {
     return generate(s, date, null);
   }
 
   public static Week generate(State s, LocalDate date, String replacement) {
     Week w = new Week(monday(date));
+    w.rotationRevision = s.rotationRevision;
     List<Person> active =
         s.people.stream().filter(p -> p.active).collect(java.util.stream.Collectors.toList());
     if (active.isEmpty())
@@ -240,7 +263,7 @@ public final class Roster {
             .filter(x -> x.monday.isBefore(w.monday))
             .max(Comparator.comparing(x -> x.monday))
             .orElse(null);
-    if (previous != null) {
+    if (previous != null && previous.rotationRevision == s.rotationRevision) {
       w.cursor = previous.cursor;
     }
     w.debts.addAll(pendingDebts(s, w.monday));
@@ -265,10 +288,11 @@ public final class Roster {
             "Birden fazla bekleyen hafta sonu var. En erken mazereti biten uygun kişi öncelikli;"
                 + " diğerleri sırada tutuluyor.");
       if (chosen == null) {
+        List<Person> order = weekendOrder(s);
         int last = -1;
-        for (int i = 0; i < s.people.size(); i++) if (s.people.get(i).id.equals(w.cursor)) last = i;
-        for (int n = 1; n <= s.people.size(); n++) {
-          Person p = s.people.get((last + n) % s.people.size());
+        for (int i = 0; i < order.size(); i++) if (order.get(i).id.equals(w.cursor)) last = i;
+        for (int n = 1; n <= order.size(); n++) {
+          Person p = order.get((last + n) % order.size());
           if (!p.active) continue;
           w.cursor = p.id;
           if (weekendAvailable(s, p.id, w.monday)) {
@@ -527,6 +551,7 @@ public final class Roster {
   public static Week copy(Week w) {
     Week c = new Week(w.monday);
     c.cursor = w.cursor;
+    c.rotationRevision = w.rotationRevision;
     for (Duty d : w.duties) c.duties.add(new Duty(d.date, d.place, d.person));
     for (Debt d : w.debts) c.debts.add(new Debt(d.person, d.end));
     c.warnings.addAll(w.warnings);

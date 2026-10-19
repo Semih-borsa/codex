@@ -1,12 +1,20 @@
-# Nöbet Çizelgesi 1.4 — Android
+# Nöbet Çizelgesi 1.5 — Android
 
 Çevrimdışı personel, görev yeri, mazeret ve haftalık nöbet planlama uygulaması.
 
-[APK 1.4 indir](../downloads/NobetCizelgesi-1.4.apk) · [Android Studio ZIP](../downloads/NobetCizelgesi-Android-Studio.zip) · [Test sonuçları](docs/TESTLER.md)
+[APK 1.5 indir](../downloads/NobetCizelgesi-1.5.apk) · [Android Studio ZIP](../downloads/NobetCizelgesi-Android-Studio.zip) · [Test sonuçları](docs/TESTLER.md)
 
-Android 8.0 ve üzeri. Önceki sürümlerden biri kuruluysa **uygulamayı kaldırmadan** 1.4 APK'sını açarak güncelleyin. Aynı paket adı ve imza kullanılır; eski kayıtlar okunur. Kaldırmak veya uygulama verilerini silmek kayıtları siler.
+Android 8.0 ve üzeri. Önceki sürümlerden biri kuruluysa **uygulamayı kaldırmadan** 1.5 APK'sını açarak güncelleyin. Aynı paket adı ve imza kullanılır; eski kayıtlar okunur. Kaldırmak veya uygulama verilerini silmek kayıtları siler.
 
-## 1.4 yenilikleri
+## 1.5 yenilikleri
+
+**Ayarlar → Hafta Sonu Nöbet Sırası** bölümünde personeller **1. Sıra, 2. Sıra…** olarak listelenir. Personele dokunup yeni sıra numarasını seçin; diğer kişiler otomatik kaydırılır. Önizlemedeki yeni sıralamayı onaylayarak kaydedin. Aynı sırayı tekrar seçip onaylamak döngüyü 1. sıradan yeniden başlatır.
+
+**Sıraya Yeni Personel Ekle** düğmesinde adı ve hafta sonu sıra numarasını girin. Personel bölümünden eklerken de sıra numarası seçilir. Her aktif personel sırada bir kez yer alır; pasifler atlanır. Yeni sıra kaydedildikten sonraki ilk otomatik öneri 1. sıradan başlar, sonraki onaylı haftalarda döngü devam eder. Mazereti biten bekleyen personelin önceliği korunur; bu nöbet normal sırayı tüketmez. Perşembe/Cuma dinlenmesi sürer.
+
+Sıra değiştirmek geçmiş/onaylı çizelgeleri veya istatistikleri değiştirmez; açık öneri iptal edilir. Önceden hazırlanmış gelecek haftaları yeni sırayla kullanmak isterseniz yeniden öneri üretip onaylayın. Eski kayıtlar güncellenirken mevcut ekleme sırası ve döngü konumu korunur; Ayarlar'dan değiştirene kadar devam eder. Sıralama ve döngü konumu cihazda saklanır. İstatistikler alfabetik kalır.
+
+## İstatistik PDF
 
 İstatistik ekranında **İstatistikleri PDF Olarak Paylaş** düğmesi bulunur. PDF yalnız tabloları içerir; açıklama, özet veya imza alanı eklenmez. Bugün Ve Öncesi / Gelecek Atamalar ayrımı tablo başlığında korunur. Gelecek atama yoksa gelecek tablosu oluşturulmaz. Personeller Türkçe alfabetik sırada, tüm şubeler sizin verdiğiniz adla gösterilir. Çizelgede gizlenen şubeler istatistik PDF'sinde de sayılmaya devam eder.
 
@@ -37,7 +45,7 @@ Uzun adlar satıra bölünür; çok personel/şube varsa tablo ek sayfalara deva
 
 ## Kullanım
 
-1. **Personel:** İsimleri ilk hafta sonu sırasına göre ekleyin. Personel çıkarma pasife alma şeklindedir; geçmişi korunur, bugün/gelecek atamaları kaldırılır. Yeniden etkinleştirebilirsiniz.
+1. **Personel:** İsimleri ve hafta sonu sıra numaralarını girin; sıralamayı Ayarlar’dan değiştirebilirsiniz. Personel çıkarma pasife alma şeklindedir; geçmişi korunur, bugün/gelecek atamaları kaldırılır. Yeniden etkinleştirebilirsiniz.
 2. **Ayarlar:** Yer adlarını ve yeni şubeleri tanımlayın. Yeni yer eklemek/gün değiştirmek eski haftalara kendiliğinden personel yazmaz; ilgili haftayı düzenleyin veya yeni öneri üretin.
 3. **Mazeret:** Senelik izin/rapor/genel mazeret, başlangıç ve bitiş dahil **tüm yerlerde** atamayı engeller. İsterseniz yalnız seçtiğiniz yere kısıt girin. Mazeret eklenince yalnız çakışan atamalar kaldırılır; diğer haftaların çakışmayan kayıtları korunur. Boşalan günler ayrıca düzenlenebilir veya yeniden dağıtılabilir.
 4. **Çizelge:** Hafta seçin → otomatik öneri veya boş manuel çizelge açın. Varsayılan olarak ana yerde her gün bir kişi; ilk şubede hafta içi kişi başı bir gün. Bu yerlerin günleri de Ayarlar’dan değiştirilebilir. Yeni yerlerde ayarladığınız gün/sınırlar kullanılır. Uygun kişi yoksa zorla atama yapılmaz; eksik günler bildirilir ve kayıttan önce teyit edilir.

@@ -343,13 +343,15 @@ public final class MainActivity extends Activity {
                             + " seçin.",
                         () -> {
                           draft = new Week(selected);
+                          draft.rotationRevision = state.rotationRevision;
                           Week previous =
                               state.weeks.stream()
                                   .filter(x -> x.monday.isBefore(selected))
                                   .max(Comparator.comparing(x -> x.monday))
                                   .orElse(null);
                           if (previous != null) {
-                            draft.cursor = previous.cursor;
+                            if (previous.rotationRevision == state.rotationRevision)
+                              draft.cursor = previous.cursor;
                             for (Debt d : previous.debts)
                               draft.debts.add(new Debt(d.person, d.end));
                           }
@@ -493,8 +495,8 @@ public final class MainActivity extends Activity {
   private void people() {
     heading("Personel");
     note(
-        "Sıra, ilk hafta sonu döngüsünün sırasıdır. Pasife alınan kişi geçmiş kayıtlarda tutulur ve"
-            + " yeni atamalarda kullanılmaz.");
+        "Hafta sonu sırasını Ayarlar → Hafta Sonu Nöbet Sırası bölümünden düzenleyin. Pasif"
+            + " personel yeni atamalarda kullanılmaz.");
     action("+ Personel Ekle", () -> personDialog(null));
     for (Person p : state.people) {
       heading(p.name + (p.active ? "" : " · Pasif"));
@@ -536,10 +538,31 @@ public final class MainActivity extends Activity {
     input.setSingleLine(true);
     input.setHint("Ad Soyad");
     if (p != null) input.setText(p.name);
+    LinearLayout fields = new LinearLayout(this);
+    fields.setOrientation(LinearLayout.VERTICAL);
+    fields.setPadding(dp(18), 0, dp(18), 0);
+    fields.addView(input);
+    List<String> ids = activeWeekendIds();
+    EditText position = new EditText(this);
+    position.setSingleLine(true);
+    position.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+    position.setHint("Hafta Sonu Sıra Numarası");
+    position.setText(
+        getString(R.string.limit_value, p == null ? ids.size() + 1 : ids.indexOf(p.id) + 1));
+    if (p == null) {
+      fields.addView(text("Hafta Sonu Nöbet Sırası (1–" + (ids.size() + 1) + ")", 14, ink));
+      fields.addView(position);
+      fields.addView(
+          text(
+              "Yeni sıra sonraki otomatik öneride 1. sıradan başlar. Bekleyen mazeret hakları"
+                  + " korunur.",
+              13,
+              muted));
+    }
     AlertDialog dialog =
         new AlertDialog.Builder(this)
             .setTitle(p == null ? "Personel Ekle" : "Adı Düzenle")
-            .setView(input)
+            .setView(fields)
             .setNegativeButton("Vazgeç", null)
             .setPositiveButton("Kaydet", null)
             .create();
@@ -559,9 +582,20 @@ public final class MainActivity extends Activity {
                         input.setError("Bu isim zaten var; ayırt edici bir ad girin.");
                         return;
                       }
-                      if (p == null)
-                        state.people.add(new Person(UUID.randomUUID().toString(), name));
-                      else p.name = name;
+                      if (p == null) {
+                        int rank;
+                        try {
+                          rank = Integer.parseInt(position.getText().toString());
+                          if (rank < 1 || rank > ids.size() + 1) throw new NumberFormatException();
+                        } catch (NumberFormatException e) {
+                          position.setError("1–" + (ids.size() + 1) + " arasında sıra girin.");
+                          return;
+                        }
+                        Person added = new Person(UUID.randomUUID().toString(), name);
+                        state.people.add(added);
+                        ids.add(rank - 1, added.id);
+                        setWeekendOrder(state, ids);
+                      } else p.name = name;
                       if (save()) {
                         dialog.dismiss();
                         draft = null;
@@ -1054,7 +1088,66 @@ public final class MainActivity extends Activity {
         .show();
   }
 
+  private List<String> activeWeekendIds() {
+    List<String> ids = new ArrayList<>();
+    for (Person person : weekendOrder(state)) if (person.active) ids.add(person.id);
+    return ids;
+  }
+
+  private void weekendSettings() {
+    heading("Hafta Sonu Nöbet Sırası");
+    note(
+        "Sırayı değiştirmek için personele dokunun. Yeni sıra sonraki otomatik öneride 1. sıradan"
+            + " başlar; onaylı listeler değişmez. Mazereti biten bekleyen personelin önceliği"
+            + " korunur.");
+    List<String> ids = activeWeekendIds();
+    for (int i = 0; i < ids.size(); i++) {
+      String id = ids.get(i);
+      action(
+          (i + 1) + ". Sıra • " + state.name(id),
+          () -> {
+            String[] positions = new String[ids.size()];
+            for (int n = 0; n < positions.length; n++) positions[n] = (n + 1) + ". Sıra";
+            new AlertDialog.Builder(this)
+                .setTitle(state.name(id) + " • Yeni Sıra")
+                .setSingleChoiceItems(
+                    positions,
+                    ids.indexOf(id),
+                    (dialog, which) -> {
+                      dialog.dismiss();
+                      List<String> reordered = new ArrayList<>(ids);
+                      reordered.remove(id);
+                      reordered.add(which, id);
+                      StringBuilder preview = new StringBuilder();
+                      for (int n = 0; n < reordered.size(); n++)
+                        preview
+                            .append(n + 1)
+                            .append(". Sıra • ")
+                            .append(state.name(reordered.get(n)))
+                            .append("\n");
+                      confirm(
+                          "Hafta Sonu Nöbet Sırasını Kaydet",
+                          preview
+                              + "\n"
+                              + "Sonraki otomatik dağıtım 1. sıradan başlar. Onaylı listeler"
+                              + " değişmez; bekleyen mazeret hakları korunur.",
+                          () -> {
+                            setWeekendOrder(state, reordered);
+                            if (save()) {
+                              draft = null;
+                              render();
+                            }
+                          });
+                    })
+                .setNegativeButton("Vazgeç", null)
+                .show();
+          });
+    }
+    action("+ Sıraya Yeni Personel Ekle", () -> personDialog(null));
+  }
+
   private void settings() {
+    weekendSettings();
     heading("Ayarlar • Görev Yerleri");
     note(
         "Yer adını değiştirmek geçmiş nöbetleri silmez. Çizelge, PDF ve istatistiklerde yeni ad"

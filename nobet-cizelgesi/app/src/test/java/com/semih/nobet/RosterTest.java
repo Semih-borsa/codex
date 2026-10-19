@@ -561,4 +561,81 @@ public class RosterTest {
     copy.duties.clear();
     assertEquals(12, w.duties.size());
   }
+
+  @Test
+  public void configuredWeekendOrderRepeatsInChosenOrder() {
+    State s = people(5);
+    List<String> order = Arrays.asList("p3", "p1", "p4", "p0", "p2");
+    setWeekendOrder(s, order);
+    for (int i = 0; i < 10; i++) {
+      Week w = generate(s, mon.plusWeeks(i));
+      assertEquals(order.get(i % 5), weekendPerson(w));
+      approve(s, w);
+    }
+    assertEquals("p0", s.people.get(0).id); // Weekday staffing list is independent.
+  }
+
+  @Test
+  public void reorderedRotationRestartsWithoutChangingSavedWeeks() {
+    State s = people(5);
+    Week original = generate(s, mon);
+    approve(s, original);
+    setWeekendOrder(s, Arrays.asList("p4", "p3", "p2", "p1", "p0"));
+    Week next = generate(s, mon.plusWeeks(1));
+    assertEquals("p4", weekendPerson(next));
+    assertEquals("p0", weekendPerson(s.weeks.get(0)));
+    approve(s, next);
+    assertEquals("p3", weekendPerson(generate(s, mon.plusWeeks(2))));
+    assertEquals(next.rotationRevision, copy(next).rotationRevision);
+  }
+
+  @Test
+  public void newPersonnelCanBeInsertedAtChosenPosition() {
+    State s = people(5);
+    s.people.add(new Person("new", "Yeni Personel"));
+    setWeekendOrder(s, Arrays.asList("p0", "new", "p1", "p2", "p3", "p4"));
+    approve(s, generate(s, mon));
+    assertEquals("new", weekendPerson(generate(s, mon.plusWeeks(1))));
+  }
+
+  @Test
+  public void configuredOrderSkipsInactivePersonnel() {
+    State s = people(5);
+    setWeekendOrder(s, Arrays.asList("p4", "p3", "p2", "p1", "p0"));
+    s.people.get(4).active = false;
+    assertEquals("p3", weekendPerson(generate(s, mon)));
+  }
+
+  @Test
+  public void customOrderPreservesLeaveDebtAndRegularCursor() {
+    State s = people(5);
+    setWeekendOrder(s, Arrays.asList("p2", "p4", "p1", "p3", "p0"));
+    s.leaves.add(new Leave("p2", ALL, mon, mon.plusDays(6), "Rapor"));
+    Week first = generate(s, mon);
+    assertEquals("p4", weekendPerson(first));
+    approve(s, first);
+    Week owed = generate(s, mon.plusWeeks(1));
+    assertEquals("p2", weekendPerson(owed));
+    approve(s, owed);
+    assertEquals("p1", weekendPerson(generate(s, mon.plusWeeks(2))));
+    assertTrue(validate(s, owed).isEmpty());
+  }
+
+  @Test
+  public void invalidOrderNeverMutatesConfiguration() {
+    State s = people(3);
+    for (List<String> bad :
+        Arrays.asList(
+            Arrays.asList("p0", "p0", "p2"),
+            Arrays.asList("p0", "p1"),
+            Arrays.asList("p0", "p1", "unknown"))) {
+      try {
+        setWeekendOrder(s, bad);
+        fail("Invalid order accepted");
+      } catch (IllegalArgumentException expected) {
+      }
+      assertTrue(s.weekendOrder.isEmpty());
+      assertEquals(0, s.rotationRevision);
+    }
+  }
 }

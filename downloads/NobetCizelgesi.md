@@ -1,11 +1,13 @@
-# Nöbet Çizelgesi 1.4
+# Nöbet Çizelgesi 1.5
 
-- [APK 1.4 indir](NobetCizelgesi-1.4.apk)
+- [APK 1.5 indir](NobetCizelgesi-1.5.apk)
 - [Güncel APK](NobetCizelgesi.apk)
 - [Android Studio kaynak ZIP](NobetCizelgesi-Android-Studio.zip)
 - [Kullanım](../nobet-cizelgesi/README.md) · [Testler](../nobet-cizelgesi/docs/TESTLER.md)
 
 Android 8.0 ve üzeri. Mevcut uygulamayı **kaldırmadan** APK üzerinden güncelleyin; aynı imza korunur. APK debug imzalıdır.
+
+**Ayarlar → Hafta Sonu Nöbet Sırası:** personelleri 1. Sıra, 2. Sıra şeklinde düzenleyin. Yeni personel eklerken sıra numarası girilebilir. Yeni sıralama sonraki otomatik öneride 1. sıradan başlar; onaylı listeler değişmez, bekleyen mazeret hakları korunur.
 
 **İstatistik → İstatistikleri PDF Olarak Paylaş:** yalnız tablolardan oluşan PDF dışa aktarılır. Uzun isimler bölünür; çok personel/şube ek sayfalarda korunur. Geçmiş ve gelecek ayrı tablolardır.
 

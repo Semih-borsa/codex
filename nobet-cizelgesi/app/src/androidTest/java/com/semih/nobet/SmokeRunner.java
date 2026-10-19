@@ -331,6 +331,12 @@ public class SmokeRunner extends Instrumentation {
                           == android.graphics.Color.rgb(42, 111, 177));
                   settings.performClick();
                   truth(
+                      findText(activity.getWindow().getDecorView(), "Hafta Sonu Nöbet Sırası")
+                          != null);
+                  truth(
+                      findText(activity.getWindow().getDecorView(), "+ Sıraya Yeni Personel Ekle")
+                          != null);
+                  truth(
                       findText(activity.getWindow().getDecorView(), "Ayarlar • Görev Yerleri")
                           != null);
                   findText(activity.getWindow().getDecorView(), "İstatistik").performClick();
@@ -437,6 +443,18 @@ public class SmokeRunner extends Instrumentation {
                     java.lang.reflect.Field field = MainActivity.class.getDeclaredField("state");
                     field.setAccessible(true);
                     field.set(activity, sample); // In memory only; never saves over device records.
+                    setWeekendOrder(sample, java.util.Arrays.asList("p4", "p2", "p0", "p3", "p1"));
+                    findText(activity.getWindow().getDecorView(), "Ayarlar").performClick();
+                    truth(
+                        findText(
+                                activity.getWindow().getDecorView(),
+                                "1. Sıra • " + sample.name("p4"))
+                            != null);
+                    truth(
+                        findText(
+                                activity.getWindow().getDecorView(),
+                                "2. Sıra • " + sample.name("p2"))
+                            != null);
                     findText(activity.getWindow().getDecorView(), "İstatistik").performClick();
                     android.view.View root = activity.getWindow().getDecorView();
                     for (Place place : statisticPlaces(sample))
@@ -538,6 +556,41 @@ public class SmokeRunner extends Instrumentation {
             rejected = true;
           }
           truth(rejected);
+        });
+    check(
+        "Weekend order and revision survive storage including saved cursor",
+        () -> {
+          State sample = Store.decode(Store.encode(s));
+          setWeekendOrder(sample, java.util.Arrays.asList("p4", "p2", "p0", "p3", "p1"));
+          Week next = generate(sample, mon.plusWeeks(1));
+          approve(sample, next);
+          Store isolatedStore = new Store(context);
+          isolatedStore.save(sample);
+          State restored = isolatedStore.load();
+          truth(restored.weekendOrder.equals(sample.weekendOrder));
+          truth(restored.rotationRevision == 1);
+          truth(restored.weeks.get(restored.weeks.size() - 1).rotationRevision == 1);
+          Week following = generate(restored, mon.plusWeeks(2));
+          truth(
+              PdfExport.person(restored, following, following.monday.plusDays(5), WORK)
+                  .equals(restored.name("p2")));
+        });
+    check(
+        "Old records without order fields keep original sequence and cursor",
+        () -> {
+          org.json.JSONObject legacy = new org.json.JSONObject(Store.encode(s));
+          legacy.remove("weekendOrder");
+          legacy.remove("rotationRevision");
+          org.json.JSONArray weeks = legacy.getJSONArray("weeks");
+          for (int i = 0; i < weeks.length(); i++)
+            weeks.getJSONObject(i).remove("rotationRevision");
+          State restored = Store.decode(legacy.toString());
+          truth(restored.weekendOrder.isEmpty() && restored.rotationRevision == 0);
+          truth(weekendOrder(restored).get(0).id.equals("p0"));
+          Week next = generate(restored, mon.plusWeeks(1));
+          truth(
+              PdfExport.person(restored, next, next.monday.plusDays(5), WORK)
+                  .equals(restored.name("p1")));
         });
     Bundle result = new Bundle();
     result.putInt("passed", passed);

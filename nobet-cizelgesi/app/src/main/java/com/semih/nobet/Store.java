@@ -50,6 +50,8 @@ final class Store {
               .put("deleted", p.deleted));
     root.put("places", places);
     root.put("hiddenPlaces", new JSONArray(s.hiddenPlaces));
+    root.put("weekendOrder", new JSONArray(s.weekendOrder));
+    root.put("rotationRevision", s.rotationRevision);
     for (Person p : s.people)
       people.put(new JSONObject().put("id", p.id).put("name", p.name).put("active", p.active));
     for (Leave l : s.leaves)
@@ -70,6 +72,7 @@ final class Store {
           new JSONObject()
               .put("monday", w.monday)
               .put("cursor", w.cursor)
+              .put("rotationRevision", w.rotationRevision)
               .put("duties", duties)
               .put("debts", debts)
               .put("limitOverrides", new JSONArray(w.limitOverrides)));
@@ -82,6 +85,10 @@ final class Store {
     if (root.getInt("version") != 1 && root.getInt("version") != 2)
       throw new JSONException("Desteklenmeyen veri sürümü");
     State s = new State();
+    s.rotationRevision = root.optInt("rotationRevision", 0);
+    JSONArray order = root.optJSONArray("weekendOrder");
+    if (order != null)
+      for (int i = 0; i < order.length(); i++) s.weekendOrder.add(order.getString(i));
     JSONArray hidden = root.optJSONArray("hiddenPlaces");
     if (hidden != null)
       for (int i = 0; i < hidden.length(); i++) s.hiddenPlaces.add(hidden.getString(i));
@@ -122,6 +129,7 @@ final class Store {
       JSONObject j = weeks.getJSONObject(i);
       Week w = new Week(LocalDate.parse(j.getString("monday")));
       w.cursor = j.getString("cursor");
+      w.rotationRevision = j.optInt("rotationRevision", 0);
       JSONArray overrides = j.optJSONArray("limitOverrides");
       if (overrides != null)
         for (int n = 0; n < overrides.length(); n++) w.limitOverrides.add(overrides.getString(n));

@@ -1,11 +1,17 @@
-# Doğrulama — Nöbet Çizelgesi 1.4 / 19 Ekim 2026
+# Doğrulama — Nöbet Çizelgesi 1.5 / 19 Ekim 2026
 
 - JDK 17.0.17, Android SDK 35, build-tools 35.0.0, Gradle 8.9, AGP 8.7.3.
-- `testDebugUnitTest`: **41 test, 0 başarısız, 0 atlanan**.
+- `testDebugUnitTest`: **47 test, 0 başarısız, 0 atlanan**.
 - `lintDebug`: **sorun bulunmadı**.
 - APK ve Android test APK derlemeleri başarılı.
-- Android 11 / API 30 x86_64 emülatöründe önceki sürüm üzerine `adb install -r` ile 1.4 güncellemesi başarılı.
-- Android test çalıştırıcısı: **22 kontrol geçti, 0 başarısız**.
+- Android 11 / API 30 x86_64 emülatöründe önceki sürüm üzerine `adb install -r` ile 1.5 güncellemesi başarılı.
+- Android test çalıştırıcısı: **24 kontrol geçti, 0 başarısız**.
+
+## 1.5 kontrolleri
+
+Seçilen özel sırayla 10 haftalık döngü, kayıtlı eski haftayı değiştirmeden yeni sıradan başlama, yeni personeli araya ekleme, pasif kişiyi atlama, mazeret sonrası bekleyen önceliği ve normal döngüye devam etme test edildi. Eksik/mükerrer/bilinmeyen kimlikli sıra reddedilir; geçerli ayar bozulmaz. Haftanın sıra sürümü kopyalamada korunur.
+
+Android testleri: sıralama ve döngü konumu diske kaydedilip yeniden açıldıktan sonra doğru kişiden devam eder. Yeni alanları içermeyen eski JSON mevcut ekleme sırası ve döngü konumunu korur. Ayarlar'daki başlık, yeni personel düğmesi ve numaralı personel adları doğrulanır. Önceki istatistik/PDF/mazeret testleri yeniden geçti.
 
 ## 1.4 kontrolleri
 
