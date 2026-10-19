@@ -27,6 +27,7 @@ public final class MainActivity extends Activity {
   private int noticeToken;
   private boolean failed = false;
   private Week draft;
+  private ArrayList<String> weekendOrderDraft;
   private int ink = Color.rgb(19, 38, 60),
       teal = Color.rgb(42, 111, 177),
       muted = Color.rgb(85, 105, 124),
@@ -69,6 +70,7 @@ public final class MainActivity extends Activity {
       }
       selected = LocalDate.parse(b.getString("week", selected.toString()));
       screen = b.getInt("screen", 0);
+      weekendOrderDraft = b.getStringArrayList("weekendOrderDraft");
     }
     render();
     if (failed)
@@ -86,6 +88,7 @@ public final class MainActivity extends Activity {
     super.onSaveInstanceState(b);
     b.putString("week", selected.toString());
     b.putInt("screen", screen);
+    if (weekendOrderDraft != null) b.putStringArrayList("weekendOrderDraft", weekendOrderDraft);
     if (draft != null)
       try {
         State temp = new State();
@@ -498,6 +501,12 @@ public final class MainActivity extends Activity {
         "Hafta sonu sırasını Ayarlar → Hafta Sonu Nöbet Sırası bölümünden düzenleyin. Pasif"
             + " personel yeni atamalarda kullanılmaz.");
     action("+ Personel Ekle", () -> personDialog(null));
+    action(
+        "Nöbet Sırasını Düzenle",
+        () -> {
+          screen = 4;
+          render();
+        });
     for (Person p : state.people) {
       heading(p.name + (p.active ? "" : " · Pasif"));
       LinearLayout row = new LinearLayout(this);
@@ -542,7 +551,7 @@ public final class MainActivity extends Activity {
     fields.setOrientation(LinearLayout.VERTICAL);
     fields.setPadding(dp(18), 0, dp(18), 0);
     fields.addView(input);
-    List<String> ids = activeWeekendIds();
+    List<String> ids = p == null ? editableWeekendIds() : activeWeekendIds();
     EditText position = new EditText(this);
     position.setSingleLine(true);
     position.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
@@ -595,6 +604,7 @@ public final class MainActivity extends Activity {
                         state.people.add(added);
                         ids.add(rank - 1, added.id);
                         setWeekendOrder(state, ids);
+                        weekendOrderDraft = null;
                       } else p.name = name;
                       if (save()) {
                         dialog.dismiss();
@@ -1094,53 +1104,101 @@ public final class MainActivity extends Activity {
     return ids;
   }
 
+  private List<String> editableWeekendIds() {
+    List<String> active = activeWeekendIds();
+    if (weekendOrderDraft != null
+        && (weekendOrderDraft.size() != active.size()
+            || !new HashSet<>(weekendOrderDraft).equals(new HashSet<>(active))))
+      weekendOrderDraft = null;
+    return weekendOrderDraft == null ? active : new ArrayList<>(weekendOrderDraft);
+  }
+
+  private void moveWeekendPerson(String id, int delta) {
+    List<String> ids = editableWeekendIds();
+    int from = ids.indexOf(id), to = from + delta;
+    if (from < 0 || to < 0 || to >= ids.size()) return;
+    weekendOrderDraft = new ArrayList<>(ids);
+    Collections.swap(weekendOrderDraft, from, to);
+    render();
+  }
+
+  private void confirmWeekendOrder(List<String> ids) {
+    StringBuilder preview = new StringBuilder();
+    for (int n = 0; n < ids.size(); n++)
+      preview.append(n + 1).append(". Sıra • ").append(state.name(ids.get(n))).append("\n");
+    confirm(
+        "Hafta Sonu Nöbet Sırasını Kaydet",
+        preview
+            + "\n"
+            + "Sonraki otomatik dağıtım 1. sıradan başlar. Onaylı listeler değişmez; bekleyen"
+            + " mazeret hakları korunur.",
+        () -> {
+          setWeekendOrder(state, ids);
+          if (save()) {
+            weekendOrderDraft = null;
+            draft = null;
+            render();
+          }
+        });
+  }
+
   private void weekendSettings() {
     heading("Hafta Sonu Nöbet Sırası");
     note(
-        "Sırayı değiştirmek için personele dokunun. Yeni sıra sonraki otomatik öneride 1. sıradan"
-            + " başlar; onaylı listeler değişmez. Mazereti biten bekleyen personelin önceliği"
+        "↑ / ↓ ile personelleri taşıyın, ardından Sırayı Kaydet'e dokunun. Yeni sıra sonraki"
+            + " otomatik öneride 1. sıradan başlar; onaylı listeler ve bekleyen mazeret hakları"
             + " korunur.");
-    List<String> ids = activeWeekendIds();
+    List<String> ids = editableWeekendIds();
     for (int i = 0; i < ids.size(); i++) {
       String id = ids.get(i);
+      LinearLayout row = new LinearLayout(this);
+      Button name =
+          button(
+              (i + 1) + ". Sıra • " + state.name(id),
+              () -> {
+                String[] positions = new String[ids.size()];
+                for (int n = 0; n < positions.length; n++) positions[n] = (n + 1) + ". Sıra";
+                new AlertDialog.Builder(this)
+                    .setTitle(state.name(id) + " • Yeni Sıra")
+                    .setSingleChoiceItems(
+                        positions,
+                        ids.indexOf(id),
+                        (dialog, which) -> {
+                          dialog.dismiss();
+                          List<String> reordered = new ArrayList<>(ids);
+                          reordered.remove(id);
+                          reordered.add(which, id);
+                          confirmWeekendOrder(reordered);
+                        })
+                    .setNegativeButton("Vazgeç", null)
+                    .show();
+              });
+      name.setTextSize(13);
+      name.setMinWidth(0);
+      name.setMinimumWidth(0);
+      name.setPadding(dp(5), 0, dp(5), 0);
+      row.addView(name, new LinearLayout.LayoutParams(0, -2, 1));
+      for (int delta : new int[] {-1, 1}) {
+        Button arrow = button(delta < 0 ? "↑" : "↓", () -> moveWeekendPerson(id, delta));
+        arrow.setTag((delta < 0 ? "weekend-up-" : "weekend-down-") + id);
+        arrow.setContentDescription(
+            state.name(id) + (delta < 0 ? " • Yukarı Taşı" : " • Aşağı Taşı"));
+        arrow.setMinWidth(0);
+        arrow.setMinimumWidth(0);
+        arrow.setPadding(0, 0, 0, 0);
+        arrow.setEnabled(delta < 0 ? i > 0 : i < ids.size() - 1);
+        if (!arrow.isEnabled()) arrow.setAlpha(.45f);
+        row.addView(arrow, new LinearLayout.LayoutParams(dp(44), dp(48)));
+      }
+      body.addView(row);
+    }
+    if (weekendOrderDraft != null) {
+      action("Sırayı Kaydet", () -> confirmWeekendOrder(new ArrayList<>(weekendOrderDraft)));
       action(
-          (i + 1) + ". Sıra • " + state.name(id),
+          "Sıra Değişikliklerini İptal Et",
           () -> {
-            String[] positions = new String[ids.size()];
-            for (int n = 0; n < positions.length; n++) positions[n] = (n + 1) + ". Sıra";
-            new AlertDialog.Builder(this)
-                .setTitle(state.name(id) + " • Yeni Sıra")
-                .setSingleChoiceItems(
-                    positions,
-                    ids.indexOf(id),
-                    (dialog, which) -> {
-                      dialog.dismiss();
-                      List<String> reordered = new ArrayList<>(ids);
-                      reordered.remove(id);
-                      reordered.add(which, id);
-                      StringBuilder preview = new StringBuilder();
-                      for (int n = 0; n < reordered.size(); n++)
-                        preview
-                            .append(n + 1)
-                            .append(". Sıra • ")
-                            .append(state.name(reordered.get(n)))
-                            .append("\n");
-                      confirm(
-                          "Hafta Sonu Nöbet Sırasını Kaydet",
-                          preview
-                              + "\n"
-                              + "Sonraki otomatik dağıtım 1. sıradan başlar. Onaylı listeler"
-                              + " değişmez; bekleyen mazeret hakları korunur.",
-                          () -> {
-                            setWeekendOrder(state, reordered);
-                            if (save()) {
-                              draft = null;
-                              render();
-                            }
-                          });
-                    })
-                .setNegativeButton("Vazgeç", null)
-                .show();
+            weekendOrderDraft = null;
+            render();
           });
     }
     action("+ Sıraya Yeni Personel Ekle", () -> personDialog(null));

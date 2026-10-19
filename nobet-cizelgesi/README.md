@@ -1,12 +1,18 @@
-# Nöbet Çizelgesi 1.5 — Android
+# Nöbet Çizelgesi 1.6 — Android
 
 Çevrimdışı personel, görev yeri, mazeret ve haftalık nöbet planlama uygulaması.
 
-[APK 1.5 indir](../downloads/NobetCizelgesi-1.5.apk) · [Android Studio ZIP](../downloads/NobetCizelgesi-Android-Studio.zip) · [Test sonuçları](docs/TESTLER.md)
+[APK 1.6 indir](../downloads/NobetCizelgesi-1.6.apk) · [Android Studio ZIP](../downloads/NobetCizelgesi-Android-Studio.zip) · [Test sonuçları](docs/TESTLER.md)
 
-Android 8.0 ve üzeri. Önceki sürümlerden biri kuruluysa **uygulamayı kaldırmadan** 1.5 APK'sını açarak güncelleyin. Aynı paket adı ve imza kullanılır; eski kayıtlar okunur. Kaldırmak veya uygulama verilerini silmek kayıtları siler.
+Android 8.0 ve üzeri. Önceki sürümlerden biri kuruluysa **uygulamayı kaldırmadan** 1.6 APK'sını açarak güncelleyin. Aynı paket adı ve imza kullanılır; eski kayıtlar okunur. Kaldırmak veya uygulama verilerini silmek kayıtları siler.
 
-## 1.5 yenilikleri
+## 1.6 yenilikleri
+
+**Ayarlar → Hafta Sonu Nöbet Sırası** bölümündeki **↑ / ↓** düğmeleri personelleri birer sıra taşır. İsim silmek veya yeniden eklemek gerekmez. Birkaç taşıma yapıp **Sırayı Kaydet** ile önizlemeyi onaylayın. **Sıra Değişikliklerini İptal Et** kaydedilmemiş taşımaları geri alır. İlk kişinin yukarı, son kişinin aşağı düğmesi kapalıdır. Personele dokunarak doğrudan sıra numarası seçme de korunur.
+
+Personel ekranındaki **Nöbet Sırasını Düzenle** düğmesi aynı ayarlara açılır. Kaydedilmemiş sıra, ekran/tema yeniden oluşturulurken korunur; personel listesi değişirse geçersiz taslak bırakılmaz. Taşıma sırasında personel kimliği, adı, eski çizelgeler ve istatistikler değişmez. Yeni sıra onaylanınca sonraki otomatik dağıtım 1. sıradan başlar; bekleyen mazeret hakları korunur.
+
+## Numaralı hafta sonu sırası
 
 **Ayarlar → Hafta Sonu Nöbet Sırası** bölümünde personeller **1. Sıra, 2. Sıra…** olarak listelenir. Personele dokunup yeni sıra numarasını seçin; diğer kişiler otomatik kaydırılır. Önizlemedeki yeni sıralamayı onaylayarak kaydedin. Aynı sırayı tekrar seçip onaylamak döngüyü 1. sıradan yeniden başlatır.
 

@@ -1,11 +1,15 @@
-# Doğrulama — Nöbet Çizelgesi 1.5 / 19 Ekim 2026
+# Doğrulama — Nöbet Çizelgesi 1.6 / 19 Ekim 2026
 
 - JDK 17.0.17, Android SDK 35, build-tools 35.0.0, Gradle 8.9, AGP 8.7.3.
 - `testDebugUnitTest`: **47 test, 0 başarısız, 0 atlanan**.
 - `lintDebug`: **sorun bulunmadı**.
 - APK ve Android test APK derlemeleri başarılı.
-- Android 11 / API 30 x86_64 emülatöründe önceki sürüm üzerine `adb install -r` ile 1.5 güncellemesi başarılı.
-- Android test çalıştırıcısı: **24 kontrol geçti, 0 başarısız**.
+- Android 11 / API 30 x86_64 emülatöründe önceki sürüm üzerine `adb install -r` ile 1.6 güncellemesi başarılı.
+- Android test çalıştırıcısı: **25 kontrol geçti, 0 başarısız**.
+
+## 1.6 kontrolleri
+
+Android üzerinde ilk/son personelin sınır düğmeleri, aşağı ve yukarı taşıma sonrası görünen sıra numaraları, Kaydet düğmesinin görünmesi, ad/kimlik/eski kayıtların değişmemesi ve İptal ile kayıtlı sıraya dönüş doğrulandı. Kaydedilmemiş sıra ekran durumuna dahil edilir. Aktif personel listesi değişince geçersiz taslak temizlenir. Önceki 47 motor testi ve 24 Android kontrolü korundu.
 
 ## 1.5 kontrolleri
 

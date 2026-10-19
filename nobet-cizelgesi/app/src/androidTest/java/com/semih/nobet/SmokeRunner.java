@@ -592,6 +592,67 @@ public class SmokeRunner extends Instrumentation {
               PdfExport.person(restored, next, next.monday.plusDays(5), WORK)
                   .equals(restored.name("p1")));
         });
+    check(
+        "Weekend arrow controls move staff without renaming or changing saved records and can"
+            + " cancel",
+        () -> {
+          Activity activity =
+              startActivitySync(
+                  new Intent(target, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+          try {
+            waitForIdleSync();
+            runOnMainSync(
+                () -> {
+                  try {
+                    State sample = new State();
+                    for (int i = 0; i < 5; i++)
+                      sample.people.add(new Person("arrow" + i, "Personel " + i));
+                    Week recorded = generate(sample, mon);
+                    approve(sample, recorded);
+                    java.lang.reflect.Field field = MainActivity.class.getDeclaredField("state");
+                    field.setAccessible(true);
+                    field.set(activity, sample);
+                    findText(activity.getWindow().getDecorView(), "Ayarlar").performClick();
+                    android.view.View root = activity.getWindow().getDecorView();
+                    truth(!root.findViewWithTag("weekend-up-arrow0").isEnabled());
+                    truth(!root.findViewWithTag("weekend-down-arrow4").isEnabled());
+                    root.findViewWithTag("weekend-down-arrow0").performClick();
+                    root = activity.getWindow().getDecorView();
+                    truth(findText(root, "1. Sıra • Personel 1") != null);
+                    truth(findText(root, "2. Sıra • Personel 0") != null);
+                    truth(findText(root, "Sırayı Kaydet") != null);
+                    root.findViewWithTag("weekend-up-arrow0").performClick();
+                    root = activity.getWindow().getDecorView();
+                    truth(findText(root, "1. Sıra • Personel 0") != null);
+                    root.findViewWithTag("weekend-up-arrow4").performClick();
+                    root = activity.getWindow().getDecorView();
+                    truth(findText(root, "4. Sıra • Personel 4") != null);
+                    Bundle bundle = new Bundle();
+                    ((MainActivity) activity).onSaveInstanceState(bundle);
+                    truth(bundle.getStringArrayList("weekendOrderDraft").get(3).equals("arrow4"));
+                    truth(sample.weekendOrder.isEmpty() && sample.rotationRevision == 0);
+                    truth(
+                        sample.people.size() == 5
+                            && sample.people.get(4).name.equals("Personel 4"));
+                    truth(sample.weeks.get(0) == recorded && recorded.duties.size() == 12);
+                    findText(root, "Sıra Değişikliklerini İptal Et").performClick();
+                    root = activity.getWindow().getDecorView();
+                    truth(findText(root, "5. Sıra • Personel 4") != null);
+                    truth(findText(root, "Sırayı Kaydet") == null);
+                    root.findViewWithTag("weekend-down-arrow0").performClick();
+                    sample.people.get(4).active = false;
+                    findText(activity.getWindow().getDecorView(), "Ayarlar").performClick();
+                    root = activity.getWindow().getDecorView();
+                    truth(root.findViewWithTag("weekend-up-arrow4") == null);
+                    truth(findText(root, "Sırayı Kaydet") == null);
+                  } catch (ReflectiveOperationException e) {
+                    throw new AssertionError(e);
+                  }
+                });
+          } finally {
+            runOnMainSync(activity::finish);
+          }
+        });
     Bundle result = new Bundle();
     result.putInt("passed", passed);
     result.putInt("failed", failed);
