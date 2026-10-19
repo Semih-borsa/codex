@@ -24,7 +24,7 @@ public final class WidgetConfigureActivity extends Activity {
     root.setOrientation(LinearLayout.VERTICAL);
     int pad = (int) (24 * getResources().getDisplayMetrics().density);
     root.setPadding(pad, pad, pad, pad);
-    root.setBackgroundColor(0xFF0B1824);
+    root.setBackgroundColor(0xFF0A1220);
     setContentView(root);
     TextView title = new TextView(this);
     title.setText(R.string.widget_configure_title);
@@ -34,7 +34,7 @@ public final class WidgetConfigureActivity extends Activity {
     TextView note = new TextView(this);
     note.setText(R.string.widget_configure_note);
     note.setTextSize(14);
-    note.setTextColor(0xFFA6BDC5);
+    note.setTextColor(0xFFA9B8CF);
     root.addView(note);
     List<City> cities;
     try (WeatherStore store = new WeatherStore(this)) {

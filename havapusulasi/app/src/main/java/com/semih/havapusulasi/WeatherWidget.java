@@ -118,7 +118,18 @@ public final class WeatherWidget extends AppWidgetProvider {
     PendingIntent launch =
         PendingIntent.getActivity(
             c, id, open, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-    views.setOnClickPendingIntent(R.id.widget_open, launch);
+    for (int target :
+        new int[] {
+          R.id.widget_root,
+          R.id.widget_city,
+          R.id.widget_date,
+          R.id.widget_temperature,
+          R.id.widget_symbol,
+          R.id.widget_details,
+          R.id.widget_age,
+          R.id.widget_state,
+          R.id.widget_open
+        }) views.setOnClickPendingIntent(target, launch);
     Intent configure =
         new Intent(c, WidgetConfigureActivity.class)
             .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id)

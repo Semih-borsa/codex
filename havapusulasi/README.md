@@ -1,10 +1,10 @@
-# HavaPusulası 1.0.2
+# HavaPusulası 1.1.0
 
 Kişisel ve ticari olmayan kullanım için Android hava asistanı. Hesap, ücretli AI, sosyal özellik veya harita içermez. Telefonun GPS konumunu istemez. Android 8.0+ desteklenir. Ayrı uygulamadır; NOVA ve Cep Bütçem kayıtlarını kullanmaz/değiştirmez.
 
 ## APK'yı indir ve kur
 
-1. [HavaPusulasi-1.0.2.apk](https://github.com/Semih-borsa/codex/blob/main/downloads/HavaPusulasi-1.0.2.apk) sayfasını aç. Depo özelse GitHub'a giriş yap.
+1. [HavaPusulasi-1.1.0.apk](https://github.com/Semih-borsa/codex/blob/main/downloads/HavaPusulasi-1.1.0.apk) sayfasını aç. Depo özelse GitHub'a giriş yap.
 2. **Download raw file** / aşağı ok simgesine bas. Tarayıcıdaki “Farklı kaydet” APK yerine sayfanın HTML'sini kaydedebilir.
 3. İnen `.apk` dosyasını telefona aktar; Dosyalar uygulamasından aç. Android isterse bu dosyayı açtığın uygulamaya kurulum iznini kendin ver. HavaPusulası bu ayarı değiştiremez.
 4. Şehirler → İstanbul/Ankara/İzmir kısayolu veya **Şehir ara** → doğru şehir/ilçe ve ülkeyi seç. En fazla 12 şehir kaydedilir.
@@ -13,6 +13,16 @@ Kişisel ve ticari olmayan kullanım için Android hava asistanı. Hesap, ücret
 7. Denemek için **Örnek bildirimi göster**. Bildirimde tüm kayıtlı şehirler ve verinin yaşı gösterilir. İnternetten yenileme yapmak yerine kayıtlı veriyi kullanır.
 
 Güncellemelerde uygulamayı kaldırmadan APK'yı kur; kaldırma yerel şehir ve önbelleği siler. İlk paket kişisel kullanım için debug imzalıdır; Play Store üretim yayını değildir. Farklı bilgisayardaki debug anahtarıyla üretilen APK mevcut APK'nın üstüne kurulmayabilir; bu sürümde dışa aktarma/aktar içe alma yoktur.
+
+## 1.1.0: yeni arayüz ve widget’tan açılış
+
+- Widget'ın gövdesine, tarihine, şehir adına veya sıcaklığına dokununca ilgili şehirde uygulama açılır. **Yenile** ve **Şehir** düğmeleri ayrı işlevlerini korur.
+- Lacivert/mavi renk sistemi; açık/koyu tema, belirgin ana tahmin kartı, büyük sıcaklık, ayrı hissedilen/yağış/rüzgâr/nem kartları.
+- Saatlik kartlarda sade HH:mm, günlük listede simge ve min/maks sıcaklık; seçili alt gezinme, dokunma geri bildirimi, tutarlı kart sınırları ve boşluklar.
+- Geniş ekranda içerik en fazla 720 dp ile ortalanır; dar telefonda hava çizimi küçülür. Yazı boyutu Android ayarını izler; ekran kaydırılabilir.
+- Yeni tasarım canlı ölçüm özelliği eklemez: gösterilen değerler indirilen **model tahminidir**. Son başarılı yenileme saati ve çevrimdışı/eski kayıt uyarıları korunur.
+
+[Tasarım kararları ve renkler](docs/TASARIM.md).
 
 ## 1.0.2: son yenileme saati ve otomatik widget
 

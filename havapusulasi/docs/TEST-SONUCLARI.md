@@ -1,4 +1,14 @@
-# Test sonuçları — HavaPusulası 1.0.2
+# Test sonuçları — HavaPusulası 1.1.0
+
+## 1.1.0 — arayüz ve widget’tan uygulama açılışı
+
+28 birim testi, debug APK/test APK derlemesi başarılı. Son derlemede lint 0 sorun. Android 11 ve Android 15 emülatörlerinde 33’er instrumentation kontrolü geçti; sonrasında hava çiziminin en-boy oranı ve günlük sıcaklık metninin kaynak üzerinden biçimlenmesi düzeltildi, APK yeniden derlendi. Bu son APK Android 11’e güncellemeyle kuruldu ve 33 kontrol tekrar geçti (`design110-final-android30.log`). Test verisiyle ana tahmin/ölçüm/saatlik kartlar ve gerçek şehirlerle veri bulunmayan görünüm incelendi. Bunlar canlı hava testi değildir.
+
+Android 11 başlatıcısında uygulamada Ankara seçiliyken İstanbul widget’ının tarih/bilgi alanına dokunuldu; uygulamanın İstanbul’a geçtiği doğrulandı. Ayrı Şehir düğmesi hâlâ şehir yapılandırmasını açtı. Açık/koyu tema ve şehir/ayar ekranlarının görsel kontrol kayıtları bu klasörde saklanır.
+
+APK önceki sürümlerle aynı debug anahtarıyla imzalı, versionCode 4 / versionName 1.1.0. Gerçek Xiaomi cihazı, API 26, büyük sistem yazı ölçeği ve fiziksel tablet testi bu turda yapılmadı. Canlı hava erişimi ve Xiaomi pil kısıtlarıyla ilgili önceki sınırlar geçerlidir. Gerçek reboot/çevrimdışı alarm testleri bu tasarım güncellemesinde tekrarlanmadı.
+
+## 1.0.2 kayıtları
 
 ## 1.0.2 — yenileme saati ve otomatik widget
 

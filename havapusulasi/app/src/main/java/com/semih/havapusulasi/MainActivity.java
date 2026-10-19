@@ -4,9 +4,11 @@ import android.Manifest;
 import android.app.*;
 import android.content.*;
 import android.content.pm.PackageManager;
+import android.content.res.ColorStateList;
 import android.content.res.Configuration;
 import android.graphics.*;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.RippleDrawable;
 import android.net.Uri;
 import android.os.*;
 import android.provider.Settings;
@@ -113,16 +115,21 @@ public final class MainActivity extends Activity {
     t.setText(s);
     t.setTextSize(size);
     t.setTextColor(color);
-    t.setLineSpacing(dp(2), 1.1f);
-    if (bold) t.setTypeface(null, Typeface.BOLD);
+    t.setLineSpacing(dp(2), 1.04f);
+    t.setIncludeFontPadding(false);
+    t.setTypeface(Typeface.create(bold ? "sans-serif-medium" : "sans-serif", Typeface.NORMAL));
+    if (size <= 11 && bold) t.setLetterSpacing(.09f);
     add(p, t);
     return t;
   }
 
   private LinearLayout card(LinearLayout p) {
     LinearLayout c = column();
-    c.setPadding(dp(20), dp(18), dp(20), dp(18));
-    c.setBackground(shape(surface, 24));
+    c.setPadding(dp(20), dp(20), dp(20), dp(20));
+    GradientDrawable panel = shape(surface, 24);
+    panel.setStroke(dp(1), light ? 0xFFE2E8F2 : 0xFF27364D);
+    c.setBackground(panel);
+    c.setElevation(dp(light ? 1 : 0));
     LinearLayout.LayoutParams l = new LinearLayout.LayoutParams(-1, -2);
     l.bottomMargin = dp(14);
     p.addView(c, l);
@@ -133,12 +140,15 @@ public final class MainActivity extends Activity {
     Button b = new Button(this);
     b.setText(title);
     b.setAllCaps(false);
-    b.setTextColor(primary ? (light ? Color.WHITE : 0xFF09252B) : accent);
+    b.setTextColor(primary ? (light ? Color.WHITE : 0xFF081B38) : accent);
     b.setTextSize(14);
+    b.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
     b.setMinHeight(dp(48));
     b.setMinimumHeight(dp(48));
     b.setPadding(dp(12), dp(8), dp(12), dp(8));
-    b.setBackground(shape(primary ? accent : (light ? 0xFFEAF1F1 : 0xFF19313E), 16));
+    GradientDrawable fill = shape(primary ? accent : (light ? 0xFFEDF3FE : 0xFF1E304A), 16);
+    b.setBackground(
+        new RippleDrawable(ColorStateList.valueOf(light ? 0x224A78FF : 0x337BB5FF), fill, null));
     b.setOnClickListener(v -> action.run());
     return b;
   }
@@ -160,11 +170,11 @@ public final class MainActivity extends Activity {
             || theme.equals("system")
                 && (getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK)
                     != Configuration.UI_MODE_NIGHT_YES;
-    bg = light ? 0xFFF3F7F5 : 0xFF0B1824;
-    surface = light ? Color.WHITE : 0xFF142936;
-    text = light ? 0xFF13333C : 0xFFEAF5F4;
-    muted = light ? 0xFF506872 : 0xFFA6BDC5;
-    accent = light ? 0xFF13747B : 0xFF76D2CF;
+    bg = light ? 0xFFF4F7FC : 0xFF0A1220;
+    surface = light ? Color.WHITE : 0xFF142137;
+    text = light ? 0xFF16243B : 0xFFF1F5FF;
+    muted = light ? 0xFF596B85 : 0xFFA9B8CF;
+    accent = light ? 0xFF245DD8 : 0xFF91BDFF;
     getWindow().setStatusBarColor(bg);
     getWindow().setNavigationBarColor(bg);
     getWindow()
@@ -194,29 +204,38 @@ public final class MainActivity extends Activity {
         });
     root.requestApplyInsets();
     LinearLayout header = row();
-    header.setPadding(dp(20), dp(14), dp(20), dp(12));
+    header.setPadding(dp(20), dp(18), dp(20), dp(16));
     LinearLayout titles = column();
     copy(titles, "HAVA PUSULASI", 11, accent, true);
+    gap(titles, 7);
     copy(
         titles,
-        page == 0
-            ? "Günün rotasını belirle."
-            : page == 1 ? "Şehirlerin, tek yerde." : "Kontrol sende.",
-        21,
+        page == 0 ? "Hava durumun." : page == 1 ? "Şehirlerin." : "Tercihlerin.",
+        27,
         text,
         true);
     weight(header, titles);
     TextView star = new TextView(this);
-    star.setText("✦");
-    star.setTextSize(28);
+    star.setText("☀");
+    star.setGravity(Gravity.CENTER);
+    star.setTextSize(23);
+    star.setBackground(shape(light ? 0xFFE6EEFF : 0xFF203556, 18));
+    star.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
     star.setTextColor(accent);
-    header.addView(star);
+    header.addView(star, new LinearLayout.LayoutParams(dp(50), dp(50)));
     add(root, header);
     scroll = new ScrollView(this);
     scroll.setFillViewport(true);
     body = column();
     body.setPadding(dp(18), dp(8), dp(18), dp(20));
-    scroll.addView(body);
+    scroll.setClipToPadding(false);
+    scroll.setVerticalScrollBarEnabled(false);
+    FrameLayout.LayoutParams content =
+        new FrameLayout.LayoutParams(
+            getResources().getConfiguration().screenWidthDp > 720 ? dp(720) : -1,
+            -2,
+            Gravity.CENTER_HORIZONTAL);
+    scroll.addView(body, content);
     root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1));
     search = null;
     if (!feedback.isEmpty()) {
@@ -227,13 +246,25 @@ public final class MainActivity extends Activity {
     else if (page == 1) cities();
     else settings();
     LinearLayout nav = row();
-    nav.setPadding(dp(10), dp(8), dp(10), dp(10));
+    nav.setPadding(dp(8), dp(8), dp(8), dp(8));
+    nav.setBackground(shape(surface, 24));
+    nav.setElevation(dp(4));
     String[] names = {"◈  Tahmin", "⌖  Şehirler", "☷  Ayarlar"};
     for (int i = 0; i < 3; i++) {
       final int index = i;
-      weight(nav, button(names[i], page == i, () -> navigate(index)));
+      Button tab = button(names[i], false, () -> navigate(index));
+      tab.setTextColor(page == i ? accent : muted);
+      tab.setBackground(
+          new RippleDrawable(
+              ColorStateList.valueOf(0x22608BDF),
+              shape(page == i ? (light ? 0xFFE8F0FF : 0xFF233B60) : Color.TRANSPARENT, 18),
+              null));
+      tab.setContentDescription(names[i] + (page == i ? ", seçili" : ""));
+      weight(nav, tab);
     }
-    add(root, nav);
+    LinearLayout.LayoutParams navParams = new LinearLayout.LayoutParams(-1, -2);
+    navParams.setMargins(dp(16), dp(4), dp(16), dp(12));
+    root.addView(nav, navParams);
     scroll.post(() -> scroll.scrollTo(0, y));
     WeatherWidget.updateAll(this);
   }
@@ -298,61 +329,73 @@ public final class MainActivity extends Activity {
     LinearLayout hero = card(body);
     GradientDrawable gradient =
         new GradientDrawable(
-            GradientDrawable.Orientation.TL_BR,
-            light ? new int[] {0xFFDEEEEA, 0xFFEAF3EE} : new int[] {0xFF1A4148, 0xFF182D42});
+            GradientDrawable.Orientation.TL_BR, new int[] {0xFF1B3C73, 0xFF142640, 0xFF102037});
     gradient.setCornerRadius(dp(26));
+    gradient.setStroke(dp(1), 0xFF36547D);
     hero.setBackground(gradient);
-    copy(hero, city.label(), 21, text, true);
-    gap(hero, 6);
+    copy(hero, city.label(), 24, Color.WHITE, true);
+    gap(hero, 7);
+    copy(
+        hero,
+        Instant.ofEpochMilli(now)
+            .atZone(ZoneId.of(city.zone))
+            .format(DateTimeFormatter.ofPattern("d MMMM EEEE", Forecast.TR)),
+        13,
+        0xFFBACCE8,
+        false);
+    gap(hero, 12);
+    LinearLayout weather = row();
+    LinearLayout temp = column();
+    TextView temperature =
+        copy(
+            temp,
+            current == null ? "—" : Forecast.value(current.temperature, "°"),
+            76,
+            Color.WHITE,
+            false);
+    temperature.setTypeface(Typeface.create("sans-serif-light", Typeface.NORMAL));
+    copy(
+        temp,
+        current == null ? "Tahmin bekleniyor" : Forecast.description(current.code),
+        18,
+        Color.WHITE,
+        true);
+    gap(temp, 6);
+    copy(temp, "Bu saatin model tahmini", 11, 0xFFBACCE8, false);
+    weight(weather, temp);
+    int artWidth = getResources().getConfiguration().screenWidthDp < 380 ? 105 : 132;
+    weather.addView(
+        new WeatherArt(this, current == null ? null : current.code),
+        new LinearLayout.LayoutParams(dp(artWidth), dp(145)));
+    add(hero, weather);
+    gap(hero, 18);
     copy(
         hero,
         f == null ? "Henüz indirilmiş tahmin yok" : f.status(now),
         12,
-        current == null || f != null && f.stale(now) ? (light ? 0xFF8F5D18 : 0xFFE9BE77) : accent,
-        true);
-    LinearLayout weather = row();
-    LinearLayout temp = column();
-    copy(temp, current == null ? "—" : Forecast.value(current.temperature, "°"), 58, text, true);
-    copy(
-        temp,
-        current == null ? "Tahmini indirerek başla" : Forecast.description(current.code),
-        17,
-        text,
-        true);
-    copy(temp, "Bu saatin model tahmini", 12, muted, false);
-    weight(weather, temp);
-    weather.addView(
-        new WeatherArt(this, current == null ? null : current.code),
-        new LinearLayout.LayoutParams(dp(150), dp(140)));
-    add(hero, weather);
-    if (current != null) {
-      gap(hero, 8);
-      copy(
-          hero,
-          "Hissedilen "
-              + Forecast.value(current.feels, "°C")
-              + "    Yağış "
-              + Forecast.value(current.rain, "%"),
-          14,
-          text,
-          false);
-      copy(
-          hero,
-          "Rüzgâr "
-              + Forecast.value(current.wind, " km/sa")
-              + "    Nem "
-              + Forecast.value(current.humidity, "%"),
-          14,
-          muted,
-          false);
-    }
-    gap(hero, 16);
+        current == null || f != null && f.stale(now) ? 0xFFFFD18A : 0xFFBACCE8,
+        false);
+    gap(hero, 14);
     Button refresh =
         button(busy ? "Tahmin indiriliyor…" : "Tahmini yenile", true, () -> refresh(city));
+    refresh.setTextColor(0xFF102440);
+    refresh.setBackground(
+        new RippleDrawable(ColorStateList.valueOf(0x334675C1), shape(0xFFDCEAFF, 16), null));
     refresh.setEnabled(!busy);
+    refresh.setAlpha(busy ? .6f : 1f);
     add(hero, refresh);
-    if (f != null)
-      copy(hero, "İndirildi: " + f.time(f.downloaded) + " • " + f.zone, 11, muted, false);
+    if (current != null) {
+      LinearLayout first = row();
+      metric(first, "Hissedilen", Forecast.value(current.feels, "°C"), "◉");
+      metric(first, "Yağış olasılığı", Forecast.value(current.rain, "%"), "☂");
+      add(body, first);
+      gap(body, 10);
+      LinearLayout second = row();
+      metric(second, "Rüzgâr", Forecast.value(current.wind, " km/sa"), "≋");
+      metric(second, "Nem", Forecast.value(current.humidity, "%"), "◈");
+      add(body, second);
+      gap(body, 18);
+    }
     LinearLayout tip = card(body);
     copy(tip, "GÜNLÜK PUSULAN", 10, accent, true);
     gap(tip, 6);
@@ -376,15 +419,23 @@ public final class MainActivity extends Activity {
       for (Forecast.Hour h : hours) {
         LinearLayout item = column();
         item.setPadding(dp(15), dp(14), dp(15), dp(14));
-        item.setBackground(shape(surface, 19));
-        copy(item, f.time(h.at), 11, muted, false);
+        item.setBackground(shape(light ? 0xFFEAF1FF : 0xFF1B2C46, 20));
+        copy(
+            item,
+            Instant.ofEpochMilli(h.at)
+                .atZone(ZoneId.of(f.zone))
+                .format(DateTimeFormatter.ofPattern("HH:mm", Forecast.TR)),
+            12,
+            muted,
+            true);
         copy(item, Forecast.icon(h.code), 25, accent, false);
         copy(item, Forecast.value(h.temperature, "°C"), 22, text, true);
         copy(item, Forecast.value(h.rain, "%") + " yağış", 11, muted, false);
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(dp(125), -2);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(dp(100), -2);
         lp.rightMargin = dp(9);
         list.addView(item, lp);
       }
+      strip.setHorizontalScrollBarEnabled(false);
       strip.addView(list);
       add(body, strip);
       gap(body, 18);
@@ -396,22 +447,34 @@ public final class MainActivity extends Activity {
       for (Forecast.Day d : f.days)
         if (!d.date.isBefore(today)) {
           LinearLayout day = card(body);
+          LinearLayout line = row();
+          TextView icon = new TextView(this);
+          icon.setText(Forecast.icon(d.code));
+          icon.setTextSize(25);
+          icon.setTextColor(accent);
+          line.addView(icon, new LinearLayout.LayoutParams(dp(42), -2));
+          LinearLayout label = column();
           copy(
-              day,
-              d.date.format(DateTimeFormatter.ofPattern("d MMM, EEEE", Forecast.TR)),
+              label,
+              d.date.equals(today)
+                  ? "Bugün"
+                  : d.date.format(DateTimeFormatter.ofPattern("d MMM, EEEE", Forecast.TR)),
               14,
               text,
               true);
-          copy(
-              day,
-              Forecast.description(d.code)
-                  + "   "
-                  + Forecast.value(d.low, "°")
-                  + " / "
-                  + Forecast.value(d.high, "°"),
-              14,
-              muted,
-              false);
+          gap(label, 4);
+          copy(label, Forecast.description(d.code), 12, muted, false);
+          weight(line, label);
+          TextView range = new TextView(this);
+          range.setText(
+              getString(
+                  R.string.temperature_range,
+                  Forecast.value(d.low, "°"),
+                  Forecast.value(d.high, "°")));
+          range.setTextColor(text);
+          range.setTextSize(15);
+          line.addView(range);
+          add(day, line);
         }
     }
     sources(body);
@@ -570,7 +633,7 @@ public final class MainActivity extends Activity {
               "Sil",
               false,
               () ->
-                  new AlertDialog.Builder(this)
+                  new AlertDialog.Builder(dialogContext())
                       .setTitle("Şehir silinsin mi?")
                       .setMessage(c.label() + " ve bu şehrin kaydedilmiş hava verisi silinecek.")
                       .setNegativeButton("Vazgeç", null)
@@ -869,7 +932,7 @@ public final class MainActivity extends Activity {
         muted,
         false);
     LinearLayout info = card(body);
-    copy(info, "HavaPusulası 1.0", 19, text, true);
+    copy(info, "HavaPusulası 1.1", 19, text, true);
     gap(info, 7);
     copy(
         info,
@@ -890,6 +953,26 @@ public final class MainActivity extends Activity {
         text,
         false);
     sources(body);
+  }
+
+  private void metric(LinearLayout parent, String title, String value, String symbol) {
+    LinearLayout cell = column();
+    cell.setPadding(dp(16), dp(16), dp(16), dp(16));
+    GradientDrawable fill = shape(surface, 20);
+    fill.setStroke(dp(1), light ? 0xFFE2E8F2 : 0xFF27364D);
+    cell.setBackground(fill);
+    copy(cell, symbol + "  " + title, 12, muted, false);
+    gap(cell, 9);
+    copy(cell, value, 23, text, true);
+    weight(parent, cell);
+  }
+
+  private Context dialogContext() {
+    return new ContextThemeWrapper(
+        this,
+        light
+            ? android.R.style.Theme_Material_Light_Dialog_Alert
+            : android.R.style.Theme_Material_Dialog_Alert);
   }
 
   private void toast(String s) {
