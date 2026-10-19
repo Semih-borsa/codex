@@ -38,6 +38,7 @@ public final class Roster {
 
   public static final class Leave {
     public String person, place, reason;
+    public String id = UUID.randomUUID().toString();
     public LocalDate start, end;
     public int days; // 0: dated leave; otherwise Monday=bit 0 ... Sunday=bit 6.
 
@@ -96,6 +97,7 @@ public final class Roster {
     public List<Debt> debts = new ArrayList<>();
     public Set<String> limitOverrides = new HashSet<>();
     public Set<String> simultaneousOverrides = new HashSet<>();
+    public Set<String> leaveOverrides = new HashSet<>();
     public List<String> warnings = new ArrayList<>();
 
     public Week(LocalDate monday) {
@@ -191,7 +193,13 @@ public final class Roster {
                                     x.person.equals(d.person)
                                         && x.place.equals(WORK)
                                         && weekend(x.date)
-                                        && x.date.isAfter(d.end)));
+                                        && (x.date.isAfter(d.end)
+                                            || w.leaveOverrides.stream()
+                                                .anyMatch(
+                                                    approvalKey ->
+                                                        approvalKey.startsWith(
+                                                            x.date + "|" + x.person + "|" + x.place
+                                                                + "|")))));
         if (!served) {
           Debt old = result.get(d.person);
           if (old == null || d.end.isAfter(old.end))
@@ -262,6 +270,14 @@ public final class Roster {
   }
 
   public static Week generate(State s, LocalDate date, String replacement) {
+    return generate(s, date, replacement, false);
+  }
+
+  public static Week generateManualReplacement(State s, LocalDate date, String replacement) {
+    return generate(s, date, replacement, true);
+  }
+
+  private static Week generate(State s, LocalDate date, String replacement, boolean manualLeave) {
     Week w = new Week(monday(date));
     w.rotationRevision = s.rotationRevision;
     List<Person> active =
@@ -329,7 +345,7 @@ public final class Roster {
                 .filter(p -> p.id.equals(replacement))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Aktif personel seçin."));
-        if (!weekendAvailable(s, requested.id, w.monday))
+        if (!manualLeave && !weekendAvailable(s, requested.id, w.monday))
           throw new IllegalArgumentException("Seçilen kişinin hafta sonunda mazereti var.");
         if (chosen != null && !chosen.id.equals(requested.id)) {
           // Manual cover does not erase the proposed person's turn; retain it as a pending turn.
@@ -495,6 +511,10 @@ public final class Roster {
     return result;
   }
 
+  public static String leaveOverrideKey(Duty duty, Leave leave) {
+    return duty.date + "|" + duty.person + "|" + duty.place + "|" + leave.id;
+  }
+
   public static String simultaneousKey(LocalDate date, String person, String a, String b) {
     return date + "|" + person + "|" + (a.compareTo(b) < 0 ? a + "|" + b : b + "|" + a);
   }
@@ -518,8 +538,14 @@ public final class Roster {
       places.add(d.place);
       if (rest(w, d.person, d.date))
         errors.add(s.name(d.person) + " hafta sonu nöbetinden önce perşembe/cuma izinli olmalı.");
-      if (!available(s, d.person, d.place, d.date))
-        errors.add(s.name(d.person) + " için mazeret veya pasif personel çakışması.");
+      if (s.people.stream().noneMatch(p -> p.id.equals(d.person) && p.active))
+        errors.add(s.name(d.person) + " pasif veya bulunamadı.");
+      if (s.leaves.stream()
+          .anyMatch(
+              leave ->
+                  leave.blocks(d.person, d.place, d.date)
+                      && !w.leaveOverrides.contains(leaveOverrideKey(d, leave))))
+        errors.add(s.name(d.person) + " için mazeret/kısıt istisnası teyidi gerekli.");
       Place location = s.places.stream().filter(p -> p.id.equals(d.place)).findFirst().orElse(null);
       if (location == null) {
         errors.add("Bilinmeyen görev yeri.");
@@ -579,6 +605,7 @@ public final class Roster {
     c.warnings.addAll(w.warnings);
     c.limitOverrides.addAll(w.limitOverrides);
     c.simultaneousOverrides.addAll(w.simultaneousOverrides);
+    c.leaveOverrides.addAll(w.leaveOverrides);
     return c;
   }
 }

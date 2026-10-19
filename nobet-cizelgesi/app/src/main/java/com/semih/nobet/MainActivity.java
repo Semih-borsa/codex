@@ -1131,8 +1131,23 @@ public final class MainActivity extends Activity {
 
   private AlertDialog applyManualChange(Week edited, List<Duty> added) {
     Set<String> messages = new LinkedHashSet<>();
-    boolean simultaneous = false, repeated = false;
+    boolean simultaneous = false, repeated = false, leaveConflict = false;
     for (Duty duty : added) {
+      for (Leave leave : state.leaves)
+        if (leave.blocks(duty.person, duty.place, duty.date)) {
+          leaveConflict = true;
+          edited.leaveOverrides.add(leaveOverrideKey(duty, leave));
+          messages.add(
+              state.name(duty.person)
+                  + " • "
+                  + duty.date.format(shortDate)
+                  + " • "
+                  + state.placeName(duty.place)
+                  + "\nMazeret / Kısıt: "
+                  + leave.reason
+                  + "\n"
+                  + leavePeriod(leave));
+        }
       List<String> otherPlaces = new ArrayList<>();
       for (Duty other : edited.duties) {
         if (other.date.equals(duty.date)
@@ -1182,9 +1197,11 @@ public final class MainActivity extends Activity {
           draft = edited;
           renderKeepingPosition();
         };
-    if (simultaneous || repeated) {
+    if (simultaneous || repeated || leaveConflict) {
       return confirm(
-          simultaneous ? "Aynı Gün Atama Teyidi" : "Tekrar Atama Onayı",
+          leaveConflict
+              ? "Mazeret / Kısıt İstisnası"
+              : simultaneous ? "Aynı Gün Atama Teyidi" : "Tekrar Atama Onayı",
           String.join("\n\n", messages) + "\n\nBu atamayı yine de yapmak istiyor musun?",
           accept);
     }
@@ -1240,46 +1257,76 @@ public final class MainActivity extends Activity {
             options.stream().map(p -> p.name).toArray(String[]::new),
             (dialog, i) -> {
               Person replacement = options.get(i);
-              if (!weekendAvailable(state, replacement.id, selected)) {
-                toast("Seçilen kişinin hafta sonunda mazereti var.");
-                return;
+              Set<String> leavePermissions = new HashSet<>();
+              Set<String> leaveMessages = new LinkedHashSet<>();
+              for (LocalDate day : weekendDays) {
+                Duty duty = new Duty(day, WORK, replacement.id);
+                for (Leave leave : state.leaves)
+                  if (leave.blocks(replacement.id, WORK, day)) {
+                    leavePermissions.add(leaveOverrideKey(duty, leave));
+                    leaveMessages.add(
+                        day.format(shortDate) + " • " + leave.reason + "\n" + leavePeriod(leave));
+                  }
               }
-              dateTitled(
-                  "Devreden Kişinin Mazeret Bitişi",
-                  selected.plusDays(6),
-                  end -> {
-                    if (end.isBefore(weekendDays.get(0))) {
-                      toast("Bitiş ilk seçili nöbet gününden önce olamaz.");
-                      return;
-                    }
-                    confirm(
-                        "Hafta Sonu Değişimini Teyit Edin",
-                        state.name(old)
-                            + " yerine "
-                            + replacement.name
-                            + " seçili hafta sonu günlerine atanacak. Devreden kişi için mazeret"
-                            + " bitişi: "
-                            + end.format(shortDate)
-                            + ". İki yerde de mazeret kaydedilir. Perşembe/cuma izinleri ve hafta"
-                            + " içi atamalar yeniden hesaplanır. Diğer haftalar korunur; öneri"
-                            + " ayrıca onayınızı ister.",
-                        () -> {
-                          if (!old.isEmpty()) {
-                            Leave leave =
-                                new Leave(old, ALL, weekendDays.get(0), end, "Hafta Sonu devri");
-                            state.leaves.add(leave);
-                            removeConflicts(leave);
-                          }
-                          if (save()) {
-                            try {
-                              draft = generate(state, selected, replacement.id);
-                              renderKeepingPosition();
-                            } catch (IllegalArgumentException e) {
-                              toast(e.getMessage());
+              Runnable continueChange =
+                  () ->
+                      dateTitled(
+                          "Devreden Kişinin Mazeret Bitişi",
+                          selected.plusDays(6),
+                          end -> {
+                            if (end.isBefore(weekendDays.get(0))) {
+                              toast("Bitiş ilk seçili nöbet gününden önce olamaz.");
+                              return;
                             }
-                          }
-                        });
-                  });
+                            confirm(
+                                "Hafta Sonu Değişimini Teyit Edin",
+                                state.name(old)
+                                    + " yerine "
+                                    + replacement.name
+                                    + " seçili hafta sonu günlerine atanacak. Devreden kişi için"
+                                    + " mazeret bitişi: "
+                                    + end.format(shortDate)
+                                    + ". İki yerde de mazeret kaydedilir. Perşembe/cuma izinleri ve"
+                                    + " hafta içi atamalar yeniden hesaplanır. Diğer haftalar"
+                                    + " korunur; öneri ayrıca onayınızı ister.",
+                                () -> {
+                                  if (!old.isEmpty()) {
+                                    Leave leave =
+                                        new Leave(
+                                            old, ALL, weekendDays.get(0), end, "Hafta Sonu devri");
+                                    state.leaves.add(leave);
+                                    removeConflicts(leave);
+                                  }
+                                  if (save()) {
+                                    try {
+                                      Week replacementWeek =
+                                          generateManualReplacement(
+                                              state, selected, replacement.id);
+                                      replacementWeek.leaveOverrides.addAll(leavePermissions);
+                                      List<String> invalid = validate(state, replacementWeek);
+                                      if (!invalid.isEmpty()) {
+                                        toast(String.join("\n", invalid));
+                                        return;
+                                      }
+                                      draft = replacementWeek;
+                                      renderKeepingPosition();
+                                    } catch (IllegalArgumentException e) {
+                                      toast(e.getMessage());
+                                    }
+                                  }
+                                });
+                          });
+              if (leavePermissions.isEmpty()) continueChange.run();
+              else
+                confirm(
+                    "Mazeret / Kısıt İstisnası",
+                    replacement.name
+                        + " • "
+                        + state.placeName(WORK)
+                        + "\n\n"
+                        + String.join("\n\n", leaveMessages)
+                        + "\n\nMazeretine rağmen bu hafta sonuna atamak istiyor musun?",
+                    continueChange);
             })
         .setNegativeButton("Vazgeç", null)
         .show();

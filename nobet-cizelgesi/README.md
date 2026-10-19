@@ -1,20 +1,28 @@
-# Nöbet Çizelgesi 1.10 — Android
+# Nöbet Çizelgesi 1.11 — Android
 
 Çevrimdışı personel, görev yeri, mazeret ve haftalık nöbet planlama uygulaması.
 
-[APK 1.10 indir](../downloads/NobetCizelgesi-1.10.apk) · [Android Studio ZIP](../downloads/NobetCizelgesi-Android-Studio.zip) · [Test sonuçları](docs/TESTLER.md)
+[APK 1.11 indir](../downloads/NobetCizelgesi-1.11.apk) · [Android Studio ZIP](../downloads/NobetCizelgesi-Android-Studio.zip) · [Test sonuçları](docs/TESTLER.md)
 
-Android 8.0 ve üzeri. Önceki sürümlerden biri kuruluysa **uygulamayı kaldırmadan** 1.10 APK'sını açarak güncelleyin. Aynı paket adı ve imza kullanılır; eski kayıtlar okunur. Kaldırmak veya uygulama verilerini silmek kayıtları siler.
+Android 8.0 ve üzeri. Önceki sürümlerden biri kuruluysa **uygulamayı kaldırmadan** 1.11 APK'sını açarak güncelleyin. Aynı paket adı ve imza kullanılır; eski kayıtlar okunur. Kaldırmak veya uygulama verilerini silmek kayıtları siler.
 
 ## Hafta sonu dönüş önceliği
 
 İzin veya raporun bitmesi tek başına öncelik oluşturmaz. Personelin hafta sonu sırası mazeret süresinde henüz gelmediyse normal sırası korunur. Sırası gelmiş, mazereti nedeniyle atlanmış ve sonraki kişi atanmışsa, mazereti bittikten sonraki ilk uygun hafta sonu önceliklidir. Sonrasında normal döngü kaldığı yerden devam eder. Örnek: sıra A/B/C/D/E; A raporlu olduğu için B atanır, A dönünce A atanır, ardından C devam eder. E aynı dönemde izinden dönse bile henüz sırası atlanmadıysa öne geçmez.
 
-## 1.10 yenilikleri
+## 1.11 yenilikleri
+
+Kalemden mazeretli/kısıtlı personeli elle seçince **Mazeret / Kısıt İstisnası** uyarısı açılır. Kişi, tarih, görev yeri ve çakışan bütün mazeret/kısıt kayıtları gösterilir. **Onayla** yalnız o görev için istisna verir; **Vazgeç** listeyi değiştirmez. Tarihli izin/rapor, genel kısıt ve haftalık gün kısıtları desteklenir. Aynı gün çoklu yer veya haftalık sınır da varsa aynı teyitte belirtilir. Ardından çizelge değişikliklerini kaydedin.
+
+İstisna kişi+tarih+görev yeri+mazeret kaydıyla sınırlıdır ve yeniden açılınca korunur. Mazeret silinmez; diğer gün ve yerlerde geçerlidir. Yeni veya düzenlenmiş bir kısıt eski onaydan yararlanmaz. Otomatik dağıtım geçmiş istisnaları kullanmaz; mazeretli günlere kendiliğinden atama yapmaz. Pasif personel, kapalı yer, aynı slotta birden fazla kişi ve Perşembe/Cuma dinlenmesi kuralları sürer.
+
+Hafta sonu elle seçiminde de mazeret için önce teyit alınır. Mazeret devam ederken onaylı istisnayla bekleyen hafta sonu tutulduysa o bekleyen hak tamamlanır; bitişten sonra aynı borç nedeniyle tekrar öne geçilmez. Eski dosyaların mazeret kimlikleri güvenli biçimde tamamlanır; eski kayıtlar kendiliğinden istisna kazanmaz.
+
+## Aynı gün farklı şubelere atama
 
 Kalemden aynı kişiyi aynı gün başka bir şubeye/görev yerine seçebilirsiniz. **Aynı Gün Atama Teyidi** mevcut görev yerlerini, tarihi, personeli ve ek atamayı gösterir. **Onayla** ile ek atama taslağa uygulanır; **Vazgeç** mevcut listeyi değiştirmez. Ardından çizelge değişikliklerini kaydedin.
 
-İstisna yalnız o haftadaki kişi/tarih/görev yeri çifti için saklanır; başka bir tarih, kişi veya üçüncü yer için yeni teyit gerekir. Haftalık kişi sınırı da aşılacaksa aynı teyitte önceki atama tarihleriyle gösterilir. Mazeret, haftalık gün kısıtı, pasiflik, kapalı yer ve Perşembe/Cuma dinlenmesi teyitle aşılamaz. Otomatik dağıtım kendiliğinden aynı güne birden fazla yer atamaz.
+İstisna yalnız o haftadaki kişi/tarih/görev yeri çifti için saklanır; başka bir tarih, kişi veya üçüncü yer için yeni teyit gerekir. Haftalık kişi sınırı da aşılacaksa aynı teyitte önceki atama tarihleriyle gösterilir. Mazeret/haftalık gün kısıtı varsa aynı teyitte görev için özel istisna istenir; pasiflik, kapalı yer ve Perşembe/Cuma dinlenmesi korunur. Otomatik dağıtım kendiliğinden aynı güne birden fazla yer atamaz.
 
 Onaylı ek görevler kayıt yeniden açıldığında korunur. İstatistikte her şubenin nöbeti kendi sütununda sayılır; çizelge/PDF'de iki atama da görünür. Aynı yerde aynı gün birden fazla kişi kuralı değişmez.
 
@@ -78,7 +86,7 @@ Uzun adlar satıra bölünür; çok personel/şube varsa tablo ek sayfalara deva
 - Yer kimliği sabittir: ad değişse de geçmiş nöbetler, mazeret bağlantıları ve sayımlar korunur. Çizelge/PDF/istatistikler yeni adı gösterir.
 - Açık temanın düğmeleri **mavi zemin/beyaz yazı**; bilgi bildirimleri uygulama içinde aynı renklerde gösterilir. Açık/koyu/sistem seçimi hatırlanır.
 - Kaydedilmiş haftada **Kaydedilmiş listeyi düzenle** veya gün/yer alanına dokunun. Düzenlemeyi **Değişiklikleri kaydet** ile onaylayın. Yalnız o hafta değiştirilir; diğer haftalar silinmez. Sayımlar güncel kayıtlardan hesaplanır; tekrar kaydetmek mükerrer sayım üretmez.
-- Otomatik dağıtım şubede kişi başı haftalık sınırı korur. Elle aynı kişiye ikinci görev verildiğinde önceki atama tarihleri gösterilir ve **Tekrar atamak istiyor musun?** onayı istenir. Onay yalnız bu haftanın ilgili kişi/yer sınırı için istisnadır. Aynı gün başka yer görevi varsa aynı teyitte gösterilir; mazeret ve perşembe/cuma dinlenmesi korunur. İstisna kaydedilir ve yeniden açınca korunur.
+- Otomatik dağıtım şubede kişi başı haftalık sınırı korur. Elle aynı kişiye ikinci görev verildiğinde önceki atama tarihleri gösterilir ve **Tekrar atamak istiyor musun?** onayı istenir. Onay yalnız bu haftanın ilgili kişi/yer sınırı için istisnadır. Aynı gün başka yer görevi varsa aynı teyitte gösterilir; mazeret için ayrıca görev kapsamlı istisna istenir, perşembe/cuma dinlenmesi korunur. İstisna kaydedilir ve yeniden açınca korunur.
 - PDF yalnız başlık, tarih aralığı ve çizelge içerir. “Onaylı haftalık çizelge”, alt açıklamalar ve hazırlayan/onaylayan alanları kaldırıldı. Atama olmayan hücreler **—** gösterilir. Yeni yerler dahil edilir; 3'ten fazla yerde PDF ek sayfalara bölünür.
 
 ## Kullanım

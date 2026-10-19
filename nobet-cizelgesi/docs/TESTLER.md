@@ -1,15 +1,21 @@
-# Doğrulama — Nöbet Çizelgesi 1.10 / 19 Ekim 2026
+# Doğrulama — Nöbet Çizelgesi 1.11 / 19 Ekim 2026
 
 - JDK 17.0.17, Android SDK 35, build-tools 35.0.0, Gradle 8.9, AGP 8.7.3.
-- `testDebugUnitTest`: **67 test, 0 başarısız, 0 atlanan**.
+- `testDebugUnitTest`: **75 test, 0 başarısız, 0 atlanan**.
 - `lintDebug`: **sorun bulunmadı**.
 - APK ve Android test APK derlemeleri başarılı.
-- Android 11 / API 30 x86_64 emülatöründe önceki sürüm üzerine `adb install -r` ile 1.10 güncellemesi başarılı.
-- Android test çalıştırıcısı: **31 kontrol geçti, 0 başarısız**.
+- Android 11 / API 30 x86_64 emülatöründe önceki sürüm üzerine `adb install -r` ile 1.11 güncellemesi başarılı.
+- Android test çalıştırıcısı: **33 kontrol geçti, 0 başarısız**.
+
+## 1.11 kontrolleri
+
+Teyitsiz mazeret reddi ve görev kapsamlı teyitle izin; tarih/kişi/yer değişince eski iznin kullanılamaması; her çakışan mazeret için ayrı kayıt; yeni/değişen kısıtın eski izinle aşılamaması test edildi. İstisna pasiflik, dinlenme, aynı gün çoklu yer veya haftalık sınır için yetki vermez. Otomatik dağıtım eski istisnaları kullanmaz. Hafta sonu manuel adayın iki günü için uygun istisnalar gerekir. Mazeret sürerken istisnayla tutulmuş hafta sonu bekleyen hakkı kapatır.
+
+Android: mazeret kimlikleri ve istisnalar diske yazılıp tekrar okundu. Eski dosyada eksik kimlik, her okumada aynı şekilde tamamlanır; istisna alanı yoksa otomatik izin verilmez. Uyarıda rapor + haftalık kısıt birlikte gösterilir; vazgeçmek kaydı/taslağı değiştirmez, onay taslağa iki görev kapsamlı izin ekler. Mazeret kayıtları korunur. Onay düğmesinin mesajı işlendiği sonrasında durum doğrulanır.
 
 ## 1.10 kontrolleri
 
-Teyitsiz aynı gün çoklu görev reddi, teyitli iki şubeye izin, istisnanın kopyada korunması ve iki şubenin istatistikte ayrı sayılması test edildi. İstisna başka kişi/tarih/yere taşınamaz; üç yer için her ek çiftin teyidi gerekir. Teyit mazereti, haftalık gün kısıtını, Perşembe/Cuma dinlenmesini, aynı yerde çift slotu veya ayrı haftalık sınırı geçersiz kılmaz. Otomatik dağıtım çoklu görev üretmez.
+Teyitsiz aynı gün çoklu görev reddi, teyitli iki şubeye izin, istisnanın kopyada korunması ve iki şubenin istatistikte ayrı sayılması test edildi. İstisna başka kişi/tarih/yere taşınamaz; üç yer için her ek çiftin teyidi gerekir. Aynı gün çoklu yer teyidi tek başına mazereti, haftalık gün kısıtını, Perşembe/Cuma dinlenmesini, aynı yerde çift slotu veya ayrı haftalık sınırı geçersiz kılmaz. Otomatik dağıtım çoklu görev üretmez.
 
 Android üzerinde aynı gün ve haftalık sınır uyarıları tek teyitte gösterildi. Vazgeçince taslak/orijinal değişmedi; onaydan sonra iki istisna da taslağa geçti, kayıtlı eski hafta kullanıcı kaydedene kadar değişmedi. Diske yazıp okuma istisnayı korur; alanı olmayan eski JSON otomatik yetki kazanmaz.
 

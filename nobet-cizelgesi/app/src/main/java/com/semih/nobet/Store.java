@@ -7,6 +7,7 @@ import android.util.AtomicFile;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.util.UUID;
 import org.json.*;
 
 final class Store {
@@ -58,6 +59,7 @@ final class Store {
       leaves.put(
           new JSONObject()
               .put("person", l.person)
+              .put("id", l.id)
               .put("place", l.place)
               .put("start", l.start)
               .put("end", l.end)
@@ -77,7 +79,8 @@ final class Store {
               .put("duties", duties)
               .put("debts", debts)
               .put("limitOverrides", new JSONArray(w.limitOverrides))
-              .put("simultaneousOverrides", new JSONArray(w.simultaneousOverrides)));
+              .put("simultaneousOverrides", new JSONArray(w.simultaneousOverrides))
+              .put("leaveOverrides", new JSONArray(w.leaveOverrides)));
     }
     return root.put("people", people).put("leaves", leaves).put("weeks", weeks).toString();
   }
@@ -119,14 +122,33 @@ final class Store {
     }
     for (int i = 0; i < leaves.length(); i++) {
       JSONObject j = leaves.getJSONObject(i);
-      s.leaves.add(
+      Leave leave =
           new Leave(
               j.getString("person"),
               j.getString("place"),
               LocalDate.parse(j.getString("start")),
               LocalDate.parse(j.getString("end")),
               j.getString("reason"),
-              j.optInt("days", 0)));
+              j.optInt("days", 0));
+      String legacyIdentity =
+          leave.person
+              + "\n"
+              + leave.place
+              + "\n"
+              + leave.start
+              + "\n"
+              + leave.end
+              + "\n"
+              + leave.reason
+              + "\n"
+              + leave.days
+              + "\n"
+              + i;
+      String stableId =
+          UUID.nameUUIDFromBytes(legacyIdentity.getBytes(StandardCharsets.UTF_8)).toString();
+      leave.id = j.optString("id", stableId);
+      if (leave.id.trim().isEmpty()) leave.id = stableId;
+      s.leaves.add(leave);
     }
     for (int i = 0; i < weeks.length(); i++) {
       JSONObject j = weeks.getJSONObject(i);
@@ -140,6 +162,10 @@ final class Store {
       if (sameDay != null)
         for (int n = 0; n < sameDay.length(); n++)
           w.simultaneousOverrides.add(sameDay.getString(n));
+      JSONArray leaveOverrides = j.optJSONArray("leaveOverrides");
+      if (leaveOverrides != null)
+        for (int n = 0; n < leaveOverrides.length(); n++)
+          w.leaveOverrides.add(leaveOverrides.getString(n));
       JSONArray ds = j.getJSONArray("duties"), bs = j.getJSONArray("debts");
       for (int n = 0; n < ds.length(); n++) {
         JSONObject d = ds.getJSONObject(n);

@@ -927,4 +927,144 @@ public class RosterTest {
     assertTrue(next.simultaneousOverrides.isEmpty());
     assertTrue(validate(s, next).isEmpty());
   }
+
+  @Test
+  public void explicitLeaveExceptionAllowsOnlySelectedAssignment() {
+    State s = people(5);
+    Leave leave = new Leave("p0", ALL, mon, mon.plusDays(6), "Rapor");
+    s.leaves.add(leave);
+    Week w = new Week(mon);
+    Duty duty = new Duty(mon, BRANCH, "p0");
+    w.duties.add(duty);
+    assertFalse(validate(s, w).isEmpty());
+    w.leaveOverrides.add(leaveOverrideKey(duty, leave));
+    assertTrue(validate(s, w).isEmpty());
+    assertFalse(available(s, "p0", BRANCH, mon));
+    assertEquals(w.leaveOverrides, copy(w).leaveOverrides);
+  }
+
+  @Test
+  public void leaveExceptionCannotBeReusedForOtherDatePersonOrPlace() {
+    State s = people(5);
+    Leave leave = new Leave("p0", ALL, mon, mon.plusDays(6), "Rapor");
+    s.leaves.add(leave);
+    String key = leaveOverrideKey(new Duty(mon, BRANCH, "p0"), leave);
+    for (int i = 0; i < 2; i++) {
+      Week w = new Week(mon);
+      w.leaveOverrides.add(key);
+      w.duties.add(new Duty(i == 0 ? mon.plusDays(1) : mon, i == 0 ? BRANCH : WORK, "p0"));
+      assertFalse(validate(s, w).isEmpty());
+    }
+    Leave other = new Leave("p1", ALL, mon, mon.plusDays(6), "Rapor");
+    s.leaves.add(other);
+    Week w = new Week(mon);
+    w.leaveOverrides.add(key);
+    w.duties.add(new Duty(mon, BRANCH, "p1"));
+    assertFalse(validate(s, w).isEmpty());
+  }
+
+  @Test
+  public void everyConflictingLeaveNeedsItsOwnApproval() {
+    State s = people(5);
+    Leave a = new Leave("p0", ALL, mon, mon.plusDays(6), "Rapor");
+    Leave b = new Leave("p0", BRANCH, mon, LocalDate.MAX, "Haftalık Kısıt", 1);
+    s.leaves.addAll(Arrays.asList(a, b));
+    Week w = new Week(mon);
+    Duty d = new Duty(mon, BRANCH, "p0");
+    w.duties.add(d);
+    w.leaveOverrides.add(leaveOverrideKey(d, a));
+    assertFalse(validate(s, w).isEmpty());
+    w.leaveOverrides.add(leaveOverrideKey(d, b));
+    assertTrue(validate(s, w).isEmpty());
+    Leave changed = new Leave("p0", ALL, mon, mon.plusDays(6), "Rapor");
+    s.leaves.set(0, changed);
+    assertFalse(validate(s, w).isEmpty());
+  }
+
+  @Test
+  public void leaveExceptionDoesNotWaiveInactiveStatusOrRest() {
+    State s = people(5);
+    Leave leave = new Leave("p0", ALL, mon, mon.plusDays(6), "İzin");
+    s.leaves.add(leave);
+    Week w = new Week(mon);
+    Duty d = new Duty(mon, BRANCH, "p0");
+    w.duties.add(d);
+    w.leaveOverrides.add(leaveOverrideKey(d, leave));
+    s.people.get(0).active = false;
+    assertFalse(validate(s, w).isEmpty());
+    s.people.get(0).active = true;
+    w.duties.clear();
+    Duty thu = new Duty(mon.plusDays(3), BRANCH, "p0");
+    w.duties.add(thu);
+    w.leaveOverrides.add(leaveOverrideKey(thu, leave));
+    for (int i = 5; i < 7; i++) {
+      Duty weekend = new Duty(mon.plusDays(i), WORK, "p0");
+      w.duties.add(weekend);
+      w.leaveOverrides.add(leaveOverrideKey(weekend, leave));
+    }
+    assertFalse(validate(s, w).isEmpty());
+  }
+
+  @Test
+  public void automaticGenerationNeverUsesHistoricalLeaveException() {
+    State s = people(5);
+    Leave leave = new Leave("p0", ALL, mon, mon.plusWeeks(3), "Rapor");
+    s.leaves.add(leave);
+    Week old = new Week(mon);
+    Duty d = new Duty(mon, BRANCH, "p0");
+    old.duties.add(d);
+    old.leaveOverrides.add(leaveOverrideKey(d, leave));
+    approve(s, old);
+    Week next = generate(s, mon.plusWeeks(1));
+    assertTrue(next.duties.stream().noneMatch(x -> x.person.equals("p0")));
+    assertTrue(next.leaveOverrides.isEmpty());
+  }
+
+  @Test
+  public void manualWeekendExceptionNeedsApprovalForEachDay() {
+    State s = people(5);
+    Leave leave = new Leave("p3", ALL, mon, mon.plusDays(6), "Rapor");
+    s.leaves.add(leave);
+    Week w = generateManualReplacement(s, mon, "p3");
+    assertEquals("p3", weekendPerson(w));
+    assertFalse(validate(s, w).isEmpty());
+    for (Duty d : w.duties)
+      if (d.person.equals("p3") && d.place.equals(WORK) && weekend(d.date))
+        w.leaveOverrides.add(leaveOverrideKey(d, leave));
+    assertTrue(validate(s, w).isEmpty());
+    assertFalse(weekendAvailable(s, "p3", mon));
+  }
+
+  @Test
+  public void leaveExceptionDoesNotGrantSameDayOrWeeklyLimitPermissions() {
+    State s = multiPlaceState();
+    Leave leave = new Leave("p0", ALL, mon, mon.plusDays(6), "İzin");
+    s.leaves.add(leave);
+    Week w = twoPlaces(s);
+    for (Duty d : w.duties) w.leaveOverrides.add(leaveOverrideKey(d, leave));
+    assertFalse(validate(s, w).isEmpty());
+    w.simultaneousOverrides.add(simultaneousKey(mon, "p0", BRANCH, "extra"));
+    assertTrue(validate(s, w).isEmpty());
+    Duty next = new Duty(mon.plusDays(1), BRANCH, "p0");
+    w.duties.add(next);
+    w.leaveOverrides.add(leaveOverrideKey(next, leave));
+    assertFalse(validate(s, w).isEmpty());
+  }
+
+  @Test
+  public void manuallyServedWeekendDuringLeaveClosesThatPendingTurn() {
+    State s = people(5);
+    Leave leave = new Leave("p0", ALL, mon, mon.plusDays(20), "Rapor");
+    s.leaves.add(leave);
+    Week first = generate(s, mon);
+    assertEquals("p1", weekendPerson(first));
+    approve(s, first);
+    assertTrue(pendingDebts(s, mon.plusWeeks(1)).stream().anyMatch(d -> d.person.equals("p0")));
+    Week manual = generateManualReplacement(s, mon.plusWeeks(1), "p0");
+    for (Duty d : manual.duties)
+      if (d.person.equals("p0") && d.place.equals(WORK) && weekend(d.date))
+        manual.leaveOverrides.add(leaveOverrideKey(d, leave));
+    approve(s, manual);
+    assertTrue(pendingDebts(s, mon.plusWeeks(2)).stream().noneMatch(d -> d.person.equals("p0")));
+  }
 }

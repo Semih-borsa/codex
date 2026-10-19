@@ -1043,6 +1043,141 @@ public class SmokeRunner extends Instrumentation {
                 });
           }
         });
+    check(
+        "Leave identity and confirmed exceptions survive storage and old files grant nothing",
+        () -> {
+          State sample = new State();
+          sample.people.add(new Person("exception", "Deneme"));
+          Leave leave = new Leave("exception", ALL, mon, mon.plusDays(6), "Rapor");
+          sample.leaves.add(leave);
+          Week w = new Week(mon);
+          Duty duty = new Duty(mon, BRANCH, "exception");
+          w.duties.add(duty);
+          w.leaveOverrides.add(leaveOverrideKey(duty, leave));
+          approve(sample, w);
+          Store isolatedStore = new Store(context);
+          isolatedStore.save(sample);
+          State restored = isolatedStore.load();
+          truth(
+              restored.leaves.get(0).id.equals(leave.id)
+                  && validate(restored, restored.weeks.get(0)).isEmpty());
+          org.json.JSONObject legacy = new org.json.JSONObject(Store.encode(sample));
+          legacy.getJSONArray("weeks").getJSONObject(0).remove("leaveOverrides");
+          legacy.getJSONArray("leaves").getJSONObject(0).remove("id");
+          State old = Store.decode(legacy.toString());
+          truth(!old.leaves.get(0).id.isEmpty());
+          truth(old.leaves.get(0).id.equals(Store.decode(legacy.toString()).leaves.get(0).id));
+          truth(old.weeks.get(0).leaveOverrides.isEmpty());
+          truth(!validate(old, old.weeks.get(0)).isEmpty());
+        });
+    check(
+        "Manual leave exception asks consent and cancel keeps original while approval preserves"
+            + " leave",
+        () -> {
+          Activity activity =
+              startActivitySync(
+                  new Intent(target, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+          android.app.AlertDialog[] dialog = new android.app.AlertDialog[1];
+          try {
+            waitForIdleSync();
+            runOnMainSync(
+                () -> {
+                  try {
+                    State sample = new State();
+                    sample.people.add(new Person("exception", "Deneme"));
+                    sample.leaves.add(new Leave("exception", ALL, mon, mon.plusDays(6), "Rapor"));
+                    sample.leaves.add(
+                        new Leave("exception", BRANCH, mon, LocalDate.MAX, "Haftalık Kısıt", 1));
+                    Week original = new Week(mon);
+                    sample.weeks.add(original);
+                    java.lang.reflect.Field stateField =
+                        MainActivity.class.getDeclaredField("state");
+                    stateField.setAccessible(true);
+                    stateField.set(activity, sample);
+                    java.lang.reflect.Field selected =
+                        MainActivity.class.getDeclaredField("selected");
+                    selected.setAccessible(true);
+                    selected.set(activity, mon);
+                    java.lang.reflect.Field draftField =
+                        MainActivity.class.getDeclaredField("draft");
+                    draftField.setAccessible(true);
+                    java.lang.reflect.Method render =
+                        MainActivity.class.getDeclaredMethod("render");
+                    render.setAccessible(true);
+                    render.invoke(activity);
+                    java.lang.reflect.Method apply =
+                        MainActivity.class.getDeclaredMethod(
+                            "applyManualChange", Week.class, java.util.List.class);
+                    apply.setAccessible(true);
+                    Week candidate = copy(original);
+                    Duty added = new Duty(mon, BRANCH, "exception");
+                    candidate.duties.add(added);
+                    dialog[0] =
+                        (android.app.AlertDialog)
+                            apply.invoke(activity, candidate, java.util.Arrays.asList(added));
+                    truth(dialog[0] != null);
+                    String message =
+                        ((android.widget.TextView) dialog[0].findViewById(android.R.id.message))
+                            .getText()
+                            .toString();
+                    truth(
+                        message.contains("Rapor")
+                            && message.contains("Haftalık Kısıt")
+                            && message.contains(
+                                mon.format(
+                                    java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy"))));
+                    dialog[0]
+                        .getButton(android.content.DialogInterface.BUTTON_NEGATIVE)
+                        .performClick();
+                    dialog[0].dismiss();
+                    dialog[0] = null;
+                    truth(
+                        draftField.get(activity) == null
+                            && original.duties.isEmpty()
+                            && sample.leaves.size() == 2);
+                    dialog[0] =
+                        (android.app.AlertDialog)
+                            apply.invoke(activity, candidate, java.util.Arrays.asList(added));
+                    dialog[0]
+                        .getButton(android.content.DialogInterface.BUTTON_POSITIVE)
+                        .performClick();
+                    dialog[0] = null;
+                  } catch (ReflectiveOperationException e) {
+                    throw new AssertionError(e);
+                  }
+                });
+            waitForIdleSync();
+            runOnMainSync(
+                () -> {
+                  try {
+                    java.lang.reflect.Field stateField =
+                        MainActivity.class.getDeclaredField("state");
+                    stateField.setAccessible(true);
+                    State sample = (State) stateField.get(activity);
+                    java.lang.reflect.Field draftField =
+                        MainActivity.class.getDeclaredField("draft");
+                    draftField.setAccessible(true);
+                    Week approved = (Week) draftField.get(activity);
+                    truth(
+                        approved != null
+                            && approved.duties.size() == 1
+                            && approved.leaveOverrides.size() == 2);
+                    truth(validate(sample, approved).isEmpty());
+                    truth(
+                        sample.leaves.size() == 2 && !available(sample, "exception", BRANCH, mon));
+                    truth(sample.weeks.get(0).duties.isEmpty());
+                  } catch (ReflectiveOperationException e) {
+                    throw new AssertionError(e);
+                  }
+                });
+          } finally {
+            runOnMainSync(
+                () -> {
+                  if (dialog[0] != null) dialog[0].dismiss();
+                  activity.finish();
+                });
+          }
+        });
     Bundle result = new Bundle();
     result.putInt("passed", passed);
     result.putInt("failed", failed);
