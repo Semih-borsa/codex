@@ -153,7 +153,7 @@ public final class WeatherWidget extends AppWidgetProvider {
     }
     String age =
         city == null
-            ? "Seçilen şehir yok; Şehir düğmesinden seç."
+            ? "Seçilen şehir yok; widget’ın şehir seçimini güncelle."
             : f == null
                 ? "Henüz indirilmiş tahmin yok"
                 : f.lastUpdated(now, java.time.ZoneId.systemDefault())
@@ -201,7 +201,7 @@ public final class WeatherWidget extends AppWidgetProvider {
           R.id.widget_details,
           R.id.widget_age,
           R.id.widget_state,
-          R.id.widget_open
+          R.id.widget_host
         }) views.setOnClickPendingIntent(target, launch);
     for (int target :
         new int[] {
@@ -224,23 +224,6 @@ public final class WeatherWidget extends AppWidgetProvider {
                 .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id)
                 .setData(Uri.parse("havapusulasi://days/" + id)),
             PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
-    Intent configure =
-        new Intent(c, WidgetConfigureActivity.class)
-            .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id)
-            .setData(Uri.parse("havapusulasi://configure/" + id));
-    views.setOnClickPendingIntent(
-        R.id.widget_configure,
-        PendingIntent.getActivity(
-            c, id, configure, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
-    Intent refresh =
-        new Intent(c, WeatherWidget.class)
-            .setAction(REFRESH)
-            .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id)
-            .setData(Uri.parse("havapusulasi://refresh/" + id));
-    views.setOnClickPendingIntent(
-        R.id.widget_refresh,
-        PendingIntent.getBroadcast(
-            c, id, refresh, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
     return views;
   }
 
@@ -251,8 +234,8 @@ public final class WeatherWidget extends AppWidgetProvider {
       Forecast f = city == null ? null : store.cached(city.id);
       AppWidgetManager manager = AppWidgetManager.getInstance(c);
       boolean compact =
-          manager.getAppWidgetOptions(id).getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 500)
-              < 480;
+          manager.getAppWidgetOptions(id).getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 430)
+              < 420;
       String status = prefs(c).getString("state_" + id, "");
       if (f != null && f.downloaded >= prefs(c).getLong("stateAt_" + id, 0)) status = "";
       manager.updateAppWidget(

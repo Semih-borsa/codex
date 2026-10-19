@@ -1,10 +1,10 @@
-# HavaPusulası 1.2.1
+# HavaPusulası 1.2.2
 
 Kişisel ve ticari olmayan kullanım için Android hava asistanı. Hesap, ücretli AI, sosyal özellik veya harita içermez. Telefonun GPS konumunu istemez. Android 8.0+ desteklenir. Ayrı uygulamadır; NOVA ve Cep Bütçem kayıtlarını kullanmaz/değiştirmez.
 
 ## APK'yı indir ve kur
 
-1. [HavaPusulasi-1.2.1.apk](https://github.com/Semih-borsa/codex/blob/main/downloads/HavaPusulasi-1.2.1.apk) sayfasını aç. Depo özelse GitHub'a giriş yap.
+1. [HavaPusulasi-1.2.2.apk](https://github.com/Semih-borsa/codex/blob/main/downloads/HavaPusulasi-1.2.2.apk) sayfasını aç. Depo özelse GitHub'a giriş yap.
 2. **Download raw file** / aşağı ok simgesine bas. Tarayıcıdaki “Farklı kaydet” APK yerine sayfanın HTML'sini kaydedebilir.
 3. İnen `.apk` dosyasını telefona aktar; Dosyalar uygulamasından aç. Android isterse bu dosyayı açtığın uygulamaya kurulum iznini kendin ver. HavaPusulası bu ayarı değiştiremez.
 4. Şehirler → İstanbul/Ankara/İzmir kısayolu veya **Şehir ara** → doğru şehir/ilçe ve ülkeyi seç. En fazla 12 şehir kaydedilir.
@@ -13,6 +13,14 @@ Kişisel ve ticari olmayan kullanım için Android hava asistanı. Hesap, ücret
 7. Denemek için **Örnek bildirimi göster**. Bildirimde tüm kayıtlı şehirler ve verinin yaşı gösterilir. İnternetten yenileme yapmak yerine kayıtlı veriyi kullanır.
 
 Güncellemelerde uygulamayı kaldırmadan APK'yı kur; kaldırma yerel şehir ve önbelleği siler. İlk paket kişisel kullanım için debug imzalıdır; Play Store üretim yayını değildir. Farklı bilgisayardaki debug anahtarıyla üretilen APK mevcut APK'nın üstüne kurulmayabilir; bu sürümde dışa aktarma/aktar içe alma yoktur.
+
+## 1.2.2: düğmesiz ve boşluksuz kart
+
+**Aç / Yenile / Şehir** alt satırı kaldırıldı. Kartın renkli zemini son tahmin satırından sonra yalnızca 14 dp iç kenar payıyla biter; kalan yüksekliği dolduran ağırlıklı boş alan yoktur. **Kartın gövdesine dokunmak uygulamayı açar**, Sonraki düğmesi diğer tahmin günlerine geçer. Yenileme uygulamadaki **Tahmini yenile** üzerinden yapılır; otomatik yenileme korunur.
+
+Yeni önerilen boyut **300 × 430 dp**, günlük tablo eşiği 420 dp’dir. Büyük eski widget’ın ana ekranda ayırdığı hücreler başlatıcıya aittir; renkli kart artık o alanı doldurmaz. Hücre alanını da küçültmek istersen widget’a basılı tutup alt tutamağı yukarı çek. Kurulumdan sonra uygulamayı bir kez aç; kayıtlı widget görünümleri yenilenir.
+
+Şehir widget eklenirken seçilir. Android 9+ başlatıcın destekliyorsa widget’a basılı tut → **Düzenle** üzerinden değiştirilebilir. Uygulamadaki seçili şehri izleme seçeneği de korunur. [Yeni düğmesiz kart örneği — test verisi](docs/ekranlar/widget-no-footer-test.png).
 
 ## 1.2.1: daha okunaklı widget
 
@@ -59,7 +67,7 @@ Widget artık telefonun yerel tarihini gün adıyla gösterir. Tarih sistem saat
 - Bu saatin **model tahmini** gösterilir; gerçek zamanlı ölçüm denmez. “Kaydedilmiş tahmin”, indirilme zamanı ve şehir saat dilimi görünür. 6 saatten eski kayıt işaretlenir; tahmin süresi dolduğunda eski sıcaklık güncelmiş gibi sunulmaz.
 - Başarısız, bozuk veya hatalı birimdeki yanıt son başarılı önbelleği değiştirmez. Çevrimdışıyken yeniden açma ve saatlik/günlük liste çalışır. Şehir araması ve yeni tahmin indirme internet gerektirir.
 - Telefonun yerel saatine göre günlük bildirim. Yeniden başlatma ve saat/saat dilimi değişikliğinde **gelecekteki** bildirim yeniden planlanır. Telefon kapalıyken kaçırılan günlük uyarı sonradan gönderilmez. Aynı gün yinelenen teslim engellenir.
-- Ana ekrana eklenen, yeniden boyutlandırılabilen widget: her widget için ayrı şehir veya uygulamada seçili şehri izleme; sıcaklık, yağış ve son başarılı yenileme saati. **Aç / Yenile / Şehir** düğmeleri.
+- Ana ekrana eklenen, yeniden boyutlandırılabilen widget: her widget için ayrı şehir veya uygulamada seçili şehri izleme; sıcaklık, yağış ve son başarılı yenileme saati. Kart gövdesine dokunarak uygulamayı açma; Sonraki ile günlük sayfalama.
 - Sistem/açık/koyu tema; sıcaklık/yağış/rüzgâr eşiklerine dayalı basit günlük öneriler. AI veya resmî tehlike uyarısı değildir.
 - Şehir silme ancak şehir ve önbelleğinin silineceği ayrıca onaylanırsa yapılır.
 
@@ -80,14 +88,14 @@ Hava verisi: **Open-Meteo**, şehir: **GeoNames**, [CC BY 4.0](https://creativec
 
 Widget yoksa arka plan yenileme varsayılan **kapalıdır**; widget varsa varsayılan **açıktır**. Açıkça kapatma tercihi her iki durumda korunur. Açılırsa **30 dakika / 1 saat / 3 saat** arasından aralık seçilir; başlangıç tercihi 30 dakikadır. **Yalnızca Wi-Fi / ölçülmeyen ağ** varsayılan açıktır. Bu seçenek kapatılırsa mobil veri de kullanılabilir; operatör tarifesi geçerlidir. Android'in ağ sınıflandırması esas alınır.
 
-Her döngüde en fazla 12 kayıtlı şehir yenilenir; widget'ta görünen ve uygulamada seçili şehirler önceliklidir. İki ardışık hatada döngü durur, sonraki plan beklenir. Android Doze/pil yönetimi/iş kotası nedeniyle **tam 30 dakikada bir, kesintisiz güncelleme veya bildirim anında taze veri garantisi yoktur**. Ön plan servisi veya sürekli uyanık tutma kullanılmaz. Elle uygulama/widget üzerinden yenileme mevcut internet bağlantısını kullanır.
+Her döngüde en fazla 12 kayıtlı şehir yenilenir; widget'ta görünen ve uygulamada seçili şehirler önceliklidir. İki ardışık hatada döngü durur, sonraki plan beklenir. Android Doze/pil yönetimi/iş kotası nedeniyle **tam 30 dakikada bir, kesintisiz güncelleme veya bildirim anında taze veri garantisi yoktur**. Ön plan servisi veya sürekli uyanık tutma kullanılmaz. Elle uygulama üzerinden yenileme mevcut internet bağlantısını kullanır.
 
 ## Ana ekran widget'ı
 
 1. Uygulamada şehir ekleyip ilk tahmini indir.
 2. Ayarlar → **Ana ekrana widget ekle**. Başlatıcı desteklemiyorsa telefonun ana ekranında boş yere basılı tut → **Widget'lar → HavaPusulası**.
-3. Şehir seçimi açılırsa bir şehir veya **Uygulamada seçili şehri izle** seç. Widget üzerindeki **Şehir** düğmesiyle daha sonra değiştirebilirsin. Birden çok widget farklı şehirleri gösterebilir.
-4. **Aç**, ilgili şehrin uygulama ekranını açar. **Yenile**, yalnızca o şehir için anahtarsız bir indirme işi ister; internet yoksa istek bağlantıyı bekleyebilir. Son başarılı indirme saati bu sırada değişmez.
+3. Şehir seçimi açılırsa bir şehir veya **Uygulamada seçili şehri izle** seç. Destekleyen başlatıcılarda uzun basıp **Düzenle** üzerinden değiştirebilirsin. Birden çok widget farklı şehirleri gösterebilir.
+4. Widget gövdesine dokununca ilgili şehir açılır. Elle yenilemek için uygulamadaki **Tahmini yenile** düğmesini kullan. Son yenileme saati yalnızca başarılı indirmede değişir.
 5. Widget'ın sistemden gelen yaklaşık yarım saatlik ekran güncellemesi kayıtlı veriyi yeniden gösterir. Widget varsa otomatik indirme varsayılan açıktır; daha önce kapattıysan Ayarlar’dan tekrar aç. Ekranı çizmek tek başına yeni veri indirmek anlamına gelmez.
 
 Süresi dolmuş veride sıcaklık `—` olur; eski değer güncelmiş gibi kalmaz. Widget boyutu ana ekran başlatıcısından ayarlanabilir; küçük boyutta ayrıntılar sadeleşir, son yenileme saati korunur. Widget kaldırıldığında o widget'ın tercihleri temizlenir; şehirler uygulamada saklanır.

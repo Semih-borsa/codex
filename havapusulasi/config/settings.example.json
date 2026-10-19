@@ -40,9 +40,11 @@
     "future_days_per_page": 3,
     "recommended_size_dp": {
       "width": 300,
-      "height": 500
+      "height": 430
     },
-    "daily_forecast_min_height_dp": 480
+    "daily_forecast_min_height_dp": 420,
+    "footer_buttons": false,
+    "card_height": "wrap_content"
   },
   "api_key_required": false
 }

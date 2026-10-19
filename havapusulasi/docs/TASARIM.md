@@ -34,3 +34,7 @@ Emülatör ekran görüntüleri gerçek uygulama çıktısıdır; test tahminler
 ## 1.2.1 okunabilirlik
 
 Şehir 18 sp, tarih ve gün bilgisi 13 sp, günlük yüksek/düşük 14 sp kalın, ölçüm değerleri etiketlerden büyük 16 sp kalın. Metinler #F1F6FF / #D2E1F8 ile koyu zeminden ayrılır. Gün satırları 48 dp. Güncel öneri 300 × 500 dp, minimum boyutlandırma 280 × 340 dp; günlük tablo eşiği 480 dp. Önceki sürümdeki daha küçük boyut önerisinin yerini alır. Ölçüm değerlerinin göreli boyut span’i Android yazı ölçeğini izler; sistem ayarları değiştirilmez.
+
+## 1.2.2 kart yüksekliği
+
+Aç/Yenile/Şehir alt satırı yoktur. Saydam FrameLayout başlatıcının ayırdığı alanı tutar; içteki renkli LinearLayout wrap_content yüksekliğindedir. Günlük satır grubunda layout_weight kaldırılmıştır. Kart bu yüzden son satır + 14 dp padding ile biter, yeniden boyutlandırmada esneyip altta renkli boşluk üretmez. Dış kapsayıcı bu farklı yükseklikleri korumak için gereklidir; UselessParent önerisi yalnız bu düğümde gerekçeli bastırılır. Güncel öneri 300 × 430 dp, tablo eşiği 420 dp. Uzun basarak yeniden yapılandırma özelliği API 28+ xml-v28 kaynağında tanımlıdır.

@@ -347,18 +347,29 @@ public final class WeatherInstrumentation extends Instrumentation {
                     (int) (300 * c.getResources().getDisplayMetrics().density),
                     View.MeasureSpec.EXACTLY),
                 View.MeasureSpec.makeMeasureSpec(
-                    (int) (500 * c.getResources().getDisplayMetrics().density),
+                    (int) (430 * c.getResources().getDisplayMetrics().density),
                     View.MeasureSpec.EXACTLY));
             freshView.layout(0, 0, freshView.getMeasuredWidth(), freshView.getMeasuredHeight());
             check(
                 freshView.findViewById(R.id.widget_forecast_rows).getHeight()
                     >= (int) (90 * c.getResources().getDisplayMetrics().density),
                 "Default widget size leaves readable space for three forecast rows");
+            View card = freshView.findViewById(R.id.widget_root);
+            View lastRow = freshView.findViewById(R.id.widget_day_row_2);
+            android.graphics.Rect lastBounds = new android.graphics.Rect();
+            lastRow.getDrawingRect(lastBounds);
+            ((android.view.ViewGroup) card).offsetDescendantRectToMyCoords(lastRow, lastBounds);
+            check(
+                card.getHeight() - lastBounds.bottom == card.getPaddingBottom(),
+                "Widget card ends at its last forecast row with padding only");
+            check(
+                !text(freshView, "Aç") && !text(freshView, "Yenile") && !text(freshView, "Şehir"),
+                "Widget has no Open Refresh or City footer buttons");
             try {
               android.graphics.Bitmap preview =
                   android.graphics.Bitmap.createBitmap(
                       freshView.getMeasuredWidth(),
-                      freshView.getMeasuredHeight(),
+                      freshView.findViewById(R.id.widget_root).getMeasuredHeight(),
                       android.graphics.Bitmap.Config.ARGB_8888);
               freshView.draw(new android.graphics.Canvas(preview));
               try (FileOutputStream output =

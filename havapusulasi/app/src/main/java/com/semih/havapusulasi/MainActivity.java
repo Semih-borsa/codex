@@ -896,9 +896,9 @@ public final class MainActivity extends Activity {
     copy(widget, "Ana ekran widget’ı", 19, text, true);
     copy(
         widget,
-        "Sıcaklık, yağış ve son yenileme saati uygulamayı açmadan görünür. Her widget için ayrı"
-            + " şehir seçebilir veya uygulamadaki seçimi izleyebilirsin. Yenile düğmesi internet"
-            + " üzerinden yalnızca o şehri ister; Şehir düğmesi seçimi değiştirir.",
+        "Widget’a dokununca ilgili şehirde uygulama açılır. Yenileme uygulamadaki Tahmini yenile"
+            + " düğmesinden yapılır. Şehir, widget eklenirken veya başlatıcının desteklediği"
+            + " Düzenle seçeneğinden seçilir. Sonraki düğmesi diğer tahmin günlerine geçer.",
         13,
         muted,
         false);

@@ -1,4 +1,12 @@
-# Test sonuçları — HavaPusulası 1.2.1
+# Test sonuçları — HavaPusulası 1.2.2
+
+## 1.2.2 — alt düğmeler ve boş alan kaldırıldı
+
+30 birim testi, lint 0 sorun, debug APK/test APK derlemesi başarılı. Android 11 ve Android 15 üzerinde **40’ar instrumentation kontrolü** geçti. Ek kontroller kartın son günlük satırından sonra yalnız padding kaldığını ve Aç/Yenile/Şehir alt düğmelerinin bulunmadığını doğruladı. Önizleme `ekranlar/widget-no-footer-test.png` içerik yüksekliğinde çizilen gerçek RemoteViews test görünümüdür; TEST VERİSİ etiketlidir. Aynı dakika/son indirme, ölçümler, günlük sayfalar, süresi dolma ve veri yokluğu kontrolleri korundu. Sonrasında yalnız şehir seçimi yardım metni, kaldırılan düğmeye yönlendirmeyecek şekilde düzeltildi ve APK tekrar derlendi.
+
+versionCode 7 / versionName 1.2.2; aynı debug imzası. Fiziksel Xiaomi, gerçek başlatıcıda eski hücre alanının otomatik küçülmesi, API 26 ve canlı servis erişimi bu turda doğrulanmadı. Başlatıcının ayırdığı hücre alanı uygulamadan değiştirilmez; iç kart içerik yüksekliğinde biter. TextClock bağımsız çizimde boş olabilir, başlatıcıya bağlanınca sistem tarafından güncellenir.
+
+## 1.2.1 kayıtları
 
 ## 1.2.1 — okunabilir widget
 
