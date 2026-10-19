@@ -15,7 +15,8 @@ public final class PdfProvider extends ContentProvider {
 
   private File file(Uri u) throws FileNotFoundException {
     String n = u.getLastPathSegment();
-    if (n == null || !n.matches("Nobet_[0-9_]+\\.pdf")) throw new FileNotFoundException();
+    if (n == null || !n.matches("(?:Nobet|Istatistik)_[0-9_]+\\.pdf"))
+      throw new FileNotFoundException();
     File root = new File(getContext().getCacheDir(), "pdf");
     File f = new File(root, n);
     try {

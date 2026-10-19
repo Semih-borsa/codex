@@ -1,11 +1,15 @@
-# Doğrulama — Nöbet Çizelgesi 1.3 / 19 Ekim 2026
+# Doğrulama — Nöbet Çizelgesi 1.4 / 19 Ekim 2026
 
 - JDK 17.0.17, Android SDK 35, build-tools 35.0.0, Gradle 8.9, AGP 8.7.3.
 - `testDebugUnitTest`: **41 test, 0 başarısız, 0 atlanan**.
 - `lintDebug`: **sorun bulunmadı**.
 - APK ve Android test APK derlemeleri başarılı.
-- Android 11 / API 30 x86_64 emülatöründe önceki sürüm üzerine `adb install -r` ile 1.3 güncellemesi başarılı.
-- Android test çalıştırıcısı: **19 kontrol geçti, 0 başarısız**.
+- Android 11 / API 30 x86_64 emülatöründe önceki sürüm üzerine `adb install -r` ile 1.4 güncellemesi başarılı.
+- Android test çalıştırıcısı: **22 kontrol geçti, 0 başarısız**.
+
+## 1.4 kontrolleri
+
+İstatistik PDF'si boş personel listesinde de geçerli, kompakt bir tablo üretir. 19 personel / 7 görev yeri / geçmiş ve gelecek atamalı sentetik örnekte 8 sayfanın tamamı PdfRenderer ile açılıp çizilir. Gizlenen şubeler istatistikte korunur. Uzun şube/personel adları satıra bölünür. İstatistik PDF paylaşım URI'sinin okunabildiği, yazma erişiminin reddedildiği ve ekrandaki dışa aktarma düğmesi doğrulanır.
 
 ## 1.3 kontrolleri
 

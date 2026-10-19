@@ -1226,12 +1226,15 @@ public final class MainActivity extends Activity {
 
   private void stats() {
     heading("Nöbet İstatistikleri");
-    note("Hafta İçi / Hafta Sonu: " + state.placeName(WORK));
-    note(
-        state.weeks.size()
-            + " Onaylı Hafta • "
-            + state.people.stream().filter(p -> p.active).count()
-            + " Aktif Personel");
+    action(
+        "İstatistikleri PDF Olarak Paylaş",
+        () -> {
+          try {
+            PdfExport.share(this, PdfExport.createStatistics(this, state, LocalDate.now()));
+          } catch (Exception e) {
+            toast("İstatistik PDF'si oluşturulamadı veya paylaşım uygulaması bulunamadı.");
+          }
+        });
     heading("Bugün Ve Öncesi");
     statisticsTable(false);
     List<StatRow> planned = statistics(state, LocalDate.now(), true);
@@ -1241,14 +1244,10 @@ public final class MainActivity extends Activity {
       heading("Gelecek Atamalar");
       statisticsTable(true);
     }
-    note(
-        "Onaylı listeler sayılır; düzenleyip onaylayınca sayılar güncellenir. Cumartesi + Pazar: 2"
-            + " Nöbet Günü.");
   }
 
   private void statisticsTable(boolean future) {
-    List<String> labels = new ArrayList<>(Arrays.asList("Hafta İçi", "Hafta Sonu"));
-    for (Place p : statisticPlaces(state)) labels.add(p.name + (p.deleted ? " (Silindi)" : ""));
+    List<String> labels = PdfExport.statisticsLabels(state);
     List<StatRow> rows = statistics(state, LocalDate.now(), future);
     // Extra branches continue vertically to keep every column readable on narrow screens.
     float density = getResources().getDisplayMetrics().density;
