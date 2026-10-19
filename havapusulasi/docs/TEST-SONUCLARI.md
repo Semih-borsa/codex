@@ -1,4 +1,6 @@
-# Test sonuçları — HavaPusulası 1.0.0
+# Test sonuçları — HavaPusulası 1.0.1
+
+1.0.1 doğrulaması: 25 birim testi, lint (0 sorun), debug APK ve test APK derlemesi başarılı. Android 11 üzerinde güncellemeyle kurulum ve 32 instrumentation kontrolü yeniden geçti. APK imzası 1.0.0 ile aynı; versionCode 2. Gerçek Android 11 arayüzünde açık/koyu seçimleri, süreç yeniden başlatılınca koyu modun korunması ve ana ekran widget’ında gün/tarih gösterimi doğrulandı. Tarih telefonun yerel dil ve saat ayarını izler. Aşağıdaki API 35, gerçek reboot ve alarm sonuçları 1.0.0 temel sürümünün kayıtlarıdır; bu küçük arayüz güncellemesinde o aşamalar yeniden çalıştırılmadı.
 
 Doğrulama: 18–19 Ekim 2026. Hazır APK debug imzalıdır; Play Store üretim yayını değildir.
 

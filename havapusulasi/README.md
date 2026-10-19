@@ -1,10 +1,10 @@
-# HavaPusulası 1.0
+# HavaPusulası 1.0.1
 
 Kişisel ve ticari olmayan kullanım için Android hava asistanı. Hesap, ücretli AI, sosyal özellik veya harita içermez. Telefonun GPS konumunu istemez. Android 8.0+ desteklenir. Ayrı uygulamadır; NOVA ve Cep Bütçem kayıtlarını kullanmaz/değiştirmez.
 
 ## APK'yı indir ve kur
 
-1. [HavaPusulasi-1.0.0.apk](https://github.com/Semih-borsa/codex/blob/main/downloads/HavaPusulasi-1.0.0.apk) sayfasını aç. Depo özelse GitHub'a giriş yap.
+1. [HavaPusulasi-1.0.1.apk](https://github.com/Semih-borsa/codex/blob/main/downloads/HavaPusulasi-1.0.1.apk) sayfasını aç. Depo özelse GitHub'a giriş yap.
 2. **Download raw file** / aşağı ok simgesine bas. Tarayıcıdaki “Farklı kaydet” APK yerine sayfanın HTML'sini kaydedebilir.
 3. İnen `.apk` dosyasını telefona aktar; Dosyalar uygulamasından aç. Android isterse bu dosyayı açtığın uygulamaya kurulum iznini kendin ver. HavaPusulası bu ayarı değiştiremez.
 4. Şehirler → İstanbul/Ankara/İzmir kısayolu veya **Şehir ara** → doğru şehir/ilçe ve ülkeyi seç. En fazla 12 şehir kaydedilir.
@@ -13,6 +13,10 @@ Kişisel ve ticari olmayan kullanım için Android hava asistanı. Hesap, ücret
 7. Denemek için **Örnek bildirimi göster**. Bildirimde tüm kayıtlı şehirler ve verinin yaşı gösterilir. İnternetten yenileme yapmak yerine kayıtlı veriyi kullanır.
 
 Güncellemelerde uygulamayı kaldırmadan APK'yı kur; kaldırma yerel şehir ve önbelleği siler. İlk paket kişisel kullanım için debug imzalıdır; Play Store üretim yayını değildir. Farklı bilgisayardaki debug anahtarıyla üretilen APK mevcut APK'nın üstüne kurulmayabilir; bu sürümde dışa aktarma/aktar içe alma yoktur.
+
+## 1.0.1 güncellemesi
+
+Widget artık telefonun yerel tarihini gün adıyla gösterir. Tarih sistem saatiyle otomatik ilerler; internetten veri indirmeye bağlı değildir. Tarihin dili telefonun diline uyar. Ayarlar → **TEMA · AÇIK / KOYU** altında **Koyu mod**, **Açık mod** ve **Sistem** seçenekleri bulunur; seçim kapanıp açılınca korunur. Güncellemeyi uygulamayı kaldırmadan kur.
 
 ## Neler çalışır?
 

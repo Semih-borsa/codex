@@ -602,14 +602,15 @@ public final class MainActivity extends Activity {
 
   private void settings() {
     LinearLayout theme = card(body);
-    copy(theme, "GÖRÜNÜM", 11, accent, true);
+    copy(theme, "TEMA · AÇIK / KOYU", 11, accent, true);
+    copy(theme, "Açık, koyu veya telefonun sistem temasını seç. Tercihin sonraki açılışta korunur.", 13, muted, false);
     gap(theme, 8);
     LinearLayout themes = row();
     for (String name : new String[] {"system", "light", "dark"})
       weight(
           themes,
           button(
-              name.equals("system") ? "Sistem" : name.equals("light") ? "Açık" : "Koyu",
+              name.equals("system") ? "Sistem" : name.equals("light") ? "Açık mod" : "Koyu mod",
               prefs.getString("theme", "system").equals(name),
               () -> {
                 prefs.edit().putString("theme", name).apply();

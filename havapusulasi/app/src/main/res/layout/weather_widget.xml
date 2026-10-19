@@ -3,6 +3,7 @@
 <TextView android:id="@+id/widget_city" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:textSize="16sp" android:textStyle="bold" android:textColor="#EAF5F4" android:maxLines="1" android:ellipsize="end"/>
 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/widget_brand" android:textSize="11sp" android:textColor="#76D2CF"/>
 </LinearLayout>
+<TextClock android:id="@+id/widget_date" android:layout_width="match_parent" android:layout_height="wrap_content" android:format12Hour="d MMMM yyyy • EEEE" android:format24Hour="d MMMM yyyy • EEEE" android:contentDescription="@string/widget_date_description" android:textSize="11sp" android:textColor="#A6BDC5" android:maxLines="2" android:ellipsize="end"/>
 <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
 <TextView android:id="@+id/widget_temperature" android:layout_width="wrap_content" android:layout_gravity="start|center_vertical" android:layout_height="wrap_content" android:textSize="44sp" android:textStyle="bold" android:textColor="#FFFFFF" android:maxLines="1"/>
 <TextView android:id="@+id/widget_symbol" android:layout_gravity="end|center_vertical" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="32sp" android:textColor="#F5CA7D" android:importantForAccessibility="no"/>
