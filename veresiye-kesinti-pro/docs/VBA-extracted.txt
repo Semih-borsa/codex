@@ -1,0 +1,378 @@
+olevba 0.60.2 on Python 3.12.14 - http://decalage.info/python/oletools
+===============================================================================
+FILE: /workspace/attachments/b9f8d078-46a2-44dc-97de-637a673f31f7/VERESİYE KESİNTİ FORMATI V3.0.xlsm
+Type: OpenXML
+WARNING  For now, VBA stomping cannot be detected for files in memory
+-------------------------------------------------------------------------------
+VBA MACRO ThisWorkbook.cls 
+in file: xl/vbaProject.bin - OLE stream: 'VBA/ThisWorkbook'
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+(empty macro)
+-------------------------------------------------------------------------------
+VBA MACRO Module2.bas 
+in file: xl/vbaProject.bin - OLE stream: 'VBA/Module2'
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+Sub EksikPersonelleriSariRenklendir()
+    Dim wsKesinti As Worksheet
+    Dim wsPersonel As Worksheet
+    Dim sonSatirKesinti As Long
+    Dim sonSatirPersonel As Long
+    Dim personelSozluk As Object
+    Dim i As Long
+    Dim kontrolDegeri As String
+
+    On Error Resume Next
+
+    ' Sayfaları tanımla
+    Set wsKesinti = ThisWorkbook.Sheets("Kesinti Listesi")
+    Set wsPersonel = ThisWorkbook.Sheets("Personel Listesi")
+
+    On Error GoTo 0
+
+    If wsKesinti Is Nothing Or wsPersonel Is Nothing Then
+        MsgBox "Sayfa isimleri hatalı. Lütfen kontrol edin.", vbCritical
+        Exit Sub
+    End If
+
+    ' Personel listesi sözlük oluştur
+    Set personelSozluk = CreateObject("Scripting.Dictionary")
+    sonSatirPersonel = wsPersonel.Cells(wsPersonel.Rows.Count, "B").End(xlUp).Row
+
+    For i = 2 To sonSatirPersonel
+        kontrolDegeri = LCase(Trim(CStr(wsPersonel.Cells(i, "B").Value)))
+        If Len(kontrolDegeri) > 0 Then
+            If Not personelSozluk.Exists(kontrolDegeri) Then
+                personelSozluk.Add kontrolDegeri, True
+            End If
+        End If
+    Next i
+
+    ' Kesinti listesinde önceki renklendirmeleri temizle
+    sonSatirKesinti = wsKesinti.Cells(wsKesinti.Rows.Count, "C").End(xlUp).Row
+    wsKesinti.Range("A2:G" & sonSatirKesinti).Interior.ColorIndex = xlNone
+
+    ' Kesinti listesinde kontrol yap
+    For i = 2 To sonSatirKesinti
+        kontrolDegeri = LCase(Trim(CStr(wsKesinti.Cells(i, "C").Value)))
+        
+        If Len(kontrolDegeri) > 0 Then
+            If Not personelSozluk.Exists(kontrolDegeri) Then
+                ' Sadece A–G arası hücreleri sarıya boya
+                wsKesinti.Range("A" & i & ":G" & i).Interior.Color = RGB(255, 255, 0)
+            End If
+        End If
+    Next i
+
+    MsgBox "Personel listesinde olmayan satırlar sarıya boyandı.", vbInformation
+End Sub
+-------------------------------------------------------------------------------
+VBA MACRO Module1.bas 
+in file: xl/vbaProject.bin - OLE stream: 'VBA/Module1'
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+Dim sonuc
+Sub SifreAc()
+sonuc = "Sayfaların Şifreleri"
+For sayfaid = 1 To Worksheets.Count
+Worksheets.Item(sayfaid).Activate
+SifreKir
+Next
+InputBox sonuc, , sonuc
+End Sub
+Sub SifreKir()
+On Error Resume Next
+Dim i As Integer, j As Integer, k As Integer
+Dim l As Integer, m As Integer, n As Integer
+Dim i1 As Integer, i2 As Integer, i3 As Integer
+Dim i4 As Integer, i5 As Integer, i6 As Integer
+For i = 65 To 66
+For j = 65 To 66
+For k = 65 To 66
+For l = 65 To 66
+For m = 65 To 66
+For i1 = 65 To 66
+For i2 = 65 To 66
+For i3 = 65 To 66
+For i4 = 65 To 66
+For i5 = 65 To 66
+For i6 = 65 To 66
+For n = 32 To 126
+ActiveSheet.Unprotect Chr(i) & Chr(j) & Chr(k) & Chr(l) & Chr(m) & Chr(i1) & Chr(i2) & Chr(i3) & Chr(i4) & Chr(i5) & Chr(i6) & Chr(n)
+If ActiveSheet.ProtectContents = False Then
+sonuc = sonuc & vbCrLf & ActiveSheet.Name & " : " & Chr(i) & Chr(j) & Chr(k) & Chr(l) & Chr(m) & Chr(i1) & Chr(i2) & Chr(i3) & Chr(i4) & Chr(i5) & Chr(i6) & Chr(n)
+Exit Sub
+End If
+Next
+Next
+Next
+Next
+Next
+Next
+Next
+Next
+Next
+Next
+Next
+Next
+End Sub
+-------------------------------------------------------------------------------
+VBA MACRO Sayfa2.cls 
+in file: xl/vbaProject.bin - OLE stream: 'VBA/Sayfa2'
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+(empty macro)
+-------------------------------------------------------------------------------
+VBA MACRO Sayfa3.cls 
+in file: xl/vbaProject.bin - OLE stream: 'VBA/Sayfa3'
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+(empty macro)
+-------------------------------------------------------------------------------
+VBA MACRO Sayfa1.cls 
+in file: xl/vbaProject.bin - OLE stream: 'VBA/Sayfa1'
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+(empty macro)
+-------------------------------------------------------------------------------
+VBA MACRO Module3.bas 
+in file: xl/vbaProject.bin - OLE stream: 'VBA/Module3'
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+Function NormalizeText(txt As String) As String
+    NormalizeText = LCase(WorksheetFunction.Trim(WorksheetFunction.Clean(txt)))
+End Function
+
+Sub Kesinti_Personel_Eslestir_Final_V3()
+
+    Dim wsK As Worksheet, wsP As Worksheet, wsI As Worksheet
+    Dim lastK As Long, lastI As Long, i As Long
+    Dim unvanK As String, unvanP As String
+    Dim satirP As Long, found As Boolean
+    
+    Set wsK = Sheets("Kesinti Listesi")
+    Set wsP = Sheets("Personel Listesi")
+    Set wsI = Sheets("İş Bankası Formatı")
+    
+    lastK = wsK.Cells(wsK.Rows.Count, "A").End(xlUp).Row
+    lastI = wsI.Cells(wsI.Rows.Count, "A").End(xlUp).Row
+    
+    If lastI < 1 Then lastI = 1
+    
+    For i = 2 To lastK
+        
+        If wsK.Cells(i, "C").Value <> "" Then
+            
+            unvanK = NormalizeText(wsK.Cells(i, "C").Value)
+            found = False
+            
+            '--- Personel listesinde eşleşme ara
+            For satirP = 2 To wsP.Cells(wsP.Rows.Count, "B").End(xlUp).Row
+                unvanP = NormalizeText(wsP.Cells(satirP, "B").Value)
+                
+                If unvanK = unvanP Then
+                    found = True
+                    Exit For
+                End If
+            Next satirP
+            
+            lastI = lastI + 1
+            
+            '--- VERİ AKTARMA ---
+            If found Then
+                ' DURUM 1: Personel Listesinde VARSA
+                wsI.Cells(lastI, "A").Value = wsP.Cells(satirP, "E").Value ' Personel Listesi Hesap/IBAN
+                wsI.Cells(lastI, "B").Value = wsP.Cells(satirP, "C").Value & " " & wsP.Cells(satirP, "D").Value
+                wsI.Cells(lastI, "F").Value = wsK.Cells(i, "F").Value
+            Else
+                ' DURUM 2: Personel Listesinde YOKSA
+                ' Kesinti Listesi C sütununu (Unvan/İsim) İş Bankası A sütununa yaz
+                wsI.Cells(lastI, "A").Value = wsK.Cells(i, "C").Value
+                ' Kesinti Listesi D ve E sütunlarını birleştirip B'ye yaz
+                wsI.Cells(lastI, "B").Value = wsK.Cells(i, "D").Value & " " & wsK.Cells(i, "E").Value
+                ' Tutar bilgisini F sütununa yaz
+                wsI.Cells(lastI, "F").Value = wsK.Cells(i, "F").Value
+            End If
+            
+            '--- KENARLIK EKLEME ---
+            ' Veri yazılan satırın A'dan F'ye kadar olan kısmına kenarlık çizer
+            With wsI.Range(wsI.Cells(lastI, "A"), wsI.Cells(lastI, "F")).Borders
+                .LineStyle = xlContinuous
+                .Weight = xlThin
+                .ColorIndex = xlAutomatic
+            End With
+            
+        End If
+    Next i
+
+    MsgBox "İşlem tamamlandı.", vbInformation
+
+End Sub
+
+-------------------------------------------------------------------------------
+VBA MACRO Sayfa4.cls 
+in file: xl/vbaProject.bin - OLE stream: 'VBA/Sayfa4'
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+(empty macro)
+-------------------------------------------------------------------------------
+VBA MACRO Sayfa5.cls 
+in file: xl/vbaProject.bin - OLE stream: 'VBA/Sayfa5'
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+(empty macro)
+-------------------------------------------------------------------------------
+VBA MACRO Module4.bas 
+in file: xl/vbaProject.bin - OLE stream: 'VBA/Module4'
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+Function NormalizeText(txt As String) As String
+    txt = Replace(txt, Chr(160), " ")
+    txt = Replace(txt, ChrW(304), "i")   ' İ
+    txt = Replace(txt, ChrW(305), "i")   ' ı
+    txt = Replace(txt, "I", "i")
+    NormalizeText = LCase(WorksheetFunction.Trim(WorksheetFunction.Clean(txt)))
+End Function
+
+Sub Kesinti_Personel_Eslestir_Final_V5()
+
+    Dim wsK As Worksheet, wsP As Worksheet, wsI As Worksheet
+    Dim lastK As Long, lastP As Long, lastI As Long
+    Dim i As Long, satirP As Long
+    Dim anahtar As String
+    Dim sozluk As Object
+    Dim found As Boolean
+    
+    Set wsK = Sheets("Kesinti Listesi")
+    Set wsP = Sheets("Personel Listesi")
+    Set wsI = Sheets("İş Bankası Formatı")
+    
+    ' Personel Listesi'nde başlık YOK, 1. satırdan başlar
+    Set sozluk = CreateObject("Scripting.Dictionary")
+    lastP = wsP.Cells(wsP.Rows.Count, "B").End(xlUp).Row
+    For satirP = 1 To lastP
+        anahtar = NormalizeText(CStr(wsP.Cells(satirP, "B").Value))
+        If anahtar <> "" Then
+            If Not sozluk.Exists(anahtar) Then sozluk.Add anahtar, satirP
+        End If
+    Next satirP
+    
+    lastK = wsK.Cells(wsK.Rows.Count, "C").End(xlUp).Row
+    lastI = wsI.Cells(wsI.Rows.Count, "A").End(xlUp).Row
+    If lastI < 1 Then lastI = 1
+    
+    For i = 2 To lastK
+        
+        If Trim(CStr(wsK.Cells(i, "C").Value)) <> "" Then
+            
+            anahtar = NormalizeText(CStr(wsK.Cells(i, "C").Value))
+            found = sozluk.Exists(anahtar)
+            If found Then satirP = sozluk(anahtar)
+            
+            lastI = lastI + 1
+            
+            If found Then
+                ' Personel Listesinde VAR: normal yazı
+                wsI.Cells(lastI, "A").Value = wsP.Cells(satirP, "E").Value   ' TC
+                wsI.Cells(lastI, "B").Value = wsP.Cells(satirP, "C").Value & " " & wsP.Cells(satirP, "D").Value
+                wsI.Cells(lastI, "F").Value = wsK.Cells(i, "F").Value
+                wsI.Range(wsI.Cells(lastI, "A"), wsI.Cells(lastI, "F")).Font.Bold = False
+            Else
+                ' Personel Listesinde YOK: KALIN yazı
+                wsI.Cells(lastI, "A").Value = wsK.Cells(i, "C").Value
+                wsI.Cells(lastI, "B").Value = wsK.Cells(i, "D").Value & " " & wsK.Cells(i, "E").Value
+                wsI.Cells(lastI, "F").Value = wsK.Cells(i, "F").Value
+                wsI.Range(wsI.Cells(lastI, "A"), wsI.Cells(lastI, "F")).Font.Bold = True
+            End If
+            
+            With wsI.Range(wsI.Cells(lastI, "A"), wsI.Cells(lastI, "F")).Borders
+                .LineStyle = xlContinuous
+                .Weight = xlThin
+                .ColorIndex = xlAutomatic
+            End With
+            
+        End If
+    Next i
+
+    MsgBox "İşlem tamamlandı.", vbInformation
+
+End Sub
+-------------------------------------------------------------------------------
+VBA MACRO Module5.bas 
+in file: xl/vbaProject.bin - OLE stream: 'VBA/Module5'
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+Sub IsBankasi_To_Mutemet()
+
+    Dim wsI As Worksheet, wsM As Worksheet
+    Dim lastI As Long, lastM As Long
+    Dim i As Long, r As Long
+    Dim hedefSatir As Long
+    
+    Set wsI = Sheets("İş Bankası Formatı")
+    Set wsM = Sheets("Mutemet Format")
+    
+    lastI = wsI.Cells(wsI.Rows.Count, "B").End(xlUp).Row
+    If lastI < 2 Then
+        MsgBox "İş Bankası Formatı sayfasında aktarılacak veri yok.", vbExclamation
+        Exit Sub
+    End If
+    
+    Application.ScreenUpdating = False
+    
+    '--- Mutemet'teki eski verileri temizle (başlık satırları 1-2 korunur) ---
+    lastM = wsM.Cells(wsM.Rows.Count, "B").End(xlUp).Row
+    If lastM < 3 Then lastM = 3
+    With wsM.Range("B3:G" & lastM)
+        .ClearContents
+        .Font.Bold = False
+        .Borders.LineStyle = xlNone
+    End With
+    
+    '--- Aktarım ---
+    hedefSatir = 3
+    For i = 2 To lastI
+        
+        If Trim(CStr(wsI.Cells(i, "B").Value)) <> "" Or Trim(CStr(wsI.Cells(i, "A").Value)) <> "" Then
+            
+            wsM.Cells(hedefSatir, "A").Formula = "=IF(B" & hedefSatir & "="""","""",ROW()-2)"
+            
+            wsM.Cells(hedefSatir, "B").NumberFormat = "0"
+            wsM.Cells(hedefSatir, "B").Value = wsI.Cells(i, "A").Value   ' TC NO
+            wsM.Cells(hedefSatir, "C").Value = wsI.Cells(i, "B").Value   ' ADI - SOYADI
+            wsM.Cells(hedefSatir, "D").Value = wsI.Cells(i, "C").Value   ' ŞUBE
+            wsM.Cells(hedefSatir, "E").Value = wsI.Cells(i, "D").Value   ' HESAP
+            wsM.Cells(hedefSatir, "F").Value = wsI.Cells(i, "E").Value   ' IBAN NO
+            wsM.Cells(hedefSatir, "G").NumberFormat = "#,##0.00"
+            wsM.Cells(hedefSatir, "G").Value = wsI.Cells(i, "F").Value   ' ÖDENECEK TUTAR
+            
+            ' Kalın biçimi İş Bankası satırından al
+            wsM.Range(wsM.Cells(hedefSatir, "A"), wsM.Cells(hedefSatir, "G")).Font.Bold = _
+                wsI.Cells(i, "B").Font.Bold
+            
+            ' Kenarlık
+            With wsM.Range(wsM.Cells(hedefSatir, "A"), wsM.Cells(hedefSatir, "G")).Borders
+                .LineStyle = xlContinuous
+                .Weight = xlThin
+                .ColorIndex = xlAutomatic
+            End With
+            
+            hedefSatir = hedefSatir + 1
+        End If
+        
+    Next i
+    
+    Application.ScreenUpdating = True
+    
+    MsgBox (hedefSatir - 3) & " kayıt Mutemet Format sayfasına aktarıldı.", vbInformation
+
+End Sub
+
+-------------------------------------------------------------------------------
+VBA MACRO Sayfa6.cls 
+in file: xl/vbaProject.bin - OLE stream: 'VBA/Sayfa6'
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+(empty macro)
++----------+--------------------+---------------------------------------------+
+|Type      |Keyword             |Description                                  |
++----------+--------------------+---------------------------------------------+
+|Suspicious|CreateObject        |May create an OLE object                     |
+|Suspicious|Chr                 |May attempt to obfuscate specific strings    |
+|          |                    |(use option --deobf to deobfuscate)          |
+|Suspicious|ChrW                |May attempt to obfuscate specific strings    |
+|          |                    |(use option --deobf to deobfuscate)          |
+|Suspicious|Hex Strings         |Hex-encoded strings were detected, may be    |
+|          |                    |used to obfuscate strings (option --decode to|
+|          |                    |see all)                                     |
++----------+--------------------+---------------------------------------------+
+
