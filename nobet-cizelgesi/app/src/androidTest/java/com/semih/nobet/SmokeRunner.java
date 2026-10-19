@@ -58,6 +58,25 @@ public class SmokeRunner extends Instrumentation {
     return null;
   }
 
+  private void checkStatisticsBounds(android.view.View view) {
+    truth(!(view instanceof android.widget.HorizontalScrollView));
+    if ("statistics-table".equals(view.getTag())) {
+      android.view.ViewGroup table = (android.view.ViewGroup) view;
+      truth(table.getWidth() > 0);
+      for (int i = 0; i < table.getChildCount(); i++) {
+        android.view.ViewGroup row = (android.view.ViewGroup) table.getChildAt(i);
+        for (int j = 0; j < row.getChildCount(); j++) {
+          android.view.View cell = row.getChildAt(j);
+          truth(cell.getWidth() > 0 && cell.getLeft() >= 0 && cell.getRight() <= table.getWidth());
+        }
+      }
+    }
+    if (view instanceof android.view.ViewGroup) {
+      android.view.ViewGroup group = (android.view.ViewGroup) view;
+      for (int i = 0; i < group.getChildCount(); i++) checkStatisticsBounds(group.getChildAt(i));
+    }
+  }
+
   @Override
   public void onStart() {
     Context target = getTargetContext();
@@ -104,10 +123,10 @@ public class SmokeRunner extends Instrumentation {
               PdfRenderer renderer = new PdfRenderer(fd)) {
             truth(renderer.getPageCount() == 1);
             try (PdfRenderer.Page page = renderer.openPage(0)) {
-              truth(page.getWidth() == 842 && page.getHeight() == 595);
+              truth(page.getWidth() == 700 && page.getHeight() == 358);
               android.graphics.Bitmap bitmap =
                   android.graphics.Bitmap.createBitmap(
-                      842, 595, android.graphics.Bitmap.Config.ARGB_8888);
+                      700, 358, android.graphics.Bitmap.Config.ARGB_8888);
               page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
               bitmap.recycle();
             }
@@ -312,12 +331,12 @@ public class SmokeRunner extends Instrumentation {
                           == android.graphics.Color.rgb(42, 111, 177));
                   settings.performClick();
                   truth(
-                      findText(activity.getWindow().getDecorView(), "Ayarlar • Görev yerleri")
+                      findText(activity.getWindow().getDecorView(), "Ayarlar • Görev Yerleri")
                           != null);
                   findText(activity.getWindow().getDecorView(), "İstatistik").performClick();
-                  truth(findText(activity.getWindow().getDecorView(), "A\nPersonel") != null);
-                  truth(findText(activity.getWindow().getDecorView(), "B\nHafta içi") != null);
-                  truth(findText(activity.getWindow().getDecorView(), "C\nHafta sonu") != null);
+                  truth(findText(activity.getWindow().getDecorView(), "Personel") != null);
+                  truth(findText(activity.getWindow().getDecorView(), "Hafta İçi") != null);
+                  truth(findText(activity.getWindow().getDecorView(), "Hafta Sonu") != null);
                 });
           } finally {
             runOnMainSync(activity::finish);
@@ -394,6 +413,57 @@ public class SmokeRunner extends Instrumentation {
           }
           truth(custom.weeks.get(0).duties.size() == 12);
           truth(custom.places.size() == 6);
+        });
+    check(
+        "Statistics fit narrow screens with twenty places and preserve every branch",
+        () -> {
+          Activity activity =
+              startActivitySync(
+                  new Intent(target, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+          try {
+            waitForIdleSync();
+            runOnMainSync(
+                () -> {
+                  try {
+                    State sample = new State();
+                    for (Person p : s.people) sample.people.add(p);
+                    for (int i = 2; i < 20; i++)
+                      sample.places.add(new Place("fit" + i, "Uzun Şube Adı " + i, 31, 1));
+                    java.lang.reflect.Field field = MainActivity.class.getDeclaredField("state");
+                    field.setAccessible(true);
+                    field.set(activity, sample); // In memory only; never saves over device records.
+                    findText(activity.getWindow().getDecorView(), "İstatistik").performClick();
+                    android.view.View root = activity.getWindow().getDecorView();
+                    for (Place place : statisticPlaces(sample))
+                      truth(findText(root, place.name) != null);
+                    truth(findText(root, "A\nPersonel") == null);
+                    for (int width : new int[] {280, 320, 360, 600}) {
+                      float density = activity.getResources().getDisplayMetrics().density;
+                      root.measure(
+                          android.view.View.MeasureSpec.makeMeasureSpec(
+                              (int) (width * density), android.view.View.MeasureSpec.EXACTLY),
+                          android.view.View.MeasureSpec.makeMeasureSpec(
+                              (int) (800 * density), android.view.View.MeasureSpec.EXACTLY));
+                      root.layout(0, 0, root.getMeasuredWidth(), root.getMeasuredHeight());
+                      checkStatisticsBounds(root);
+                    }
+                    root.requestLayout();
+                  } catch (ReflectiveOperationException e) {
+                    throw new AssertionError(e);
+                  }
+                });
+            waitForIdleSync();
+            android.graphics.Bitmap screenshot = getUiAutomation().takeScreenshot();
+            if (screenshot != null) {
+              try (FileOutputStream stream =
+                  new FileOutputStream(new File(isolated, "statistics-fit.png"))) {
+                screenshot.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, stream);
+              }
+              screenshot.recycle();
+            }
+          } finally {
+            runOnMainSync(activity::finish);
+          }
         });
     Bundle result = new Bundle();
     result.putInt("passed", passed);

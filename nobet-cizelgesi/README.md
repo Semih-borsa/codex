@@ -1,12 +1,19 @@
-# Nöbet Çizelgesi 1.2 — Android
+# Nöbet Çizelgesi 1.3 — Android
 
 Çevrimdışı personel, görev yeri, mazeret ve haftalık nöbet planlama uygulaması.
 
-[APK 1.2 indir](../downloads/NobetCizelgesi-1.2.apk) · [Android Studio ZIP](../downloads/NobetCizelgesi-Android-Studio.zip) · [Test sonuçları](docs/TESTLER.md)
+[APK 1.3 indir](../downloads/NobetCizelgesi-1.3.apk) · [Android Studio ZIP](../downloads/NobetCizelgesi-Android-Studio.zip) · [Test sonuçları](docs/TESTLER.md)
 
-Android 8.0 ve üzeri. 1.0 veya 1.1 kuruluysa **uygulamayı kaldırmadan** 1.2 APK'sını açarak güncelleyin. Aynı paket adı ve imza kullanılır; eski kayıtlar okunur. Kaldırmak veya uygulama verilerini silmek kayıtları siler.
+Android 8.0 ve üzeri. Önceki sürümlerden biri kuruluysa **uygulamayı kaldırmadan** 1.3 APK'sını açarak güncelleyin. Aynı paket adı ve imza kullanılır; eski kayıtlar okunur. Kaldırmak veya uygulama verilerini silmek kayıtları siler.
 
-## 1.2 yenilikleri
+## 1.3 yenilikleri
+
+- İstatistik başlıklarındaki A/B/C harfleri kaldırıldı. **Personel, Hafta İçi, Hafta Sonu** ve verdiğiniz şube adları gösterilir.
+- Tablo ekran genişliğine sığar; yatay kaydırma gerekmez. Çok sayıda şube varsa okunabilir sütun grupları alt alta devam eder. Hücre boşlukları azaltıldı, uzun adlar satıra bölünür.
+- PDF kenarları ve satır araları daraltıldı; sayfa 700 × 358 punto olarak tabloya göre boyutlandı. Alttaki geniş boşluk kaldırıldı. Çok sayıda yer ek sayfalarda eksiksiz korunur.
+- Sabit arayüz başlıkları/düğmeleri **Hafta İçi**, **Hafta Sonu** düzeninde büyük baş harflerle gösterilir; girilen personel/şube adları korunur.
+
+## Korunan şube ayarları
 
 - **Eklenen şubeyi silme:** Ayarlar → ilgili şube → Şubeyi sil. Silinen yer yeni dağıtımlardan çıkar; yarın ve sonraki atamaları kaldırılır. Geçmiş ve bugünkü kayıtları/istatistikleri korunur. Silinen görev yerleri düğmesinden geri alınabilir; eski gelecek atamalar otomatik geri gelmez. İlk iki temel yer silinmez, adı/günleri değiştirilebilir.
 - **İlk iki yerin günleri de değiştirilebilir.** Hiç gün seçilmezse o yere yeni atama yapılmaz. Ana yerde yalnız cumartesi veya yalnız pazar da seçilebilir; yalnız seçili güne atama yapılır. İki hafta sonu günü seçiliyse aynı kişi atanır. Ana yerin hafta sonu nöbetçisi perşembe/cuma dinlenir. İlk şubenin hafta sonu günleri de seçilebilir. Gün değişikliği mevcut kayıtları silmez; yeni önerilerde uygulanır.
@@ -34,7 +41,7 @@ Android 8.0 ve üzeri. 1.0 veya 1.1 kuruluysa **uygulamayı kaldırmadan** 1.2 A
 
 ## İstatistik tablosu
 
-Personeller Türkçe alfabetik sıradadır. A: Personel, B: ana yerin hafta içi nöbet günleri, C: ana yerin hafta sonu nöbet günleri, D: verdiğiniz adla ilk şube, E/F/...: eklediğiniz diğer görev yerleri. Şube sütunları o yerdeki toplam nöbet günleridir. Cumartesi+pazar 2 gündür, sıra açısından 1 bloktur. Tüm sütunlar için tablo yatay kaydırılabilir.
+Personeller Türkçe alfabetik sıradadır. Başlıklar Personel, Hafta İçi, Hafta Sonu ve sizin verdiğiniz şube adlarıdır; harfli sütun işaretleri yoktur. Ana yerin hafta içi/hafta sonu sayıları ayrı, her şubenin toplam nöbet günleri kendi sütunundadır. Cumartesi+pazar 2 gündür, sıra açısından 1 bloktur. Tablo ekrana sığar; çok sayıdaki şube sütunları personel adları tekrarlanarak aşağıda devam eder. Yatay kaydırma gerekmez.
 
 Bugün ve öncesindeki onaylı atamalar ile gelecek atamalar ayrı tablolardadır. Taslaklar sayılmaz. Fiilen gerçekleşmeyen görevleri kaydedilmiş çizelgede düzeltin; uygulama devam/saat ölçümü yapmaz.
 
