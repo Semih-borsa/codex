@@ -1,0 +1,838 @@
+TAP version 13
+# Subtest: UI-S02 — Kredi ekranından ödendi işaretlenince bakiye 20.000 TL → 15.000 TL olmalı
+ok 1 - UI-S02 — Kredi ekranından ödendi işaretlenince bakiye 20.000 TL → 15.000 TL olmalı
+  ---
+  duration_ms: 3032.12451
+  type: 'test'
+  ...
+# Subtest: UI-S04 — Uygulama yeni maaş döneminde açıldığında kartın ödenmemiş dönem içi borcu kaybolmamalı
+ok 2 - UI-S04 — Uygulama yeni maaş döneminde açıldığında kartın ödenmemiş dönem içi borcu kaybolmamalı
+  ---
+  duration_ms: 906.630168
+  type: 'test'
+  ...
+# Subtest: UI-KONTROL — Normal bekleyen ödeme ödendiğinde ve geri alındığında nakit ve ayrılan tutar uyumlu olmalı
+ok 3 - UI-KONTROL — Normal bekleyen ödeme ödendiğinde ve geri alındığında nakit ve ayrılan tutar uyumlu olmalı
+  ---
+  duration_ms: 2254.964949
+  type: 'test'
+  ...
+# Subtest: S01 — Bekleyen 5.000 TL kredi taksiti 20.000 TL bakiyeden 15.000 TL kullanılabilir bırakmalı
+ok 4 - S01 — Bekleyen 5.000 TL kredi taksiti 20.000 TL bakiyeden 15.000 TL kullanılabilir bırakmalı
+  ---
+  duration_ms: 11.7489
+  type: 'test'
+  ...
+# Subtest: S02a — Gerçek kredi ödeme işleyicisi 5.000 TL nakit çıkışını bir kez kaydetmeli
+ok 5 - S02a — Gerçek kredi ödeme işleyicisi 5.000 TL nakit çıkışını bir kez kaydetmeli
+  ---
+  duration_ms: 5.186593
+  type: 'test'
+  ...
+# Subtest: S02b — Normal ödemeye bağlanmış tutar hem borç hem nakit çıkışı olarak iki kez düşmemeli
+ok 6 - S02b — Normal ödemeye bağlanmış tutar hem borç hem nakit çıkışı olarak iki kez düşmemeli
+  ---
+  duration_ms: 1.996181
+  type: 'test'
+  ...
+# Subtest: S03a — Kredi ödeme durumunu geri alma mevcut takip bayrağını geri döndürmeli
+ok 7 - S03a — Kredi ödeme durumunu geri alma mevcut takip bayrağını geri döndürmeli
+  ---
+  duration_ms: 2.449545
+  type: 'test'
+  ...
+# Subtest: S03b — Krediyle ilişkilendirilmiş ödeme geri alınınca nakit iade edilmeli ve taksit yeniden ayrılmalı
+ok 8 - S03b — Krediyle ilişkilendirilmiş ödeme geri alınınca nakit iade edilmeli ve taksit yeniden ayrılmalı
+  ---
+  duration_ms: 13.341097
+  type: 'test'
+  ...
+# Subtest: S04a — Maaş dönemi değişince ödenmemiş 10.000 TL kart borcu korunmalı
+ok 9 - S04a — Maaş dönemi değişince ödenmemiş 10.000 TL kart borcu korunmalı
+  ---
+  duration_ms: 8.560065
+  type: 'test'
+  ...
+# Subtest: S04b — Önceki dönemden kalan kart dönem içi borcu yeni dönemin kullanılabilir tutarını da sınırlamalı
+ok 10 - S04b — Önceki dönemden kalan kart dönem içi borcu yeni dönemin kullanılabilir tutarını da sınırlamalı
+  ---
+  duration_ms: 3.409483
+  type: 'test'
+  ...
+# Subtest: S04c — Önceki dönemin ödenmemiş ekstresi ayrılan tutarda korunuyor
+ok 11 - S04c — Önceki dönemin ödenmemiş ekstresi ayrılan tutarda korunuyor
+  ---
+  duration_ms: 7.76992
+  type: 'test'
+  ...
+# Subtest: S05 — Kart alışverişi harcama, ekstre ödemesi yalnız nakit çıkışı olmalı
+ok 12 - S05 — Kart alışverişi harcama, ekstre ödemesi yalnız nakit çıkışı olmalı
+  ---
+  duration_ms: 2.400431
+  type: 'test'
+  ...
+# Subtest: S06a — Provizyondaki 2.000 TL kesinleşince toplam aynıysa yeni harcama oluşmamalı
+ok 13 - S06a — Provizyondaki 2.000 TL kesinleşince toplam aynıysa yeni harcama oluşmamalı
+  ---
+  duration_ms: 1.072527
+  type: 'test'
+  ...
+# Subtest: S06b — Aynı gün iki güncelleme sonunda yalnız yeni 500 TL bir kez sayılmalı
+ok 14 - S06b — Aynı gün iki güncelleme sonunda yalnız yeni 500 TL bir kez sayılmalı
+  ---
+  duration_ms: 0.882511
+  type: 'test'
+  ...
+# Subtest: S06c — Dönem içinin ekstreye taşınması yeni alışveriş üretmemeli
+ok 15 - S06c — Dönem içinin ekstreye taşınması yeni alışveriş üretmemeli
+  ---
+  duration_ms: 0.800817
+  type: 'test'
+  ...
+# Subtest: S07a — Kart taksit kaydı gelecekteki ekstre dönemlerine tarihli plan sağlamalı [eksik yetenek]
+ok 16 - S07a — Kart taksit kaydı gelecekteki ekstre dönemlerine tarihli plan sağlamalı [eksik yetenek]
+  ---
+  duration_ms: 1.308364
+  type: 'test'
+  ...
+# Subtest: S07b — Mevcut kredi taksit planı kısa ayı ve kuruş toplamını korumalı [kontrol]
+ok 17 - S07b — Mevcut kredi taksit planı kısa ayı ve kuruş toplamını korumalı [kontrol]
+  ---
+  duration_ms: 9.03649
+  type: 'test'
+  ...
+# Subtest: S08a — Yeni kart güncellemesi eski kayıt nesnesini yerinde değiştirmemeli
+ok 18 - S08a — Yeni kart güncellemesi eski kayıt nesnesini yerinde değiştirmemeli
+  ---
+  duration_ms: 0.82873
+  type: 'test'
+  ...
+# Subtest: S08b — Bugünkü ekstre değişikliği geçmiş dönemin kart toplamını değiştirmemeli
+ok 19 - S08b — Bugünkü ekstre değişikliği geçmiş dönemin kart toplamını değiştirmemeli
+  ---
+  duration_ms: 0.779676
+  type: 'test'
+  ...
+# Subtest: S09 — butce-takip-v1 yedeği kişisel kategori ve ödeme bağlarını koruyarak okunmalı
+ok 20 - S09 — butce-takip-v1 yedeği kişisel kategori ve ödeme bağlarını koruyarak okunmalı
+  ---
+  duration_ms: 1.931463
+  type: 'test'
+  ...
+# Subtest: S09 — finora-v1 yedeği kişisel kategori ve ödeme bağlarını koruyarak okunmalı
+ok 21 - S09 — finora-v1 yedeği kişisel kategori ve ödeme bağlarını koruyarak okunmalı
+  ---
+  duration_ms: 0.726826
+  type: 'test'
+  ...
+# Subtest: S09 — finora-v2 yedeği kişisel kategori ve ödeme bağlarını koruyarak okunmalı
+ok 22 - S09 — finora-v2 yedeği kişisel kategori ve ödeme bağlarını koruyarak okunmalı
+  ---
+  duration_ms: 0.824073
+  type: 'test'
+  ...
+# Subtest: S10a — Geçersiz tutarlı yedek reddedilmeli; mevcut veri ve yedek aynı kalmalı
+ok 23 - S10a — Geçersiz tutarlı yedek reddedilmeli; mevcut veri ve yedek aynı kalmalı
+  ---
+  duration_ms: 1.361764
+  type: 'test'
+  ...
+# Subtest: S10b — Eksik çekirdek veri içeren yedek mevcut işlemleri silmemeli
+ok 24 - S10b — Eksik çekirdek veri içeren yedek mevcut işlemleri silmemeli
+  ---
+  duration_ms: 1.271047
+  type: 'test'
+  ...
+# Subtest: S10c — Yedek yazılırken kota hatasında önceki kayıtlar ve kişisel kategoriler geri dönmeli
+ok 25 - S10c — Yedek yazılırken kota hatasında önceki kayıtlar ve kişisel kategoriler geri dönmeli
+  ---
+  duration_ms: 1.325029
+  type: 'test'
+  ...
+# Subtest: S10d — Okunamayan yerel JSON varsayılan listeyle ezilmemeli
+ok 26 - S10d — Okunamayan yerel JSON varsayılan listeyle ezilmemeli
+  ---
+  duration_ms: 1.079998
+  type: 'test'
+  ...
+# Subtest: S10e — Bağlı iki kayıt yazılırken ikinci yazma hatası ilk yazmayı da geri almalı
+ok 27 - S10e — Bağlı iki kayıt yazılırken ikinci yazma hatası ilk yazmayı da geri almalı
+  ---
+  duration_ms: 1.156014
+  type: 'test'
+  ...
+# Subtest: S10f — Yinelenen kimlik veya geçersiz tarih içeren yedek reddedilmeli
+ok 28 - S10f — Yinelenen kimlik veya geçersiz tarih içeren yedek reddedilmeli
+  ---
+  duration_ms: 0.703051
+  type: 'test'
+  ...
+# Subtest: GÜVENLİK — Kaynak dosyanın SHA-256 değeri testler boyunca değişmemeli
+ok 29 - GÜVENLİK — Kaynak dosyanın SHA-256 değeri testler boyunca değişmemeli
+  ---
+  duration_ms: 0.693316
+  type: 'test'
+  ...
+# Subtest: UI-A01 — 20.000/5.000/15.000 ödeme ve geri alma, rapor, kalıcılık ve devir koruması
+ok 30 - UI-A01 — 20.000/5.000/15.000 ödeme ve geri alma, rapor, kalıcılık ve devir koruması
+  ---
+  duration_ms: 4980.486699
+  type: 'test'
+  ...
+# Subtest: UI-A02 — Eski ödendi kaydı açılışta gider üretmez ve manuel ödeme eşleştirilmez
+ok 31 - UI-A02 — Eski ödendi kaydı açılışta gider üretmez ve manuel ödeme eşleştirilmez
+  ---
+  duration_ms: 1775.204847
+  type: 'test'
+  ...
+# Subtest: A01 — Tam 20.000 / 5.000 / 15.000 → ödeme → geri alma senaryosu
+ok 32 - A01 — Tam 20.000 / 5.000 / 15.000 → ödeme → geri alma senaryosu
+  ---
+  duration_ms: 11.583341
+  type: 'test'
+  ...
+# Subtest: A02 — Aynı ödeme eski UI durumu ile yeniden işlenirse ikinci nakit çıkışı oluşmamalı
+ok 33 - A02 — Aynı ödeme eski UI durumu ile yeniden işlenirse ikinci nakit çıkışı oluşmamalı
+  ---
+  duration_ms: 3.353248
+  type: 'test'
+  ...
+# Subtest: A03 — Ödeme/geri alma/yeniden ödeme tek ödeme kimliğiyle bir kez etkili olmalı
+ok 34 - A03 — Ödeme/geri alma/yeniden ödeme tek ödeme kimliğiyle bir kez etkili olmalı
+  ---
+  duration_ms: 23.484677
+  type: 'test'
+  ...
+# Subtest: A04 — Eski odendi:true kayıt için geçmiş gider üretilmemeli; manuel ödeme geri almada silinmemeli
+ok 35 - A04 — Eski odendi:true kayıt için geçmiş gider üretilmemeli; manuel ödeme geri almada silinmemeli
+  ---
+  duration_ms: 1.795258
+  type: 'test'
+  ...
+# Subtest: A05 — Aynı tutar/kategori/tarihli bağımsız manuel kayıt otomatik eşleştirilmemeli
+ok 36 - A05 — Aynı tutar/kategori/tarihli bağımsız manuel kayıt otomatik eşleştirilmemeli
+  ---
+  duration_ms: 1.247432
+  type: 'test'
+  ...
+# Subtest: A06 — Onay iptalinde hiçbir ödeme veya takip durumu yazılmamalı
+ok 37 - A06 — Onay iptalinde hiçbir ödeme veya takip durumu yazılmamalı
+  ---
+  duration_ms: 1.108853
+  type: 'test'
+  ...
+# Subtest: A07 — Güvenlik kopyası yazılamazsa kredi ödemesi başlamamalı
+ok 38 - A07 — Güvenlik kopyası yazılamazsa kredi ödemesi başlamamalı
+  ---
+  duration_ms: 1.417928
+  type: 'test'
+  ...
+# Subtest: A08 — Ödemede ikinci kayıt yazılamazsa ilk değişiklik geri dönmeli
+ok 39 - A08 — Ödemede ikinci kayıt yazılamazsa ilk değişiklik geri dönmeli
+  ---
+  duration_ms: 3.753401
+  type: 'test'
+  ...
+# Subtest: A08 — Geri almada ikinci kayıt yazılamazsa ilk değişiklik geri dönmeli
+ok 40 - A08 — Geri almada ikinci kayıt yazılamazsa ilk değişiklik geri dönmeli
+  ---
+  duration_ms: 1.509687
+  type: 'test'
+  ...
+# Subtest: A09 — Geçersiz taksit tutarı veya tarihi ödeme kaydı oluşturmamalı
+ok 41 - A09 — Geçersiz taksit tutarı veya tarihi ödeme kaydı oluşturmamalı
+  ---
+  duration_ms: 3.590565
+  type: 'test'
+  ...
+# Subtest: A10 — Çakışan ödeme kimliği normal manuel kaydı ezmemeli
+ok 42 - A10 — Çakışan ödeme kimliği normal manuel kaydı ezmemeli
+  ---
+  duration_ms: 1.394954
+  type: 'test'
+  ...
+# Subtest: A11 — Yalnız vadesi dönem sonuna kadar gelen ödenmemiş kredi taksitleri ayrılmalı
+ok 43 - A11 — Yalnız vadesi dönem sonuna kadar gelen ödenmemiş kredi taksitleri ayrılmalı
+  ---
+  duration_ms: 1.125097
+  type: 'test'
+  ...
+# Subtest: A12 — İleri tarihli açık bağlı ödeme zaten ayrılmışsa taksit ikinci kez ayrılmamalı
+ok 44 - A12 — İleri tarihli açık bağlı ödeme zaten ayrılmışsa taksit ikinci kez ayrılmamalı
+  ---
+  duration_ms: 1.159999
+  type: 'test'
+  ...
+# Subtest: A13 — Yeni kredi ödemesi yalnız nakit raporuna girmeli; harcama toplamı artmamalı
+ok 45 - A13 — Yeni kredi ödemesi yalnız nakit raporuna girmeli; harcama toplamı artmamalı
+  ---
+  duration_ms: 3.058974
+  type: 'test'
+  ...
+# Subtest: A14 — Yeni kredi nakit çıkışı tahminde günlük harcama gibi aya yayılmamalı
+ok 46 - A14 — Yeni kredi nakit çıkışı tahminde günlük harcama gibi aya yayılmamalı
+  ---
+  duration_ms: 5.43681
+  type: 'test'
+  ...
+# Subtest: A15 — Yeni kredi ödeme bağları mevcut yedek biçimiyle korunmalı
+ok 47 - A15 — Yeni kredi ödeme bağları mevcut yedek biçimiyle korunmalı
+  ---
+  duration_ms: 2.878031
+  type: 'test'
+  ...
+# Subtest: A16 — Genel işlem düzenleme/silme kredi ödeme bağını bozmamalı
+ok 48 - A16 — Genel işlem düzenleme/silme kredi ödeme bağını bozmamalı
+  ---
+  duration_ms: 6.427194
+  type: 'test'
+  ...
+# Subtest: A17 — Birden fazla açık bağlı ödeme varsa otomatik silme/birleştirme yapılmamalı
+ok 49 - A17 — Birden fazla açık bağlı ödeme varsa otomatik silme/birleştirme yapılmamalı
+  ---
+  duration_ms: 2.108721
+  type: 'test'
+  ...
+# Subtest: UI-B01 — Dönem geçişi borcu korur; yeni 500 TL güncelleme kapalı dönemi değiştirmez
+ok 50 - UI-B01 — Dönem geçişi borcu korur; yeni 500 TL güncelleme kapalı dönemi değiştirmez
+  ---
+  duration_ms: 2867.390602
+  type: 'test'
+  ...
+# Subtest: UI-B02 — Kesilmiş ekstre değiştirilemez; aynı kartın yeni ekstresi eski borcu ve kimliği korur
+ok 51 - UI-B02 — Kesilmiş ekstre değiştirilemez; aynı kartın yeni ekstresi eski borcu ve kimliği korur
+  ---
+  duration_ms: 8937.260949
+  type: 'test'
+  ...
+# Subtest: UI-B03 — İki açık ekstre tek onayla ayrı kimlikli ödenir; yeniden alışveriş gideri oluşmaz
+ok 52 - UI-B03 — İki açık ekstre tek onayla ayrı kimlikli ödenir; yeniden alışveriş gideri oluşmaz
+  ---
+  duration_ms: 3864.168026
+  type: 'test'
+  ...
+# Subtest: UI-B04 — Geçmiş veri yoksa bugünkü tutar geçmiş kartta gösterilmez
+ok 53 - UI-B04 — Geçmiş veri yoksa bugünkü tutar geçmiş kartta gösterilmez
+  ---
+  duration_ms: 874.75422
+  type: 'test'
+  ...
+# Subtest: UI-B05 — Yeni kart UUID ile eklenir; mevcut kart kimliği ve kişisel kategori korunur
+ok 54 - UI-B05 — Yeni kart UUID ile eklenir; mevcut kart kimliği ve kişisel kategori korunur
+  ---
+  duration_ms: 1659.192088
+  type: 'test'
+  ...
+# Subtest: B01 — Eski kart kimliği ve kesin tek kategori bağı değişmeden yeni dönemde korunur
+ok 55 - B01 — Eski kart kimliği ve kesin tek kategori bağı değişmeden yeni dönemde korunur
+  ---
+  duration_ms: 7.449637
+  type: 'test'
+  ...
+# Subtest: B02 — Kimlikli kartın adı değişse bile eski isimdeki gözlem aynı karta aittir
+ok 56 - B02 — Kimlikli kartın adı değişse bile eski isimdeki gözlem aynı karta aittir
+  ---
+  duration_ms: 1.828673
+  type: 'test'
+  ...
+# Subtest: B03 — Aynı isimli iki kartın kimliksiz kaydı otomatik ilişkilendirilmez
+ok 57 - B03 — Aynı isimli iki kartın kimliksiz kaydı otomatik ilişkilendirilmez
+  ---
+  duration_ms: 1.70421
+  type: 'test'
+  ...
+# Subtest: B04 — Aynı gün birden fazla eski gözlem birleştirilmez veya toplanmaz
+ok 58 - B04 — Aynı gün birden fazla eski gözlem birleştirilmez veya toplanmaz
+  ---
+  duration_ms: 11.333153
+  type: 'test'
+  ...
+# Subtest: B05 — Farklı günlerin banka toplamları toplanmaz, son gözlem esas alınır
+ok 59 - B05 — Farklı günlerin banka toplamları toplanmaz, son gözlem esas alınır
+  ---
+  duration_ms: 0.946688
+  type: 'test'
+  ...
+# Subtest: B06 — Dönem geçişinden sonra güncelleme yalnız yeni 500 TL alışveriş sayar
+ok 60 - B06 — Dönem geçişinden sonra güncelleme yalnız yeni 500 TL alışveriş sayar
+  ---
+  duration_ms: 1.326311
+  type: 'test'
+  ...
+# Subtest: B07 — Provizyondan dönem içine geçiş ve aynı gün tekrar güncelleme mükerrer gider üretmez
+ok 61 - B07 — Provizyondan dönem içine geçiş ve aynı gün tekrar güncelleme mükerrer gider üretmez
+  ---
+  duration_ms: 0.978837
+  type: 'test'
+  ...
+# Subtest: B08 — Geçmiş gözlem, yeni güncellemenin bugünkü banka toplamından etkilenmez
+ok 62 - B08 — Geçmiş gözlem, yeni güncellemenin bugünkü banka toplamından etkilenmez
+  ---
+  duration_ms: 1.238818
+  type: 'test'
+  ...
+# Subtest: B09 — Doğrulanmış kapalı dönem özeti güncel ekstre ve ödemelerden bağımsız okunur
+ok 63 - B09 — Doğrulanmış kapalı dönem özeti güncel ekstre ve ödemelerden bağımsız okunur
+  ---
+  duration_ms: 0.965747
+  type: 'test'
+  ...
+# Subtest: B10 — Geçmiş kayıt yoksa bugünkü ekstre geçmişe kopyalanmaz
+ok 64 - B10 — Geçmiş kayıt yoksa bugünkü ekstre geçmişe kopyalanmaz
+  ---
+  duration_ms: 0.900337
+  type: 'test'
+  ...
+# Subtest: B11 — Karşılaştırma yalnız doğrulanmış aynı kapsamlı iki tutarda oluşur
+ok 65 - B11 — Karşılaştırma yalnız doğrulanmış aynı kapsamlı iki tutarda oluşur
+  ---
+  duration_ms: 1.074075
+  type: 'test'
+  ...
+# Subtest: B12 — UUID/fallback yeni kimlikleri aynı saatte benzersiz üretir
+ok 66 - B12 — UUID/fallback yeni kimlikleri aynı saatte benzersiz üretir
+  ---
+  duration_ms: 4.250622
+  type: 'test'
+  ...
+# Subtest: B13 — Doğrulanmış ekstre tutarı, tarihleri ve kimliği sonradan değişmez
+ok 67 - B13 — Doğrulanmış ekstre tutarı, tarihleri ve kimliği sonradan değişmez
+  ---
+  duration_ms: 1.615987
+  type: 'test'
+  ...
+# Subtest: B14 — Yeni ekstre, önceki ödenmemiş ekstreyi silmez; toplam 15.000 TL kalır
+ok 68 - B14 — Yeni ekstre, önceki ödenmemiş ekstreyi silmez; toplam 15.000 TL kalır
+  ---
+  duration_ms: 1.136975
+  type: 'test'
+  ...
+# Subtest: B15 — Kısmi ödeme yalnız bağlı ekstreyi azaltır; yeni ekstrenin tutarı değişmez
+ok 69 - B15 — Kısmi ödeme yalnız bağlı ekstreyi azaltır; yeni ekstrenin tutarı değişmez
+  ---
+  duration_ms: 2.108741
+  type: 'test'
+  ...
+# Subtest: B16 — Aynı tarihli/anahtarlı belirsiz eski ödeme yeni ekstrelere varsayımla dağıtılmaz
+ok 70 - B16 — Aynı tarihli/anahtarlı belirsiz eski ödeme yeni ekstrelere varsayımla dağıtılmaz
+  ---
+  duration_ms: 1.088101
+  type: 'test'
+  ...
+# Subtest: B17 — Eksik eski kesim/vade tarihleri tahmin edilmez
+ok 71 - B17 — Eksik eski kesim/vade tarihleri tahmin edilmez
+  ---
+  duration_ms: 1.148883
+  type: 'test'
+  ...
+# Subtest: B18 — Tarihi bilinmeyen eski ekstre mevcutta korunur fakat geçmişe taşınmaz
+ok 72 - B18 — Tarihi bilinmeyen eski ekstre mevcutta korunur fakat geçmişe taşınmaz
+  ---
+  duration_ms: 1.684711
+  type: 'test'
+  ...
+# Subtest: B19 — Ekstre ödemesi nakitte bir kez sayılır; alışveriş harcaması artmaz
+ok 73 - B19 — Ekstre ödemesi nakitte bir kez sayılır; alışveriş harcaması artmaz
+  ---
+  duration_ms: 2.460772
+  type: 'test'
+  ...
+# Subtest: B20 — Gelecek tarihli ödeme şimdiden nakit düşmez ve borç ikinci kez ayrılmaz
+ok 74 - B20 — Gelecek tarihli ödeme şimdiden nakit düşmez ve borç ikinci kez ayrılmaz
+  ---
+  duration_ms: 1.277347
+  type: 'test'
+  ...
+# Subtest: B21 — Pay ayır seçimi kapalıysa eski dönem içi borcu gerçek bakiyeyi veya ayrılanı azaltmaz
+ok 75 - B21 — Pay ayır seçimi kapalıysa eski dönem içi borcu gerçek bakiyeyi veya ayrılanı azaltmaz
+  ---
+  duration_ms: 1.124676
+  type: 'test'
+  ...
+# Subtest: B22 — Yeni ekstre ve günlük gözlem alanları eski üç yedek biçiminde korunur
+ok 76 - B22 — Yeni ekstre ve günlük gözlem alanları eski üç yedek biçiminde korunur
+  ---
+  duration_ms: 2.760383
+  type: 'test'
+  ...
+# Subtest: B23 — Bozuk ekstre kimliği, tarih veya yabancı kart bağlantısı yedekte reddedilir
+ok 77 - B23 — Bozuk ekstre kimliği, tarih veya yabancı kart bağlantısı yedekte reddedilir
+  ---
+  duration_ms: 1.270467
+  type: 'test'
+  ...
+# Subtest: B24 — Geçmiş borç gözlemine normal ekle/düzenle akışından sessiz yazılamaz
+ok 78 - B24 — Geçmiş borç gözlemine normal ekle/düzenle akışından sessiz yazılamaz
+  ---
+  duration_ms: 0.746857
+  type: 'test'
+  ...
+# Subtest: B25 — Önceki dönemin açılış borcu tahminde tek sefer sayılır
+ok 79 - B25 — Önceki dönemin açılış borcu tahminde tek sefer sayılır
+  ---
+  duration_ms: 1.210696
+  type: 'test'
+  ...
+# Subtest: B26 — Kesin eski ekstre anahtarıyla bağlı ödeme arşive geçerken korunur
+ok 80 - B26 — Kesin eski ekstre anahtarıyla bağlı ödeme arşive geçerken korunur
+  ---
+  duration_ms: 0.8284
+  type: 'test'
+  ...
+# Subtest: B27 — Gerçek Özet ödeme işleyicisi iki ekstreye ayrı nakit kaydı yazar
+ok 81 - B27 — Gerçek Özet ödeme işleyicisi iki ekstreye ayrı nakit kaydı yazar
+  ---
+  duration_ms: 4.814332
+  type: 'test'
+  ...
+# Subtest: B28 — Ekstre ödeme yazması hata verirse yeni arşiv ve nakit birlikte geri alınır
+ok 82 - B28 — Ekstre ödeme yazması hata verirse yeni arşiv ve nakit birlikte geri alınır
+  ---
+  duration_ms: 4.39622
+  type: 'test'
+  ...
+# Subtest: B29 — İptal edilen ödeme kaydı ve arşiv oluşturmaz
+ok 83 - B29 — İptal edilen ödeme kaydı ve arşiv oluşturmaz
+  ---
+  duration_ms: 4.272054
+  type: 'test'
+  ...
+# Subtest: B30 — Yeni ekstre ödeme bağı eksik kartla yeni cihaza yüklenemez
+ok 84 - B30 — Yeni ekstre ödeme bağı eksik kartla yeni cihaza yüklenemez
+  ---
+  duration_ms: 6.187632
+  type: 'test'
+  ...
+# Subtest: B31 — Gelecekteki kesim tarihi için kesilmiş ekstre yaratılmaz
+ok 85 - B31 — Gelecekteki kesim tarihi için kesilmiş ekstre yaratılmaz
+  ---
+  duration_ms: 1.235564
+  type: 'test'
+  ...
+# Subtest: B32 — Tutar bileşenleri tutmayan doğrulanmış dönem özeti yedekte reddedilir
+ok 86 - B32 — Tutar bileşenleri tutmayan doğrulanmış dönem özeti yedekte reddedilir
+  ---
+  duration_ms: 1.360813
+  type: 'test'
+  ...
+# Subtest: B33 — Eski maaş-dönemi anahtarlı ekstre ödemesi kesin kart/vade eşleşmesinde korunur
+ok 87 - B33 — Eski maaş-dönemi anahtarlı ekstre ödemesi kesin kart/vade eşleşmesinde korunur
+  ---
+  duration_ms: 1.464899
+  type: 'test'
+  ...
+# Subtest: B34 — Maaş dönemi anahtarı tek başına ödeme bağlamaz; çelişen açık anahtar aşılmaz
+ok 88 - B34 — Maaş dönemi anahtarı tek başına ödeme bağlamaz; çelişen açık anahtar aşılmaz
+  ---
+  duration_ms: 1.04069
+  type: 'test'
+  ...
+# Subtest: UI-C01 — Eksik işlem listeli paket önizlenir ama tam geri yükleme düğmesi kapalıdır
+ok 89 - UI-C01 — Eksik işlem listeli paket önizlenir ama tam geri yükleme düğmesi kapalıdır
+  ---
+  duration_ms: 1911.352297
+  type: 'test'
+  ...
+# Subtest: UI-C02 — Ekleme/silme/değiştirme etkileri görünür; Vazgeç ve Escape kayıtları korur
+ok 90 - UI-C02 — Ekleme/silme/değiştirme etkileri görünür; Vazgeç ve Escape kayıtları korur
+  ---
+  duration_ms: 1567.917467
+  type: 'test'
+  ...
+# Subtest: UI-C03 — Gerçek Yedek Al → dosyadan geri yükle → kredi ödemesini geri al akışı
+ok 91 - UI-C03 — Gerçek Yedek Al → dosyadan geri yükle → kredi ödemesini geri al akışı
+  ---
+  duration_ms: 4193.597883
+  type: 'test'
+  ...
+# Subtest: UI-C04 — Hatalı JSON dosyası mevcut veriyi değiştirmez
+ok 92 - UI-C04 — Hatalı JSON dosyası mevcut veriyi değiştirmez
+  ---
+  duration_ms: 1032.890208
+  type: 'test'
+  ...
+# Subtest: UI-C05 — Güvenlik kopyası kota hatası geri yüklemeyi başlatmaz
+ok 93 - UI-C05 — Güvenlik kopyası kota hatası geri yüklemeyi başlatmaz
+  ---
+  duration_ms: 1499.814159
+  type: 'test'
+  ...
+# Subtest: UI-C06 — İkinci alan yazma hatasında kayıtlar geri alınır, kurtarma kopyası saklanır
+ok 94 - UI-C06 — İkinci alan yazma hatasında kayıtlar geri alınır, kurtarma kopyası saklanır
+  ---
+  duration_ms: 1600.003715
+  type: 'test'
+  ...
+# Subtest: UI-C07 — Önizleme açıkken kayıt değişirse yükleme reddedilir
+ok 95 - UI-C07 — Önizleme açıkken kayıt değişirse yükleme reddedilir
+  ---
+  duration_ms: 1404.81591
+  type: 'test'
+  ...
+# Subtest: UI-C08 — Açıkça boş liste, silme etkisi gösterilip onaylandıktan sonra uygulanır
+ok 96 - UI-C08 — Açıkça boş liste, silme etkisi gösterilip onaylandıktan sonra uygulanır
+  ---
+  duration_ms: 1928.459019
+  type: 'test'
+  ...
+# Subtest: UI-C09 — Tam işaretli ancak alanı kaybolmuş paket yükleme önizlemesine ulaşamaz
+ok 97 - UI-C09 — Tam işaretli ancak alanı kaybolmuş paket yükleme önizlemesine ulaşamaz
+  ---
+  duration_ms: 989.937645
+  type: 'test'
+  ...
+# Subtest: C01 — finora-v2: eksik işlem listesi reddedilir; mevcut kayıtlar korunur
+ok 98 - C01 — finora-v2: eksik işlem listesi reddedilir; mevcut kayıtlar korunur
+  ---
+  duration_ms: 9.00374
+  type: 'test'
+  ...
+# Subtest: C02 — finora-v2: eski yedek uygulanır; bulunmayan kartlar ve kategoriler korunur
+ok 99 - C02 — finora-v2: eski yedek uygulanır; bulunmayan kartlar ve kategoriler korunur
+  ---
+  duration_ms: 2.835086
+  type: 'test'
+  ...
+# Subtest: C01 — finora-v1: eksik işlem listesi reddedilir; mevcut kayıtlar korunur
+ok 100 - C01 — finora-v1: eksik işlem listesi reddedilir; mevcut kayıtlar korunur
+  ---
+  duration_ms: 1.523548
+  type: 'test'
+  ...
+# Subtest: C02 — finora-v1: eski yedek uygulanır; bulunmayan kartlar ve kategoriler korunur
+ok 101 - C02 — finora-v1: eski yedek uygulanır; bulunmayan kartlar ve kategoriler korunur
+  ---
+  duration_ms: 1.696018
+  type: 'test'
+  ...
+# Subtest: C01 — butce-takip-v1: eksik işlem listesi reddedilir; mevcut kayıtlar korunur
+ok 102 - C01 — butce-takip-v1: eksik işlem listesi reddedilir; mevcut kayıtlar korunur
+  ---
+  duration_ms: 1.64427
+  type: 'test'
+  ...
+# Subtest: C02 — butce-takip-v1: eski yedek uygulanır; bulunmayan kartlar ve kategoriler korunur
+ok 103 - C02 — butce-takip-v1: eski yedek uygulanır; bulunmayan kartlar ve kategoriler korunur
+  ---
+  duration_ms: 1.61771
+  type: 'test'
+  ...
+# Subtest: C03 — Açık boş işlem listesi onaylı yüklemede temizlenir; eksik bölüm korunur
+ok 104 - C03 — Açık boş işlem listesi onaylı yüklemede temizlenir; eksik bölüm korunur
+  ---
+  duration_ms: 8.671459
+  type: 'test'
+  ...
+# Subtest: C04 — İşlem listesi bulunsa bile açık kısmi paket uygulanmaz
+ok 105 - C04 — İşlem listesi bulunsa bile açık kısmi paket uygulanmaz
+  ---
+  duration_ms: 1.800084
+  type: 'test'
+  ...
+# Subtest: C05 — Güvenlik kopyası yazılamazsa tek kullanıcı kaydı bile değişmez
+ok 106 - C05 — Güvenlik kopyası yazılamazsa tek kullanıcı kaydı bile değişmez
+  ---
+  duration_ms: 1.755097
+  type: 'test'
+  ...
+# Subtest: C06 — Güvenlik kopyasının geri okuması uyuşmazsa yükleme başlamaz
+ok 107 - C06 — Güvenlik kopyasının geri okuması uyuşmazsa yükleme başlamaz
+  ---
+  duration_ms: 1.790601
+  type: 'test'
+  ...
+# Subtest: C07 — İkinci veri yazmasındaki hata ilk yazmayı geri alır; güvenlik ve eski dosya korunur
+ok 108 - C07 — İkinci veri yazmasındaki hata ilk yazmayı geri alır; güvenlik ve eski dosya korunur
+  ---
+  duration_ms: 1.913176
+  type: 'test'
+  ...
+# Subtest: C08 — Yazılan değer geri okunarak doğrulanır; sessiz bozuk yazma geri alınır
+ok 109 - C08 — Yazılan değer geri okunarak doğrulanır; sessiz bozuk yazma geri alınır
+  ---
+  duration_ms: 1.813735
+  type: 'test'
+  ...
+# Subtest: C09 — Yeni anahtar yazıldıktan sonraki hatada yeni anahtar da kaldırılır
+ok 110 - C09 — Yeni anahtar yazıldıktan sonraki hatada yeni anahtar da kaldırılır
+  ---
+  duration_ms: 1.901868
+  type: 'test'
+  ...
+# Subtest: C10 — Bozuk JSON reddedilir, bekleyen önizleme temizlenir; kayıt/yedek yazılmaz
+ok 111 - C10 — Bozuk JSON reddedilir, bekleyen önizleme temizlenir; kayıt/yedek yazılmaz
+  ---
+  duration_ms: 3.44158
+  type: 'test'
+  ...
+# Subtest: C11 — Dosya seçimi iptal edilirse kayıt ve bekleyen önizleme değişmez
+ok 112 - C11 — Dosya seçimi iptal edilirse kayıt ve bekleyen önizleme değişmez
+  ---
+  duration_ms: 11.302828
+  type: 'test'
+  ...
+# Subtest: C12 — 10 MB üzeri dosya reddedilir ve eski önizleme uygulanabilir kalmaz
+ok 113 - C12 — 10 MB üzeri dosya reddedilir ve eski önizleme uygulanabilir kalmaz
+  ---
+  duration_ms: 7.236645
+  type: 'test'
+  ...
+# Subtest: C13 — Hatalı tür/tutar/kimlik/tarih yüklemeyi güvenlik kopyasından önce durdurur: {"ft_islemler":null}
+ok 114 - C13 — Hatalı tür/tutar/kimlik/tarih yüklemeyi güvenlik kopyasından önce durdurur: {"ft_islemler":null}
+  ---
+  duration_ms: 1.207061
+  type: 'test'
+  ...
+# Subtest: C13 — Hatalı tür/tutar/kimlik/tarih yüklemeyi güvenlik kopyasından önce durdurur: {"ft_islemler":{}}
+ok 115 - C13 — Hatalı tür/tutar/kimlik/tarih yüklemeyi güvenlik kopyasından önce durdurur: {"ft_islemler":{}}
+  ---
+  duration_ms: 1.198458
+  type: 'test'
+  ...
+# Subtest: C13 — Hatalı tür/tutar/kimlik/tarih yüklemeyi güvenlik kopyasından önce durdurur: {"ft_islemler":[{"id":"old","tip":"gelir","kategori":"Maaş","tutar":"bozuk","tarih":"2026-10-15"}]}
+ok 116 - C13 — Hatalı tür/tutar/kimlik/tarih yüklemeyi güvenlik kopyasından önce durdurur: {"ft_islemler":[{"id":"old","tip":"gelir","kategori":"Maaş","tutar":"bozuk","tarih":"2026-10-15"}]}
+  ---
+  duration_ms: 0.850002
+  type: 'test'
+  ...
+# Subtest: C13 — Hatalı tür/tutar/kimlik/tarih yüklemeyi güvenlik kopyasından önce durdurur: {"ft_islemler":[{"id":"old","tip":"gelir","kategori":"Maaş","tutar":20000,"tarih":"2026-10-15"},{"id":"old","tip":"gelir","kategori":"Maaş","tutar":20000,"tarih":"2026-10-15"}]}
+ok 117 - C13 — Hatalı tür/tutar/kimlik/tarih yüklemeyi güvenlik kopyasından önce durdurur: {"ft_islemler":[{"id":"old","tip":"gelir","kategori":"Maaş","tutar":20000,"tarih":"2026-10-15"},{"id":"old","tip":"gelir","kategori":"Maaş","tutar":20000,"tarih":"2026-10-15"}]}
+  ---
+  duration_ms: 0.780307
+  type: 'test'
+  ...
+# Subtest: C13 — Hatalı tür/tutar/kimlik/tarih yüklemeyi güvenlik kopyasından önce durdurur: {"ft_islemler":[{"id":"old","tip":"gelir","kategori":"Maaş","tutar":20000,"tarih":"2026-02-30"}]}
+ok 118 - C13 — Hatalı tür/tutar/kimlik/tarih yüklemeyi güvenlik kopyasından önce durdurur: {"ft_islemler":[{"id":"old","tip":"gelir","kategori":"Maaş","tutar":20000,"tarih":"2026-02-30"}]}
+  ---
+  duration_ms: 0.742319
+  type: 'test'
+  ...
+# Subtest: C14 — Yeni tam yedeğin alan listesi eksik/bozuk içeriği yakalar
+ok 119 - C14 — Yeni tam yedeğin alan listesi eksik/bozuk içeriği yakalar
+  ---
+  duration_ms: 1.948448
+  type: 'test'
+  ...
+# Subtest: C15 — Yeni, hiç işlem kaydetmemiş uygulama açık boş işlem listeli yedek üretir
+ok 120 - C15 — Yeni, hiç işlem kaydetmemiş uygulama açık boş işlem listeli yedek üretir
+  ---
+  duration_ms: 0.992357
+  type: 'test'
+  ...
+# Subtest: C16 — Önizlemeden sonra kullanıcı kaydı değişirse eski etki onayı uygulanmaz
+ok 121 - C16 — Önizlemeden sonra kullanıcı kaydı değişirse eski etki onayı uygulanmaz
+  ---
+  duration_ms: 1.667074
+  type: 'test'
+  ...
+# Subtest: C17 — Etki hesabı eklenecek/silinecek/değişecek kayıtları ve eksik bölümü ayırır
+ok 122 - C17 — Etki hesabı eklenecek/silinecek/değişecek kayıtları ve eksik bölümü ayırır
+  ---
+  duration_ms: 1.040459
+  type: 'test'
+  ...
+# Subtest: C18 — Yerel bozuk JSON sessizce ezilmez; güvenlik kopyası alınamadan yükleme durur
+ok 123 - C18 — Yerel bozuk JSON sessizce ezilmez; güvenlik kopyası alınamadan yükleme durur
+  ---
+  duration_ms: 1.166169
+  type: 'test'
+  ...
+# Subtest: C19 — Prototip alanı ve bozuk paket türü reddedilir
+ok 124 - C19 — Prototip alanı ve bozuk paket türü reddedilir
+  ---
+  duration_ms: 0.794639
+  type: 'test'
+  ...
+# Subtest: C20 — Kredi ödeme bağlantıları, kartlar, kategoriler ve geçmiş veri eksiksiz geri yüklenir
+ok 125 - C20 — Kredi ödeme bağlantıları, kartlar, kategoriler ve geçmiş veri eksiksiz geri yüklenir
+  ---
+  duration_ms: 1.693264
+  type: 'test'
+  ...
+# Subtest: C21 — Açık kredi bağlantısı bozuksa değiştirmeden reddet: missing-payment
+ok 126 - C21 — Açık kredi bağlantısı bozuksa değiştirmeden reddet: missing-payment
+  ---
+  duration_ms: 1.029863
+  type: 'test'
+  ...
+# Subtest: C21 — Açık kredi bağlantısı bozuksa değiştirmeden reddet: missing-loan
+ok 127 - C21 — Açık kredi bağlantısı bozuksa değiştirmeden reddet: missing-loan
+  ---
+  duration_ms: 4.370511
+  type: 'test'
+  ...
+# Subtest: C21 — Açık kredi bağlantısı bozuksa değiştirmeden reddet: duplicate-payment
+ok 128 - C21 — Açık kredi bağlantısı bozuksa değiştirmeden reddet: duplicate-payment
+  ---
+  duration_ms: 1.084836
+  type: 'test'
+  ...
+# Subtest: C21 — Açık kredi bağlantısı bozuksa değiştirmeden reddet: amount
+ok 129 - C21 — Açık kredi bağlantısı bozuksa değiştirmeden reddet: amount
+  ---
+  duration_ms: 1.041331
+  type: 'test'
+  ...
+# Subtest: C21 — Açık kredi bağlantısı bozuksa değiştirmeden reddet: paid-flag
+ok 130 - C21 — Açık kredi bağlantısı bozuksa değiştirmeden reddet: paid-flag
+  ---
+  duration_ms: 2.894045
+  type: 'test'
+  ...
+# Subtest: C21 — Açık kredi bağlantısı bozuksa değiştirmeden reddet: duplicate-installment
+ok 131 - C21 — Açık kredi bağlantısı bozuksa değiştirmeden reddet: duplicate-installment
+  ---
+  duration_ms: 1.163896
+  type: 'test'
+  ...
+# Subtest: C22 — Eski ödendi:true taksitten otomatik ödeme türetilmez
+ok 132 - C22 — Eski ödendi:true taksitten otomatik ödeme türetilmez
+  ---
+  duration_ms: 1.387733
+  type: 'test'
+  ...
+# Subtest: C23 — Eksik kredi bölümü korununca geri yüklenecek işlemlerle bağı bozulursa yükleme engellenir
+ok 133 - C23 — Eksik kredi bölümü korununca geri yüklenecek işlemlerle bağı bozulursa yükleme engellenir
+  ---
+  duration_ms: 0.926027
+  type: 'test'
+  ...
+# Subtest: C24 — Yazıcıya doğrudan eksik veri verilse de kullanıcı kayıtları silinmez
+ok 134 - C24 — Yazıcıya doğrudan eksik veri verilse de kullanıcı kayıtları silinmez
+  ---
+  duration_ms: 0.819886
+  type: 'test'
+  ...
+# Subtest: C25 — İkinci alan sürekli yazma hatası verse de değişmemiş alanı yeniden yazmadan geri al
+ok 135 - C25 — İkinci alan sürekli yazma hatası verse de değişmemiş alanı yeniden yazmadan geri al
+  ---
+  duration_ms: 1.083144
+  type: 'test'
+  ...
+# Subtest: C26 — Geri alma da engellenirse başarı bildirme; eski veri güvenlik kopyası ve kurtarma dosyasında kalmalı
+ok 136 - C26 — Geri alma da engellenirse başarı bildirme; eski veri güvenlik kopyası ve kurtarma dosyasında kalmalı
+  ---
+  duration_ms: 1.547495
+  type: 'test'
+  ...
+# Subtest: C27 — Yeni/boş cihazda kredi listesi eksikse bağlantılı ödeme sahipsiz içeri aktarılamaz
+ok 137 - C27 — Yeni/boş cihazda kredi listesi eksikse bağlantılı ödeme sahipsiz içeri aktarılamaz
+  ---
+  duration_ms: 1.084526
+  type: 'test'
+  ...
+# Subtest: C28 — Korunacak yerel kredi bölümü null/bozuk türdeyse bağlantı kontrolü sessizce atlanmaz
+ok 138 - C28 — Korunacak yerel kredi bölümü null/bozuk türdeyse bağlantı kontrolü sessizce atlanmaz
+  ---
+  duration_ms: 2.677899
+  type: 'test'
+  ...
+1..138
+# tests 138
+# suites 0
+# pass 138
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 24042.906403

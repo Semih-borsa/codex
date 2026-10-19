@@ -1,0 +1,155 @@
+TAP version 13
+# Subtest: UI-EX01 — Native kaydetme beklenirken görünür durum/tek işlem; yalnız doğrulama sonrası başarı
+ok 1 - UI-EX01 — Native kaydetme beklenirken görünür durum/tek işlem; yalnız doğrulama sonrası başarı
+  ---
+  duration_ms: 3539.264567
+  type: 'test'
+  ...
+# Subtest: UI-EX02 — Sistem iptali nötr mesaj; kayıt değişmez, başarı/Blob indirmesi yok
+ok 2 - UI-EX02 — Sistem iptali nötr mesaj; kayıt değişmez, başarı/Blob indirmesi yok
+  ---
+  duration_ms: 2753.261931
+  type: 'test'
+  ...
+# Subtest: UI-EX03 — Native yazma hatası görünür Türkçe hata ve tekrar deneme; kayıt değişmez
+ok 3 - UI-EX03 — Native yazma hatası görünür Türkçe hata ve tekrar deneme; kayıt değişmez
+  ---
+  duration_ms: 1573.191749
+  type: 'test'
+  ...
+# Subtest: UI-EX04 — Eski APK’da plugin yoksa APK güncellemesi gerektiği açıkça görünür
+ok 4 - UI-EX04 — Eski APK’da plugin yoksa APK güncellemesi gerektiği açıkça görünür
+  ---
+  duration_ms: 2470.40538
+  type: 'test'
+  ...
+# Subtest: UI-EX05 — İnternetsiz native dışa aktarma sözleşmesi çalışır
+ok 5 - UI-EX05 — İnternetsiz native dışa aktarma sözleşmesi çalışır
+  ---
+  duration_ms: 1358.460697
+  type: 'test'
+  ...
+# Subtest: UI-EX06 — Yerel ek kopya kota hatası gerçek dış dosya başarısını engellemez/ayrı açıklar
+ok 6 - UI-EX06 — Yerel ek kopya kota hatası gerçek dış dosya başarısını engellemez/ayrı açıklar
+  ---
+  duration_ms: 1337.762025
+  type: 'test'
+  ...
+# Subtest: UI-EX07 — Eksik/bozuk veri dosya seçiciye gönderilmez, kayıtlar korunur
+not ok 7 - UI-EX07 — Eksik/bozuk veri dosya seçiciye gönderilmez, kayıtlar korunur
+  ---
+  duration_ms: 2452.787349
+  type: 'test'
+  location: '/workspace/codex/tests/finance-baseline/backup-export.browser.test.mjs:107:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    locator.innerText: Error: strict mode violation: getByRole('alert') resolved to 2 elements:
+        1) <div role="alert" class="kayit-hatasi">…</div> aka getByText('Veri kaydedilemediOtomatik gü')
+        2) <p role="alert" class="tools-note" aria-live="polite">Yedek kaydedilemedi: Mevcut kayıtlardan biri okun…</p> aka getByRole('main').getByText('Yedek kaydedilemedi: Mevcut')
+    
+    Call log:
+    [2m  - waiting for getByRole('alert')[22m
+    
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    TestContext.<anonymous> (/workspace/codex/tests/finance-baseline/backup-export.browser.test.mjs:110:46)
+  ...
+# Subtest: UI-EX08 — Native doğrulama tutarsızlığı sahte başarı yerine hata olur
+ok 8 - UI-EX08 — Native doğrulama tutarsızlığı sahte başarı yerine hata olur
+  ---
+  duration_ms: 1372.530831
+  type: 'test'
+  ...
+# Subtest: EX01 — Android save ancak doğrulanmış gerçek bayt sayısıyla başarılı olur
+ok 9 - EX01 — Android save ancak doğrulanmış gerçek bayt sayısıyla başarılı olur
+  ---
+  duration_ms: 4.862942
+  type: 'test'
+  ...
+# Subtest: EX02 — Android iptali başarı değildir ve indirme fallback’i çalışmaz
+ok 10 - EX02 — Android iptali başarı değildir ve indirme fallback’i çalışmaz
+  ---
+  duration_ms: 1.440903
+  type: 'test'
+  ...
+# Subtest: EX03 — Kanıtsız native sonuç başarı değildir: {"status":"saved","verified":false,"bytes":94}
+ok 11 - EX03 — Kanıtsız native sonuç başarı değildir: {"status":"saved","verified":false,"bytes":94}
+  ---
+  duration_ms: 1.296114
+  type: 'test'
+  ...
+# Subtest: EX03 — Kanıtsız native sonuç başarı değildir: {"status":"saved","verified":true,"bytes":1}
+ok 12 - EX03 — Kanıtsız native sonuç başarı değildir: {"status":"saved","verified":true,"bytes":1}
+  ---
+  duration_ms: 0.864243
+  type: 'test'
+  ...
+# Subtest: EX03 — Kanıtsız native sonuç başarı değildir: {"status":"opened"}
+ok 13 - EX03 — Kanıtsız native sonuç başarı değildir: {"status":"opened"}
+  ---
+  duration_ms: 1.05452
+  type: 'test'
+  ...
+# Subtest: EX03 — Kanıtsız native sonuç başarı değildir: {}
+ok 14 - EX03 — Kanıtsız native sonuç başarı değildir: {}
+  ---
+  duration_ms: 0.674367
+  type: 'test'
+  ...
+# Subtest: EX03 — Kanıtsız native sonuç başarı değildir: null
+ok 15 - EX03 — Kanıtsız native sonuç başarı değildir: null
+  ---
+  duration_ms: 0.970584
+  type: 'test'
+  ...
+# Subtest: EX04 — Native yazma hatası kullanıcı akışına ulaşır, Blob fallback yok
+ok 16 - EX04 — Native yazma hatası kullanıcı akışına ulaşır, Blob fallback yok
+  ---
+  duration_ms: 1.177976
+  type: 'test'
+  ...
+# Subtest: EX05 — Eski APK köprüsü yoksa açık hata; sahte başarı yok
+ok 17 - EX05 — Eski APK köprüsü yoksa açık hata; sahte başarı yok
+  ---
+  duration_ms: 0.844854
+  type: 'test'
+  ...
+# Subtest: EX06 — Tanınmayan native platformda web fallback’e sessizce düşülmez
+ok 18 - EX06 — Tanınmayan native platformda web fallback’e sessizce düşülmez
+  ---
+  duration_ms: 0.990914
+  type: 'test'
+  ...
+# Subtest: EX07 — Sistem tarayıcı kaydetmesi yaz/kapat/geri oku bittikten sonra başarılı
+ok 19 - EX07 — Sistem tarayıcı kaydetmesi yaz/kapat/geri oku bittikten sonra başarılı
+  ---
+  duration_ms: 0.813737
+  type: 'test'
+  ...
+# Subtest: EX08 — Tarayıcı sistem diyaloğu iptalinde başarı yok
+ok 20 - EX08 — Tarayıcı sistem diyaloğu iptalinde başarı yok
+  ---
+  duration_ms: 0.886026
+  type: 'test'
+  ...
+# Subtest: EX09 — Tarayıcı yanlış kaydedilen dosyada başarı yok
+ok 21 - EX09 — Tarayıcı yanlış kaydedilen dosyada başarı yok
+  ---
+  duration_ms: 0.979838
+  type: 'test'
+  ...
+# Subtest: EX10 — Normal tarayıcı Blob isteği tamamlanmış kaydetme diye sunulmaz
+ok 22 - EX10 — Normal tarayıcı Blob isteği tamamlanmış kaydetme diye sunulmaz
+  ---
+  duration_ms: 1.220701
+  type: 'test'
+  ...
+1..22
+# tests 22
+# suites 0
+# pass 21
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 17478.425914

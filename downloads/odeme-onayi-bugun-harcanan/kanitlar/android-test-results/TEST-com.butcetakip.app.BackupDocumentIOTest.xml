@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.butcetakip.app.BackupDocumentIOTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-19T00:22:57.826Z" hostname="0cf5ef5fe074" time="0.033">
+  <properties/>
+  <testcase name="extraBytesAreNotSuccess" classname="com.butcetakip.app.BackupDocumentIOTest" time="0.012"/>
+  <testcase name="readPermissionFailureIsNotSuccess" classname="com.butcetakip.app.BackupDocumentIOTest" time="0.004"/>
+  <testcase name="closeFailureIsNotSuccess" classname="com.butcetakip.app.BackupDocumentIOTest" time="0.001"/>
+  <testcase name="emptyPayloadCannotBecomeSuccessfulBackup" classname="com.butcetakip.app.BackupDocumentIOTest" time="0.002"/>
+  <testcase name="openFailureIsNotSuccess" classname="com.butcetakip.app.BackupDocumentIOTest" time="0.0"/>
+  <testcase name="writesRealFileAndReadsIdenticalUtf8" classname="com.butcetakip.app.BackupDocumentIOTest" time="0.004"/>
+  <testcase name="midWriteFailureClosesStream" classname="com.butcetakip.app.BackupDocumentIOTest" time="0.001"/>
+  <testcase name="nullOutputIsNotSuccess" classname="com.butcetakip.app.BackupDocumentIOTest" time="0.001"/>
+  <testcase name="shortReadIsNotSuccess" classname="com.butcetakip.app.BackupDocumentIOTest" time="0.001"/>
+  <testcase name="sameLengthWrongBytesAreNotSuccess" classname="com.butcetakip.app.BackupDocumentIOTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

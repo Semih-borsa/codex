@@ -1,0 +1,22 @@
+✔ EX01 — Android save ancak doğrulanmış gerçek bayt sayısıyla başarılı olur (4.132782ms)
+✔ EX02 — Android iptali başarı değildir ve indirme fallback’i çalışmaz (0.804904ms)
+✔ EX03 — Kanıtsız native sonuç başarı değildir: {"status":"saved","verified":false,"bytes":94} (1.082393ms)
+✔ EX03 — Kanıtsız native sonuç başarı değildir: {"status":"saved","verified":true,"bytes":1} (0.89514ms)
+✔ EX03 — Kanıtsız native sonuç başarı değildir: {"status":"opened"} (0.662569ms)
+✔ EX03 — Kanıtsız native sonuç başarı değildir: {} (0.770862ms)
+✔ EX03 — Kanıtsız native sonuç başarı değildir: null (1.064866ms)
+✔ EX04 — Native yazma hatası kullanıcı akışına ulaşır, Blob fallback yok (1.022842ms)
+✔ EX05 — Eski APK köprüsü yoksa açık hata; sahte başarı yok (0.907759ms)
+✔ EX06 — Tanınmayan native platformda web fallback’e sessizce düşülmez (0.924294ms)
+✔ EX07 — Sistem tarayıcı kaydetmesi yaz/kapat/geri oku bittikten sonra başarılı (1.192919ms)
+✔ EX08 — Tarayıcı sistem diyaloğu iptalinde başarı yok (0.918926ms)
+✔ EX09 — Tarayıcı yanlış kaydedilen dosyada başarı yok (0.937574ms)
+✔ EX10 — Normal tarayıcı Blob isteği tamamlanmış kaydetme diye sunulmaz (1.247411ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 260.629468

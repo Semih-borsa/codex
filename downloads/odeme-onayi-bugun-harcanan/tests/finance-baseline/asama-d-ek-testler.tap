@@ -1,0 +1,340 @@
+TAP version 13
+# Subtest: D01 — 1 taksit: tarih, benzersiz satır, kuruş toplamı
+ok 1 - D01 — 1 taksit: tarih, benzersiz satır, kuruş toplamı
+  ---
+  duration_ms: 4.493147
+  type: 'test'
+  ...
+# Subtest: D01 — 2 taksit: tarih, benzersiz satır, kuruş toplamı
+ok 2 - D01 — 2 taksit: tarih, benzersiz satır, kuruş toplamı
+  ---
+  duration_ms: 0.913398
+  type: 'test'
+  ...
+# Subtest: D01 — 3 taksit: tarih, benzersiz satır, kuruş toplamı
+ok 3 - D01 — 3 taksit: tarih, benzersiz satır, kuruş toplamı
+  ---
+  duration_ms: 0.837283
+  type: 'test'
+  ...
+# Subtest: D01 — 6 taksit: tarih, benzersiz satır, kuruş toplamı
+ok 4 - D01 — 6 taksit: tarih, benzersiz satır, kuruş toplamı
+  ---
+  duration_ms: 1.061701
+  type: 'test'
+  ...
+# Subtest: D01 — 12 taksit: tarih, benzersiz satır, kuruş toplamı
+ok 5 - D01 — 12 taksit: tarih, benzersiz satır, kuruş toplamı
+  ---
+  duration_ms: 0.937934
+  type: 'test'
+  ...
+# Subtest: D02 — Ekim ilk ekstre Ekim/Kasım/Aralık; 100 TL tam kuruş dağıtılır
+ok 6 - D02 — Ekim ilk ekstre Ekim/Kasım/Aralık; 100 TL tam kuruş dağıtılır
+  ---
+  duration_ms: 1.328694
+  type: 'test'
+  ...
+# Subtest: D03 — İlk banka ekstresi Kasım ise Ekim kaydı üretilmez; yıl değişir
+ok 7 - D03 — İlk banka ekstresi Kasım ise Ekim kaydı üretilmez; yıl değişir
+  ---
+  duration_ms: 0.78234
+  type: 'test'
+  ...
+# Subtest: D04 — 2027-01-31, tercih 31: kısa ay kayması kalıcı değildir
+ok 8 - D04 — 2027-01-31, tercih 31: kısa ay kayması kalıcı değildir
+  ---
+  duration_ms: 0.874519
+  type: 'test'
+  ...
+# Subtest: D04 — 2028-01-31, tercih 31: kısa ay kayması kalıcı değildir
+ok 9 - D04 — 2028-01-31, tercih 31: kısa ay kayması kalıcı değildir
+  ---
+  duration_ms: 0.905826
+  type: 'test'
+  ...
+# Subtest: D04 — 2027-01-30, tercih 30: kısa ay kayması kalıcı değildir
+ok 10 - D04 — 2027-01-30, tercih 30: kısa ay kayması kalıcı değildir
+  ---
+  duration_ms: 1.188322
+  type: 'test'
+  ...
+# Subtest: D04 — 2028-01-29, tercih 29: kısa ay kayması kalıcı değildir
+ok 11 - D04 — 2028-01-29, tercih 29: kısa ay kayması kalıcı değildir
+  ---
+  duration_ms: 1.125137
+  type: 'test'
+  ...
+# Subtest: D04 — 2027-02-28, tercih 31: kısa ay kayması kalıcı değildir
+ok 12 - D04 — 2027-02-28, tercih 31: kısa ay kayması kalıcı değildir
+  ---
+  duration_ms: 1.117436
+  type: 'test'
+  ...
+# Subtest: D05 — Ödeme günü 31 de bağımsız ay sonuna iner ve yeniden 31 olur
+ok 13 - D05 — Ödeme günü 31 de bağımsız ay sonuna iner ve yeniden 31 olur
+  ---
+  duration_ms: 1.154612
+  type: 'test'
+  ...
+# Subtest: D06 — Doğrulanmış ilk ödeme tarihi ay geçişini belirler
+ok 14 - D06 — Doğrulanmış ilk ödeme tarihi ay geçişini belirler
+  ---
+  duration_ms: 1.082804
+  type: 'test'
+  ...
+# Subtest: D07 — Kesim sınırında ilk bankanın bildirdiği dönem esas alınır
+ok 15 - D07 — Kesim sınırında ilk bankanın bildirdiği dönem esas alınır
+  ---
+  duration_ms: 1.594665
+  type: 'test'
+  ...
+# Subtest: D08 — Eksik/bozuk alan tahmin edilmez: {"ilkEkstreTarihi":""}
+ok 16 - D08 — Eksik/bozuk alan tahmin edilmez: {"ilkEkstreTarihi":""}
+  ---
+  duration_ms: 0.998647
+  type: 'test'
+  ...
+# Subtest: D08 — Eksik/bozuk alan tahmin edilmez: {"kartId":"missing"}
+ok 17 - D08 — Eksik/bozuk alan tahmin edilmez: {"kartId":"missing"}
+  ---
+  duration_ms: 1.004625
+  type: 'test'
+  ...
+# Subtest: D08 — Eksik/bozuk alan tahmin edilmez: {"kesimGunu":""}
+ok 18 - D08 — Eksik/bozuk alan tahmin edilmez: {"kesimGunu":""}
+  ---
+  duration_ms: 0.873478
+  type: 'test'
+  ...
+# Subtest: D08 — Eksik/bozuk alan tahmin edilmez: {"odemeGunu":"","ilkSonOdemeTarihi":""}
+ok 19 - D08 — Eksik/bozuk alan tahmin edilmez: {"odemeGunu":"","ilkSonOdemeTarihi":""}
+  ---
+  duration_ms: 0.92184
+  type: 'test'
+  ...
+# Subtest: D08 — Eksik/bozuk alan tahmin edilmez: {"toplamTutar":"0.02","vade":"3"}
+ok 20 - D08 — Eksik/bozuk alan tahmin edilmez: {"toplamTutar":"0.02","vade":"3"}
+  ---
+  duration_ms: 0.881019
+  type: 'test'
+  ...
+# Subtest: D08 — Eksik/bozuk alan tahmin edilmez: {"toplamTutar":"100.001"}
+ok 21 - D08 — Eksik/bozuk alan tahmin edilmez: {"toplamTutar":"100.001"}
+  ---
+  duration_ms: 6.624252
+  type: 'test'
+  ...
+# Subtest: D08 — Eksik/bozuk alan tahmin edilmez: {"ilkSonOdemeTarihi":"2026-10-05"}
+ok 22 - D08 — Eksik/bozuk alan tahmin edilmez: {"ilkSonOdemeTarihi":"2026-10-05"}
+  ---
+  duration_ms: 1.089103
+  type: 'test'
+  ...
+# Subtest: D09 — Plan oluşturmak yeni harcama veya nakit işlemi üretmez
+ok 23 - D09 — Plan oluşturmak yeni harcama veya nakit işlemi üretmez
+  ---
+  duration_ms: 2.332038
+  type: 'test'
+  ...
+# Subtest: D10 — Banka aynı yükümlülüğü içeriyorsa plan bakiye rezervine ikinci kez eklenmez
+ok 24 - D10 — Banka aynı yükümlülüğü içeriyorsa plan bakiye rezervine ikinci kez eklenmez
+  ---
+  duration_ms: 1.727645
+  type: 'test'
+  ...
+# Subtest: D11 — Bankanın dönem içi/provizyon toplamı varsa plan ayrıca sayılmaz
+ok 25 - D11 — Bankanın dönem içi/provizyon toplamı varsa plan ayrıca sayılmaz
+  ---
+  duration_ms: 1.410708
+  type: 'test'
+  ...
+# Subtest: D12 — Birden fazla kart/plan ve gelecek dönem vadeleri ayrı kalır
+ok 26 - D12 — Birden fazla kart/plan ve gelecek dönem vadeleri ayrı kalır
+  ---
+  duration_ms: 0.970825
+  type: 'test'
+  ...
+# Subtest: D13 — Yalnız aynı kartın aynı kesim tarihli kesin ekstresine tek bağ kurulabilir
+ok 27 - D13 — Yalnız aynı kartın aynı kesim tarihli kesin ekstresine tek bağ kurulabilir
+  ---
+  duration_ms: 1.001861
+  type: 'test'
+  ...
+# Subtest: D14 — Kısmi ödeme payı gerçek nakit kaydını ikinci kez oluşturmaz
+ok 28 - D14 — Kısmi ödeme payı gerçek nakit kaydını ikinci kez oluşturmaz
+  ---
+  duration_ms: 2.090894
+  type: 'test'
+  ...
+# Subtest: D15 — Aynı ödeme payı iki plana dağıtılıp ödeme tutarını aşamaz
+ok 29 - D15 — Aynı ödeme payı iki plana dağıtılıp ödeme tutarını aşamaz
+  ---
+  duration_ms: 1.131818
+  type: 'test'
+  ...
+# Subtest: D16 — Ödeme geri alınınca pay sayılmaz, nakit ve borç birlikte geri döner
+ok 30 - D16 — Ödeme geri alınınca pay sayılmaz, nakit ve borç birlikte geri döner
+  ---
+  duration_ms: 1.356295
+  type: 'test'
+  ...
+# Subtest: D17 — Tam ekstre ödemesi bağlı taksiti tamamlar; farklı tutarda planı tahminle kapatmaz
+ok 31 - D17 — Tam ekstre ödemesi bağlı taksiti tamamlar; farklı tutarda planı tahminle kapatmaz
+  ---
+  duration_ms: 0.882041
+  type: 'test'
+  ...
+# Subtest: D18 — Aynı ekstrede iki plan toplamı bankadan fazlaysa tam ödeme ikisini varsayımla kapatmaz
+ok 32 - D18 — Aynı ekstrede iki plan toplamı bankadan fazlaysa tam ödeme ikisini varsayımla kapatmaz
+  ---
+  duration_ms: 0.83526
+  type: 'test'
+  ...
+# Subtest: D19 — Yalnız plan iadesi banka borcunu veya nakdi değiştirmez
+ok 33 - D19 — Yalnız plan iadesi banka borcunu veya nakdi değiştirmez
+  ---
+  duration_ms: 1.244788
+  type: 'test'
+  ...
+# Subtest: D20 — Banka onaylı iade özgün ekstreyi değiştirmez; nakit gelir üretmez
+ok 34 - D20 — Banka onaylı iade özgün ekstreyi değiştirmez; nakit gelir üretmez
+  ---
+  duration_ms: 1.422195
+  type: 'test'
+  ...
+# Subtest: D21 — İade geri alındığında borç/plan eski tutara döner; diğer kart değişmez
+ok 35 - D21 — İade geri alındığında borç/plan eski tutara döner; diğer kart değişmez
+  ---
+  duration_ms: 1.006308
+  type: 'test'
+  ...
+# Subtest: D22 — İade taksiti/ekstreyi aşamaz; bağsız plan bankaya kredi yazamaz
+ok 36 - D22 — İade taksiti/ekstreyi aşamaz; bağsız plan bankaya kredi yazamaz
+  ---
+  duration_ms: 0.97436
+  type: 'test'
+  ...
+# Subtest: D23 — İptal yalnız gelecek bağlı olmayan satırları kapatır; eski ekstre ve geçmiş taksit kalır
+ok 37 - D23 — İptal yalnız gelecek bağlı olmayan satırları kapatır; eski ekstre ve geçmiş taksit kalır
+  ---
+  duration_ms: 0.86794
+  type: 'test'
+  ...
+# Subtest: D24 — Alışveriş öncesi tarihe iade yazılmaz
+ok 38 - D24 — Alışveriş öncesi tarihe iade yazılmaz
+  ---
+  duration_ms: 0.748769
+  type: 'test'
+  ...
+# Subtest: D25 — finora-v2: tarihli plan/ekstre/iade/bağlantı kaybolmadan okunur
+ok 39 - D25 — finora-v2: tarihli plan/ekstre/iade/bağlantı kaybolmadan okunur
+  ---
+  duration_ms: 2.344746
+  type: 'test'
+  ...
+# Subtest: D25 — finora-v1: tarihli plan/ekstre/iade/bağlantı kaybolmadan okunur
+ok 40 - D25 — finora-v1: tarihli plan/ekstre/iade/bağlantı kaybolmadan okunur
+  ---
+  duration_ms: 1.270417
+  type: 'test'
+  ...
+# Subtest: D25 — butce-takip-v1: tarihli plan/ekstre/iade/bağlantı kaybolmadan okunur
+ok 41 - D25 — butce-takip-v1: tarihli plan/ekstre/iade/bağlantı kaybolmadan okunur
+  ---
+  duration_ms: 1.11384
+  type: 'test'
+  ...
+# Subtest: D26 — Eski takip kaydına kendiliğinden tarih veya nakit eklenmez
+ok 42 - D26 — Eski takip kaydına kendiliğinden tarih veya nakit eklenmez
+  ---
+  duration_ms: 0.706515
+  type: 'test'
+  ...
+# Subtest: D27 — Tarihi bilinmeyen yeni takip listesi tarih_bekliyor olarak kalır (S07a koşulu)
+ok 43 - D27 — Tarihi bilinmeyen yeni takip listesi tarih_bekliyor olarak kalır (S07a koşulu)
+  ---
+  duration_ms: 1.516928
+  type: 'test'
+  ...
+# Subtest: D28 — Bozuk plan yedeği reddedilir: p=>p.taksitler[0].tutar=34
+ok 44 - D28 — Bozuk plan yedeği reddedilir: p=>p.taksitler[0].tutar=34
+  ---
+  duration_ms: 1.052968
+  type: 'test'
+  ...
+# Subtest: D28 — Bozuk plan yedeği reddedilir: p=>p.taksitler[0].kesimTarihi='2026-09-10'
+ok 45 - D28 — Bozuk plan yedeği reddedilir: p=>p.taksitler[0].kesimTarihi='2026-09-10'
+  ---
+  duration_ms: 0.959598
+  type: 'test'
+  ...
+# Subtest: D28 — Bozuk plan yedeği reddedilir: p=>p.taksitler[0].ekstreDonemi='2026-11'
+ok 46 - D28 — Bozuk plan yedeği reddedilir: p=>p.taksitler[0].ekstreDonemi='2026-11'
+  ---
+  duration_ms: 0.902491
+  type: 'test'
+  ...
+# Subtest: D28 — Bozuk plan yedeği reddedilir: p=>p.taksitler[1].id=p.taksitler[0].id
+ok 47 - D28 — Bozuk plan yedeği reddedilir: p=>p.taksitler[1].id=p.taksitler[0].id
+  ---
+  duration_ms: 0.839637
+  type: 'test'
+  ...
+# Subtest: D29 — Yeni cihaza eksik kart veya bozuk ekstre bağıyla geri yükleme yapılmaz
+ok 48 - D29 — Yeni cihaza eksik kart veya bozuk ekstre bağıyla geri yükleme yapılmaz
+  ---
+  duration_ms: 2.15473
+  type: 'test'
+  ...
+# Subtest: D30 — Silinmiş ödeme payı yedekte korunur; geri alınmış ödeme olarak sayılmaz
+ok 49 - D30 — Silinmiş ödeme payı yedekte korunur; geri alınmış ödeme olarak sayılmaz
+  ---
+  duration_ms: 1.256696
+  type: 'test'
+  ...
+# Subtest: D31 — Tarihli plan rezervi tahminde tek sefer sayılır, günlere çoğaltılmaz
+ok 50 - D31 — Tarihli plan rezervi tahminde tek sefer sayılır, günlere çoğaltılmaz
+  ---
+  duration_ms: 1.421524
+  type: 'test'
+  ...
+# Subtest: D32 — Eski bankanın önceki ekstresi gelecekteki ayrı taksiti gizlemez
+ok 51 - D32 — Eski bankanın önceki ekstresi gelecekteki ayrı taksiti gizlemez
+  ---
+  duration_ms: 0.809702
+  type: 'test'
+  ...
+# Subtest: D33 — Alışverişten önceki banka gözlemi yeni taksiti içeriyor sayılmaz
+ok 52 - D33 — Alışverişten önceki banka gözlemi yeni taksiti içeriyor sayılmaz
+  ---
+  duration_ms: 0.887028
+  type: 'test'
+  ...
+# Subtest: D34 — Tek taksit tam ödeme sonrası tamamlanır, geri almada aktif olur
+ok 53 - D34 — Tek taksit tam ödeme sonrası tamamlanır, geri almada aktif olur
+  ---
+  duration_ms: 0.826046
+  type: 'test'
+  ...
+# Subtest: D35 — Kuruş altı iade ve gelecek tarihli iade reddedilir
+ok 54 - D35 — Kuruş altı iade ve gelecek tarihli iade reddedilir
+  ---
+  duration_ms: 0.801259
+  type: 'test'
+  ...
+# Subtest: D36 — Pay dağıtılmış banka ödemesi pay toplamının altına düzenlenemez
+ok 55 - D36 — Pay dağıtılmış banka ödemesi pay toplamının altına düzenlenemez
+  ---
+  duration_ms: 2.031284
+  type: 'test'
+  ...
+1..55
+# tests 55
+# suites 0
+# pass 55
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 297.97048

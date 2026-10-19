@@ -1,0 +1,27 @@
+{
+  "changedFunctions": [
+    "islemKaynagi",
+    "Ozet",
+    "donemSonuGiderTahmini",
+    "gunlukFinansHareketleri",
+    "donemBakiyeHesapla",
+    "IslemlerTab",
+    "KredilerTab"
+  ],
+  "unchangedFunctionCount": 89,
+  "stylesUnchanged": true,
+  "hashes": [
+    {
+      "path": "/workspace/codex/downloads/App.jsx",
+      "sha256": "4f46bce2bddb8ce38c197e38f08b023e6ca39790b86126af384626d232e05f2f"
+    },
+    {
+      "path": "/workspace/codex/downloads/finans-takip-bildirim/src/App.jsx",
+      "sha256": "4f46bce2bddb8ce38c197e38f08b023e6ca39790b86126af384626d232e05f2f"
+    },
+    {
+      "path": "/workspace/finans-upload/finans-takip/src/App.jsx",
+      "sha256": "4f46bce2bddb8ce38c197e38f08b023e6ca39790b86126af384626d232e05f2f"
+    }
+  ]
+}

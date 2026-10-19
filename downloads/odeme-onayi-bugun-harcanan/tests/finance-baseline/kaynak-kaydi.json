@@ -1,0 +1,24 @@
+{
+  "source": "/workspace/codex/downloads/App.jsx",
+  "sourceSha256": "118e06964a75c4fd3994b1bb80bcbf2fc4fd9371cc4494dadf7db774f34c0a74",
+  "commit": "65eb9f3532be637da6737fadd371f49e6727aa9b",
+  "node": "v24.19.0",
+  "timezone": "Europe/Istanbul",
+  "testData": "Yalnız sentetik veriler; izole bellek ve geçici tarayıcı bağlamları",
+  "functions": {
+    "gunlukFinansHareketleri": 1972,
+    "donemBakiyeHesapla": 2005,
+    "kartToplamBorcHesapla": 391,
+    "kartKaydiniGuncelle": 418,
+    "kartAnalizHareketleri": 449,
+    "yedekVerisiniDogrula": 700,
+    "yedegiGuvenleYaz": 789,
+    "useLocalStorage": 625
+  },
+  "callbacks": {
+    "KredilerTab.taksitToggle": 4176,
+    "TaksitlerTab.kaydet": 3979,
+    "KredilerTab.taksitleriOlustur": 4135,
+    "AyarlarTab.yedekUygula": 2868
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "previousTestFiles": 28,
+  "unchangedAssertionCalls": 980,
+  "allAssertionCallsUnchanged": true,
+  "preservedFunctions": [
+    "gunlukFinansHareketleri",
+    "donemBakiyeHesapla",
+    "kartAnalizHareketleri",
+    "kartSonDurum",
+    "yerelYedekPaketi"
+  ]
+}
