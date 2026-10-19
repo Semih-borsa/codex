@@ -1,12 +1,18 @@
-# Nöbet Çizelgesi 2.0 — Android
+# Nöbet Çizelgesi 2.1 — Android
 
 **Yeni arayüz:** Bütçe Takip’ten ilham alan kurumsal mavi özet kartı, çizgi simgeler, yüzen alt menü, personel kartları ve açık/koyu tema. [Ekran görüntüleri](docs/TASARIM-2.0.md)
 
 Çevrimdışı personel, görev yeri, mazeret ve haftalık nöbet planlama uygulaması.
 
-[APK 2.0 indir](../downloads/NobetCizelgesi-2.0.apk) · [Android Studio ZIP](../downloads/NobetCizelgesi-Android-Studio.zip) · [Test sonuçları](docs/TESTLER.md)
+[APK 2.1 indir](../downloads/NobetCizelgesi-2.1.apk) · [Android Studio ZIP](../downloads/NobetCizelgesi-Android-Studio.zip) · [Test sonuçları](docs/TESTLER.md)
 
-Android 8.0 ve üzeri. Önceki sürümlerden biri kuruluysa **uygulamayı kaldırmadan** 2.0 APK'sını açarak güncelleyin. Aynı paket adı ve imza kullanılır; eski kayıtlar okunur. Kaldırmak veya uygulama verilerini silmek kayıtları siler.
+Android 8.0 ve üzeri. Önceki sürümlerden biri kuruluysa **uygulamayı kaldırmadan** 2.1 APK'sını açarak güncelleyin. Aynı paket adı ve imza kullanılır; eski kayıtlar okunur. Kaldırmak veya uygulama verilerini silmek kayıtları siler.
+
+## 2.1 — Resmî Tatiller
+
+**Ayarlar → Resmî Tatil Takvimi:** Türkiye sabit resmî tatilleri ve 2020–2032 dinî bayramları çevrimdışı tanınır. Tatil ekleyebilir, tarihi/adı/süreyi düzeltebilir veya devre dışı bırakabilirsiniz. Yarım gün **0,5**, tam gün **1** sayılır. Aynı tarih çakışmalarında görev iki kez sayılmaz.
+
+Normal istatistikler korunur. İstatistik ekranındaki ayrı **Resmî Tatiller** tabloları personel ve görev yerine göre sayar; kayıtlı nöbet/tatil değişiklikleri sayımlara yansır. Geçmiş ve gelecek ayrı tutulur; ayrı PDF düğmesi vardır. Tatil takvimi otomatik nöbet dağılımını değiştirmez. [Kapsam, kaynaklar ve kullanım](docs/RESMI-TATILLER.md).
 
 ## Hafta sonu dönüş önceliği
 

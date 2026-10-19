@@ -99,7 +99,24 @@ final class PdfExport {
     return labels;
   }
 
+  static List<String> holidayLabels(State s) {
+    List<String> labels = new ArrayList<>();
+    for (Place place : Holidays.places(s))
+      labels.add(place.name + (place.deleted ? " (Silindi)" : ""));
+    return labels;
+  }
+
+  static File createHolidayStatistics(Context context, State s, LocalDate today)
+      throws IOException {
+    return createStatistics(context, s, today, true);
+  }
+
   static File createStatistics(Context context, State s, LocalDate today) throws IOException {
+    return createStatistics(context, s, today, false);
+  }
+
+  private static File createStatistics(Context context, State s, LocalDate today, boolean holidays)
+      throws IOException {
     File dir = new File(context.getCacheDir(), "pdf");
     if (!dir.exists() && !dir.mkdirs()) throw new IOException();
     File[] old = dir.listFiles();
@@ -109,17 +126,18 @@ final class PdfExport {
     File out =
         new File(
             dir,
-            "Istatistik_"
+            (holidays ? "Resmi_Tatiller_" : "Istatistik_")
                 + today.toString().replace("-", "_")
                 + "_"
                 + System.currentTimeMillis()
                 + ".pdf");
-    List<String> labels = statisticsLabels(s);
+    List<String> labels = holidays ? holidayLabels(s) : statisticsLabels(s);
     PdfDocument document = new PdfDocument();
     int number = 0;
     try {
       for (boolean future : new boolean[] {false, true}) {
-        List<StatRow> rows = statistics(s, today, future);
+        List<StatRow> rows =
+            holidays ? Holidays.statistics(s, today, future) : statistics(s, today, future);
         boolean any = false;
         for (StatRow row : rows) for (long count : row.counts) if (count > 0) any = true;
         if (future && !any) continue;
@@ -158,7 +176,12 @@ final class PdfExport {
             canvas.drawRect(12, 12, 12 + width, 12 + 24 + headerHeight, paint);
             paint.setColor(Color.WHITE);
             paint.setTypeface(Typeface.DEFAULT_BOLD);
-            canvas.drawText(future ? "Gelecek Atamalar" : "Bugün Ve Öncesi", 20, 29, paint);
+            canvas.drawText(
+                (holidays ? "Resmî Tatiller • " : "")
+                    + (future ? "Gelecek Atamalar" : "Bugün Ve Öncesi"),
+                20,
+                29,
+                paint);
             int x = 20;
             for (int col = 0; col < headers.size(); col++) {
               drawLines(canvas, paint, headers.get(col), x, 52);
@@ -174,7 +197,10 @@ final class PdfExport {
               paint.setColor(Color.rgb(16, 35, 57));
               drawLines(canvas, paint, lines, 20, y + 17);
               for (int col = first; col < end; col++) {
-                String value = Long.toString(rows.get(row).counts[col]);
+                String value =
+                    holidays
+                        ? Holidays.days(rows.get(row).counts[col])
+                        : Long.toString(rows.get(row).counts[col]);
                 canvas.drawText(
                     value,
                     12 + 220 + (col - first) * 110 + (110 - paint.measureText(value)) / 2,

@@ -49,6 +49,16 @@ final class Store {
               .put("limit", p.limit)
               .put("automatic", p.automatic)
               .put("deleted", p.deleted));
+    JSONArray holidays = new JSONArray();
+    for (Holidays.Holiday h : s.holidays)
+      holidays.put(
+          new JSONObject()
+              .put("id", h.id)
+              .put("name", h.name)
+              .put("date", h.date)
+              .put("units", h.units)
+              .put("enabled", h.enabled));
+    root.put("holidays", holidays);
     root.put("places", places);
     root.put("hiddenPlaces", new JSONArray(s.hiddenPlaces));
     root.put("weekendOrder", new JSONArray(s.weekendOrder));
@@ -90,6 +100,21 @@ final class Store {
     if (root.getInt("version") != 1 && root.getInt("version") != 2)
       throw new JSONException("Desteklenmeyen veri sürümü");
     State s = new State();
+    JSONArray holidays = root.optJSONArray("holidays");
+    if (holidays != null)
+      for (int i = 0; i < holidays.length(); i++) {
+        JSONObject h = holidays.getJSONObject(i);
+        Holidays.Holiday holiday =
+            new Holidays.Holiday(
+                h.getString("id"),
+                h.getString("name"),
+                LocalDate.parse(h.getString("date")),
+                h.getInt("units"),
+                h.getBoolean("enabled"));
+        if (s.holidays.stream().anyMatch(old -> old.id.equals(holiday.id)))
+          throw new JSONException("Mükerrer tatil kimliği");
+        s.holidays.add(holiday);
+      }
     s.rotationRevision = root.optInt("rotationRevision", 0);
     JSONArray order = root.optJSONArray("weekendOrder");
     if (order != null)

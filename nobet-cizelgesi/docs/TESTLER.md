@@ -1,11 +1,21 @@
-# Doğrulama — Nöbet Çizelgesi 2.0 / 19 Ekim 2026
+# Doğrulama — Nöbet Çizelgesi 2.1 / 19 Ekim 2026
 
 - JDK 17.0.17, Android SDK 35, build-tools 35.0.0, Gradle 8.9, AGP 8.7.3.
-- `testDebugUnitTest`: **75 test, 0 başarısız, 0 atlanan**.
+- `testDebugUnitTest`: **89 test, 0 başarısız, 0 atlanan**.
 - `lintDebug`: **sorun bulunmadı**.
 - APK ve Android test APK derlemeleri başarılı.
-- Android 11 / API 30 x86_64 emülatöründe önceki sürüm üzerine `adb install -r` ile 2.0 güncellemesi başarılı.
-- Android test çalıştırıcısı: **34 kontrol geçti, 0 başarısız**.
+- Android 11 / API 30 x86_64 emülatöründe önceki sürüm üzerine `adb install -r` ile 2.1 güncellemesi başarılı.
+- Android test çalıştırıcısı: **37 kontrol geçti, 0 başarısız**.
+
+## 2.1 Resmî Tatil Kontrolleri
+
+14 yeni JVM testi: 2026 sabit tatilleri, 28 Ekim ve arifelerde yarım gün; Ramazan/Kurban bütün günleri; 2020–2032 sınırları ve artık yıl; destek dışı yıllarda dinî tarih tahmin edilmemesi; otomatik tatilin başka yıla taşınması ve sıfırlanması; devre dışı bırakma; çakışan tatillerde bir kez/en yüksek süreyle sayma; tatil ve nöbet düzenleme sonrası yeniden hesaplama; değişmeyen normal sayımlar; geçmiş/gelecek ayrımı; gizli/silinmiş şube, pasif personel ve güncel yer adları; tam sayı yarım gün birimleriyle yuvarlama hatası olmaması; geçersiz süre/boş adın reddi. Önceki 75 motor testi de geçti.
+
+Ayrı PDF metni de çıkarıldı: Merkez ve Çarşı sütunlarında aynı sentetik personel için `0,5` doğrulandı; görseli RESMI-TATILLER.md içinde.
+
+3 yeni Android kontrolü: özel/düzeltilmiş/devre dışı tatillerin JSON ve AtomicFile ile saklanıp yeniden okunması; eski kayıtta eksik tatil alanının otomatik takvimle güvenli açılması ve mükerrer kimliğin reddi; ayrı yarım gün PDF'sinin PdfRenderer ile açılıp çizilmesi; takvim ve editör ekranlarının açılması, boş ad doğrulaması, vazgeçme, yarım gün seçimi ve gerçek teyit düğmesiyle kayıt; diskteki veri ve canlı normal/tatil sayımlarının kontrolü. Sentetik veriler ayrı test deposuna yazılır.
+
+İlk editör testi, ShowListener henüz işlenmeden Kaydet'e basınca doğrulamanın bağlanmamış olduğunu yakaladı. Dinleyici `show()` sonrasında aynı UI adımında bağlandı; kontrol kaldırılmadı. 20 şubeli ekran ölçüm testinde odak bekleme eklendi; Ayarlar ve İstatistik açılışları ayrı UI adımlarına bölündü. Aynı genişliklerde hem normal hem resmî tatil tablolarının sınırları kontrol edilir. Diğer ekranlardaki odak zaman aşımı sonrasında bütün test açılışları odak bekleyen ortak yardımcıdan geçirilir. Teyit düğmesi testi büyük/küçük harf dönüşümüne duyarsızdır; gerçek erişilebilirlik düğmesi bulunup tıklanır. Yalnız `-e match Holiday` ile yapılan odaklı koşu 3 geçti / 34 atlandı olarak ayrı raporlandı; tam koşuda filtre kullanılmaz. İlk başarısız/kesilmiş koşular başarı sayılmaz.
 
 ## 2.0 arayüz kontrolleri
 
@@ -77,8 +87,8 @@ Gizleme testleri: şube görünümden çıkıyor; görev kayıtları, personel s
 
 ## APK Bütünlüğü
 
-2.0 APK SHA-256: `a8d4198fcd6bb003990e0316882a3b9e334137088fa49c593c7ba37525392523`. Paket `com.semih.nobet`, sürüm kodu 13. Önceki APK ile aynı imza doğrulandı.
+2.1 APK SHA-256: `20babe9232aa3eb0921be6de77f17d58cf9e734f42ac782e899a57f2a6a65318`. Paket `com.semih.nobet`, sürüm kodu 14. Önceki APK ile aynı imza doğrulandı.
 
 ## Sınırlar
 
-Fiziksel telefon veya tüm Android sürümleri test edilmedi. WhatsApp'ta gerçek alıcıya gönderim yapılmadı; PDF üretimi ve Android paylaşım URI erişimi test edildi. APK debug imzalıdır. Canlı telefon eşitlemesi ve yönetici hesapları uygulanmadı; APK cihazda çalışır. Yetki/sunucu planı ORTAK-KULLANIM.md içindedir.
+Fiziksel telefon veya tüm Android sürümleri test edilmedi. WhatsApp'ta gerçek alıcıya gönderim yapılmadı; PDF üretimi ve Android paylaşım URI erişimi test edildi. APK debug imzalıdır. Dinî takvim 2020–2032 ile sınırlıdır; diğer yıllar manuel kontrol edilir. Sabit tatiller 2020 ve sonrasında üretilir. Takvim kaynağı/kapsamı RESMI-TATILLER.md içindedir. Canlı telefon eşitlemesi ve yönetici hesapları uygulanmadı; APK cihazda çalışır. Yetki/sunucu planı ORTAK-KULLANIM.md içindedir.

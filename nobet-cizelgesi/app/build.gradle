@@ -3,7 +3,7 @@ android {
  namespace 'com.semih.nobet'
  compileSdk 35
  buildToolsVersion "35.0.0"
- defaultConfig { applicationId 'com.semih.nobet'; minSdk 26; targetSdk 35; versionCode 13; versionName '2.0'; testInstrumentationRunner 'com.semih.nobet.SmokeRunner' }
+ defaultConfig { applicationId 'com.semih.nobet'; minSdk 26; targetSdk 35; versionCode 14; versionName '2.1'; testInstrumentationRunner 'com.semih.nobet.SmokeRunner' }
  compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
  buildTypes { release { minifyEnabled false } }
 }

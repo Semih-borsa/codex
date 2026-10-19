@@ -1,11 +1,13 @@
-# Nöbet Çizelgesi 2.0
+# Nöbet Çizelgesi 2.1
 
 **Yeni arayüz:** Bütçe Takip’ten ilham alan kurumsal mavi özet kartı, çizgi simgeler, yüzen alt menü, personel kartları ve açık/koyu tema. [Ekran görüntüleri](../nobet-cizelgesi/docs/TASARIM-2.0.md)
 
-- [APK 2.0 indir](NobetCizelgesi-2.0.apk)
+- [APK 2.1 indir](NobetCizelgesi-2.1.apk)
 - [Güncel APK](NobetCizelgesi.apk)
 - [Android Studio kaynak ZIP](NobetCizelgesi-Android-Studio.zip)
 - [Kullanım](../nobet-cizelgesi/README.md) · [Testler](../nobet-cizelgesi/docs/TESTLER.md)
+
+**Resmî Tatiller:** otomatik takvim, manuel ekleme/düzenleme/devre dışı bırakma; ayrı görev yeri istatistikleri ve PDF. Yarım gün 0,5; tam gün 1. Normal sayımlar korunur. Dinî takvim 2020–2032 aralığındadır. [Ayrıntılar ve kapsam](../nobet-cizelgesi/docs/RESMI-TATILLER.md).
 
 Android 8.0 ve üzeri. Mevcut uygulamayı **kaldırmadan** APK üzerinden güncelleyin; aynı imza korunur. APK debug imzalıdır.
 

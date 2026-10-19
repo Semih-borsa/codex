@@ -17,6 +17,7 @@ public class SmokeRunner extends Instrumentation {
   @Override
   public void onCreate(Bundle args) {
     super.onCreate(args);
+    match = args == null ? "" : args.getString("match", "");
     start();
   }
 
@@ -24,9 +25,14 @@ public class SmokeRunner extends Instrumentation {
     void run() throws Exception;
   }
 
-  int passed = 0, failed = 0;
+  int passed = 0, failed = 0, skipped = 0;
+  String match = "";
 
   void check(String name, Check check) {
+    if (!name.contains(match)) {
+      skipped++;
+      return;
+    }
     Bundle b = new Bundle();
     b.putString("test", name);
     try {
@@ -35,6 +41,9 @@ public class SmokeRunner extends Instrumentation {
       b.putString("status", "PASS");
     } catch (Throwable e) {
       failed++;
+      StringWriter trace = new StringWriter();
+      e.printStackTrace(new PrintWriter(trace));
+      b.putString("trace", trace.toString());
       b.putString("status", "FAIL: " + e.getClass().getSimpleName() + " " + e.getMessage());
     }
     sendStatus(0, b);
@@ -60,7 +69,8 @@ public class SmokeRunner extends Instrumentation {
 
   private void checkStatisticsBounds(android.view.View view) {
     truth(!(view instanceof android.widget.HorizontalScrollView));
-    if ("statistics-table".equals(view.getTag())) {
+    if ("statistics-table".equals(view.getTag())
+        || "holiday-statistics-table".equals(view.getTag())) {
       android.view.ViewGroup table = (android.view.ViewGroup) view;
       truth(table.getWidth() > 0);
       for (int i = 0; i < table.getChildCount(); i++) {
@@ -90,6 +100,24 @@ public class SmokeRunner extends Instrumentation {
     waitForIdleSync();
   }
 
+  private Activity launchActivity(Intent intent) throws InterruptedException {
+    Activity activity = startActivitySync(intent);
+    waitForFrames(activity);
+    waitForFocus(activity);
+    return activity;
+  }
+
+  private void waitForFocus(Activity activity) throws InterruptedException {
+    long deadline = SystemClock.uptimeMillis() + 15000;
+    boolean[] focused = {false};
+    while (SystemClock.uptimeMillis() < deadline) {
+      runOnMainSync(() -> focused[0] = activity.hasWindowFocus());
+      if (focused[0]) return;
+      Thread.sleep(100);
+    }
+    truth(focused[0]);
+  }
+
   @Override
   public void onStart() {
     Context target = getTargetContext();
@@ -116,6 +144,201 @@ public class SmokeRunner extends Instrumentation {
     LocalDate mon = LocalDate.of(2026, 10, 19);
     Week week = generate(s, mon);
     approve(s, week);
+    check(
+        "Holiday overrides persist and legacy data enables only automatic calendar",
+        () -> {
+          State sample = new State();
+          Holidays.Holiday automatic = Holidays.on(sample, LocalDate.of(2026, 10, 29)).get(0);
+          Holidays.put(
+              sample,
+              new Holidays.Holiday(
+                  automatic.id, "Düzeltilmiş", LocalDate.of(2027, 2, 1), 1, false));
+          Holidays.put(sample, new Holidays.Holiday("custom:test", "Kurum Tatili", mon, 1, true));
+          Store storage = new Store(context);
+          storage.save(sample);
+          State read = storage.load();
+          truth(read.holidays.size() == 2 && Holidays.units(read, mon) == 1);
+          truth(Holidays.units(read, LocalDate.of(2026, 10, 29)) == 0);
+          truth(Holidays.units(read, LocalDate.of(2027, 2, 1)) == 0);
+          Holidays.Holiday custom =
+              read.holidays.stream().filter(h -> h.id.equals("custom:test")).findFirst().get();
+          truth(custom.name.equals("Kurum Tatili") && custom.units == 1);
+          org.json.JSONObject legacy = new org.json.JSONObject(Store.encode(read));
+          legacy.remove("holidays");
+          State old = Store.decode(legacy.toString());
+          truth(old.holidays.isEmpty() && Holidays.units(old, LocalDate.of(2026, 10, 29)) == 2);
+          org.json.JSONObject duplicate = new org.json.JSONObject(Store.encode(read));
+          duplicate
+              .getJSONArray("holidays")
+              .put(duplicate.getJSONArray("holidays").getJSONObject(0));
+          boolean rejected = false;
+          try {
+            Store.decode(duplicate.toString());
+          } catch (org.json.JSONException expected) {
+            rejected = true;
+          }
+          truth(rejected);
+        });
+    check(
+        "Holiday PDF renders separate place tables and decimal half days",
+        () -> {
+          State sample = new State();
+          sample.people.add(new Person("holiday", "Deneme"));
+          sample.place(WORK).name = "Merkez";
+          sample.place(BRANCH).name = "Çarşı";
+          Week w = new Week(mon);
+          w.duties.add(new Duty(mon, WORK, "holiday"));
+          w.duties.add(new Duty(mon, BRANCH, "holiday"));
+          sample.weeks.add(w);
+          sample.hiddenPlaces.add(BRANCH);
+          Holidays.put(sample, new Holidays.Holiday("custom:pdf", "Kurum Tatili", mon, 1, true));
+          truth(Holidays.statistics(sample, mon, false).get(0).counts[0] == 1);
+          truth(PdfExport.holidayLabels(sample).equals(java.util.Arrays.asList("Merkez", "Çarşı")));
+          File pdf = PdfExport.createHolidayStatistics(context, sample, mon);
+          try (ParcelFileDescriptor fd =
+                  ParcelFileDescriptor.open(pdf, ParcelFileDescriptor.MODE_READ_ONLY);
+              PdfRenderer renderer = new PdfRenderer(fd)) {
+            truth(renderer.getPageCount() == 1);
+            try (PdfRenderer.Page page = renderer.openPage(0)) {
+              android.graphics.Bitmap bitmap =
+                  android.graphics.Bitmap.createBitmap(
+                      page.getWidth(), page.getHeight(), android.graphics.Bitmap.Config.ARGB_8888);
+              page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
+              bitmap.recycle();
+            }
+          }
+          truth(PdfExport.createHolidayStatistics(context, new State(), mon).length() > 0);
+        });
+    check(
+        "Holiday calendar editor validates cancels and persists confirmed half day with live"
+            + " statistics",
+        () -> {
+          Activity activity =
+              launchActivity(
+                  new Intent(target, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+          android.app.AlertDialog[] calendar = {null}, editor = {null};
+          State sample = new State();
+          sample.people.add(new Person("holiday-ui", "Deneme Personel"));
+          Week w = new Week(mon);
+          w.duties.add(new Duty(mon, WORK, "holiday-ui"));
+          sample.weeks.add(w);
+          try {
+            waitForFrames(activity);
+            runOnMainSync(
+                () -> {
+                  try {
+                    java.lang.reflect.Field field = MainActivity.class.getDeclaredField("state");
+                    field.setAccessible(true);
+                    field.set(activity, sample);
+                    java.lang.reflect.Field store = MainActivity.class.getDeclaredField("store");
+                    store.setAccessible(true);
+                    store.set(activity, new Store(context));
+                    java.lang.reflect.Method open =
+                        MainActivity.class.getDeclaredMethod("holidayCalendar");
+                    open.setAccessible(true);
+                    calendar[0] = (android.app.AlertDialog) open.invoke(activity);
+                  } catch (ReflectiveOperationException e) {
+                    throw new AssertionError(e);
+                  }
+                });
+            waitForFrames(activity);
+            Thread.sleep(1000);
+            truth(
+                calendar[0].getWindow().getDecorView().findViewWithTag("holiday-add").getHeight()
+                    > 0);
+            android.graphics.Bitmap image = getUiAutomation().takeScreenshot();
+            truth(image != null);
+            try (FileOutputStream stream =
+                new FileOutputStream(new File(isolated, "holiday-calendar.png"))) {
+              image.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, stream);
+            }
+            image.recycle();
+            runOnMainSync(
+                () -> {
+                  try {
+                    calendar[0].dismiss();
+                    calendar[0] = null;
+                    java.lang.reflect.Method edit =
+                        MainActivity.class.getDeclaredMethod(
+                            "holidayDialog", Holidays.Holiday.class, int.class, Runnable.class);
+                    edit.setAccessible(true);
+                    editor[0] =
+                        (android.app.AlertDialog)
+                            edit.invoke(activity, null, 2026, (Runnable) () -> {});
+                    editor[0].getButton(-1).performClick();
+                    android.widget.EditText name =
+                        editor[0].getWindow().getDecorView().findViewWithTag("holiday-name");
+                    truth(name.getError() != null && sample.holidays.isEmpty());
+                    editor[0].getButton(-2).performClick();
+                    editor[0] = null;
+                    truth(sample.holidays.isEmpty());
+                    Holidays.Holiday custom =
+                        new Holidays.Holiday("custom:ui", "Kurum Tatili", mon, 2, true);
+                    editor[0] =
+                        (android.app.AlertDialog)
+                            edit.invoke(activity, custom, 2026, (Runnable) () -> {});
+                    android.widget.Spinner duration =
+                        editor[0].getWindow().getDecorView().findViewWithTag("holiday-duration");
+                    duration.setSelection(1);
+                  } catch (ReflectiveOperationException e) {
+                    throw new AssertionError(e);
+                  }
+                });
+            waitForFrames(activity);
+            runOnMainSync(() -> editor[0].getButton(-1).performClick());
+            waitForIdleSync();
+            boolean clicked = false;
+            long deadline = SystemClock.uptimeMillis() + 10000;
+            while (!clicked && SystemClock.uptimeMillis() < deadline) {
+              android.view.accessibility.AccessibilityNodeInfo root =
+                  getUiAutomation().getRootInActiveWindow();
+              if (root != null) {
+                for (android.view.accessibility.AccessibilityNodeInfo node :
+                    root.findAccessibilityNodeInfosByText("Onayla")) {
+                  if ("Onayla"
+                      .equalsIgnoreCase(node.getText() == null ? "" : node.getText().toString()))
+                    clicked =
+                        node.performAction(
+                            android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK);
+                  node.recycle();
+                }
+                root.recycle();
+              }
+              if (!clicked) Thread.sleep(250);
+            }
+            truth(clicked);
+            boolean[] saved = {false};
+            deadline = SystemClock.uptimeMillis() + 10000;
+            while (!saved[0] && SystemClock.uptimeMillis() < deadline) {
+              runOnMainSync(
+                  () ->
+                      saved[0] = sample.holidays.size() == 1 && sample.holidays.get(0).units == 1);
+              if (!saved[0]) Thread.sleep(100);
+            }
+            truth(saved[0]);
+            waitForIdleSync();
+            waitForFrames(activity);
+            truth(new Store(context).load().holidays.get(0).units == 1);
+            truth(Holidays.statistics(sample, mon, false).get(0).counts[0] == 1);
+            truth(Roster.statistics(sample, mon, false).get(0).counts[0] == 1);
+            runOnMainSync(
+                () -> activity.getWindow().getDecorView().findViewWithTag("nav-3").performClick());
+            waitForFrames(activity);
+            runOnMainSync(
+                () -> {
+                  android.view.View rootView = activity.getWindow().getDecorView();
+                  truth(rootView.findViewWithTag("holiday-statistics-table") != null);
+                  truth(findText(rootView, "Resmî Tatilleri PDF Olarak Paylaş") != null);
+                });
+          } finally {
+            runOnMainSync(
+                () -> {
+                  if (calendar[0] != null) calendar[0].dismiss();
+                  if (editor[0] != null) editor[0].dismiss();
+                  activity.finish();
+                });
+          }
+        });
     check(
         "JSON round trip and atomic persistence",
         () -> {
@@ -197,7 +420,7 @@ public class SmokeRunner extends Instrumentation {
         "Activity launches",
         () -> {
           Activity activity =
-              startActivitySync(
+              launchActivity(
                   new Intent(target, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
           truth(activity != null);
           waitForIdleSync();
@@ -213,7 +436,7 @@ public class SmokeRunner extends Instrumentation {
           try {
             truth(prefs.edit().putInt("theme", 2).commit());
             activity =
-                startActivitySync(
+                launchActivity(
                     new Intent(target, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             Activity launched = activity;
             runOnMainSync(
@@ -328,7 +551,7 @@ public class SmokeRunner extends Instrumentation {
         "Settings and alphabetical statistics table open with blue white controls",
         () -> {
           Activity activity =
-              startActivitySync(
+              launchActivity(
                   new Intent(target, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
           try {
             waitForIdleSync();
@@ -443,10 +666,11 @@ public class SmokeRunner extends Instrumentation {
         "Statistics fit narrow screens with twenty places and preserve every branch",
         () -> {
           Activity activity =
-              startActivitySync(
+              launchActivity(
                   new Intent(target, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
           try {
             waitForFrames(activity);
+            waitForFocus(activity);
             runOnMainSync(
                 () -> {
                   try {
@@ -469,15 +693,21 @@ public class SmokeRunner extends Instrumentation {
                                 activity.getWindow().getDecorView(),
                                 "2. Sıra • " + sample.name("p2"))
                             != null);
-                    findText(activity.getWindow().getDecorView(), "İstatistik").performClick();
-                    android.view.View root = activity.getWindow().getDecorView();
-                    for (Place place : statisticPlaces(sample))
-                      truth(findText(root, place.name) != null);
-                    truth(findText(root, "A\nPersonel") == null);
 
                   } catch (ReflectiveOperationException e) {
                     throw new AssertionError(e);
                   }
+                });
+            waitForFrames(activity);
+            runOnMainSync(
+                () -> {
+                  findText(activity.getWindow().getDecorView(), "İstatistik").performClick();
+                  android.view.View root = activity.getWindow().getDecorView();
+                  for (int i = 1; i < 20; i++)
+                    truth(
+                        findText(root, i == 1 ? s.placeName(BRANCH) : "Uzun Şube Adı " + i)
+                            != null);
+                  truth(findText(root, "A\nPersonel") == null);
                 });
             waitForFrames(activity);
             // Each viewport is a separate UI operation so focus/input can be delivered between
@@ -619,7 +849,7 @@ public class SmokeRunner extends Instrumentation {
             + " cancel",
         () -> {
           Activity activity =
-              startActivitySync(
+              launchActivity(
                   new Intent(target, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
           try {
             waitForIdleSync();
@@ -712,7 +942,7 @@ public class SmokeRunner extends Instrumentation {
         "Weekly restrictions hide dates and add independent rows with plus",
         () -> {
           Activity activity =
-              startActivitySync(
+              launchActivity(
                   new Intent(target, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
           android.app.AlertDialog[] dialog = new android.app.AlertDialog[1];
           State[] sampleState = new State[1];
@@ -813,7 +1043,7 @@ public class SmokeRunner extends Instrumentation {
         "Personnel selection retains visible day and offset after rebuilding the roster",
         () -> {
           Activity activity =
-              startActivitySync(
+              launchActivity(
                   new Intent(target, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
           android.app.AlertDialog[] dialog = new android.app.AlertDialog[1];
           State sample = new State();
@@ -952,7 +1182,7 @@ public class SmokeRunner extends Instrumentation {
             + " saved week",
         () -> {
           Activity activity =
-              startActivitySync(
+              launchActivity(
                   new Intent(target, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
           android.app.AlertDialog[] dialog = new android.app.AlertDialog[1];
           try {
@@ -1084,7 +1314,7 @@ public class SmokeRunner extends Instrumentation {
             + " leave",
         () -> {
           Activity activity =
-              startActivitySync(
+              launchActivity(
                   new Intent(target, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
           android.app.AlertDialog[] dialog = new android.app.AlertDialog[1];
           try {
@@ -1199,7 +1429,7 @@ public class SmokeRunner extends Instrumentation {
             for (int mode : new int[] {1, 2}) {
               truth(prefs.edit().putInt("theme", mode).commit());
               Activity activity =
-                  startActivitySync(
+                  launchActivity(
                       new Intent(target, MainActivity.class)
                           .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
               try {
@@ -1333,7 +1563,10 @@ public class SmokeRunner extends Instrumentation {
     Bundle result = new Bundle();
     result.putInt("passed", passed);
     result.putInt("failed", failed);
-    result.putString("stream", "Android checks: " + passed + " passed, " + failed + " failed\n");
+    result.putInt("skipped", skipped);
+    result.putString(
+        "stream",
+        "Android checks: " + passed + " passed, " + failed + " failed, " + skipped + " skipped\n");
     finish(failed == 0 ? Activity.RESULT_OK : Activity.RESULT_CANCELED, result);
   }
 }

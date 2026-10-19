@@ -729,6 +729,21 @@ public final class MainActivity extends Activity {
       lp.setMargins(0, dp(7), 0, dp(3));
       body.addView(card, lp);
       dayHeader(card, day);
+      List<Holidays.Holiday> holidays = Holidays.on(state, day);
+      if (!holidays.isEmpty()) {
+        String names =
+            holidays.stream()
+                .map(h -> h.name)
+                .distinct()
+                .collect(java.util.stream.Collectors.joining(" • "));
+        TextView holidayLabel =
+            text(
+                names + (Holidays.units(state, day) == 1 ? " • Yarım Gün" : " • Resmî Tatil"),
+                11,
+                teal);
+        holidayLabel.setPadding(0, dp(6), 0, 0);
+        card.addView(holidayLabel);
+      }
       for (Place location : displayPlaces(state, w)) {
         String place = location.id;
         if ((location.deleted || !location.on(day))
@@ -1830,7 +1845,214 @@ public final class MainActivity extends Activity {
     action("+ Sıraya Yeni Personel Ekle", () -> personDialog(null));
   }
 
+  private AlertDialog holidayCalendar() {
+    LinearLayout box = column();
+    box.setPadding(dp(16), dp(8), dp(16), dp(8));
+    LinearLayout yearRow = row();
+    int[] year = {selected.getYear()};
+    TextView yearLabel = bold(Integer.toString(year[0]), 17, ink);
+    yearLabel.setGravity(Gravity.CENTER);
+    LinearLayout list = column();
+    ScrollView scroll = new ScrollView(this);
+    scroll.addView(list);
+    Runnable[] refresh = new Runnable[1];
+    refresh[0] =
+        () -> {
+          yearLabel.setText(String.format(new Locale("tr", "TR"), "%d", year[0]));
+          list.removeAllViews();
+          for (Holidays.Holiday h : Holidays.forYear(state, year[0], true)) {
+            LinearLayout card = column();
+            card.setPadding(0, dp(10), 0, dp(8));
+            card.addView(
+                bold(
+                    h.date.format(shortDate) + " • " + (h.units == 1 ? "Yarım Gün" : "Tam Gün"),
+                    13,
+                    h.enabled ? teal : muted));
+            card.addView(text(h.name + (h.enabled ? "" : " • Devre Dışı"), 14, ink));
+            LinearLayout controls = row();
+            Button edit = button("Düzenle", () -> holidayDialog(h, year[0], refresh[0]));
+            edit.setTag("holiday-edit-" + h.id);
+            soft(edit, "edit");
+            controls.addView(edit, new LinearLayout.LayoutParams(0, -2, 1));
+            Button remove =
+                button(
+                    h.enabled ? "Kaldır" : "Etkinleştir",
+                    () ->
+                        confirm(
+                            h.enabled ? "Tatili Kaldır" : "Tatili Etkinleştir",
+                            h.name
+                                + " • "
+                                + h.date.format(shortDate)
+                                + ". Nöbet kayıtları korunur; resmî tatil sayımları yeniden"
+                                + " hesaplanır.",
+                            () -> {
+                              if (h.automatic())
+                                Holidays.put(
+                                    state,
+                                    new Holidays.Holiday(
+                                        h.id, h.name, h.date, h.units, !h.enabled));
+                              else state.holidays.removeIf(old -> old.id.equals(h.id));
+                              if (save()) {
+                                refresh[0].run();
+                                renderKeepingPosition();
+                              }
+                            }));
+            remove.setTag("holiday-remove-" + h.id);
+            soft(remove, "calendar");
+            controls.addView(remove, new LinearLayout.LayoutParams(0, -2, 1));
+            card.addView(controls);
+            if (h.automatic() && state.holidays.stream().anyMatch(old -> old.id.equals(h.id))) {
+              Button reset =
+                  button(
+                      "Otomatik Kaydı Geri Yükle",
+                      () ->
+                          confirm(
+                              "Otomatik Tatili Geri Yükle",
+                              "Bu tatil için yaptığınız değişiklik kaldırılır; takvimdeki asıl"
+                                  + " tarih, ad ve süre geri gelir.",
+                              () -> {
+                                state.holidays.removeIf(old -> old.id.equals(h.id));
+                                if (save()) {
+                                  refresh[0].run();
+                                  renderKeepingPosition();
+                                }
+                              }));
+              soft(reset, "calendar");
+              card.addView(reset);
+            }
+            list.addView(card);
+          }
+        };
+    Button previous =
+        button(
+            "‹",
+            () -> {
+              if (year[0] > 1900) {
+                year[0]--;
+                refresh[0].run();
+              }
+            });
+    previous.setContentDescription("Önceki Tatil Yılı");
+    Button next =
+        button(
+            "›",
+            () -> {
+              if (year[0] < 2200) {
+                year[0]++;
+                refresh[0].run();
+              }
+            });
+    next.setContentDescription("Sonraki Tatil Yılı");
+    yearRow.addView(previous, new LinearLayout.LayoutParams(dp(48), dp(48)));
+    yearRow.addView(yearLabel, new LinearLayout.LayoutParams(0, dp(48), 1));
+    yearRow.addView(next, new LinearLayout.LayoutParams(dp(48), dp(48)));
+    box.addView(yearRow);
+    TextView scope =
+        text(
+            "Sabit Tatiller: 2020 Ve Sonrası • Dinî Tatiller: 2020–2032. İdarî İzinleri Manuel"
+                + " Ekleyin. Yarım Gün: 0,5.",
+            11,
+            muted);
+    scope.setPadding(0, dp(8), 0, dp(8));
+    box.addView(scope);
+    Button add = button("+ Resmî Tatil Ekle", () -> holidayDialog(null, year[0], refresh[0]));
+    add.setTag("holiday-add");
+    box.addView(add);
+    box.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1));
+    refresh[0].run();
+    AlertDialog dialog =
+        new AlertDialog.Builder(this)
+            .setTitle("Resmî Tatil Takvimi")
+            .setView(box)
+            .setNegativeButton("Kapat", null)
+            .create();
+    dialog.show();
+    dialog
+        .getWindow()
+        .setLayout(-1, (int) (getResources().getDisplayMetrics().heightPixels * .85f));
+    return dialog;
+  }
+
+  private AlertDialog holidayDialog(Holidays.Holiday current, int year, Runnable refresh) {
+    LinearLayout box = column();
+    box.setPadding(dp(20), dp(8), dp(20), dp(8));
+    EditText name = new EditText(this);
+    name.setHint("Tatil Adı");
+    name.setSingleLine(true);
+    name.setTag("holiday-name");
+    if (current != null) name.setText(current.name);
+    box.addView(name);
+    LocalDate[] chosen = {current != null ? current.date : LocalDate.of(year, 1, 1)};
+    Button dateButton = button(chosen[0].format(shortDate), null);
+    dateButton.setTag("holiday-date");
+    dateButton.setOnClickListener(
+        v ->
+            date(
+                chosen[0],
+                value -> {
+                  chosen[0] = value;
+                  dateButton.setText(value.format(shortDate));
+                }));
+    box.addView(dateButton);
+    Spinner duration = spinner(new String[] {"Tam Gün • 1", "Yarım Gün • 0,5 (13.00 Sonrası)"});
+    duration.setTag("holiday-duration");
+    duration.setSelection(current != null && current.units == 1 ? 1 : 0);
+    box.addView(duration);
+    AlertDialog dialog =
+        new AlertDialog.Builder(this)
+            .setTitle(current == null ? "Resmî Tatil Ekle" : "Resmî Tatili Düzenle")
+            .setView(box)
+            .setNegativeButton("Vazgeç", null)
+            .setPositiveButton("Kaydet", null)
+            .create();
+    dialog.show();
+    dialog
+        .getButton(-1)
+        .setOnClickListener(
+            v -> {
+              if (name.getText().toString().trim().isEmpty()) {
+                name.setError("Tatil Adını Girin");
+                return;
+              }
+              int units = duration.getSelectedItemPosition() == 0 ? 2 : 1;
+              List<Holidays.Holiday> others = Holidays.on(state, chosen[0]);
+              boolean overlap =
+                  others.stream().anyMatch(h -> current == null || !h.id.equals(current.id));
+              confirm(
+                  "Resmî Tatili Kaydet",
+                  name.getText().toString().trim()
+                      + " • "
+                      + chosen[0].format(shortDate)
+                      + (units == 1 ? " • Yarım Gün (0,5)" : " • Tam Gün (1)")
+                      + (overlap
+                          ? "\n"
+                              + "Bu tarihte başka tatil var. Aynı görev iki kez sayılmaz;"
+                              + " en uzun tatil süresi kullanılır."
+                          : "")
+                      + "\n"
+                      + "Geçmiş ve gelecek resmî tatil sayımları güncellenir. Nöbet"
+                      + " kayıtları değişmez.",
+                  () -> {
+                    Holidays.put(
+                        state,
+                        new Holidays.Holiday(
+                            current == null ? "custom:" + UUID.randomUUID() : current.id,
+                            name.getText().toString(),
+                            chosen[0],
+                            units,
+                            current == null || current.enabled));
+                    if (save()) {
+                      dialog.dismiss();
+                      refresh.run();
+                      renderKeepingPosition();
+                    }
+                  });
+            });
+    return dialog;
+  }
+
   private void settings() {
+    action("Resmî Tatil Takvimi", this::holidayCalendar);
     weekendSettings();
     heading("Ayarlar • Görev Yerleri");
     note(
@@ -2024,11 +2246,37 @@ public final class MainActivity extends Activity {
       heading("Gelecek Atamalar");
       statisticsTable(true);
     }
+    heading("Resmî Tatiller • Bugün Ve Öncesi");
+    action(
+        "Resmî Tatilleri PDF Olarak Paylaş",
+        () -> {
+          try {
+            PdfExport.share(this, PdfExport.createHolidayStatistics(this, state, LocalDate.now()));
+          } catch (Exception e) {
+            toast("Resmî tatil PDF'si oluşturulamadı veya paylaşım uygulaması bulunamadı.");
+          }
+        });
+    statisticsTable(false, true);
+    boolean holidayFuture =
+        Holidays.statistics(state, LocalDate.now(), true).stream()
+            .anyMatch(r -> java.util.Arrays.stream(r.counts).anyMatch(n -> n > 0));
+    if (holidayFuture) {
+      heading("Resmî Tatiller • Gelecek Atamalar");
+      statisticsTable(true, true);
+    }
   }
 
   private void statisticsTable(boolean future) {
-    List<String> labels = PdfExport.statisticsLabels(state);
-    List<StatRow> rows = statistics(state, LocalDate.now(), future);
+    statisticsTable(future, false);
+  }
+
+  private void statisticsTable(boolean future, boolean holidays) {
+    List<String> labels =
+        holidays ? PdfExport.holidayLabels(state) : PdfExport.statisticsLabels(state);
+    List<StatRow> rows =
+        holidays
+            ? Holidays.statistics(state, LocalDate.now(), future)
+            : statistics(state, LocalDate.now(), future);
     // Extra branches continue vertically to keep every column readable on narrow screens.
     float density = getResources().getDisplayMetrics().density;
     int available = (int) (getResources().getDisplayMetrics().widthPixels / density) - 36;
@@ -2037,7 +2285,7 @@ public final class MainActivity extends Activity {
       int end = Math.min(labels.size(), first + columns);
       LinearLayout table = new LinearLayout(this);
       table.setOrientation(LinearLayout.VERTICAL);
-      table.setTag("statistics-table");
+      table.setTag(holidays ? "holiday-statistics-table" : "statistics-table");
       table.setBackground(Visuals.surface(cardColor, dp(14), lineColor));
       table.setClipToOutline(true);
       LinearLayout header = new LinearLayout(this);
@@ -2051,7 +2299,12 @@ public final class MainActivity extends Activity {
         addStatCell(
             line, row.person.name + (row.person.active ? "" : " · Pasif"), true, false, stripe);
         for (int i = first; i < end; i++)
-          addStatCell(line, Long.toString(row.counts[i]), false, false, stripe);
+          addStatCell(
+              line,
+              holidays ? Holidays.days(row.counts[i]) : Long.toString(row.counts[i]),
+              false,
+              false,
+              stripe);
         table.addView(line);
       }
       LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2);
