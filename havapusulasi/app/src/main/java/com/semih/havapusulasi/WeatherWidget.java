@@ -10,6 +10,7 @@ import android.widget.RemoteViews;
 import java.util.*;
 
 public final class WeatherWidget extends AppWidgetProvider {
+  static final String NEXT = "com.semih.havapusulasi.WIDGET_NEXT_DAYS";
   static final String REFRESH = "com.semih.havapusulasi.WIDGET_REFRESH";
 
   static ComponentName component(Context c) {
@@ -77,7 +78,62 @@ public final class WeatherWidget extends AppWidgetProvider {
         h == null
             ? "Bu saatin tahmini yok"
             : Forecast.description(h.code) + " • Yağış " + Forecast.value(h.rain, "%"));
-    views.setViewVisibility(R.id.widget_details, compact ? View.GONE : View.VISIBLE);
+    views.setViewVisibility(R.id.widget_details, View.VISIBLE);
+    views.setTextViewText(
+        R.id.widget_feels, "Hissedilen\n" + Forecast.value(h == null ? null : h.feels, "°C"));
+    views.setTextViewText(
+        R.id.widget_wind, "Rüzgâr\n" + Forecast.value(h == null ? null : h.wind, " km/sa"));
+    views.setTextViewText(
+        R.id.widget_humidity, "Nem\n" + Forecast.value(h == null ? null : h.humidity, "%"));
+    List<Forecast.Day> days = f == null ? Collections.emptyList() : f.futureDays(now);
+    int pages = Math.max(1, (days.size() + 2) / 3);
+    int page = Math.floorMod(prefs(c).getInt("page_" + id, 0), pages);
+    boolean showDays = !compact && !days.isEmpty();
+    views.setViewVisibility(R.id.widget_forecast_header, compact ? View.GONE : View.VISIBLE);
+    views.setViewVisibility(R.id.widget_forecast_labels, showDays ? View.VISIBLE : View.GONE);
+    views.setViewVisibility(R.id.widget_forecast_rows, showDays ? View.VISIBLE : View.GONE);
+    views.setViewVisibility(R.id.widget_next, showDays && pages > 1 ? View.VISIBLE : View.GONE);
+    views.setTextViewText(
+        R.id.widget_forecast_title,
+        "Gelecek günler" + (showDays ? " · " + (page + 1) + "/" + pages : ""));
+    views.setViewVisibility(R.id.widget_forecast_empty, showDays ? View.GONE : View.VISIBLE);
+    views.setTextViewText(
+        R.id.widget_forecast_empty,
+        compact
+            ? "Günlük tahminler için widget’ı büyüt."
+            : "Gelecek günlere ait kayıt yok; tahmini yenile.");
+    int[] rows = {R.id.widget_day_row_0, R.id.widget_day_row_1, R.id.widget_day_row_2};
+    int[] dates = {R.id.widget_day_date_0, R.id.widget_day_date_1, R.id.widget_day_date_2};
+    int[] conditions = {
+      R.id.widget_day_condition_0, R.id.widget_day_condition_1, R.id.widget_day_condition_2
+    };
+    int[] ranges = {R.id.widget_day_range_0, R.id.widget_day_range_1, R.id.widget_day_range_2};
+    for (int i = 0; i < 3; i++) {
+      int index = page * 3 + i;
+      views.setViewVisibility(rows[i], index < days.size() ? View.VISIBLE : View.GONE);
+      if (index >= days.size()) continue;
+      Forecast.Day day = days.get(index);
+      views.setTextViewText(
+          dates[i],
+          day.date.format(java.time.format.DateTimeFormatter.ofPattern("d MMM EEE", Forecast.TR)));
+      views.setTextViewText(
+          conditions[i], Forecast.icon(day.code) + " " + Forecast.description(day.code));
+      views.setTextViewText(
+          ranges[i],
+          c.getString(
+              R.string.temperature_range,
+              Forecast.value(day.high, "°"),
+              Forecast.value(day.low, "°")));
+      views.setContentDescription(
+          rows[i],
+          day.date
+              + ", "
+              + Forecast.description(day.code)
+              + ", en yüksek "
+              + Forecast.value(day.high, " derece")
+              + ", en düşük "
+              + Forecast.value(day.low, " derece"));
+    }
     String age =
         city == null
             ? "Seçilen şehir yok; Şehir düğmesinden seç."
@@ -130,6 +186,27 @@ public final class WeatherWidget extends AppWidgetProvider {
           R.id.widget_state,
           R.id.widget_open
         }) views.setOnClickPendingIntent(target, launch);
+    for (int target :
+        new int[] {
+          R.id.widget_feels,
+          R.id.widget_wind,
+          R.id.widget_humidity,
+          R.id.widget_forecast_title,
+          R.id.widget_forecast_empty,
+          R.id.widget_day_row_0,
+          R.id.widget_day_row_1,
+          R.id.widget_day_row_2
+        }) views.setOnClickPendingIntent(target, launch);
+    views.setOnClickPendingIntent(
+        R.id.widget_next,
+        PendingIntent.getBroadcast(
+            c,
+            id,
+            new Intent(c, WeatherWidget.class)
+                .setAction(NEXT)
+                .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id)
+                .setData(Uri.parse("havapusulasi://days/" + id)),
+            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
     Intent configure =
         new Intent(c, WidgetConfigureActivity.class)
             .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id)
@@ -157,8 +234,8 @@ public final class WeatherWidget extends AppWidgetProvider {
       Forecast f = city == null ? null : store.cached(city.id);
       AppWidgetManager manager = AppWidgetManager.getInstance(c);
       boolean compact =
-          manager.getAppWidgetOptions(id).getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 180)
-              < 170;
+          manager.getAppWidgetOptions(id).getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 430)
+              < 360;
       String status = prefs(c).getString("state_" + id, "");
       if (f != null && f.downloaded >= prefs(c).getLong("stateAt_" + id, 0)) status = "";
       manager.updateAppWidget(
@@ -182,6 +259,15 @@ public final class WeatherWidget extends AppWidgetProvider {
 
   public void onReceive(Context c, Intent intent) {
     super.onReceive(c, intent);
+    if (NEXT.equals(intent.getAction())) {
+      int id = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, -1);
+      if (owns(c, id)) {
+        int page = prefs(c).getInt("page_" + id, 0);
+        // The view normalizes this bounded preference to the available day count.
+        prefs(c).edit().putInt("page_" + id, Math.floorMod(page + 1, 2)).apply();
+        update(c, id);
+      }
+    }
     if (REFRESH.equals(intent.getAction())) {
       int id = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, -1);
       if (owns(c, id)) RefreshJob.requestWidget(c, id);
@@ -193,7 +279,7 @@ public final class WeatherWidget extends AppWidgetProvider {
     for (int id : ids) {
       if (id > 0 && id < Integer.MAX_VALUE - RefreshJob.WIDGET_BASE)
         c.getSystemService(android.app.job.JobScheduler.class).cancel(RefreshJob.WIDGET_BASE + id);
-      edit.remove("city_" + id).remove("state_" + id).remove("stateAt_" + id);
+      edit.remove("city_" + id).remove("state_" + id).remove("stateAt_" + id).remove("page_" + id);
     }
     edit.apply();
   }

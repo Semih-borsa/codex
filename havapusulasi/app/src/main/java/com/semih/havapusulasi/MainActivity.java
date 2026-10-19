@@ -932,7 +932,7 @@ public final class MainActivity extends Activity {
         muted,
         false);
     LinearLayout info = card(body);
-    copy(info, "HavaPusulası 1.1", 19, text, true);
+    copy(info, "HavaPusulası 1.2", 19, text, true);
     gap(info, 7);
     copy(
         info,

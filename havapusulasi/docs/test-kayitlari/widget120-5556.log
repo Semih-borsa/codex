@@ -1,0 +1,39 @@
+PASS 24 hourly slots from fixture
+PASS Seven daily forecasts
+PASS Temperature and units parsed
+PASS Missing value stays null
+PASS Incompatible time units rejected
+PASS Out of range probability rejected
+PASS No geocoding results handled
+PASS Geocoding candidate retains city timezone
+PASS Networking limited to forecast and geocoding hosts
+PASS Duplicate city is not added
+PASS Saved city bounded and unique
+PASS Failed update preserves last good forecast
+PASS Twelve city storage limit
+PASS Notification labels cached data
+PASS Expired forecasts never appear current in notification
+PASS Offline cache and cities survive database reopen
+PASS Custom daily alarm scheduled in future
+PASS Boot receiver restores future alarm
+PASS Timezone change replans using device clock
+PASS Installed widgets enable automatic updates unless explicitly opted out
+PASS Background job is opt-in, persisted and unmetered only
+PASS Default background policy is thirty minutes
+PASS Changing frequency and data preference replaces existing job constraints
+PASS Widget RemoteViews shows exact last successful refresh time
+PASS Widget exposes feels-like wind and humidity with units
+PASS Widget daily table shows condition and high before low
+PASS Default widget size leaves readable space for three forecast rows
+PASS Widget second page advances to fourth future day
+PASS Missing forecast has no fabricated measurements or daily predictions
+PASS Expired widget clears old current temperature
+PASS Unknown widget ID cannot request private widget actions
+PASS Opt-out cancels background job
+PASS Notification permission is respected on this Android version
+PASS Notification denied state handled without changing settings
+PASS No GPS, messaging or payment permission
+PASS Activity renders isolated fixture city
+PASS UI identifies hourly forecast instead of observation
+PASS Hourly forecast UI renders
+OK (38 Android checks), API 35. All forecast data is test fixture; no live API claim.

@@ -1,4 +1,16 @@
-# Test sonuçları — HavaPusulası 1.1.0
+# Test sonuçları — HavaPusulası 1.2.0
+
+## 1.2.0 — ayrıntılı widget ve günlük tahmin tablosu
+
+- Gradle/JDK/SDK önceki sürümle aynı. 30 birim testi, 0 hata. Lint 0 sorun; debug APK ve test APK başarılı.
+- Android 11 (API 30) ve Android 15 (API 35) üzerinde güncellemeyle kurulum, **38’er instrumentation kontrolü** geçti.
+- Widget gerçek RemoteViews olarak oluşturuldu: hissedilen 21°C, rüzgâr 16 km/sa, nem %55; durum ve yüksek/düşük 24° / 14° alanları işaretli test verileriyle doğrulandı. 280 × 430 dp ölçümünde üç günlük satırlar için okunabilir alan kontrol edildi.
+- İkinci sayfa dördüncü gelecek günden başlıyor; şehir saat diliminde bugünü/geçmişi dışlama ve en fazla altı gün sınırı birim testinde doğrulandı. Eksik veride ölçüm/tahmin uydurulmadığı, süresi dolmuş sıcaklığın temizlendiği test edildi.
+- Önizleme `ekranlar/widget-expanded-test.png`, testte çizilen görünümün görüntüsüdür; açıkça TEST VERİSİ etiketlidir. TextClock tarih alanı gerçek başlatıcıya bağlanınca sistem tarafından güncellenir. Bu görüntü canlı hava kanıtı değildir.
+- Önceki gerçek widget ekleme, gövdeden uygulama açma ve alarm/reboot kontrolleri aşağıda tarihsel kayıt olarak korunur. Bu turda başlatıcıda elle boyutlandırma ve fiziksel Xiaomi testi tekrarlanmadı. Android başlatıcısının eski widget boyutunu koruması nedeniyle kullanıcı uzun basıp büyütmelidir.
+- versionCode 5 / versionName 1.2.0, aynı debug imzası. Canlı API erişimi bulut ağ engeli nedeniyle doğrulanamadı; fiziksel cihaz ve büyük yazı ölçeği kontrolü hâlâ yapılmalıdır.
+
+## 1.1.0 kayıtları
 
 ## 1.1.0 — arayüz ve widget’tan uygulama açılışı
 

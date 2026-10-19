@@ -55,3 +55,5 @@ JobService yalnızca Android'in `BIND_JOB_SERVICE` izniyle çağrılabilir. Alar
 Bu tablolar ve puanlar **v1.0'da çalışıyor diye sunulmaz**; sonraki sürüm planıdır. İlk sürümün kişisel/anahtarsız koşulları korunur.
 
 1.0.2: `Forecast.lastUpdated` son başarılı indirme anını telefon saat diliminde HH:mm gösterir; farklı günde tarih eklenir. Widget güncellemesi bu anı değiştirmez. `RefreshJob.enabled` widget varlığını varsayılan olarak kullanır; açıkça kaydedilmiş kapatma tercihini korur. Android durdurmalarında geçerli iş yeniden denenebilir.
+
+1.2: `Forecast.futureDays` şehir saat dilimindeki bugünü/geçmişi dışlar, en fazla altı gün döndürür. Widget üç satırlık iki sayfa kullanır; sayfa tercihi widget kimliğine bağlıdır. NEXT özel broadcast’i yalnızca bu uygulamaya ait geçerli widget kimliğini kabul eder. Sayfa değiştirmek ağ çağrısı yapmaz; widget silinince sayfa tercihi de temizlenir. Yeni servis/izin veya bağımlılık eklenmez.

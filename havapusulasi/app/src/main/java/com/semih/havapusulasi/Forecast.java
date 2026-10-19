@@ -67,6 +67,13 @@ final class Forecast {
     return out;
   }
 
+  List<Day> futureDays(long now) {
+    LocalDate today = Instant.ofEpochMilli(now).atZone(ZoneId.of(zone)).toLocalDate();
+    List<Day> out = new ArrayList<>();
+    for (Day day : days) if (day.date.isAfter(today) && out.size() < 6) out.add(day);
+    return out;
+  }
+
   Hour current(long now) {
     for (Hour h : hours) if (h.at <= now && now - h.at < 3600_000L) return h;
     return null;

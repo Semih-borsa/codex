@@ -334,6 +334,66 @@ public final class WeatherInstrumentation extends Instrumentation {
                 text(freshView, "22°")
                     && text(freshView, f.lastUpdated(now, java.time.ZoneId.systemDefault())),
                 "Widget RemoteViews shows exact last successful refresh time");
+            check(
+                text(freshView, "Hissedilen\n21°C")
+                    && text(freshView, "Rüzgâr\n16 km/sa")
+                    && text(freshView, "Nem\n55%"),
+                "Widget exposes feels-like wind and humidity with units");
+            check(
+                text(freshView, "24° / 14°") && text(freshView, "Parçalı bulutlu"),
+                "Widget daily table shows condition and high before low");
+            freshView.measure(
+                View.MeasureSpec.makeMeasureSpec(
+                    (int) (280 * c.getResources().getDisplayMetrics().density),
+                    View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(
+                    (int) (430 * c.getResources().getDisplayMetrics().density),
+                    View.MeasureSpec.EXACTLY));
+            freshView.layout(0, 0, freshView.getMeasuredWidth(), freshView.getMeasuredHeight());
+            check(
+                freshView.findViewById(R.id.widget_forecast_rows).getHeight()
+                    >= (int) (90 * c.getResources().getDisplayMetrics().density),
+                "Default widget size leaves readable space for three forecast rows");
+            try {
+              android.graphics.Bitmap preview =
+                  android.graphics.Bitmap.createBitmap(
+                      freshView.getMeasuredWidth(),
+                      freshView.getMeasuredHeight(),
+                      android.graphics.Bitmap.Config.ARGB_8888);
+              freshView.draw(new android.graphics.Canvas(preview));
+              try (FileOutputStream output =
+                  new FileOutputStream(
+                      new File(
+                          c.getFilesDir(),
+                          "widget-expanded-api-" + Build.VERSION.SDK_INT + ".png"))) {
+                preview.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, output);
+              }
+            } catch (IOException e) {
+              throw new RuntimeException(e);
+            }
+            WeatherWidget.prefs(isolated).edit().putInt("page_991", 1).commit();
+            View secondPage =
+                WeatherWidget.views(isolated, 991, sampleCity, f, now, "", false)
+                    .apply(c, new FrameLayout(c));
+            String fourthDate =
+                f.futureDays(now)
+                    .get(3)
+                    .date
+                    .format(java.time.format.DateTimeFormatter.ofPattern("d MMM EEE", Forecast.TR));
+            check(
+                ((TextView) secondPage.findViewById(R.id.widget_day_date_0))
+                    .getText()
+                    .toString()
+                    .equals(fourthDate),
+                "Widget second page advances to fourth future day");
+            View emptyWidget =
+                WeatherWidget.views(c, 991, sampleCity, null, now, "", false)
+                    .apply(c, new FrameLayout(c));
+            check(
+                text(emptyWidget, "Hissedilen\n—")
+                    && text(emptyWidget, "Rüzgâr\n—")
+                    && text(emptyWidget, "Gelecek günlere ait kayıt yok"),
+                "Missing forecast has no fabricated measurements or daily predictions");
             android.widget.RemoteViews expired =
                 WeatherWidget.views(c, 991, sampleCity, f, now + 10 * 86400_000L, "", true);
             View expiredView = expired.apply(c, new FrameLayout(c));

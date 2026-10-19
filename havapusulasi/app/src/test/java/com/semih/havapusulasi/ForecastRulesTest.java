@@ -183,4 +183,27 @@ public class ForecastRulesTest {
     assertEquals("Son yenileme: 08:47", sample(at).lastUpdated(at, ZoneId.of("UTC")));
     assertEquals("Son yenileme: 11:47", sample(at).lastUpdated(at, ZoneId.of("Europe/Istanbul")));
   }
+
+  @Test
+  public void widgetForecastUsesCityDateAndSkipsToday() {
+    long at = Instant.parse("2026-10-19T22:30:00Z").toEpochMilli();
+    List<Forecast.Day> days = new ArrayList<>();
+    for (int i = 0; i < 9; i++)
+      days.add(new Forecast.Day(LocalDate.of(2026, 10, 19).plusDays(i), 14.0, 24.0, 2));
+    Forecast f = new Forecast("Europe/Istanbul", at, Collections.emptyList(), days);
+    assertEquals(LocalDate.of(2026, 10, 21), f.futureDays(at).get(0).date);
+    assertEquals(6, f.futureDays(at).size());
+  }
+
+  @Test
+  public void expiredDailyForecastDoesNotReusePastDates() {
+    Forecast f =
+        new Forecast(
+            "UTC",
+            now,
+            Collections.emptyList(),
+            Collections.singletonList(
+                new Forecast.Day(LocalDate.of(2026, 10, 17), null, null, null)));
+    assertTrue(f.futureDays(now).isEmpty());
+  }
 }

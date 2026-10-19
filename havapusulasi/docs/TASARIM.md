@@ -26,3 +26,7 @@ Emülatör ekran görüntüleri gerçek uygulama çıktısıdır; test tahminler
 ## Gerçek emülatör ekranları
 
 [Açık ana ekran](ekranlar/home-light.png) · [Koyu ana ekran](ekranlar/home-dark.png) · [Ayarlar](ekranlar/settings-light.png) · [Şehirler](ekranlar/cities-light.png). Bu ekranlarda henüz tahmin indirilmemiş durum gösterilir; hava verisi uydurulmaz.
+
+## 1.2 ayrıntılı widget
+
+280 × 430 dp önerilen alan; 250 × 300 dp minimum yeniden boyut. Hissedilen, rüzgâr ve nem üç sütunda; altında üç günlük tarih/durum/yüksek-düşük tablosu vardır. Altı gelecek güne iki sayfada erişilir. Sonraki düğmesi ayrı eylemdir; diğer bilgi alanları uygulamayı açar. 360 dp altı yükseklikte tablo yerine büyütme yönlendirmesi gösterilir. Günlük satırlar sabit 36 dp’dir; katmanlı ağırlıklarla tekrar ölçümden kaçınılır. Eksik ve eski veri kuralları korunur.

@@ -32,7 +32,17 @@
     "city_per_widget": true,
     "follow_app_city": true,
     "cache_display_interval_minutes": 30,
-    "last_update_format": "HH:mm (device timezone; date added for previous days)"
+    "last_update_format": "HH:mm (device timezone; date added for previous days)",
+    "feels_like": true,
+    "wind": true,
+    "humidity": true,
+    "future_days_limit": 6,
+    "future_days_per_page": 3,
+    "recommended_size_dp": {
+      "width": 280,
+      "height": 430
+    },
+    "daily_forecast_min_height_dp": 360
   },
   "api_key_required": false
 }
