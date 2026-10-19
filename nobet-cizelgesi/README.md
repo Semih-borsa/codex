@@ -1,16 +1,18 @@
-# Nöbet Çizelgesi 1.11 — Android
+# Nöbet Çizelgesi 2.0 — Android
+
+**Yeni arayüz:** Bütçe Takip’ten ilham alan kurumsal mavi özet kartı, çizgi simgeler, yüzen alt menü, personel kartları ve açık/koyu tema. [Ekran görüntüleri](docs/TASARIM-2.0.md)
 
 Çevrimdışı personel, görev yeri, mazeret ve haftalık nöbet planlama uygulaması.
 
-[APK 1.11 indir](../downloads/NobetCizelgesi-1.11.apk) · [Android Studio ZIP](../downloads/NobetCizelgesi-Android-Studio.zip) · [Test sonuçları](docs/TESTLER.md)
+[APK 2.0 indir](../downloads/NobetCizelgesi-2.0.apk) · [Android Studio ZIP](../downloads/NobetCizelgesi-Android-Studio.zip) · [Test sonuçları](docs/TESTLER.md)
 
-Android 8.0 ve üzeri. Önceki sürümlerden biri kuruluysa **uygulamayı kaldırmadan** 1.11 APK'sını açarak güncelleyin. Aynı paket adı ve imza kullanılır; eski kayıtlar okunur. Kaldırmak veya uygulama verilerini silmek kayıtları siler.
+Android 8.0 ve üzeri. Önceki sürümlerden biri kuruluysa **uygulamayı kaldırmadan** 2.0 APK'sını açarak güncelleyin. Aynı paket adı ve imza kullanılır; eski kayıtlar okunur. Kaldırmak veya uygulama verilerini silmek kayıtları siler.
 
 ## Hafta sonu dönüş önceliği
 
 İzin veya raporun bitmesi tek başına öncelik oluşturmaz. Personelin hafta sonu sırası mazeret süresinde henüz gelmediyse normal sırası korunur. Sırası gelmiş, mazereti nedeniyle atlanmış ve sonraki kişi atanmışsa, mazereti bittikten sonraki ilk uygun hafta sonu önceliklidir. Sonrasında normal döngü kaldığı yerden devam eder. Örnek: sıra A/B/C/D/E; A raporlu olduğu için B atanır, A dönünce A atanır, ardından C devam eder. E aynı dönemde izinden dönse bile henüz sırası atlanmadıysa öne geçmez.
 
-## 1.11 yenilikleri
+## Manuel mazeret istisnaları
 
 Kalemden mazeretli/kısıtlı personeli elle seçince **Mazeret / Kısıt İstisnası** uyarısı açılır. Kişi, tarih, görev yeri ve çakışan bütün mazeret/kısıt kayıtları gösterilir. **Onayla** yalnız o görev için istisna verir; **Vazgeç** listeyi değiştirmez. Tarihli izin/rapor, genel kısıt ve haftalık gün kısıtları desteklenir. Aynı gün çoklu yer veya haftalık sınır da varsa aynı teyitte belirtilir. Ardından çizelge değişikliklerini kaydedin.
 

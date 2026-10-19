@@ -1,6 +1,8 @@
-# Nöbet Çizelgesi 1.11
+# Nöbet Çizelgesi 2.0
 
-- [APK 1.11 indir](NobetCizelgesi-1.11.apk)
+**Yeni arayüz:** Bütçe Takip’ten ilham alan kurumsal mavi özet kartı, çizgi simgeler, yüzen alt menü, personel kartları ve açık/koyu tema. [Ekran görüntüleri](../nobet-cizelgesi/docs/TASARIM-2.0.md)
+
+- [APK 2.0 indir](NobetCizelgesi-2.0.apk)
 - [Güncel APK](NobetCizelgesi.apk)
 - [Android Studio kaynak ZIP](NobetCizelgesi-Android-Studio.zip)
 - [Kullanım](../nobet-cizelgesi/README.md) · [Testler](../nobet-cizelgesi/docs/TESTLER.md)

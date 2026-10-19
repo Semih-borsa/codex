@@ -336,13 +336,14 @@ public class SmokeRunner extends Instrumentation {
                 () -> {
                   android.view.View root = activity.getWindow().getDecorView();
                   android.widget.TextView settings = findText(root, "Ayarlar");
-                  truth(
-                      settings != null
-                          && settings.getCurrentTextColor() == android.graphics.Color.WHITE);
-                  truth(
-                      settings.getBackgroundTintList().getDefaultColor()
-                          == android.graphics.Color.rgb(42, 111, 177));
+                  truth(settings != null && settings.getCompoundDrawables()[1] != null);
                   settings.performClick();
+                  android.widget.TextView selectedTab =
+                      (android.widget.TextView)
+                          activity.getWindow().getDecorView().findViewWithTag("nav-4");
+                  truth(
+                      selectedTab.isSelected()
+                          && selectedTab.getCurrentTextColor() == android.graphics.Color.WHITE);
                   truth(
                       findText(activity.getWindow().getDecorView(), "Hafta Sonu Nöbet Sırası")
                           != null);
@@ -445,7 +446,7 @@ public class SmokeRunner extends Instrumentation {
               startActivitySync(
                   new Intent(target, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
           try {
-            waitForIdleSync();
+            waitForFrames(activity);
             runOnMainSync(
                 () -> {
                   try {
@@ -473,22 +474,30 @@ public class SmokeRunner extends Instrumentation {
                     for (Place place : statisticPlaces(sample))
                       truth(findText(root, place.name) != null);
                     truth(findText(root, "A\nPersonel") == null);
-                    for (int width : new int[] {280, 320, 360, 600}) {
-                      float density = activity.getResources().getDisplayMetrics().density;
-                      root.measure(
-                          android.view.View.MeasureSpec.makeMeasureSpec(
-                              (int) (width * density), android.view.View.MeasureSpec.EXACTLY),
-                          android.view.View.MeasureSpec.makeMeasureSpec(
-                              (int) (800 * density), android.view.View.MeasureSpec.EXACTLY));
-                      root.layout(0, 0, root.getMeasuredWidth(), root.getMeasuredHeight());
-                      checkStatisticsBounds(root);
-                    }
-                    root.requestLayout();
+
                   } catch (ReflectiveOperationException e) {
                     throw new AssertionError(e);
                   }
                 });
-            waitForIdleSync();
+            waitForFrames(activity);
+            // Each viewport is a separate UI operation so focus/input can be delivered between
+            // synthetic stress layouts on the software-emulated device.
+            for (int width : new int[] {280, 320, 360, 600}) {
+              runOnMainSync(
+                  () -> {
+                    android.view.View root = activity.getWindow().getDecorView();
+                    float density = activity.getResources().getDisplayMetrics().density;
+                    root.measure(
+                        android.view.View.MeasureSpec.makeMeasureSpec(
+                            (int) (width * density), android.view.View.MeasureSpec.EXACTLY),
+                        android.view.View.MeasureSpec.makeMeasureSpec(
+                            (int) (800 * density), android.view.View.MeasureSpec.EXACTLY));
+                    root.layout(0, 0, root.getMeasuredWidth(), root.getMeasuredHeight());
+                    checkStatisticsBounds(root);
+                    root.requestLayout();
+                  });
+              waitForFrames(activity);
+            }
             android.graphics.Bitmap screenshot = getUiAutomation().takeScreenshot();
             if (screenshot != null) {
               try (FileOutputStream stream =
@@ -892,7 +901,7 @@ public class SmokeRunner extends Instrumentation {
                     truth(
                         scroll.getScrollY() > 0
                             && Math.abs(day.getTop() - scroll.getScrollY() - offset[0]) <= 2);
-                    truth(findText(day, sample.placeName(BRANCH) + ": —  ✎") != null);
+                    truth(findText(day, sample.placeName(BRANCH) + ": —") != null);
                     findText(activity.getWindow().getDecorView(), "Personel").performClick();
                   } catch (ReflectiveOperationException e) {
                     throw new AssertionError(e);
@@ -1176,6 +1185,149 @@ public class SmokeRunner extends Instrumentation {
                   if (dialog[0] != null) dialog[0].dismiss();
                   activity.finish();
                 });
+          }
+        });
+    check(
+        "Modern light and dark screens retain navigation and render synthetic design previews",
+        () -> {
+          android.content.SharedPreferences prefs = target.getSharedPreferences("appearance", 0);
+          boolean had = prefs.contains("theme");
+          int previous = prefs.getInt("theme", 0);
+          File previews = new File(isolated, "redesign");
+          previews.mkdirs();
+          try {
+            for (int mode : new int[] {1, 2}) {
+              truth(prefs.edit().putInt("theme", mode).commit());
+              Activity activity =
+                  startActivitySync(
+                      new Intent(target, MainActivity.class)
+                          .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+              try {
+                waitForFrames(activity);
+                runOnMainSync(
+                    () -> {
+                      try {
+                        State sample = new State();
+                        String[] names = {
+                          "Ahmet Yılmaz", "Elif Demir", "Mehmet Kaya", "Zeynep Arslan", "Can Öztürk"
+                        };
+                        for (int i = 0; i < names.length; i++)
+                          sample.people.add(new Person("preview" + i, names[i]));
+                        sample.place(WORK).name = "Merkez";
+                        sample.place(BRANCH).name = "Çarşı Şubesi";
+                        sample.places.add(new Place("preview-branch", "Destek Şubesi", 31, 1));
+                        approve(sample, generate(sample, mon));
+                        sample.leaves.add(
+                            new Leave(
+                                "preview2",
+                                ALL,
+                                mon.plusWeeks(1),
+                                mon.plusWeeks(1).plusDays(4),
+                                "Senelik İzin"));
+                        sample.leaves.add(
+                            new Leave(
+                                "preview3", BRANCH, mon, LocalDate.MAX, "Haftalık Kısıt", 64));
+                        java.lang.reflect.Field stateField =
+                            MainActivity.class.getDeclaredField("state");
+                        stateField.setAccessible(true);
+                        stateField.set(activity, sample);
+                        java.lang.reflect.Field selected =
+                            MainActivity.class.getDeclaredField("selected");
+                        selected.setAccessible(true);
+                        selected.set(activity, mon);
+                        java.lang.reflect.Field screen =
+                            MainActivity.class.getDeclaredField("screen");
+                        screen.setAccessible(true);
+                        screen.setInt(activity, 0);
+                        java.lang.reflect.Method render =
+                            MainActivity.class.getDeclaredMethod("render");
+                        render.setAccessible(true);
+                        render.invoke(activity);
+                      } catch (ReflectiveOperationException e) {
+                        throw new AssertionError(e);
+                      }
+                    });
+                String[] pages = {"home", "people", "leave", "statistics", "settings"};
+                for (int page = 0; page < 5; page++) {
+                  final int index = page;
+                  runOnMainSync(
+                      () ->
+                          activity
+                              .getWindow()
+                              .getDecorView()
+                              .findViewWithTag("nav-" + index)
+                              .performClick());
+                  waitForFrames(activity);
+                  runOnMainSync(
+                      () -> {
+                        android.view.View root = activity.getWindow().getDecorView();
+                        android.view.ViewGroup nav =
+                            (android.view.ViewGroup) root.findViewWithTag("bottom-navigation");
+                        truth(nav != null && nav.getChildCount() == 5);
+                        for (int tab = 0; tab < 5; tab++) {
+                          android.widget.Button item = (android.widget.Button) nav.getChildAt(tab);
+                          truth(item.isSelected() == (tab == index));
+                          truth(
+                              item.getCompoundDrawables()[1] != null
+                                  && item.getWidth() > 0
+                                  && item.getRight() <= nav.getWidth());
+                          if (tab == index)
+                            truth(item.getCurrentTextColor() == android.graphics.Color.WHITE);
+                        }
+                        truth(root.findViewWithTag("theme-control") != null);
+                        if (index == 0) truth(root.findViewWithTag("week-hero") != null);
+                      });
+                  // Allow the emulated GPU compositor to present the completed frame.
+                  Thread.sleep(1000);
+                  android.graphics.Bitmap screenshot = getUiAutomation().takeScreenshot();
+                  truth(screenshot != null);
+                  try (FileOutputStream stream =
+                      new FileOutputStream(
+                          new File(
+                              previews, pages[page] + (mode == 1 ? "-light.png" : "-dark.png")))) {
+                    screenshot.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, stream);
+                  }
+                  screenshot.recycle();
+                }
+                runOnMainSync(
+                    () ->
+                        activity
+                            .getWindow()
+                            .getDecorView()
+                            .findViewWithTag("nav-0")
+                            .performClick());
+                waitForFrames(activity);
+                runOnMainSync(
+                    () -> {
+                      try {
+                        java.lang.reflect.Field scrollField =
+                            MainActivity.class.getDeclaredField("pageScroll");
+                        scrollField.setAccessible(true);
+                        android.widget.ScrollView scroll =
+                            (android.widget.ScrollView) scrollField.get(activity);
+                        scroll.scrollTo(0, scroll.findViewWithTag("roster-day-" + mon).getTop());
+                      } catch (ReflectiveOperationException e) {
+                        throw new AssertionError(e);
+                      }
+                    });
+                waitForFrames(activity);
+                // Allow the emulated GPU compositor to present the completed frame.
+                Thread.sleep(1000);
+                android.graphics.Bitmap screenshot = getUiAutomation().takeScreenshot();
+                truth(screenshot != null);
+                try (FileOutputStream stream =
+                    new FileOutputStream(
+                        new File(previews, mode == 1 ? "roster-light.png" : "roster-dark.png"))) {
+                  screenshot.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, stream);
+                }
+                screenshot.recycle();
+              } finally {
+                runOnMainSync(activity::finish);
+              }
+            }
+          } finally {
+            if (had) prefs.edit().putInt("theme", previous).commit();
+            else prefs.edit().remove("theme").commit();
           }
         });
     Bundle result = new Bundle();

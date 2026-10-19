@@ -8,7 +8,6 @@ import android.app.DatePickerDialog;
 import android.content.*;
 import android.graphics.Color;
 import android.graphics.Typeface;
-import android.graphics.drawable.GradientDrawable;
 import android.os.*;
 import android.view.*;
 import android.widget.*;
@@ -36,6 +35,8 @@ public final class MainActivity extends Activity {
       cardColor = Color.WHITE,
       warningColor = Color.rgb(155, 83, 0);
   private int themeMode;
+  private boolean darkMode;
+  private int lineColor = 0xFFDCE7F4;
   private final DateTimeFormatter shortDate = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
   @Override
@@ -47,12 +48,14 @@ public final class MainActivity extends Activity {
                 && (getResources().getConfiguration().uiMode
                         & android.content.res.Configuration.UI_MODE_NIGHT_MASK)
                     == android.content.res.Configuration.UI_MODE_NIGHT_YES);
+    darkMode = dark;
     setTheme(dark ? R.style.AppThemeDark : R.style.AppTheme);
     if (dark) {
       ink = Color.rgb(231, 238, 247);
       teal = Color.rgb(137, 187, 235);
       muted = Color.rgb(174, 189, 209);
-      surface = Color.rgb(16, 27, 43);
+      surface = 0xFF0E1829;
+      lineColor = 0xFF293D56;
       cardColor = Color.rgb(26, 42, 62);
       warningColor = Color.rgb(255, 194, 112);
     }
@@ -108,27 +111,67 @@ public final class MainActivity extends Activity {
     v.setText(str);
     v.setTextSize(size);
     v.setTextColor(color);
-    v.setPadding(0, dp(5), 0, dp(5));
+    v.setPadding(0, dp(3), 0, dp(3));
+    v.setFontFeatureSettings("kern");
     return v;
   }
 
-  private void heading(String s) {
-    TextView v = text(s, 22, ink);
-    v.setTypeface(null, Typeface.BOLD);
-    body.addView(v);
+  private LinearLayout column() {
+    LinearLayout view = new LinearLayout(this);
+    view.setOrientation(LinearLayout.VERTICAL);
+    return view;
   }
 
-  private void note(String s) {
-    body.addView(text(s, 14, muted));
+  private LinearLayout row() {
+    LinearLayout view = new LinearLayout(this);
+    view.setGravity(Gravity.CENTER_VERTICAL);
+    return view;
   }
 
-  private Button button(String s, Runnable action) {
+  private LinearLayout panel() {
+    LinearLayout view = column();
+    view.setPadding(dp(14), dp(14), dp(14), dp(14));
+    view.setBackground(Visuals.surface(cardColor, dp(20), lineColor));
+    LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
+    lp.setMargins(0, dp(5), 0, dp(7));
+    body.addView(view, lp);
+    return view;
+  }
+
+  private TextView bold(String value, int size, int color) {
+    TextView view = text(value, size, color);
+    view.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+    return view;
+  }
+
+  private void heading(String value) {
+    TextView view = bold(value, 20, ink);
+    LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
+    lp.topMargin = dp(12);
+    lp.bottomMargin = dp(5);
+    body.addView(view, lp);
+  }
+
+  private void note(String value) {
+    TextView view = text(value, 12, muted);
+    view.setLineSpacing(dp(2), 1);
+    body.addView(view);
+  }
+
+  private Button button(String value, Runnable action) {
     Button b = new Button(this);
-    b.setText(s);
-    b.setTextSize(14);
-    b.setTextColor(Color.WHITE);
-    b.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(42, 111, 177)));
+    b.setText(value);
     b.setAllCaps(false);
+    b.setTextSize(13);
+    b.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+    b.setTextColor(Color.WHITE);
+    b.setBackgroundTintList(null);
+    b.setStateListAnimator(null);
+    b.setElevation(0);
+    b.setBackground(Visuals.touch(0xFF2A6FB1, dp(14), 0));
+    b.setMinHeight(dp(48));
+    b.setMinimumHeight(dp(48));
+    b.setPadding(dp(14), dp(8), dp(14), dp(8));
     b.setOnClickListener(
         v -> {
           if (failed) {
@@ -140,8 +183,70 @@ public final class MainActivity extends Activity {
     return b;
   }
 
-  private void action(String s, Runnable r) {
-    body.addView(button(s, r), new LinearLayout.LayoutParams(-1, dp(52)));
+  private void soft(Button b, String icon) {
+    b.setTextColor(ink);
+    b.setBackground(Visuals.touch(cardColor, dp(14), lineColor));
+    b.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
+    b.setCompoundDrawablesWithIntrinsicBounds(
+        new Visuals.Icon(icon, teal, dp(19)), null, new Visuals.Icon("right", muted, dp(14)), null);
+    b.setCompoundDrawablePadding(dp(10));
+  }
+
+  private void action(String value, Runnable action) {
+    actionTo(body, value, action);
+  }
+
+  private void noteTo(LinearLayout parent, String value) {
+    TextView view = text(value, 12, muted);
+    view.setLineSpacing(dp(2), 1);
+    parent.addView(view);
+  }
+
+  private void actionTo(LinearLayout parent, String value, Runnable action) {
+    Button b = button(value, action);
+    boolean primary =
+        value.startsWith("+")
+            || value.startsWith("Otomatik")
+            || value.contains("Kaydet")
+            || value.contains("Onayla")
+            || value.contains("PDF");
+    String icon =
+        value.contains("PDF")
+            ? "pdf"
+            : value.contains("Kaydet") || value.contains("Onayla")
+                ? "check"
+                : value.startsWith("+")
+                    ? "plus"
+                    : value.startsWith("Otomatik")
+                        ? "spark"
+                        : value.contains("Sıra")
+                            ? "people"
+                            : value.contains("Şube") || value.contains("Kuralları")
+                                ? "building"
+                                : value.contains("Mazeret") ? "leave" : "edit";
+    if (primary) {
+      b.setCompoundDrawablesWithIntrinsicBounds(
+          new Visuals.Icon(icon, Color.WHITE, dp(18)), null, null, null);
+      b.setCompoundDrawablePadding(dp(8));
+    } else soft(b, icon);
+    LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
+    lp.setMargins(0, dp(4), 0, dp(4));
+    parent.addView(b, lp);
+  }
+
+  private void appearance() {
+    new AlertDialog.Builder(this)
+        .setTitle("Kurumsal Renk Teması")
+        .setSingleChoiceItems(
+            new String[] {"Sistem Teması", "Açık • Kurumsal Mavi", "Koyu • Kurumsal Mavi"},
+            themeMode,
+            (dialog, which) -> {
+              getSharedPreferences("appearance", 0).edit().putInt("theme", which).apply();
+              dialog.dismiss();
+              recreate();
+            })
+        .setNegativeButton("Vazgeç", null)
+        .show();
   }
 
   private void toast(String s) {
@@ -191,80 +296,97 @@ public final class MainActivity extends Activity {
   }
 
   private void render() {
-    root = new LinearLayout(this);
-    root.setOrientation(LinearLayout.VERTICAL);
+    root = column();
     root.setBackgroundColor(surface);
-    root.setPadding(dp(18), dp(12), dp(18), dp(8));
     root.setOnApplyWindowInsetsListener(
         (v, insets) -> {
           root.setPadding(
-              dp(18),
-              dp(12) + insets.getSystemWindowInsetTop(),
-              dp(18),
-              dp(8) + insets.getSystemWindowInsetBottom());
+              0, insets.getSystemWindowInsetTop(), 0, insets.getSystemWindowInsetBottom());
           return insets;
         });
-    TextView logo = text("Nöbet Çizelgesi", 27, ink);
-    logo.setTypeface(null, Typeface.BOLD);
-    root.addView(logo);
-    root.addView(text("Planla • Onayla • Adil Dağıt", 13, muted));
-    root.addView(
-        button(
-            "Görünüm: " + (themeMode == 0 ? "Sistem" : themeMode == 1 ? "Açık" : "Koyu"),
-            () ->
-                new AlertDialog.Builder(this)
-                    .setTitle("Kurumsal Renk Teması")
-                    .setSingleChoiceItems(
-                        new String[] {"Sistem Teması", "Açık • Lacivert", "Koyu • Lacivert"},
-                        themeMode,
-                        (dialog, which) -> {
-                          getSharedPreferences("appearance", 0)
-                              .edit()
-                              .putInt("theme", which)
-                              .apply();
-                          dialog.dismiss();
-                          recreate();
-                        })
-                    .setNegativeButton("Vazgeç", null)
-                    .show()));
-    tabs = new LinearLayout(this);
+    LinearLayout header = row();
+    header.setPadding(dp(18), dp(9), dp(18), dp(8));
+    ImageView mark = new ImageView(this);
+    mark.setImageDrawable(new Visuals.Icon("calendar", Color.WHITE, dp(23)));
+    mark.setPadding(dp(9), dp(9), dp(9), dp(9));
+    mark.setBackground(Visuals.surface(0xFF2A6FB1, dp(13), 0));
+    header.addView(mark, new LinearLayout.LayoutParams(dp(42), dp(42)));
+    LinearLayout brand = column();
+    brand.setPadding(dp(11), 0, 0, 0);
+    brand.addView(bold("Nöbet Çizelgesi", 20, ink));
+    String[] subtitles = {
+      "Haftalık Planlama",
+      "Ekip Yönetimi",
+      "Uygunluk Ve Kısıtlar",
+      "Görev Dağılımı",
+      "Uygulama Ayarları"
+    };
+    brand.addView(text(subtitles[screen], 11, muted));
+    header.addView(brand, new LinearLayout.LayoutParams(0, -2, 1));
+    Button theme = button("", this::appearance);
+    theme.setTag("theme-control");
+    theme.setContentDescription(
+        "Görünüm: " + (themeMode == 0 ? "Sistem" : themeMode == 1 ? "Açık" : "Koyu"));
+    theme.setTooltipText("Renk Teması");
+    theme.setMinWidth(0);
+    theme.setMinimumWidth(0);
+    theme.setPadding(dp(12), dp(12), dp(12), dp(12));
+    theme.setCompoundDrawablesWithIntrinsicBounds(
+        new Visuals.Icon("moon", teal, dp(22)), null, null, null);
+    theme.setBackground(Visuals.touch(cardColor, dp(16), lineColor));
+    header.addView(theme, new LinearLayout.LayoutParams(dp(48), dp(48)));
+    root.addView(header);
+    pageScroll = new ScrollView(this);
+    pageScroll.setClipToPadding(false);
+    pageScroll.setVerticalScrollBarEnabled(false);
+    body = column();
+    body.setPadding(dp(18), dp(5), dp(18), dp(22));
+    pageScroll.setFillViewport(true);
+    pageScroll.addView(body);
+    root.addView(pageScroll, new LinearLayout.LayoutParams(-1, 0, 1));
+    notice = text(noticeText, 13, Color.WHITE);
+    notice.setPadding(dp(14), dp(12), dp(14), dp(12));
+    notice.setBackground(Visuals.surface(0xFF2A6FB1, dp(16), 0));
+    notice.setVisibility(noticeText.isEmpty() ? View.GONE : View.VISIBLE);
+    LinearLayout.LayoutParams noticeParams = new LinearLayout.LayoutParams(-1, -2);
+    noticeParams.setMargins(dp(18), 0, dp(18), dp(6));
+    root.addView(notice, noticeParams);
+    tabs = row();
+    tabs.setPadding(dp(5), dp(5), dp(5), dp(5));
+    tabs.setBackground(Visuals.surface(cardColor, dp(24), lineColor));
+    tabs.setElevation(dp(3));
+    tabs.setTag("bottom-navigation");
     String[] titles = {"Çizelge", "Personel", "Mazeret", "İstatistik", "Ayarlar"};
+    String[] icons = {"calendar", "people", "leave", "chart", "settings"};
     for (int i = 0; i < titles.length; i++) {
-      final int idx = i;
-      Button b =
+      final int index = i;
+      Button tab =
           button(
               titles[i],
               () -> {
-                screen = idx;
+                screen = index;
                 render();
               });
-      b.setTextSize(11);
-      b.setMinWidth(0);
-      b.setMinimumWidth(0);
-      b.setPadding(dp(3), 0, dp(3), 0);
-      if (i == screen) {
-        b.setTypeface(null, Typeface.BOLD);
-        b.setTextColor(Color.WHITE);
-      }
-      tabs.addView(b, new LinearLayout.LayoutParams(0, dp(52), 1));
+      tab.setTag("nav-" + i);
+      tab.setSelected(i == screen);
+      int color = i == screen ? Color.WHITE : muted;
+      tab.setTextColor(color);
+      tab.setTextSize(10);
+      tab.setMinWidth(0);
+      tab.setMinimumWidth(0);
+      tab.setMinHeight(0);
+      tab.setMinimumHeight(0);
+      tab.setPadding(0, dp(5), 0, dp(3));
+      tab.setGravity(Gravity.CENTER);
+      tab.setBackground(Visuals.touch(i == screen ? 0xFF2A6FB1 : Color.TRANSPARENT, dp(19), 0));
+      tab.setCompoundDrawablesWithIntrinsicBounds(
+          null, new Visuals.Icon(icons[i], color, dp(21)), null, null);
+      tab.setCompoundDrawablePadding(dp(3));
+      tabs.addView(tab, new LinearLayout.LayoutParams(0, dp(62), 1));
     }
-    root.addView(tabs);
-    ScrollView scroll = new ScrollView(this);
-    pageScroll = scroll;
-    body = new LinearLayout(this);
-    body.setOrientation(LinearLayout.VERTICAL);
-    body.setPadding(0, dp(12), 0, dp(30));
-    scroll.setFillViewport(true);
-    scroll.addView(body);
-    root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1));
-    notice = text(noticeText, 14, Color.WHITE);
-    notice.setPadding(dp(12), dp(10), dp(12), dp(10));
-    GradientDrawable noticeBg = new GradientDrawable();
-    noticeBg.setColor(Color.rgb(42, 111, 177));
-    noticeBg.setCornerRadius(dp(12));
-    notice.setBackground(noticeBg);
-    notice.setVisibility(noticeText.isEmpty() ? View.GONE : View.VISIBLE);
-    root.addView(notice, new LinearLayout.LayoutParams(-1, -2));
+    LinearLayout.LayoutParams navParams = new LinearLayout.LayoutParams(-1, -2);
+    navParams.setMargins(dp(14), dp(4), dp(14), dp(9));
+    root.addView(tabs, navParams);
     setContentView(root);
     if (screen == 0) program();
     else if (screen == 1) people();
@@ -311,8 +433,135 @@ public final class MainActivity extends Activity {
             });
   }
 
+  private String proper(String value) {
+    return value.isEmpty()
+        ? value
+        : value.substring(0, 1).toUpperCase(new Locale("tr", "TR")) + value.substring(1);
+  }
+
+  private TextView chip(String value, boolean onBlue) {
+    TextView view = bold(value, 10, onBlue ? Color.WHITE : teal);
+    view.setPadding(dp(9), dp(5), dp(9), dp(5));
+    view.setBackground(
+        Visuals.surface(onBlue ? 0x20000000 : darkMode ? 0xFF233E5A : 0xFFE9F2FD, dp(20), 0));
+    return view;
+  }
+
+  private void weekHero() {
+    Week week = draft != null ? draft : saved();
+    LinearLayout hero = column();
+    hero.setTag("week-hero");
+    hero.setPadding(dp(18), dp(16), dp(18), dp(16));
+    hero.setBackground(new Visuals.Hero(dp(24)));
+    LinearLayout top = row();
+    TextView caption = bold("HAFTALIK NÖBET PLANI", 10, 0xFFDCEBFF);
+    caption.setLetterSpacing(.09f);
+    top.addView(caption, new LinearLayout.LayoutParams(0, -2, 1));
+    top.addView(chip(draft != null ? "Taslak" : week != null ? "Onaylı" : "Yeni Plan", true));
+    hero.addView(top);
+    String person =
+        week == null
+            ? ""
+            : week.duties.stream()
+                .filter(d -> d.place.equals(WORK) && weekend(d.date))
+                .map(d -> state.name(d.person))
+                .findFirst()
+                .orElse("");
+    TextView label =
+        text(
+            person.isEmpty() ? "Dengeli Bir Hafta Planla" : "Hafta Sonu Nöbetçisi", 12, 0xFFDCEBFF);
+    label.setPadding(0, dp(14), 0, dp(1));
+    hero.addView(label);
+    hero.addView(
+        bold(
+            person.isEmpty()
+                ? (state.people.stream().anyMatch(p -> p.active)
+                    ? "Yeni Haftaya Hazırsın"
+                    : "Önce Ekibini Ekle")
+                : person,
+            23,
+            Color.WHITE));
+    LinearLayout metrics = row();
+    metrics.setPadding(0, dp(14), 0, 0);
+    String[] values = {
+      Long.toString(state.people.stream().filter(p -> p.active).count()),
+      Integer.toString(week == null ? 0 : week.duties.size()),
+      Long.toString(state.places.stream().filter(p -> !p.deleted).count())
+    };
+    String[] names = {"Aktif Personel", "Atama", "Görev Yeri"};
+    for (int i = 0; i < 3; i++) {
+      LinearLayout metric = column();
+      metric.addView(bold(values[i], 21, Color.WHITE));
+      metric.addView(text(names[i], 10, 0xFFDCEBFF));
+      metrics.addView(metric, new LinearLayout.LayoutParams(0, -2, 1));
+    }
+    hero.addView(metrics);
+    LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
+    lp.setMargins(0, dp(12), 0, dp(9));
+    body.addView(hero, lp);
+  }
+
+  private void dayHeader(LinearLayout card, LocalDate day) {
+    LinearLayout header = row();
+    LinearLayout badge = column();
+    badge.setGravity(Gravity.CENTER);
+    badge.setBackground(Visuals.surface(darkMode ? 0xFF243F5D : 0xFFEAF3FF, dp(12), 0));
+    TextView date = bold(Integer.toString(day.getDayOfMonth()), 21, teal);
+    date.setPadding(0, 0, 0, 0);
+    date.setGravity(Gravity.CENTER);
+    badge.addView(date);
+    TextView month =
+        bold(
+            day.format(DateTimeFormatter.ofPattern("MMM", new Locale("tr", "TR")))
+                .toUpperCase(new Locale("tr", "TR")),
+            9,
+            teal);
+    month.setPadding(0, 0, 0, 0);
+    month.setGravity(Gravity.CENTER);
+    badge.addView(month);
+    header.addView(badge, new LinearLayout.LayoutParams(dp(44), dp(49)));
+    LinearLayout title = column();
+    title.setPadding(dp(12), 0, dp(6), 0);
+    title.addView(
+        bold(
+            proper(
+                day.getDayOfWeek()
+                    .getDisplayName(java.time.format.TextStyle.FULL, new Locale("tr", "TR"))),
+            16,
+            ink));
+    title.addView(text(weekend(day) ? "Hafta Sonu" : "Hafta İçi", 11, muted));
+    header.addView(title, new LinearLayout.LayoutParams(0, -2, 1));
+    if (day.equals(LocalDate.now())) header.addView(chip("Bugün", false));
+    card.addView(header);
+  }
+
+  private String weekCaption() {
+    LocalDate end = selected.plusDays(6);
+    Locale tr = new Locale("tr", "TR");
+    String endText =
+        end.getDayOfMonth()
+            + " "
+            + proper(end.getMonth().getDisplayName(java.time.format.TextStyle.FULL, tr))
+            + " "
+            + end.getYear();
+    if (selected.getYear() != end.getYear())
+      return selected.getDayOfMonth()
+          + " "
+          + proper(selected.getMonth().getDisplayName(java.time.format.TextStyle.FULL, tr))
+          + " "
+          + selected.getYear()
+          + " – "
+          + endText;
+    if (selected.getMonth() != end.getMonth())
+      return selected.getDayOfMonth()
+          + " "
+          + proper(selected.getMonth().getDisplayName(java.time.format.TextStyle.FULL, tr))
+          + " – "
+          + endText;
+    return selected.getDayOfMonth() + " – " + endText;
+  }
+
   private void program() {
-    heading(range());
     LinearLayout nav = new LinearLayout(this);
     nav.addView(
         button(
@@ -344,12 +593,32 @@ public final class MainActivity extends Activity {
               render();
             }),
         new LinearLayout.LayoutParams(0, dp(52), 1));
+    nav.setBackground(Visuals.surface(cardColor, dp(18), lineColor));
+    nav.setPadding(dp(4), dp(4), dp(4), dp(4));
+    for (int i = 0; i < 3; i++) {
+      Button control = (Button) nav.getChildAt(i);
+      control.setBackground(Visuals.touch(Color.TRANSPARENT, dp(14), 0));
+      control.setTextColor(ink);
+      control.setMinWidth(0);
+      control.setMinimumWidth(0);
+      control.setPadding(dp(3), 0, dp(3), 0);
+      if (i == 1) {
+        control.setText(weekCaption());
+        control.setTextSize(12);
+        control.setContentDescription("Hafta Seç • " + range());
+        control.setLayoutParams(new LinearLayout.LayoutParams(0, dp(48), 1));
+      } else {
+        control.setText(i == 0 ? "‹" : "›");
+        control.setTextSize(26);
+        control.setContentDescription(i == 0 ? "Önceki Hafta" : "Sonraki Hafta");
+        control.setLayoutParams(new LinearLayout.LayoutParams(dp(39), dp(48)));
+      }
+    }
     body.addView(nav);
-    note(
-        "Görev yerlerinin günleri Ayarlar bölümünden belirlenir. Ana yerde seçili hafta sonu"
-            + " günleri aynı kişiye verilir; bu kişi perşembe/cuma tüm yerlerde izinli olur.");
+    weekHero();
     action("Çizelgede Gösterilecek Şubeler", () -> chooseVisiblePlaces(null));
-    note("Gizlenen şubeler yalnız çizelge/PDF'de görünmez; atamaları ve istatistikleri korunur.");
+    int shortcutStart = body.getChildCount() - 1;
+
     if (state.people.stream().noneMatch(p -> p.active)) {
       note(
           "Başlamak için Personel bölümüne 5 kişinin adını ekleyin. Sonradan ekleyebilir, pasife"
@@ -403,6 +672,29 @@ public final class MainActivity extends Activity {
                                   + " onaylayın.");
                           render();
                         })));
+    LinearLayout shortcuts = row();
+    String[] quickLabels = {"Şubeler", "Otomatik Dağıt", "Manuel Liste"};
+    String[] quickIcons = {"building", "spark", "edit"};
+    for (int i = 0; i < 3; i++) {
+      Button control = (Button) body.getChildAt(shortcutStart);
+      body.removeViewAt(shortcutStart);
+      control.setContentDescription(control.getText());
+      control.setText(quickLabels[i]);
+      control.setTextSize(11);
+      control.setGravity(Gravity.CENTER);
+      control.setMinWidth(0);
+      control.setMinimumWidth(0);
+      control.setPadding(dp(4), dp(10), dp(4), dp(9));
+      control.setCompoundDrawablesWithIntrinsicBounds(
+          null, new Visuals.Icon(quickIcons[i], i == 1 ? Color.WHITE : teal, dp(22)), null, null);
+      control.setCompoundDrawablePadding(dp(5));
+      LinearLayout.LayoutParams quickParams = new LinearLayout.LayoutParams(0, dp(79), 1);
+      quickParams.setMargins(i == 0 ? 0 : dp(6), 0, 0, 0);
+      shortcuts.addView(control, quickParams);
+    }
+    LinearLayout.LayoutParams quickParams = new LinearLayout.LayoutParams(-1, -2);
+    quickParams.bottomMargin = dp(5);
+    body.addView(shortcuts, shortcutStart, quickParams);
     Week w = draft != null ? draft : saved();
     if (w == null) {
       note("Bu hafta için henüz onaylı çizelge yok.");
@@ -425,24 +717,18 @@ public final class MainActivity extends Activity {
             .min(Comparator.naturalOrder())
             .orElse(selected.plusDays(5));
     String weekendPerson = PdfExport.person(state, w, sat, WORK);
-    note("Hafta Sonu: " + weekendPerson + "\nPerşembe / Cuma Dinlenme: " + weekendPerson);
-    DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd MMMM EEEE", new Locale("tr", "TR"));
+
     for (int i = 0; i < 7; i++) {
       LocalDate day = selected.plusDays(i);
       LinearLayout card = new LinearLayout(this);
       card.setTag("roster-day-" + day);
       card.setOrientation(LinearLayout.VERTICAL);
-      card.setPadding(dp(14), dp(10), dp(14), dp(10));
-      GradientDrawable bg = new GradientDrawable();
-      bg.setColor(cardColor);
-      bg.setCornerRadius(dp(14));
-      card.setBackground(bg);
+      card.setPadding(dp(14), dp(13), dp(14), dp(13));
+      card.setBackground(Visuals.surface(cardColor, dp(20), lineColor));
       LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
       lp.setMargins(0, dp(7), 0, dp(3));
       body.addView(card, lp);
-      TextView dayTitle = text(day.format(fmt), 16, ink);
-      dayTitle.setTypeface(null, Typeface.BOLD);
-      card.addView(dayTitle);
+      dayHeader(card, day);
       for (Place location : displayPlaces(state, w)) {
         String place = location.id;
         if ((location.deleted || !location.on(day))
@@ -450,10 +736,33 @@ public final class MainActivity extends Activity {
           continue;
         String label = location.name + ": " + PdfExport.person(state, w, day, place);
         if (location.deleted) card.addView(text(label + " (Silindi)", 14, ink));
-        else card.addView(button(label + "  ✎", () -> edit(day, place)));
+        else {
+          Button assignment = button(label, () -> edit(day, place));
+          assignment.setTextColor(ink);
+          assignment.setTextSize(13);
+          assignment.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
+          assignment.setBackground(Visuals.touch(darkMode ? 0xFF20324A : 0xFFF1F6FD, dp(12), 0));
+          assignment.setCompoundDrawablesWithIntrinsicBounds(
+              new Visuals.Icon(place.equals(WORK) ? "calendar" : "building", teal, dp(18)),
+              null,
+              new Visuals.Icon("edit", teal, dp(16)),
+              null);
+          assignment.setCompoundDrawablePadding(dp(9));
+          assignment.setContentDescription(label + ", Düzenle");
+          assignment.setTag("assignment-" + day + "-" + place);
+          LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2);
+          params.topMargin = dp(7);
+          card.addView(assignment, params);
+        }
       }
-      if (day.getDayOfWeek().getValue() == 4 || day.getDayOfWeek().getValue() == 5)
-        card.addView(text("Dinlenme: " + weekendPerson, 13, muted));
+      if (!weekendPerson.equals("—")
+          && (day.getDayOfWeek().getValue() == 4 || day.getDayOfWeek().getValue() == 5)) {
+        TextView rest = text("Dinlenme: " + weekendPerson, 11, muted);
+        rest.setCompoundDrawablesWithIntrinsicBounds(
+            new Visuals.Icon("clock", muted, dp(13)), null, null, null);
+        rest.setCompoundDrawablePadding(dp(5));
+        card.addView(rest);
+      }
     }
     for (String warning : w.warnings) body.addView(text("• " + warning, 14, warningColor));
     if (preview) {
@@ -549,7 +858,29 @@ public final class MainActivity extends Activity {
           render();
         });
     for (Person p : state.people) {
-      heading(p.name + (p.active ? "" : " · Pasif"));
+      LinearLayout card = panel();
+      LinearLayout identity = row();
+      String[] words = p.name.trim().split("\\s+");
+      String initials =
+          words[0].substring(0, 1)
+              + (words.length > 1 ? words[words.length - 1].substring(0, 1) : "");
+      TextView avatar = bold(initials.toUpperCase(new Locale("tr", "TR")), 16, teal);
+      avatar.setGravity(Gravity.CENTER);
+      avatar.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+      avatar.setBackground(Visuals.surface(darkMode ? 0xFF243E5B : 0xFFE7F1FE, dp(14), 0));
+      identity.addView(avatar, new LinearLayout.LayoutParams(dp(45), dp(45)));
+      LinearLayout title = column();
+      title.setPadding(dp(11), 0, dp(6), 0);
+      title.addView(bold(p.name, 15, ink));
+      int rank = activeWeekendIds().indexOf(p.id) + 1;
+      title.addView(
+          text(
+              rank > 0 ? "Hafta Sonu • " + rank + ". Sıra" : "Geçmiş Kayıtları Korunuyor",
+              11,
+              muted));
+      identity.addView(title, new LinearLayout.LayoutParams(0, -2, 1));
+      identity.addView(chip(p.active ? "Aktif" : "Pasif", false));
+      card.addView(identity);
       LinearLayout row = new LinearLayout(this);
       row.addView(button("Adı Düzenle", () -> personDialog(p)));
       row.addView(
@@ -576,7 +907,17 @@ public final class MainActivity extends Activity {
                           render();
                         }
                       })));
-      body.addView(row);
+      for (int i = 0; i < row.getChildCount(); i++) {
+        Button control = (Button) row.getChildAt(i);
+        soft(control, i == 0 ? "edit" : "people");
+        control.setTextSize(11);
+        control.setCompoundDrawablesWithIntrinsicBounds(
+            new Visuals.Icon(i == 0 ? "edit" : "people", teal, dp(15)), null, null, null);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, -2, 1);
+        lp.setMargins(i == 0 ? 0 : dp(5), dp(12), 0, 0);
+        control.setLayoutParams(lp);
+      }
+      card.addView(row);
     }
     note(
         "Veriler yalnız bu cihazda tutulur. Uygulamanın kaldırılması veya verilerinin silinmesi"
@@ -666,6 +1007,7 @@ public final class MainActivity extends Activity {
         "+ Mazeret / Kısıt Ekle",
         () -> leaveDialog(null, ALL, selected, selected.plusDays(6), "Senelik izin"));
     for (Leave l : state.leaves) {
+      LinearLayout card = panel();
       TextView t =
           text(
               state.name(l.person)
@@ -675,9 +1017,13 @@ public final class MainActivity extends Activity {
                   + leavePeriod(l)
                   + " • "
                   + state.placeName(l.place),
-              16,
+              14,
               ink);
-      body.addView(t);
+      t.setLineSpacing(dp(3), 1);
+      t.setCompoundDrawablesWithIntrinsicBounds(
+          new Visuals.Icon("leave", teal, dp(23)), null, null, null);
+      t.setCompoundDrawablePadding(dp(10));
+      card.addView(t);
       LinearLayout row = new LinearLayout(this);
       row.addView(button("Düzenle", () -> leaveDialog(l, l.place, l.start, l.end, l.reason)));
       row.addView(
@@ -699,7 +1045,16 @@ public final class MainActivity extends Activity {
                           render();
                         }
                       })));
-      body.addView(row);
+      for (int i = 0; i < row.getChildCount(); i++) {
+        Button control = (Button) row.getChildAt(i);
+        soft(control, i == 0 ? "edit" : "leave");
+        control.setCompoundDrawablesWithIntrinsicBounds(
+            new Visuals.Icon(i == 0 ? "edit" : "leave", teal, dp(16)), null, null, null);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, -2, 1);
+        lp.setMargins(i == 0 ? 0 : dp(6), dp(10), 0, 0);
+        control.setLayoutParams(lp);
+      }
+      card.addView(row);
     }
   }
 
@@ -1440,6 +1795,8 @@ public final class MainActivity extends Activity {
                     .setNegativeButton("Vazgeç", null)
                     .show();
               });
+      soft(name, "people");
+      name.setCompoundDrawablesWithIntrinsicBounds(null, null, null, null);
       name.setTextSize(13);
       name.setMinWidth(0);
       name.setMinimumWidth(0);
@@ -1457,7 +1814,9 @@ public final class MainActivity extends Activity {
         if (!arrow.isEnabled()) arrow.setAlpha(.45f);
         row.addView(arrow, new LinearLayout.LayoutParams(dp(44), dp(48)));
       }
-      body.addView(row);
+      LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(-1, -2);
+      rowParams.bottomMargin = dp(6);
+      body.addView(row, rowParams);
     }
     if (weekendOrderDraft != null) {
       action("Sırayı Kaydet", () -> confirmWeekendOrder(new ArrayList<>(weekendOrderDraft)));
@@ -1482,21 +1841,24 @@ public final class MainActivity extends Activity {
     action("+ Yeni Şube / Görev Yeri Ekle", () -> placeDialog(null));
     for (Place place : state.places) {
       if (place.deleted) continue;
-      heading(place.name);
+      LinearLayout card = panel();
+      card.addView(bold(place.name, 17, ink));
       StringBuilder days = new StringBuilder();
       String[] names = {"Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"};
       for (int i = 0; i < 7; i++)
         if ((place.days & (1 << i)) != 0) days.append(names[i]).append(" ");
       if (days.length() == 0) days.append("Kapalı (gün seçilmedi)");
-      note(
+      noteTo(
+          card,
           days
               + " • Kişi başı haftalık: "
               + (place.limit == 0 ? "Sınırsız" : place.limit)
               + " • "
               + (place.automatic ? "Otomatik Dağıtım" : "Yalnız Manuel"));
-      action("Adı / Kuralları Düzenle", () -> placeDialog(place));
+      actionTo(card, "Adı / Kuralları Düzenle", () -> placeDialog(place));
       if (!place.id.equals(WORK) && !place.id.equals(BRANCH))
-        action(
+        actionTo(
+            card,
             "Şubeyi Sil",
             () ->
                 confirm(
@@ -1676,6 +2038,8 @@ public final class MainActivity extends Activity {
       LinearLayout table = new LinearLayout(this);
       table.setOrientation(LinearLayout.VERTICAL);
       table.setTag("statistics-table");
+      table.setBackground(Visuals.surface(cardColor, dp(14), lineColor));
+      table.setClipToOutline(true);
       LinearLayout header = new LinearLayout(this);
       addStatCell(header, "Personel", true, true, false);
       for (int i = first; i < end; i++) addStatCell(header, labels.get(i), false, true, false);

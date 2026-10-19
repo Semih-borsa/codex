@@ -1,11 +1,17 @@
-# Doğrulama — Nöbet Çizelgesi 1.11 / 19 Ekim 2026
+# Doğrulama — Nöbet Çizelgesi 2.0 / 19 Ekim 2026
 
 - JDK 17.0.17, Android SDK 35, build-tools 35.0.0, Gradle 8.9, AGP 8.7.3.
 - `testDebugUnitTest`: **75 test, 0 başarısız, 0 atlanan**.
 - `lintDebug`: **sorun bulunmadı**.
 - APK ve Android test APK derlemeleri başarılı.
-- Android 11 / API 30 x86_64 emülatöründe önceki sürüm üzerine `adb install -r` ile 1.11 güncellemesi başarılı.
-- Android test çalıştırıcısı: **33 kontrol geçti, 0 başarısız**.
+- Android 11 / API 30 x86_64 emülatöründe önceki sürüm üzerine `adb install -r` ile 2.0 güncellemesi başarılı.
+- Android test çalıştırıcısı: **34 kontrol geçti, 0 başarısız**.
+
+## 2.0 arayüz kontrolleri
+
+Açık ve koyu temada beş sekme açıldı; seçili menü durumu, çizgi simgeler, menü genişliği ve tema düğmesi doğrulandı. Sentetik beş personelle ana ekran, gün kartları, personel, mazeret, istatistik ve ayarlar görüntüleri üretildi. Önceki 33 Android kontrolü ve 75 motor testi korunur. Tasarım Bütçe Takip uygulamasındaki kart/menü dilinden ilham alır; hesaplama ve veri şeması değişmez.
+
+Yazılım emülasyonunda bir tekrar koşusu, 20 şubeyi dört genişlikte tek ana iş parçacığı adımında ölçerken odak zaman aşımıyla kesildi. Ölçümler aynı doğrulamaları koruyarak ayrı UI adımlarına bölündü ve ilk kare beklendi. Emülatör animasyonları kapatıldı. Son tam koşunun sonucu yukarıdadır; yarıda kalan koşu başarı sayılmadı. Önizleme alırken GPU sunumu için kısa bekleme uygulanır.
 
 ## 1.11 kontrolleri
 
@@ -68,6 +74,10 @@ Ek şubeyi silerken geçmiş/bugün ve sayımların korunması, yalnız gelecekt
 Gizleme testleri: şube görünümden çıkıyor; görev kayıtları, personel sayımları ve otomatik dağıtım değişmiyor. Gizli yerin PDF sütunu çıkarılıyor; arşiv/gizlilik bayrakları ve seçili günler kayıttan yeniden açılınca korunuyor. Açık kurumsal mavi (#2A6FB1) ve beyaz düğme yazısı Android üzerinde doğrulandı.
 
 Önceki sürümün 32 motor ve 14 Android kontrolü de geçti: mazeret/sıra, perşembe/cuma dinlenme, 100 haftalık yük dengesi, kayıtlı liste revizyonu/istatistik güncellemesi, onaylı tekrar şube ataması, Türkçe alfabetik tablo, yer adlarını koruyan geçiş, sade çok sayfalı PDF, paylaşım URI güvenliği, açık/koyu tema ve ekran açılışları.
+
+## APK Bütünlüğü
+
+2.0 APK SHA-256: `a8d4198fcd6bb003990e0316882a3b9e334137088fa49c593c7ba37525392523`. Paket `com.semih.nobet`, sürüm kodu 13. Önceki APK ile aynı imza doğrulandı.
 
 ## Sınırlar
 
