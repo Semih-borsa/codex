@@ -1,0 +1,8 @@
+{
+  "App.jsx": "e91cd17f12ef1078b75f810fe0a8267fa8180b642da5dbd4b3c6e24c4efc2b10",
+  "App.main.jsx": "e91cd17f12ef1078b75f810fe0a8267fa8180b642da5dbd4b3c6e24c4efc2b10",
+  "package.json": "355cda3194a2a5e42cff0db2a07ae2fe692af9b836d552664b2346c4ec54be73",
+  "package-lock.json": "926de09fa4a8ed3ec628ed7350f015b9d2509252546629bf29ea1b22bd5bdd3b",
+  "build.gradle": "471380027122145a8266956e659b45fb88b4197a8f8391e7c67608530d9c5d19",
+  "source-harness.mjs": "67956fe71ae1ef5b9b8b71c4331aaf6dca2d0d99942c4dcc05415e7097814093"
+}

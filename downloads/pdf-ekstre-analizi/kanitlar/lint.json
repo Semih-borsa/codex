@@ -1,0 +1,624 @@
+{
+  "before": {
+    "errors": 49,
+    "warnings": 12,
+    "messages": [
+      {
+        "rule": "no-unused-vars",
+        "line": 147,
+        "message": "'tarihAralikta' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 152,
+        "message": "'donemGiderOzeti' is defined but never used. Allowed unused vars must match /^[A-Z_]/u."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 822,
+        "message": "'krediKartiMarkaRengi' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 1181,
+        "message": "'hata' is defined but never used."
+      },
+      {
+        "rule": "react-hooks/refs",
+        "line": 1213,
+        "message": "Error: Cannot access refs during render\n\nReact refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).\n\n  1211 |   const panel = useRef(null);\n  1212 |   const kapat = useRef(onClose);\n> 1213 |   kapat.current = onClose;\n       |   ^^^^^^^^^^^^^ Cannot update ref during render\n  1214 |   useEffect(() => {\n  1215 |     const oncekiOdak = document.activeElement;\n  1216 |     const oncekiOverflow = document.body.style.overflow;"
+      },
+      {
+        "rule": "no-constant-binary-expression",
+        "line": 1388,
+        "message": "Unexpected constant truthiness on the left-hand side of a `||` expression."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 1388,
+        "message": "'e' is defined but never used."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 1424,
+        "message": "'e' is defined but never used."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 1428,
+        "message": "'e' is defined but never used."
+      },
+      {
+        "rule": "react-hooks/set-state-in-effect",
+        "line": 1449,
+        "message": "Error: Calling setState synchronously within an effect can trigger cascading renders\n\nEffects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:\n* Update external systems with the latest state from React.\n* Subscribe for updates from some external system, calling setState in a callback function when external state changes.\n\nCalling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).\n\n  1447 |   const [animOran, setAnimOran] = useState(0);\n  1448 |   useEffect(() => {\n> 1449 |     setAnimOran(0);\n       |     ^^^^^^^^^^^ Avoid calling setState() directly within an effect\n  1450 |     const hedef = Math.max(0, Number.isFinite(oran) ? oran : 0);\n  1451 |     let baslangic = null;\n  1452 |     const sure = 3500;"
+      },
+      {
+        "rule": "react-hooks/exhaustive-deps",
+        "line": 1604,
+        "message": "React Hook useMemo has an unnecessary dependency: 'gununTarihi'. Either exclude it or remove the dependency array."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 1690,
+        "message": "'guncelDonemMi' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+      },
+      {
+        "rule": "react-hooks/exhaustive-deps",
+        "line": 1744,
+        "message": "React Hook useMemo has missing dependencies: 'bakiyeOzeti.ayrilan', 'bakiyeOzeti.nakitCikis', and 'buAyDevir'. Either include them or remove the dependency array."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 1788,
+        "message": "'kategoriTrendVeri' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 2034,
+        "message": "'odemeKaydi' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+      },
+      {
+        "rule": "react-hooks/set-state-in-effect",
+        "line": 2360,
+        "message": "Error: Calling setState synchronously within an effect can trigger cascading renders\n\nEffects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:\n* Update external systems with the latest state from React.\n* Subscribe for updates from some external system, calling setState in a callback function when external state changes.\n\nCalling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).\n\n  2358 | function TasarrufHedefi({hedef,setHedef}) {\n  2359 |   const [taslak,setTaslak] = useState(String(hedef));\n> 2360 |   useEffect(()=>setTaslak(String(hedef)),[hedef]);\n       |                 ^^^^^^^^^ Avoid calling setState() directly within an effect\n  2361 |   return <section className=\"tools-card\"><h3>Tasarruf hedefi</h3><p className=\"tools-note\">Gelirinin ayırmak istediğin yüzdesi. Günlük harcama payı bu hedef ve kayıtlı ödemeler dikkate alınarak hesaplanır.</p><div className=\"tools-grid\"><Input label=\"Hedef (%)\" type=\"number\" min=\"0\" max=\"100\" step=\"1\" value={taslak} onChange={e=>setTaslak(e.target.value)} /><Btn onClick={()=>{if(!tamSayiGecerli(taslak,0,100)){toast(\"0–100 arasında tam sayı gir\", \"uyari\");return;}setHedef(Number(taslak));toast(\"Tasarruf hedefi kaydedildi\");}}>Hedefi kaydet</Btn></div></section>;\n  2362 | }\n  2363 | // Kredi ödeme bağları yalnız açık kimliklerle tanınır; isim/tutar eşleştirmesi yapılmaz."
+      },
+      {
+        "rule": "react-hooks/set-state-in-effect",
+        "line": 2884,
+        "message": "Error: Calling setState synchronously within an effect can trigger cascading renders\n\nEffects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:\n* Update external systems with the latest state from React.\n* Subscribe for updates from some external system, calling setState in a callback function when external state changes.\n\nCalling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).\n\n  2882 |   const [ay,setAy] = useState(ilk.slice(0,7));\n  2883 |   const [secili,setSecili] = useState(null);\n> 2884 |   useEffect(()=>{setAy(ilk.slice(0,7));setSecili(null);},[ilk,son]);\n       |                  ^^^^^ Avoid calling setState() directly within an effect\n  2885 |   const bugun = yerelTarihAnahtari();\n  2886 |   const tumHareketler = useMemo(()=>gunlukFinansHareketleri(islemler,odemeler,kartOdemeleri,ilk,son,bugun,gorunum),[islemler,odemeler,kartOdemeleri,ilk,son,bugun,gorunum]);\n  2887 |   const hareketler = tumHareketler.filter(i=>i.tip==='gider');"
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 2900,
+        "message": "'ekstreTrendIslemleri' is defined but never used. Allowed unused vars must match /^[A-Z_]/u."
+      },
+      {
+        "rule": "react-hooks/exhaustive-deps",
+        "line": 2927,
+        "message": "React Hook useMemo has an unnecessary dependency: 'bugun'. Either exclude it or remove the dependency array."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 2974,
+        "message": "'kartlar' is assigned a value but never used."
+      },
+      {
+        "rule": "react-hooks/preserve-manual-memoization",
+        "line": 2988,
+        "message": "Compilation Skipped: Existing memoization could not be preserved\n\nReact Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. The inferred dependencies did not match the manually specified dependencies, which could cause the value to change more or less frequently than expected. The inferred dependency was `aralik`, but the source dependencies were [raporKayitlari, aralik?.ilk, aralik?.son]. Inferred less specific property than source.\n\n  2986 |   const aralik=esnekRaporAraligi(mod,donemGun,offset,yil,ilk,son);\n  2987 |   const bugun=yerelTarihAnahtari();\n> 2988 |   const ozet=useMemo(()=>aralik?aralikOzeti(raporKayitlari,aralik.ilk,aralik.son):null,[raporKayitlari,aralik?.ilk,aralik?.son]);\n       |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Could not preserve existing manual memoization\n  2989 |   const bitis=aralik?(aralik.son<bugun?aralik.son:bugun):null;\n  2990 |   const onceki=aralik&&bitis>=aralik.ilk?(()=>{\n  2991 |     const gun=takvimGunFarki(bitis,aralik.ilk)+1;"
+      },
+      {
+        "rule": "react-hooks/exhaustive-deps",
+        "line": 2988,
+        "message": "React Hook useMemo has a missing dependency: 'aralik'. Either include it or remove the dependency array."
+      },
+      {
+        "rule": "react-hooks/exhaustive-deps",
+        "line": 3002,
+        "message": "React Hook useMemo has a missing dependency: 'aralik'. Either include it or remove the dependency array."
+      },
+      {
+        "rule": "react-hooks/exhaustive-deps",
+        "line": 3022,
+        "message": "React Hook useMemo has a missing dependency: 'aralik'. Either include it or remove the dependency array."
+      },
+      {
+        "rule": "react-hooks/preserve-manual-memoization",
+        "line": 3022,
+        "message": "Compilation Skipped: Existing memoization could not be preserved\n\nReact Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. This dependency may be mutated later, which could cause the value to change unexpectedly.\n\n  3020 |     });\n  3021 |     return Object.values(map);\n> 3022 |   },[trendOzeti,aralik?.ilk,bitis]);\n       |                             ^^^^^ This dependency may be modified later\n  3023 |   const fark=(simdi,eski)=>eski>0?`${simdi>=eski?'+':''}${((simdi-eski)/eski*100).toFixed(1).replace('.',',')}%`:'Önceki tutar yok';\n  3024 |   const dagilim=(liste,toplam,tip)=><section className=\"tools-card\"><h3><Icon name={tip==='gelir'?'arrowUp':'arrowDown'} size={17}/>{tip==='gelir'?'Gelir kaynakları':'Gider kategorileri'}</h3>{liste.length?liste.map(([k,v])=><div className=\"category-distribution\" key={k}><div className=\"tools-row\"><span className=\"category-label\"><KategoriSimge kategori={k} tip={tip}/>{k}</span><strong>{fmtTL(v)} <small>%{toplam>0?(v/toplam*100).toFixed(1):0}</small></strong></div><div className=\"distribution-track\"><span style={{width:`${toplam>0?v/toplam*100:0}%`,background:kategoriGorunumu(k,tip,kategoriGorunumleri).renk}}/></div></div>):<p className=\"tools-note\">Bu aralıkta {tip} kaydı yok.</p>}</section>;\n  3025 |   const gunSayisi=aralik&&bitis>=aralik.ilk?takvimGunFarki(bitis,aralik.ilk)+1:0;"
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 3246,
+        "message": "'net' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 3440,
+        "message": "'donemGun' is defined but never used."
+      },
+      {
+        "rule": "react-hooks/purity",
+        "line": 3506,
+        "message": "Error: Cannot call impure function during render\n\n`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).\n\n  3504 |       (i.odemeId != null && String(i.odemeId) === String(odeme.id))\n  3505 |     );\n> 3506 |     const islemId = mevcut?.id ?? odeme.islemId ?? (Date.now() + 1);\n       |                                                     ^^^^^^^^^^ Cannot call impure function\n  3507 |     setOdemeler(p => p.map(x => x.id === odeme.id ? { ...x, odendi: true, odendiTarih: new Date().toISOString(), islemId } : x));\n  3508 |     setIslemler(p => {\n  3509 |       const bulundu = p.some(i => String(i.id) === String(islemId));"
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 3702,
+        "message": "'devirLog' is defined but never used."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 3702,
+        "message": "'setBakiyeHesapModu' is defined but never used."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 3707,
+        "message": "'setKurtarma' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 3760,
+        "message": "'e' is defined but never used."
+      },
+      {
+        "rule": "no-empty",
+        "line": 3760,
+        "message": "Empty block statement."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 4124,
+        "message": "'kategoriler' is defined but never used."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 4127,
+        "message": "'analizSekme' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 4127,
+        "message": "'setAnalizSekme' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 4179,
+        "message": "'aylikVerisi' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+      },
+      {
+        "rule": "no-misleading-character-class",
+        "line": 4474,
+        "message": "Unexpected combined character in character class."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 4500,
+        "message": "'yillikGelir' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 4501,
+        "message": "'yillikGider' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 4522,
+        "message": "'renderDagilim' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 4579,
+        "message": "'renderTrend' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 4731,
+        "message": "'setKategoriler' is defined but never used."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 4969,
+        "message": "'ti' is defined but never used."
+      },
+      {
+        "rule": "react-hooks/preserve-manual-memoization",
+        "line": 5285,
+        "message": "Compilation Skipped: Existing memoization could not be preserved\n\nReact Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. This value was memoized in source but not in compilation output.\n\n  5283 |   // Mevcut maaş zaten o dönemin zammını almıştır. Dönem zammı SADECE\n  5284 |   // enflasyon farkı hesabında kullanılır, maaşa tekrar uygulanmaz.\n> 5285 |   const hesapla = useMemo(() => {\n       |                   ^^^^^^^^^^^^^^^\n> 5286 |     const mevcutMaas = paraOku(dMaas.mevcutMaas) || 0;\n       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n> 5287 |     if (mevcutMaas === 0) return null;\n       …\n       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n> 5324 |     };\n       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n> 5325 |   }, [dMaas, dZamlar, dEnflasyon]);\n       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Could not preserve existing memoization\n  5326 |\n  5327 |   return (\n  5328 |     <div>"
+      },
+      {
+        "rule": "react-hooks/exhaustive-deps",
+        "line": 5325,
+        "message": "React Hook useMemo has missing dependencies: 'buYil', 'enfAl', and 'zamAl'. Either include them or remove the dependency array."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 5529,
+        "message": "'e' is defined but never used."
+      },
+      {
+        "rule": "no-empty",
+        "line": 5529,
+        "message": "Empty block statement."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 5539,
+        "message": "'e' is defined but never used."
+      },
+      {
+        "rule": "no-empty",
+        "line": 5539,
+        "message": "Empty block statement."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 5549,
+        "message": "'e' is defined but never used."
+      },
+      {
+        "rule": "no-empty",
+        "line": 5549,
+        "message": "Empty block statement."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 5559,
+        "message": "'e' is defined but never used."
+      },
+      {
+        "rule": "no-empty",
+        "line": 5559,
+        "message": "Empty block statement."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 5571,
+        "message": "'e' is defined but never used."
+      },
+      {
+        "rule": "no-empty",
+        "line": 5571,
+        "message": "Empty block statement."
+      },
+      {
+        "rule": "react-hooks/exhaustive-deps",
+        "line": 5649,
+        "message": "React Hook useEffect has a missing dependency: 'setSonBildirimPlanlama'. Either include it or remove the dependency array."
+      },
+      {
+        "rule": "react-hooks/exhaustive-deps",
+        "line": 5667,
+        "message": "React Hook useEffect has a missing dependency: 'setKartBorcOzetleri'. Either include it or remove the dependency array."
+      },
+      {
+        "rule": "react-hooks/exhaustive-deps",
+        "line": 5683,
+        "message": "React Hook useEffect has missing dependencies: 'setDevirLog' and 'setIslemler'. Either include them or remove the dependency array."
+      },
+      {
+        "rule": "react-hooks/exhaustive-deps",
+        "line": 5694,
+        "message": "React Hook useEffect has missing dependencies: 'setIslemler' and 'setOdemeler'. Either include them or remove the dependency array."
+      },
+      {
+        "rule": "react-hooks/exhaustive-deps",
+        "line": 5746,
+        "message": "React Hook useEffect has missing dependencies: 'setIslemler', 'setOdemeler', and 'setSabitEklemeLog'. Either include them or remove the dependency array."
+      }
+    ]
+  },
+  "after": {
+    "errors": 49,
+    "warnings": 12,
+    "messages": [
+      {
+        "rule": "no-unused-vars",
+        "line": 147,
+        "message": "'tarihAralikta' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 152,
+        "message": "'donemGiderOzeti' is defined but never used. Allowed unused vars must match /^[A-Z_]/u."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 822,
+        "message": "'krediKartiMarkaRengi' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 1181,
+        "message": "'hata' is defined but never used."
+      },
+      {
+        "rule": "react-hooks/refs",
+        "line": 1213,
+        "message": "Error: Cannot access refs during render\n\nReact refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).\n\n  1211 |   const panel = useRef(null);\n  1212 |   const kapat = useRef(onClose);\n> 1213 |   kapat.current = onClose;\n       |   ^^^^^^^^^^^^^ Cannot update ref during render\n  1214 |   useEffect(() => {\n  1215 |     const oncekiOdak = document.activeElement;\n  1216 |     const oncekiOverflow = document.body.style.overflow;"
+      },
+      {
+        "rule": "no-constant-binary-expression",
+        "line": 1388,
+        "message": "Unexpected constant truthiness on the left-hand side of a `||` expression."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 1388,
+        "message": "'e' is defined but never used."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 1424,
+        "message": "'e' is defined but never used."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 1428,
+        "message": "'e' is defined but never used."
+      },
+      {
+        "rule": "react-hooks/set-state-in-effect",
+        "line": 1449,
+        "message": "Error: Calling setState synchronously within an effect can trigger cascading renders\n\nEffects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:\n* Update external systems with the latest state from React.\n* Subscribe for updates from some external system, calling setState in a callback function when external state changes.\n\nCalling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).\n\n  1447 |   const [animOran, setAnimOran] = useState(0);\n  1448 |   useEffect(() => {\n> 1449 |     setAnimOran(0);\n       |     ^^^^^^^^^^^ Avoid calling setState() directly within an effect\n  1450 |     const hedef = Math.max(0, Number.isFinite(oran) ? oran : 0);\n  1451 |     let baslangic = null;\n  1452 |     const sure = 3500;"
+      },
+      {
+        "rule": "react-hooks/exhaustive-deps",
+        "line": 1604,
+        "message": "React Hook useMemo has an unnecessary dependency: 'gununTarihi'. Either exclude it or remove the dependency array."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 1690,
+        "message": "'guncelDonemMi' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+      },
+      {
+        "rule": "react-hooks/exhaustive-deps",
+        "line": 1744,
+        "message": "React Hook useMemo has missing dependencies: 'bakiyeOzeti.ayrilan', 'bakiyeOzeti.nakitCikis', and 'buAyDevir'. Either include them or remove the dependency array."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 1788,
+        "message": "'kategoriTrendVeri' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 2034,
+        "message": "'odemeKaydi' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+      },
+      {
+        "rule": "react-hooks/set-state-in-effect",
+        "line": 2360,
+        "message": "Error: Calling setState synchronously within an effect can trigger cascading renders\n\nEffects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:\n* Update external systems with the latest state from React.\n* Subscribe for updates from some external system, calling setState in a callback function when external state changes.\n\nCalling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).\n\n  2358 | function TasarrufHedefi({hedef,setHedef}) {\n  2359 |   const [taslak,setTaslak] = useState(String(hedef));\n> 2360 |   useEffect(()=>setTaslak(String(hedef)),[hedef]);\n       |                 ^^^^^^^^^ Avoid calling setState() directly within an effect\n  2361 |   return <section className=\"tools-card\"><h3>Tasarruf hedefi</h3><p className=\"tools-note\">Gelirinin ayırmak istediğin yüzdesi. Günlük harcama payı bu hedef ve kayıtlı ödemeler dikkate alınarak hesaplanır.</p><div className=\"tools-grid\"><Input label=\"Hedef (%)\" type=\"number\" min=\"0\" max=\"100\" step=\"1\" value={taslak} onChange={e=>setTaslak(e.target.value)} /><Btn onClick={()=>{if(!tamSayiGecerli(taslak,0,100)){toast(\"0–100 arasında tam sayı gir\", \"uyari\");return;}setHedef(Number(taslak));toast(\"Tasarruf hedefi kaydedildi\");}}>Hedefi kaydet</Btn></div></section>;\n  2362 | }\n  2363 | // Kredi ödeme bağları yalnız açık kimliklerle tanınır; isim/tutar eşleştirmesi yapılmaz."
+      },
+      {
+        "rule": "react-hooks/set-state-in-effect",
+        "line": 3135,
+        "message": "Error: Calling setState synchronously within an effect can trigger cascading renders\n\nEffects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:\n* Update external systems with the latest state from React.\n* Subscribe for updates from some external system, calling setState in a callback function when external state changes.\n\nCalling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).\n\n  3133 |   const [ay,setAy] = useState(ilk.slice(0,7));\n  3134 |   const [secili,setSecili] = useState(null);\n> 3135 |   useEffect(()=>{setAy(ilk.slice(0,7));setSecili(null);},[ilk,son]);\n       |                  ^^^^^ Avoid calling setState() directly within an effect\n  3136 |   const bugun = yerelTarihAnahtari();\n  3137 |   const tumHareketler = useMemo(()=>gunlukFinansHareketleri(islemler,odemeler,kartOdemeleri,ilk,son,bugun,gorunum),[islemler,odemeler,kartOdemeleri,ilk,son,bugun,gorunum]);\n  3138 |   const hareketler = tumHareketler.filter(i=>i.tip==='gider');"
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 3151,
+        "message": "'ekstreTrendIslemleri' is defined but never used. Allowed unused vars must match /^[A-Z_]/u."
+      },
+      {
+        "rule": "react-hooks/exhaustive-deps",
+        "line": 3178,
+        "message": "React Hook useMemo has an unnecessary dependency: 'bugun'. Either exclude it or remove the dependency array."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 3225,
+        "message": "'kartlar' is assigned a value but never used."
+      },
+      {
+        "rule": "react-hooks/preserve-manual-memoization",
+        "line": 3239,
+        "message": "Compilation Skipped: Existing memoization could not be preserved\n\nReact Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. The inferred dependencies did not match the manually specified dependencies, which could cause the value to change more or less frequently than expected. The inferred dependency was `aralik`, but the source dependencies were [raporKayitlari, aralik?.ilk, aralik?.son]. Inferred less specific property than source.\n\n  3237 |   const aralik=esnekRaporAraligi(mod,donemGun,offset,yil,ilk,son);\n  3238 |   const bugun=yerelTarihAnahtari();\n> 3239 |   const ozet=useMemo(()=>aralik?aralikOzeti(raporKayitlari,aralik.ilk,aralik.son):null,[raporKayitlari,aralik?.ilk,aralik?.son]);\n       |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Could not preserve existing manual memoization\n  3240 |   const bitis=aralik?(aralik.son<bugun?aralik.son:bugun):null;\n  3241 |   const onceki=aralik&&bitis>=aralik.ilk?(()=>{\n  3242 |     const gun=takvimGunFarki(bitis,aralik.ilk)+1;"
+      },
+      {
+        "rule": "react-hooks/exhaustive-deps",
+        "line": 3239,
+        "message": "React Hook useMemo has a missing dependency: 'aralik'. Either include it or remove the dependency array."
+      },
+      {
+        "rule": "react-hooks/exhaustive-deps",
+        "line": 3253,
+        "message": "React Hook useMemo has a missing dependency: 'aralik'. Either include it or remove the dependency array."
+      },
+      {
+        "rule": "react-hooks/exhaustive-deps",
+        "line": 3273,
+        "message": "React Hook useMemo has a missing dependency: 'aralik'. Either include it or remove the dependency array."
+      },
+      {
+        "rule": "react-hooks/preserve-manual-memoization",
+        "line": 3273,
+        "message": "Compilation Skipped: Existing memoization could not be preserved\n\nReact Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. This dependency may be mutated later, which could cause the value to change unexpectedly.\n\n  3271 |     });\n  3272 |     return Object.values(map);\n> 3273 |   },[trendOzeti,aralik?.ilk,bitis]);\n       |                             ^^^^^ This dependency may be modified later\n  3274 |   const fark=(simdi,eski)=>eski>0?`${simdi>=eski?'+':''}${((simdi-eski)/eski*100).toFixed(1).replace('.',',')}%`:'Önceki tutar yok';\n  3275 |   const dagilim=(liste,toplam,tip)=><section className=\"tools-card\"><h3><Icon name={tip==='gelir'?'arrowUp':'arrowDown'} size={17}/>{tip==='gelir'?'Gelir kaynakları':'Gider kategorileri'}</h3>{liste.length?liste.map(([k,v])=><div className=\"category-distribution\" key={k}><div className=\"tools-row\"><span className=\"category-label\"><KategoriSimge kategori={k} tip={tip}/>{k}</span><strong>{fmtTL(v)} <small>%{toplam>0?(v/toplam*100).toFixed(1):0}</small></strong></div><div className=\"distribution-track\"><span style={{width:`${toplam>0?v/toplam*100:0}%`,background:kategoriGorunumu(k,tip,kategoriGorunumleri).renk}}/></div></div>):<p className=\"tools-note\">Bu aralıkta {tip} kaydı yok.</p>}</section>;\n  3276 |   const gunSayisi=aralik&&bitis>=aralik.ilk?takvimGunFarki(bitis,aralik.ilk)+1:0;"
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 3497,
+        "message": "'net' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 3691,
+        "message": "'donemGun' is defined but never used."
+      },
+      {
+        "rule": "react-hooks/purity",
+        "line": 3757,
+        "message": "Error: Cannot call impure function during render\n\n`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).\n\n  3755 |       (i.odemeId != null && String(i.odemeId) === String(odeme.id))\n  3756 |     );\n> 3757 |     const islemId = mevcut?.id ?? odeme.islemId ?? (Date.now() + 1);\n       |                                                     ^^^^^^^^^^ Cannot call impure function\n  3758 |     setOdemeler(p => p.map(x => x.id === odeme.id ? { ...x, odendi: true, odendiTarih: new Date().toISOString(), islemId } : x));\n  3759 |     setIslemler(p => {\n  3760 |       const bulundu = p.some(i => String(i.id) === String(islemId));"
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 3953,
+        "message": "'devirLog' is defined but never used."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 3953,
+        "message": "'setBakiyeHesapModu' is defined but never used."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 3958,
+        "message": "'setKurtarma' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 4011,
+        "message": "'e' is defined but never used."
+      },
+      {
+        "rule": "no-empty",
+        "line": 4011,
+        "message": "Empty block statement."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 4375,
+        "message": "'kategoriler' is defined but never used."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 4378,
+        "message": "'analizSekme' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 4378,
+        "message": "'setAnalizSekme' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 4430,
+        "message": "'aylikVerisi' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+      },
+      {
+        "rule": "no-misleading-character-class",
+        "line": 4725,
+        "message": "Unexpected combined character in character class."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 4751,
+        "message": "'yillikGelir' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 4752,
+        "message": "'yillikGider' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 4773,
+        "message": "'renderDagilim' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 4830,
+        "message": "'renderTrend' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 4982,
+        "message": "'setKategoriler' is defined but never used."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 5220,
+        "message": "'ti' is defined but never used."
+      },
+      {
+        "rule": "react-hooks/preserve-manual-memoization",
+        "line": 5536,
+        "message": "Compilation Skipped: Existing memoization could not be preserved\n\nReact Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. This value was memoized in source but not in compilation output.\n\n  5534 |   // Mevcut maaş zaten o dönemin zammını almıştır. Dönem zammı SADECE\n  5535 |   // enflasyon farkı hesabında kullanılır, maaşa tekrar uygulanmaz.\n> 5536 |   const hesapla = useMemo(() => {\n       |                   ^^^^^^^^^^^^^^^\n> 5537 |     const mevcutMaas = paraOku(dMaas.mevcutMaas) || 0;\n       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n> 5538 |     if (mevcutMaas === 0) return null;\n       …\n       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n> 5575 |     };\n       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n> 5576 |   }, [dMaas, dZamlar, dEnflasyon]);\n       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Could not preserve existing memoization\n  5577 |\n  5578 |   return (\n  5579 |     <div>"
+      },
+      {
+        "rule": "react-hooks/exhaustive-deps",
+        "line": 5576,
+        "message": "React Hook useMemo has missing dependencies: 'buYil', 'enfAl', and 'zamAl'. Either include them or remove the dependency array."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 5780,
+        "message": "'e' is defined but never used."
+      },
+      {
+        "rule": "no-empty",
+        "line": 5780,
+        "message": "Empty block statement."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 5790,
+        "message": "'e' is defined but never used."
+      },
+      {
+        "rule": "no-empty",
+        "line": 5790,
+        "message": "Empty block statement."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 5800,
+        "message": "'e' is defined but never used."
+      },
+      {
+        "rule": "no-empty",
+        "line": 5800,
+        "message": "Empty block statement."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 5810,
+        "message": "'e' is defined but never used."
+      },
+      {
+        "rule": "no-empty",
+        "line": 5810,
+        "message": "Empty block statement."
+      },
+      {
+        "rule": "no-unused-vars",
+        "line": 5822,
+        "message": "'e' is defined but never used."
+      },
+      {
+        "rule": "no-empty",
+        "line": 5822,
+        "message": "Empty block statement."
+      },
+      {
+        "rule": "react-hooks/exhaustive-deps",
+        "line": 5900,
+        "message": "React Hook useEffect has a missing dependency: 'setSonBildirimPlanlama'. Either include it or remove the dependency array."
+      },
+      {
+        "rule": "react-hooks/exhaustive-deps",
+        "line": 5918,
+        "message": "React Hook useEffect has a missing dependency: 'setKartBorcOzetleri'. Either include it or remove the dependency array."
+      },
+      {
+        "rule": "react-hooks/exhaustive-deps",
+        "line": 5934,
+        "message": "React Hook useEffect has missing dependencies: 'setDevirLog' and 'setIslemler'. Either include them or remove the dependency array."
+      },
+      {
+        "rule": "react-hooks/exhaustive-deps",
+        "line": 5945,
+        "message": "React Hook useEffect has missing dependencies: 'setIslemler' and 'setOdemeler'. Either include them or remove the dependency array."
+      },
+      {
+        "rule": "react-hooks/exhaustive-deps",
+        "line": 5997,
+        "message": "React Hook useEffect has missing dependencies: 'setIslemler', 'setOdemeler', and 'setSabitEklemeLog'. Either include them or remove the dependency array."
+      }
+    ]
+  }
+}

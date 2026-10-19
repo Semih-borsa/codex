@@ -1,0 +1,20 @@
+{
+  "degisen_eski_islevler": [
+    "App"
+  ],
+  "yeni_islevler": [
+    "ekstreMetinAnahtari",
+    "ekstreTutarOku",
+    "ekstreTarihOku",
+    "ekstreKategoriOner",
+    "ekstreSatirlariAyikla",
+    "ekstreAnalizHesapla",
+    "ekstreYorumlari",
+    "ekstrePdfOku",
+    "EkstreAnaliziTab"
+  ],
+  "App_sadece_menu_ve_route": true,
+  "mevcut_finans_yedek_planlama_islevleri_ve_tema_bloklari_ayni": true,
+  "onceki_sha256": "e91cd17f12ef1078b75f810fe0a8267fa8180b642da5dbd4b3c6e24c4efc2b10",
+  "sonraki_sha256": "d1a5a61fd9f4f09e5508000b124a33ed1081196b42acafded73f7dc9353af24a"
+}
