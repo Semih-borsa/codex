@@ -1,51 +1,51 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/widget_root" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:padding="14dp" android:background="@drawable/widget_background">
-<LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical">
-<TextView android:id="@+id/widget_city" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:textSize="16sp" android:textStyle="bold" android:textColor="#EAF5F4" android:maxLines="1" android:ellipsize="end"/>
-<TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/widget_brand" android:textSize="11sp" android:textColor="#A9CCFF"/>
-</LinearLayout>
-<TextClock android:id="@+id/widget_date" android:layout_width="match_parent" android:layout_height="wrap_content" android:format12Hour="d MMMM yyyy • EEEE" android:format24Hour="d MMMM yyyy • EEEE" android:contentDescription="@string/widget_date_description" android:textSize="11sp" android:textColor="#BACCE8" android:maxLines="2" android:ellipsize="end"/>
-<FrameLayout android:layout_width="match_parent" android:layout_height="56dp">
-<TextView android:id="@+id/widget_temperature" android:layout_width="wrap_content" android:layout_gravity="start|center_vertical" android:layout_height="wrap_content" android:textSize="44sp" android:textStyle="bold" android:textColor="#FFFFFF" android:maxLines="1"/>
-<TextView android:id="@+id/widget_symbol" android:layout_gravity="end|center_vertical" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="32sp" android:textColor="#F5CA7D" android:importantForAccessibility="no"/>
-</FrameLayout>
-<TextView android:id="@+id/widget_details" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="12sp" android:textColor="#E2EBFF" android:maxLines="1" android:ellipsize="end"/>
-<LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:paddingTop="6dp" android:paddingBottom="6dp">
-<TextView android:id="@+id/widget_feels" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:textSize="12sp" android:textColor="#E2EBFF" android:maxLines="2" android:gravity="center"/>
-<TextView android:id="@+id/widget_wind" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:textSize="12sp" android:textColor="#E2EBFF" android:maxLines="2" android:gravity="center"/>
-<TextView android:id="@+id/widget_humidity" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:textSize="12sp" android:textColor="#E2EBFF" android:maxLines="2" android:gravity="center"/>
-</LinearLayout>
-<TextView android:id="@+id/widget_age" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="11sp" android:textColor="#BACCE8" android:maxLines="2" android:ellipsize="end"/>
-<TextView android:id="@+id/widget_state" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="11sp" android:textColor="#F5CA7D" android:maxLines="1" android:ellipsize="end"/>
-<LinearLayout android:id="@+id/widget_forecast_header" android:layout_width="match_parent" android:layout_height="44dp" android:gravity="center_vertical">
-<TextView android:id="@+id/widget_forecast_title" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:textSize="12sp" android:textStyle="bold" android:textColor="#E2EBFF"/>
-<TextView android:id="@+id/widget_next" android:layout_width="wrap_content" android:layout_height="match_parent" android:paddingStart="10dp" android:paddingEnd="4dp" android:gravity="center" android:text="@string/widget_next_days" android:textSize="12sp" android:textColor="#A9CCFF"/>
-</LinearLayout>
-<LinearLayout android:id="@+id/widget_forecast_labels" android:layout_width="match_parent" android:layout_height="wrap_content">
-<TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="@string/widget_day" android:textSize="11sp" android:textColor="#BACCE8"/>
-<TextView android:layout_width="0dp" android:layout_weight="1.2" android:layout_height="wrap_content" android:text="@string/widget_weather" android:textSize="11sp" android:textColor="#BACCE8"/>
-<TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:gravity="end" android:text="@string/widget_high_low" android:textSize="11sp" android:textColor="#BACCE8"/>
-</LinearLayout>
-<LinearLayout android:id="@+id/widget_forecast_rows" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:orientation="vertical">
-<LinearLayout android:id="@+id/widget_day_row_0" android:layout_width="match_parent" android:layout_height="36dp" android:gravity="center_vertical">
-<TextView android:id="@+id/widget_day_date_0" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:textSize="11sp" android:textColor="#E2EBFF" android:maxLines="2" android:ellipsize="end"/>
-<TextView android:id="@+id/widget_day_condition_0" android:layout_width="0dp" android:layout_weight="1.2" android:layout_height="wrap_content" android:textSize="11sp" android:textColor="#BACCE8" android:maxLines="2" android:ellipsize="end"/>
-<TextView android:id="@+id/widget_day_range_0" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:textSize="11sp" android:textColor="#FFFFFF" android:maxLines="2" android:ellipsize="end" android:gravity="end"/>
-</LinearLayout>
-<LinearLayout android:id="@+id/widget_day_row_1" android:layout_width="match_parent" android:layout_height="36dp" android:gravity="center_vertical">
-<TextView android:id="@+id/widget_day_date_1" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:textSize="11sp" android:textColor="#E2EBFF" android:maxLines="2" android:ellipsize="end"/>
-<TextView android:id="@+id/widget_day_condition_1" android:layout_width="0dp" android:layout_weight="1.2" android:layout_height="wrap_content" android:textSize="11sp" android:textColor="#BACCE8" android:maxLines="2" android:ellipsize="end"/>
-<TextView android:id="@+id/widget_day_range_1" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:textSize="11sp" android:textColor="#FFFFFF" android:maxLines="2" android:ellipsize="end" android:gravity="end"/>
-</LinearLayout>
-<LinearLayout android:id="@+id/widget_day_row_2" android:layout_width="match_parent" android:layout_height="36dp" android:gravity="center_vertical">
-<TextView android:id="@+id/widget_day_date_2" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:textSize="11sp" android:textColor="#E2EBFF" android:maxLines="2" android:ellipsize="end"/>
-<TextView android:id="@+id/widget_day_condition_2" android:layout_width="0dp" android:layout_weight="1.2" android:layout_height="wrap_content" android:textSize="11sp" android:textColor="#BACCE8" android:maxLines="2" android:ellipsize="end"/>
-<TextView android:id="@+id/widget_day_range_2" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:textSize="11sp" android:textColor="#FFFFFF" android:maxLines="2" android:ellipsize="end" android:gravity="end"/>
-</LinearLayout>
-</LinearLayout>
-<TextView android:id="@+id/widget_forecast_empty" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="11sp" android:textColor="#BACCE8"/>
-<LinearLayout android:layout_width="match_parent" android:layout_height="44dp" android:orientation="horizontal" android:gravity="center_vertical">
-<TextView android:id="@+id/widget_open" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:gravity="center" android:text="@string/widget_open" android:textSize="12sp" android:textStyle="bold" android:textColor="#A9CCFF"/>
-<TextView android:id="@+id/widget_refresh" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:gravity="center" android:text="@string/widget_refresh" android:textSize="12sp" android:textStyle="bold" android:textColor="#A9CCFF"/>
-<TextView android:id="@+id/widget_configure" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:gravity="center" android:text="@string/widget_city" android:textSize="12sp" android:textStyle="bold" android:textColor="#A9CCFF"/>
-</LinearLayout>
+  <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical">
+    <TextView android:id="@+id/widget_city" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:textSize="18sp" android:textStyle="bold" android:textColor="#EAF5F4" android:maxLines="1" android:ellipsize="end" android:includeFontPadding="false" android:fontFamily="sans-serif" />
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/widget_brand" android:textSize="11sp" android:textColor="#A9CCFF" android:includeFontPadding="false" android:fontFamily="sans-serif" />
+  </LinearLayout>
+  <TextClock android:id="@+id/widget_date" android:layout_width="match_parent" android:layout_height="wrap_content" android:format12Hour="d MMMM yyyy • EEEE" android:format24Hour="d MMMM yyyy • EEEE" android:contentDescription="@string/widget_date_description" android:textSize="13sp" android:textColor="#D2E1F8" android:maxLines="2" android:ellipsize="end" android:includeFontPadding="false" android:fontFamily="sans-serif" />
+  <FrameLayout android:layout_width="match_parent" android:layout_height="56dp">
+    <TextView android:id="@+id/widget_temperature" android:layout_width="wrap_content" android:layout_gravity="start|center_vertical" android:layout_height="wrap_content" android:textSize="44sp" android:textStyle="bold" android:textColor="#FFFFFF" android:maxLines="1" android:includeFontPadding="false" android:fontFamily="sans-serif" />
+    <TextView android:id="@+id/widget_symbol" android:layout_gravity="end|center_vertical" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="32sp" android:textColor="#F5CA7D" android:importantForAccessibility="no" android:includeFontPadding="false" android:fontFamily="sans-serif" />
+  </FrameLayout>
+  <TextView android:id="@+id/widget_details" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="14sp" android:textColor="#F1F6FF" android:maxLines="1" android:ellipsize="end" android:includeFontPadding="false" android:fontFamily="sans-serif" />
+  <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:paddingTop="6dp" android:paddingBottom="6dp">
+    <TextView android:id="@+id/widget_feels" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:textSize="13sp" android:textColor="#F1F6FF" android:maxLines="2" android:gravity="center" android:includeFontPadding="false" android:fontFamily="sans-serif" />
+    <TextView android:id="@+id/widget_wind" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:textSize="13sp" android:textColor="#F1F6FF" android:maxLines="2" android:gravity="center" android:includeFontPadding="false" android:fontFamily="sans-serif" />
+    <TextView android:id="@+id/widget_humidity" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:textSize="13sp" android:textColor="#F1F6FF" android:maxLines="2" android:gravity="center" android:includeFontPadding="false" android:fontFamily="sans-serif" />
+  </LinearLayout>
+  <TextView android:id="@+id/widget_age" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="13sp" android:textColor="#D2E1F8" android:maxLines="2" android:ellipsize="end" android:includeFontPadding="false" android:fontFamily="sans-serif" />
+  <TextView android:id="@+id/widget_state" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="12sp" android:textColor="#F5CA7D" android:maxLines="1" android:ellipsize="end" android:includeFontPadding="false" android:fontFamily="sans-serif" />
+  <LinearLayout android:id="@+id/widget_forecast_header" android:layout_width="match_parent" android:layout_height="44dp" android:gravity="center_vertical">
+    <TextView android:id="@+id/widget_forecast_title" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:textSize="14sp" android:textStyle="bold" android:textColor="#F1F6FF" android:includeFontPadding="false" android:fontFamily="sans-serif" />
+    <TextView android:id="@+id/widget_next" android:layout_width="wrap_content" android:layout_height="match_parent" android:paddingStart="10dp" android:paddingEnd="4dp" android:gravity="center" android:text="@string/widget_next_days" android:textSize="13sp" android:textColor="#A9CCFF" android:includeFontPadding="false" android:fontFamily="sans-serif" />
+  </LinearLayout>
+  <LinearLayout android:id="@+id/widget_forecast_labels" android:layout_width="match_parent" android:layout_height="wrap_content">
+    <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="@string/widget_day" android:textSize="12sp" android:textColor="#D2E1F8" android:includeFontPadding="false" android:fontFamily="sans-serif" />
+    <TextView android:layout_width="0dp" android:layout_weight="1.2" android:layout_height="wrap_content" android:text="@string/widget_weather" android:textSize="12sp" android:textColor="#D2E1F8" android:includeFontPadding="false" android:fontFamily="sans-serif" />
+    <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:gravity="end" android:text="@string/widget_high_low" android:textSize="12sp" android:textColor="#D2E1F8" android:includeFontPadding="false" android:fontFamily="sans-serif" />
+  </LinearLayout>
+  <LinearLayout android:id="@+id/widget_forecast_rows" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:orientation="vertical">
+    <LinearLayout android:id="@+id/widget_day_row_0" android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical">
+      <TextView android:id="@+id/widget_day_date_0" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:textSize="13sp" android:textColor="#F1F6FF" android:maxLines="2" android:ellipsize="end" android:includeFontPadding="false" android:fontFamily="sans-serif" />
+      <TextView android:id="@+id/widget_day_condition_0" android:layout_width="0dp" android:layout_weight="1.2" android:layout_height="wrap_content" android:textSize="13sp" android:textColor="#D2E1F8" android:maxLines="2" android:ellipsize="end" android:includeFontPadding="false" android:fontFamily="sans-serif" />
+      <TextView android:id="@+id/widget_day_range_0" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:textSize="14sp" android:textColor="#FFFFFF" android:maxLines="2" android:ellipsize="end" android:gravity="end" android:textStyle="bold" android:includeFontPadding="false" android:fontFamily="sans-serif" />
+    </LinearLayout>
+    <LinearLayout android:id="@+id/widget_day_row_1" android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical">
+      <TextView android:id="@+id/widget_day_date_1" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:textSize="13sp" android:textColor="#F1F6FF" android:maxLines="2" android:ellipsize="end" android:includeFontPadding="false" android:fontFamily="sans-serif" />
+      <TextView android:id="@+id/widget_day_condition_1" android:layout_width="0dp" android:layout_weight="1.2" android:layout_height="wrap_content" android:textSize="13sp" android:textColor="#D2E1F8" android:maxLines="2" android:ellipsize="end" android:includeFontPadding="false" android:fontFamily="sans-serif" />
+      <TextView android:id="@+id/widget_day_range_1" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:textSize="14sp" android:textColor="#FFFFFF" android:maxLines="2" android:ellipsize="end" android:gravity="end" android:textStyle="bold" android:includeFontPadding="false" android:fontFamily="sans-serif" />
+    </LinearLayout>
+    <LinearLayout android:id="@+id/widget_day_row_2" android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical">
+      <TextView android:id="@+id/widget_day_date_2" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:textSize="13sp" android:textColor="#F1F6FF" android:maxLines="2" android:ellipsize="end" android:includeFontPadding="false" android:fontFamily="sans-serif" />
+      <TextView android:id="@+id/widget_day_condition_2" android:layout_width="0dp" android:layout_weight="1.2" android:layout_height="wrap_content" android:textSize="13sp" android:textColor="#D2E1F8" android:maxLines="2" android:ellipsize="end" android:includeFontPadding="false" android:fontFamily="sans-serif" />
+      <TextView android:id="@+id/widget_day_range_2" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:textSize="14sp" android:textColor="#FFFFFF" android:maxLines="2" android:ellipsize="end" android:gravity="end" android:textStyle="bold" android:includeFontPadding="false" android:fontFamily="sans-serif" />
+    </LinearLayout>
+  </LinearLayout>
+  <TextView android:id="@+id/widget_forecast_empty" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="13sp" android:textColor="#D2E1F8" android:includeFontPadding="false" android:fontFamily="sans-serif" />
+  <LinearLayout android:layout_width="match_parent" android:layout_height="44dp" android:orientation="horizontal" android:gravity="center_vertical">
+    <TextView android:id="@+id/widget_open" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:gravity="center" android:text="@string/widget_open" android:textSize="14sp" android:textStyle="bold" android:textColor="#A9CCFF" android:includeFontPadding="false" android:fontFamily="sans-serif" />
+    <TextView android:id="@+id/widget_refresh" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:gravity="center" android:text="@string/widget_refresh" android:textSize="14sp" android:textStyle="bold" android:textColor="#A9CCFF" android:includeFontPadding="false" android:fontFamily="sans-serif" />
+    <TextView android:id="@+id/widget_configure" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:gravity="center" android:text="@string/widget_city" android:textSize="14sp" android:textStyle="bold" android:textColor="#A9CCFF" android:includeFontPadding="false" android:fontFamily="sans-serif" />
+  </LinearLayout>
 </LinearLayout>

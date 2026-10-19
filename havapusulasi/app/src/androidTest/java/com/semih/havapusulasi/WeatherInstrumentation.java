@@ -344,10 +344,10 @@ public final class WeatherInstrumentation extends Instrumentation {
                 "Widget daily table shows condition and high before low");
             freshView.measure(
                 View.MeasureSpec.makeMeasureSpec(
-                    (int) (280 * c.getResources().getDisplayMetrics().density),
+                    (int) (300 * c.getResources().getDisplayMetrics().density),
                     View.MeasureSpec.EXACTLY),
                 View.MeasureSpec.makeMeasureSpec(
-                    (int) (430 * c.getResources().getDisplayMetrics().density),
+                    (int) (500 * c.getResources().getDisplayMetrics().density),
                     View.MeasureSpec.EXACTLY));
             freshView.layout(0, 0, freshView.getMeasuredWidth(), freshView.getMeasuredHeight());
             check(

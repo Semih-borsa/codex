@@ -1,10 +1,10 @@
-# HavaPusulası 1.2.0
+# HavaPusulası 1.2.1
 
 Kişisel ve ticari olmayan kullanım için Android hava asistanı. Hesap, ücretli AI, sosyal özellik veya harita içermez. Telefonun GPS konumunu istemez. Android 8.0+ desteklenir. Ayrı uygulamadır; NOVA ve Cep Bütçem kayıtlarını kullanmaz/değiştirmez.
 
 ## APK'yı indir ve kur
 
-1. [HavaPusulasi-1.2.0.apk](https://github.com/Semih-borsa/codex/blob/main/downloads/HavaPusulasi-1.2.0.apk) sayfasını aç. Depo özelse GitHub'a giriş yap.
+1. [HavaPusulasi-1.2.1.apk](https://github.com/Semih-borsa/codex/blob/main/downloads/HavaPusulasi-1.2.1.apk) sayfasını aç. Depo özelse GitHub'a giriş yap.
 2. **Download raw file** / aşağı ok simgesine bas. Tarayıcıdaki “Farklı kaydet” APK yerine sayfanın HTML'sini kaydedebilir.
 3. İnen `.apk` dosyasını telefona aktar; Dosyalar uygulamasından aç. Android isterse bu dosyayı açtığın uygulamaya kurulum iznini kendin ver. HavaPusulası bu ayarı değiştiremez.
 4. Şehirler → İstanbul/Ankara/İzmir kısayolu veya **Şehir ara** → doğru şehir/ilçe ve ülkeyi seç. En fazla 12 şehir kaydedilir.
@@ -14,11 +14,17 @@ Kişisel ve ticari olmayan kullanım için Android hava asistanı. Hesap, ücret
 
 Güncellemelerde uygulamayı kaldırmadan APK'yı kur; kaldırma yerel şehir ve önbelleği siler. İlk paket kişisel kullanım için debug imzalıdır; Play Store üretim yayını değildir. Farklı bilgisayardaki debug anahtarıyla üretilen APK mevcut APK'nın üstüne kurulmayabilir; bu sürümde dışa aktarma/aktar içe alma yoktur.
 
+## 1.2.1: daha okunaklı widget
+
+Şehir adı 18 sp, günlük tahminler 13–14 sp, ölçüm değerleri kalın 16 sp; açık renkli metinler ve 48 dp günlük satırlarla okunabilirlik artırıldı. Görseldeki düzeni telefonda korumak için widget’ı **tam genişliğe ve aşağı doğru büyüt**: önerilen alan **300 × 500 dp**. Android başlatıcısı güncellemede eski boyutu koruyabilir. 480 dp altı yükseklikte günlük tablo yerine büyütme yönlendirmesi gösterilir; yazılar küçültülerek sıkıştırılmaz. Gerçek fiziksel boyut telefonun ekran ölçeği ve ana ekran düzenine bağlıdır.
+
+[Yeni okunaklı widget örneği — test verisi](docs/ekranlar/widget-readable-test.png).
+
 ## 1.2.0: ayrıntılı hava widget’ı
 
 Widget artık sıcaklığa ek olarak **hissedilen sıcaklık, rüzgâr (km/sa), nem (%) ve yağış olasılığını** gösterir. Altında **Tarih · Durum · Yüksek/Düşük** sütunlarıyla günlük tahminler yer alır. Üç gün aynı anda gösterilir; **Sonraki ›** ile ikinci sayfaya, ardından ilk sayfaya dönülür. İndirilen 7 günlük veride bugün hariç en fazla 6 gelecek gün bulunur. Eksik ölçüm `—` olarak görünür; geçmiş tarihler yeniden kullanılmaz.
 
-**Mevcut widget’ı büyüt:** Ana ekranda widget’a basılı tut → boyutlandırma tutamaklarıyla genişlet ve aşağı doğru uzat. Günlük tablo için yaklaşık 360 dp veya daha yüksek alan gerekir; yeni eklenen widget’ın önerilen boyutu 280 × 430 dp’dir. Başlatıcın boyutlandırma sunmuyorsa widget’ı kendi işleminle yeniden ekleyebilirsin. Güncelleme eski widget’ın ana ekran boyutunu kendiliğinden değiştiremez. Küçük görünüm mevcut ölçümleri gösterip günlük tablo için büyütme yönlendirmesi verir.
+**Mevcut widget’ı büyüt:** Ana ekranda widget’a basılı tut → boyutlandırma tutamaklarıyla genişlet ve aşağı doğru uzat. Günlük tablo için yaklaşık 480 dp veya daha yüksek alan gerekir; yeni eklenen widget’ın önerilen boyutu 300 × 500 dp’dir. Başlatıcın boyutlandırma sunmuyorsa widget’ı kendi işleminle yeniden ekleyebilirsin. Güncelleme eski widget’ın ana ekran boyutunu kendiliğinden değiştiremez. Küçük görünüm mevcut ölçümleri gösterip günlük tablo için büyütme yönlendirmesi verir.
 
 Son başarılı yenileme saati, şehir seçimi, otomatik indirme ve gövdeye dokununca uygulamayı açma korunur. Sonraki düğmesi yalnızca sayfa değiştirir; yeni internet isteği yapmaz. Günlük tarihler seçilen şehrin saat dilimine göre belirlenir; güncel tarih/son indirme saati telefon saatini izler. Bunlar model tahminleridir; canlı istasyon ölçümü değildir.
 

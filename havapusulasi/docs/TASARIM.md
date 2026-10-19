@@ -30,3 +30,7 @@ Emülatör ekran görüntüleri gerçek uygulama çıktısıdır; test tahminler
 ## 1.2 ayrıntılı widget
 
 280 × 430 dp önerilen alan; 250 × 300 dp minimum yeniden boyut. Hissedilen, rüzgâr ve nem üç sütunda; altında üç günlük tarih/durum/yüksek-düşük tablosu vardır. Altı gelecek güne iki sayfada erişilir. Sonraki düğmesi ayrı eylemdir; diğer bilgi alanları uygulamayı açar. 360 dp altı yükseklikte tablo yerine büyütme yönlendirmesi gösterilir. Günlük satırlar sabit 36 dp’dir; katmanlı ağırlıklarla tekrar ölçümden kaçınılır. Eksik ve eski veri kuralları korunur.
+
+## 1.2.1 okunabilirlik
+
+Şehir 18 sp, tarih ve gün bilgisi 13 sp, günlük yüksek/düşük 14 sp kalın, ölçüm değerleri etiketlerden büyük 16 sp kalın. Metinler #F1F6FF / #D2E1F8 ile koyu zeminden ayrılır. Gün satırları 48 dp. Güncel öneri 300 × 500 dp, minimum boyutlandırma 280 × 340 dp; günlük tablo eşiği 480 dp. Önceki sürümdeki daha küçük boyut önerisinin yerini alır. Ölçüm değerlerinin göreli boyut span’i Android yazı ölçeğini izler; sistem ayarları değiştirilmez.

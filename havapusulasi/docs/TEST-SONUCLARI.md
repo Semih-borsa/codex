@@ -1,4 +1,12 @@
-# Test sonuçları — HavaPusulası 1.2.0
+# Test sonuçları — HavaPusulası 1.2.1
+
+## 1.2.1 — okunabilir widget
+
+30 birim testi ve Android 11/15 üzerinde 38’er instrumentation kontrolü yeniden geçti. Lint 0 sorun; debug APK/test APK derlemesi başarılı. Önerilen boyut 300 × 500 dp olarak güncellendi; testte RemoteViews bu ölçüde oluşturulup incelendi. Büyük/kalın ölçüm değerleri, 13–14 sp günlük yazılar ve 48 dp satırlar test önizlemesinde görüldü. Yeni önizleme `ekranlar/widget-readable-test.png` açıkça işaretli test verisi içerir, canlı hava görüntüsü değildir. Başlatıcıya bağlı TextClock tarihi bu bağımsız test çiziminde boş olabilir.
+
+versionCode 6 / versionName 1.2.1; önceki paketle aynı debug imzası. Fiziksel Xiaomi, büyük sistem yazı ölçeği ve gerçek başlatıcıda yeni boyutlandırma bu turda doğrulanmadı. Mevcut widget kullanıcı tarafından büyütülmelidir; ekran görüntüsünün fiziksel ölçüsü telefonun ekran/başlatıcı ölçeğine göre değişir. Ağ ve canlı servis sınırları önceki sürümle aynıdır.
+
+## 1.2.0 kayıtları
 
 ## 1.2.0 — ayrıntılı widget ve günlük tahmin tablosu
 

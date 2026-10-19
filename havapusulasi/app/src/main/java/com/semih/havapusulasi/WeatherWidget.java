@@ -63,6 +63,20 @@ public final class WeatherWidget extends AppWidgetProvider {
     update(c, id);
   }
 
+  private static CharSequence metricText(String label, String value) {
+    android.text.SpannableString text = new android.text.SpannableString(label + "\n" + value);
+    int start = label.length() + 1;
+    text.setSpan(
+        new android.text.style.StyleSpan(android.graphics.Typeface.BOLD), start, text.length(), 0);
+    text.setSpan(new android.text.style.RelativeSizeSpan(16f / 13f), start, text.length(), 0);
+    text.setSpan(
+        new android.text.style.ForegroundColorSpan(android.graphics.Color.WHITE),
+        start,
+        text.length(),
+        0);
+    return text;
+  }
+
   static RemoteViews views(
       Context c, int id, City city, Forecast f, long now, String state, boolean compact) {
     RemoteViews views = new RemoteViews(c.getPackageName(), R.layout.weather_widget);
@@ -80,11 +94,14 @@ public final class WeatherWidget extends AppWidgetProvider {
             : Forecast.description(h.code) + " • Yağış " + Forecast.value(h.rain, "%"));
     views.setViewVisibility(R.id.widget_details, View.VISIBLE);
     views.setTextViewText(
-        R.id.widget_feels, "Hissedilen\n" + Forecast.value(h == null ? null : h.feels, "°C"));
+        R.id.widget_feels,
+        metricText("Hissedilen", Forecast.value(h == null ? null : h.feels, "°C")));
     views.setTextViewText(
-        R.id.widget_wind, "Rüzgâr\n" + Forecast.value(h == null ? null : h.wind, " km/sa"));
+        R.id.widget_wind,
+        metricText("Rüzgâr", Forecast.value(h == null ? null : h.wind, " km/sa")));
     views.setTextViewText(
-        R.id.widget_humidity, "Nem\n" + Forecast.value(h == null ? null : h.humidity, "%"));
+        R.id.widget_humidity,
+        metricText("Nem", Forecast.value(h == null ? null : h.humidity, "%")));
     List<Forecast.Day> days = f == null ? Collections.emptyList() : f.futureDays(now);
     int pages = Math.max(1, (days.size() + 2) / 3);
     int page = Math.floorMod(prefs(c).getInt("page_" + id, 0), pages);
@@ -234,8 +251,8 @@ public final class WeatherWidget extends AppWidgetProvider {
       Forecast f = city == null ? null : store.cached(city.id);
       AppWidgetManager manager = AppWidgetManager.getInstance(c);
       boolean compact =
-          manager.getAppWidgetOptions(id).getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 430)
-              < 360;
+          manager.getAppWidgetOptions(id).getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 500)
+              < 480;
       String status = prefs(c).getString("state_" + id, "");
       if (f != null && f.downloaded >= prefs(c).getLong("stateAt_" + id, 0)) status = "";
       manager.updateAppWidget(

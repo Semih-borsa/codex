@@ -39,10 +39,10 @@
     "future_days_limit": 6,
     "future_days_per_page": 3,
     "recommended_size_dp": {
-      "width": 280,
-      "height": 430
+      "width": 300,
+      "height": 500
     },
-    "daily_forecast_min_height_dp": 360
+    "daily_forecast_min_height_dp": 480
   },
   "api_key_required": false
 }
