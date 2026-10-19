@@ -1,16 +1,20 @@
-# Nöbet Çizelgesi 1.8 — Android
+# Nöbet Çizelgesi 1.9 — Android
 
 Çevrimdışı personel, görev yeri, mazeret ve haftalık nöbet planlama uygulaması.
 
-[APK 1.8 indir](../downloads/NobetCizelgesi-1.8.apk) · [Android Studio ZIP](../downloads/NobetCizelgesi-Android-Studio.zip) · [Test sonuçları](docs/TESTLER.md)
+[APK 1.9 indir](../downloads/NobetCizelgesi-1.9.apk) · [Android Studio ZIP](../downloads/NobetCizelgesi-Android-Studio.zip) · [Test sonuçları](docs/TESTLER.md)
 
-Android 8.0 ve üzeri. Önceki sürümlerden biri kuruluysa **uygulamayı kaldırmadan** 1.8 APK'sını açarak güncelleyin. Aynı paket adı ve imza kullanılır; eski kayıtlar okunur. Kaldırmak veya uygulama verilerini silmek kayıtları siler.
+Android 8.0 ve üzeri. Önceki sürümlerden biri kuruluysa **uygulamayı kaldırmadan** 1.9 APK'sını açarak güncelleyin. Aynı paket adı ve imza kullanılır; eski kayıtlar okunur. Kaldırmak veya uygulama verilerini silmek kayıtları siler.
 
 ## Hafta sonu dönüş önceliği
 
 İzin veya raporun bitmesi tek başına öncelik oluşturmaz. Personelin hafta sonu sırası mazeret süresinde henüz gelmediyse normal sırası korunur. Sırası gelmiş, mazereti nedeniyle atlanmış ve sonraki kişi atanmışsa, mazereti bittikten sonraki ilk uygun hafta sonu önceliklidir. Sonrasında normal döngü kaldığı yerden devam eder. Örnek: sıra A/B/C/D/E; A raporlu olduğu için B atanır, A dönünce A atanır, ardından C devam eder. E aynı dönemde izinden dönse bile henüz sırası atlanmadıysa öne geçmez.
 
-## 1.8 yenilikleri
+## 1.9 yenilikleri
+
+Çizelgedeki kalemden personel seçtikten sonra sayfa en üste dönmez. Görünen günün ekran içindeki konumu korunur; alanı boş bırakma, haftalık sınır için teyit edilen seçim ve hafta sonu personel değişimi de aynı yolu kullanır. Kaydedilmiş listeyi düzenlemeye açarken konum korunur. Sekme/hafta değiştirmek normal şekilde yeni ekranı baştan açar.
+
+## Tarihsiz haftalık kısıtlar
 
 **Mazeret → Mazeret / Kısıt Ekle → Her Hafta Tekrarla** seçilince tarih ve mazeret türü alanları gizlenir. Yalnız görev yeri ve haftanın günleri gösterilir. Aynı satırda Pazartesi/Çarşamba gibi birden fazla gün işaretleyebilirsiniz. Alttaki **+ Kısıt Ekle** aynı personele başka görev yeri/gün birleşimi için bağımsız satır ekler; **− Kısıtı Kaldır** o satırı çıkarır. Gün seçilmeyen satır varsa hiçbir satır kaydedilmez.
 

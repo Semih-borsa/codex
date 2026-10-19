@@ -1,11 +1,15 @@
-# Doğrulama — Nöbet Çizelgesi 1.8 / 19 Ekim 2026
+# Doğrulama — Nöbet Çizelgesi 1.9 / 19 Ekim 2026
 
 - JDK 17.0.17, Android SDK 35, build-tools 35.0.0, Gradle 8.9, AGP 8.7.3.
 - `testDebugUnitTest`: **60 test, 0 başarısız, 0 atlanan**.
 - `lintDebug`: **sorun bulunmadı**.
 - APK ve Android test APK derlemeleri başarılı.
-- Android 11 / API 30 x86_64 emülatöründe önceki sürüm üzerine `adb install -r` ile 1.8 güncellemesi başarılı.
-- Android test çalıştırıcısı: **28 kontrol geçti, 0 başarısız**.
+- Android 11 / API 30 x86_64 emülatöründe önceki sürüm üzerine `adb install -r` ile 1.9 güncellemesi başarılı.
+- Android test çalıştırıcısı: **29 kontrol geçti, 0 başarısız**.
+
+## 1.9 kontrolleri
+
+Android üzerinde onaylı listenin Perşembe kartına kaydırıldı. Personel seçim diyalogundan seçim yapılınca, onaylı görünüm taslağa geçerken başlık yüksekliği değişse de aynı günün ekran içindeki konumu 2 piksel toleransla korundu. İkinci seçimde alan boşaltılıp tekrar kontrol edildi; yeni boş hücre görünürken konum korunur. Kontroller çizim kareleri tamamlandıktan sonra yapılır. Personel sekmesine geçildiğinde kaydırma yeni ekranın başına döner.
 
 ## 1.8 kontrolleri
 

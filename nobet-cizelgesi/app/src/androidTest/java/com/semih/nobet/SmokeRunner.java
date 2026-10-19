@@ -77,6 +77,19 @@ public class SmokeRunner extends Instrumentation {
     }
   }
 
+  private void waitForFrames(Activity activity) throws InterruptedException {
+    java.util.concurrent.CountDownLatch frame = new java.util.concurrent.CountDownLatch(1);
+    runOnMainSync(
+        () ->
+            activity
+                .getWindow()
+                .getDecorView()
+                .postOnAnimation(
+                    () -> activity.getWindow().getDecorView().postOnAnimation(frame::countDown)));
+    truth(frame.await(15, java.util.concurrent.TimeUnit.SECONDS));
+    waitForIdleSync();
+  }
+
   @Override
   public void onStart() {
     Context target = getTargetContext();
@@ -778,6 +791,122 @@ public class SmokeRunner extends Instrumentation {
                           == android.view.View.VISIBLE);
                   weekly.performClick();
                   truth(monday.isChecked() && wednesday.isChecked());
+                });
+          } finally {
+            runOnMainSync(
+                () -> {
+                  if (dialog[0] != null) dialog[0].dismiss();
+                  activity.finish();
+                });
+          }
+        });
+    check(
+        "Personnel selection retains visible day and offset after rebuilding the roster",
+        () -> {
+          Activity activity =
+              startActivitySync(
+                  new Intent(target, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+          android.app.AlertDialog[] dialog = new android.app.AlertDialog[1];
+          State sample = new State();
+          for (int i = 0; i < 5; i++) sample.people.add(new Person("scroll" + i, "Deneme " + i));
+          Week saved = generate(sample, mon);
+          approve(sample, saved);
+          java.lang.reflect.Field stateField = MainActivity.class.getDeclaredField("state");
+          stateField.setAccessible(true);
+          java.lang.reflect.Field selectedField = MainActivity.class.getDeclaredField("selected");
+          selectedField.setAccessible(true);
+          java.lang.reflect.Field scrollField = MainActivity.class.getDeclaredField("pageScroll");
+          scrollField.setAccessible(true);
+          java.lang.reflect.Method render = MainActivity.class.getDeclaredMethod("render");
+          render.setAccessible(true);
+          java.lang.reflect.Method edit =
+              MainActivity.class.getDeclaredMethod("edit", LocalDate.class, String.class);
+          edit.setAccessible(true);
+          String anchor = "roster-day-" + mon.plusDays(3);
+          int[] offset = new int[1];
+          try {
+            waitForFrames(activity);
+            runOnMainSync(
+                () -> {
+                  try {
+                    stateField.set(activity, sample);
+                    selectedField.set(activity, mon);
+                    render.invoke(activity);
+                  } catch (ReflectiveOperationException e) {
+                    throw new AssertionError(e);
+                  }
+                });
+            waitForFrames(activity);
+            runOnMainSync(
+                () -> {
+                  try {
+                    android.widget.ScrollView scroll =
+                        (android.widget.ScrollView) scrollField.get(activity);
+                    android.view.View day = scroll.findViewWithTag(anchor);
+                    scroll.scrollTo(0, day.getTop() + 12);
+                    truth(scroll.getScrollY() > 0);
+                    offset[0] = day.getTop() - scroll.getScrollY();
+                    dialog[0] =
+                        (android.app.AlertDialog) edit.invoke(activity, mon.plusDays(3), BRANCH);
+                    String assigned =
+                        saved.duties.stream()
+                            .filter(d -> d.date.equals(mon.plusDays(3)) && d.place.equals(BRANCH))
+                            .findFirst()
+                            .get()
+                            .person;
+                    int option = 0;
+                    for (int i = 0; i < sample.people.size(); i++)
+                      if (sample.people.get(i).id.equals(assigned)) option = i + 1;
+                    dialog[0].getListView().performItemClick(null, option, option);
+                    dialog[0].dismiss();
+                    dialog[0] = null;
+                  } catch (ReflectiveOperationException e) {
+                    throw new AssertionError(e);
+                  }
+                });
+            waitForFrames(activity);
+            runOnMainSync(
+                () -> {
+                  try {
+                    android.widget.ScrollView scroll =
+                        (android.widget.ScrollView) scrollField.get(activity);
+                    android.view.View day = scroll.findViewWithTag(anchor);
+                    truth(scroll.getScrollY() > 0);
+                    truth(Math.abs(day.getTop() - scroll.getScrollY() - offset[0]) <= 2);
+                    dialog[0] =
+                        (android.app.AlertDialog) edit.invoke(activity, mon.plusDays(3), BRANCH);
+                    dialog[0].getListView().performItemClick(null, 0, 0);
+                    dialog[0].dismiss();
+                    dialog[0] = null;
+                  } catch (ReflectiveOperationException e) {
+                    throw new AssertionError(e);
+                  }
+                });
+            waitForFrames(activity);
+            runOnMainSync(
+                () -> {
+                  try {
+                    android.widget.ScrollView scroll =
+                        (android.widget.ScrollView) scrollField.get(activity);
+                    android.view.View day = scroll.findViewWithTag(anchor);
+                    truth(
+                        scroll.getScrollY() > 0
+                            && Math.abs(day.getTop() - scroll.getScrollY() - offset[0]) <= 2);
+                    truth(findText(day, sample.placeName(BRANCH) + ": —  ✎") != null);
+                    findText(activity.getWindow().getDecorView(), "Personel").performClick();
+                  } catch (ReflectiveOperationException e) {
+                    throw new AssertionError(e);
+                  }
+                });
+            waitForFrames(activity);
+            runOnMainSync(
+                () -> {
+                  try {
+                    truth(
+                        ((android.widget.ScrollView) scrollField.get(activity)).getScrollY() == 0);
+                  } catch (ReflectiveOperationException e) {
+                    throw new AssertionError(e);
+                  }
                 });
           } finally {
             runOnMainSync(

@@ -20,6 +20,7 @@ public final class MainActivity extends Activity {
   private State state;
   private Store store;
   private LinearLayout root, body, tabs;
+  private ScrollView pageScroll;
   private LocalDate selected = monday(LocalDate.now());
   private int screen = 0;
   private TextView notice;
@@ -249,6 +250,7 @@ public final class MainActivity extends Activity {
     }
     root.addView(tabs);
     ScrollView scroll = new ScrollView(this);
+    pageScroll = scroll;
     body = new LinearLayout(this);
     body.setOrientation(LinearLayout.VERTICAL);
     body.setPadding(0, dp(12), 0, dp(30));
@@ -269,6 +271,44 @@ public final class MainActivity extends Activity {
     else if (screen == 2) leaves();
     else if (screen == 3) stats();
     else settings();
+  }
+
+  private void renderKeepingPosition() {
+    int y = pageScroll == null ? 0 : pageScroll.getScrollY();
+    String anchor = null;
+    int offset = 0;
+    if (pageScroll != null) {
+      for (int i = 0; i < body.getChildCount(); i++) {
+        View child = body.getChildAt(i);
+        if (child.getTag() instanceof String
+            && ((String) child.getTag()).startsWith("roster-day-")
+            && child.getBottom() > y
+            && child.getTop() < y + pageScroll.getHeight()) {
+          anchor = (String) child.getTag();
+          offset = child.getTop() - y;
+          break;
+        }
+      }
+    }
+    render();
+    ScrollView restored = pageScroll;
+    LinearLayout content = body;
+    String tag = anchor;
+    int topOffset = offset;
+    restored.setFocusableInTouchMode(true);
+    restored.requestFocus();
+    restored
+        .getViewTreeObserver()
+        .addOnPreDrawListener(
+            new android.view.ViewTreeObserver.OnPreDrawListener() {
+              @Override
+              public boolean onPreDraw() {
+                restored.getViewTreeObserver().removeOnPreDrawListener(this);
+                View target = tag == null ? null : content.findViewWithTag(tag);
+                restored.scrollTo(0, target == null ? y : Math.max(0, target.getTop() - topOffset));
+                return true;
+              }
+            });
   }
 
   private void program() {
@@ -375,7 +415,7 @@ public final class MainActivity extends Activity {
           "Kaydedilmiş Listeyi Düzenle",
           () -> {
             draft = copy(w);
-            render();
+            renderKeepingPosition();
             toast("Gün/yer alanlarına dokunup düzenleyin; ardından değişiklikleri kaydedin.");
           });
     LocalDate sat =
@@ -390,6 +430,7 @@ public final class MainActivity extends Activity {
     for (int i = 0; i < 7; i++) {
       LocalDate day = selected.plusDays(i);
       LinearLayout card = new LinearLayout(this);
+      card.setTag("roster-day-" + day);
       card.setOrientation(LinearLayout.VERTICAL);
       card.setPadding(dp(14), dp(10), dp(14), dp(10));
       GradientDrawable bg = new GradientDrawable();
@@ -1053,19 +1094,19 @@ public final class MainActivity extends Activity {
         });
   }
 
-  private void edit(LocalDate day, String place) {
+  private AlertDialog edit(LocalDate day, String place) {
     Week original = draft != null ? draft : saved();
-    if (original == null) return;
+    if (original == null) return null;
     if (weekend(day) && place.equals(WORK)) {
       replaceWeekend(original);
-      return;
+      return null;
     }
     Week edited = copy(original);
     List<Person> options = new ArrayList<>();
     options.add(new Person("", "Boş Bırak"));
     options.addAll(
         state.people.stream().filter(p -> p.active).collect(java.util.stream.Collectors.toList()));
-    new AlertDialog.Builder(this)
+    return new AlertDialog.Builder(this)
         .setTitle(day.format(shortDate) + " • " + state.placeName(place))
         .setItems(
             options.stream().map(p -> p.name).toArray(String[]::new),
@@ -1088,7 +1129,7 @@ public final class MainActivity extends Activity {
                             + " → "
                             + p.name);
                     draft = edited;
-                    render();
+                    renderKeepingPosition();
                   };
               Place location = state.place(place);
               List<String> assigned = new ArrayList<>();
@@ -1152,7 +1193,7 @@ public final class MainActivity extends Activity {
                   return;
                 }
                 draft = manual;
-                render();
+                renderKeepingPosition();
               })
           .setNegativeButton("Vazgeç", null)
           .show();
@@ -1197,7 +1238,7 @@ public final class MainActivity extends Activity {
                           if (save()) {
                             try {
                               draft = generate(state, selected, replacement.id);
-                              render();
+                              renderKeepingPosition();
                             } catch (IllegalArgumentException e) {
                               toast(e.getMessage());
                             }

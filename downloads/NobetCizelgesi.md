@@ -1,11 +1,13 @@
-# Nöbet Çizelgesi 1.8
+# Nöbet Çizelgesi 1.9
 
-- [APK 1.8 indir](NobetCizelgesi-1.8.apk)
+- [APK 1.9 indir](NobetCizelgesi-1.9.apk)
 - [Güncel APK](NobetCizelgesi.apk)
 - [Android Studio kaynak ZIP](NobetCizelgesi-Android-Studio.zip)
 - [Kullanım](../nobet-cizelgesi/README.md) · [Testler](../nobet-cizelgesi/docs/TESTLER.md)
 
 Android 8.0 ve üzeri. Mevcut uygulamayı **kaldırmadan** APK üzerinden güncelleyin; aynı imza korunur. APK debug imzalıdır.
+
+**Kalemden seçim sonrası konum korunur:** personel seçince veya alanı boş bırakınca sayfa en üste dönmez.
 
 **Birden fazla ve haftalık kısıt:** aynı personele ayrı kayıtlar eklenebilir. Mazeret bölümünde **Her Hafta Tekrarla** seçerek Her Pazartesi/Her Çarşamba gibi günler belirleyin. Haftalık modda tarih alanları yoktur. **+ Kısıt Ekle** ile aynı personele ek gün/görev yeri satırları eklenebilir. Tarihli izin/rapor ayrı modda kullanılır. Genel ve görev yerine özel kısıtlar birlikte denetlenir.
 
