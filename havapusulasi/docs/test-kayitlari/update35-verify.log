@@ -1,0 +1,6 @@
+PASS City survives actual emulator reboot
+PASS Cached forecast survives actual emulator reboot
+PASS Daily reminder choice survives actual reboot
+PASS Boot broadcast restores alarm before reopening Activity
+PASS Offline cold launch renders persisted cached forecast
+OK (5 actual reboot checks). No network required.

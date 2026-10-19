@@ -1,5 +1,7 @@
 # Cep Bütçem
 
+**HavaPusulası 1.0:** çoklu şehir, saatlik tahmin, çevrimdışı kayıt, seçilen saatte bildirim ve ana ekran widget’ı. İsteğe bağlı 30 dakika / 1 saat / 3 saat yenileme. [APK indir](downloads/HavaPusulasi-1.0.0.apk) · [Android Studio ZIP](downloads/HavaPusulasi-Android-Studio.zip) · [Türkçe kurulum ve test sınırları](havapusulasi/README.md). Ücretsiz kişisel kullanım; ilk tahmin için internet gerekir.
+
 **NOVA AI 1.2 · Adaş:** ücretsiz, kişisel ve cihazda çalışan yapay zekâ asistanı. Konuşarak onaylı hatırlatma, zamanlı sesli uyarı, güvenli WhatsApp/SMS taslakları ve kaynaklı web araştırması eklendi. Mesajı son aşamada kullanıcı gönderir; SMS operatör ücreti doğurabilir. [APK indir](downloads/NOVA-Adas.apk) · [Android Studio paketi](downloads/NOVA-Adas-Android-Studio.zip) · [Kurulum ve model indirme](nova/README.md). Model ağırlıkları ayrı indirilir; fiziksel Xiaomi cihazında kalite/hız kontrolü henüz yapılmadı.
 
 **Yeni Android uygulaması: [İlacım — ilaç dolabı ve randevu takibi](ilacim/README.md).** [APK indir](downloads/Ilacim.apk) · [Android Studio proje paketi](downloads/Ilacim-Android-Studio.zip). Dosya sayfasında **Download raw file** ile indir. Barkod/karekod, kutu bazında son kullanma tarihi ve stok, günlük doz planı, randevu ve yerel hatırlatmalar; API sağlayıcısı sonradan ayarlardan bağlanır.

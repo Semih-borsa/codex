@@ -1,0 +1,6 @@
+PASS Real timer scheduled while Activity is not open
+PASS Actual AlarmManager broadcast delivers weather notification
+PASS Receiver durably marks delivered day
+PASS Receiver schedules next daily alarm
+PASS Duplicate same-day alarm does not post a second notification
+OK (5 actual timer checks). Previous app settings restored.

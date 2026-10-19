@@ -1,0 +1,32 @@
+# Test sonuçları — HavaPusulası 1.0.0
+
+Doğrulama: 18–19 Ekim 2026. Hazır APK debug imzalıdır; Play Store üretim yayını değildir.
+
+| Kontrol | Sonuç |
+|---|---|
+| Temurin tam JDK 21.0.12+8, Gradle 8.9, AGP 8.7.3, SDK 35 | Derleme başarılı |
+| `testDebugUnitTest` | 25 test, 0 hata |
+| `lintDebug` | 0 sorun |
+| `assembleDebug`, `assembleDebugAndroidTest` | Başarılı |
+| Android 11 / API 30 instrumentation | 32 kontrol geçti |
+| Android 15 / API 35 instrumentation, ağ kapalı | 36 kontrol geçti |
+| Gerçek AlarmManager tetiklenmesi, Activity kapalı | 5 kontrol geçti |
+| API 35 gerçek işletim sistemi yeniden başlatması | 5 kontrol geçti |
+| `adb install -r` güncelleme sonrası kalıcılık | 5 kontrol geçti |
+
+Birim testleri saat dilimi/DST, günlük alarm, eksik ve süresi dolmuş veri, öneri eşikleri, iş aralıkları ve şehir önceliğini kapsar. Android kontrolleri ayrı SQLite depolarında önbellek korunması, bozuk yanıt reddi, şehir limiti, izinler, alarm yeniden planlama, ağ koşullarına göre iş değiştirme, widget RemoteViews, geçersiz widget kimliği reddi ve gerçek Activity çizimini kapsar. API 35 çevrimdışı testinde aktif ağ olmadığı ayrıca doğrulanmıştır. Test verisi açıkça TEST VERİSİ olarak işaretlidir ve kullanıcı APK'sında bulunmaz.
+
+Gerçek reboot testi çekirdek boot kimliğinin değiştiğini kontrol etti. Uygulama ekranı açılmadan AlarmManager üzerinde gelecek alarm gözlendi; şehirler, kayıtlı tahmin ve tercihler korundu. Android'in boot yayını yazılım emülatöründe gecikerek teslim edildi. Gerçek zamanlayıcı testinde bildirim, aynı gün ikinci bildirimin engellenmesi ve sonraki alarmın kurulması doğrulandı; önceki tercihler geri yüklendi. Bu ek aşamalar ana 32/36 kontrolden ayrı çalıştırıldı.
+
+Android 11 gerçek arayüzünde şehir ekleme, çevrimdışı hata, silme onayını iptal etme, tema, bildirim tercihleri ve başlatıcının gerçek widget ekleme onayı denendi. Widget ana ekranda kayıt olmayan şehir için sıcaklık uydurmadan `—` ve kayıt bulunmadığı bilgisini gösterdi. Widget üzerindeki Şehir ile İstanbul seçimi, Aç ile ilgili şehir ekranına geçiş ve Yenile ile bağlantı bekleyen tek seferlik iş isteği de doğrulandı.
+
+## Doğrulanamayanlar ve teslim sınırı
+
+- Bu bulutun ağ geçidi Open-Meteo uç noktalarında 403/DNS erişim hatası verdi. Canlı şehir araması ve canlı tahmin indirme başarısı **doğrulanamadı**. Ayrıştırma ve arayüz testleri sabit, işaretli yanıtlarla yapıldı. Telefonda ilk gerçek indirme ayrıca kontrol edilmelidir.
+- API 35 yazılım emülatöründe System UI ANR görüldü; HavaPusulası işlevsel testleri geçti fakat o sürümde gerçek başlatıcı/widget GUI testi tamamlanamadı. Ana ekran denemesi API 30'da yapıldı.
+- Fiziksel Xiaomi 12T Pro bağlı değildi. OEM pil kısıtları, gerçek cihaz hızı, gece boyunca güncelleme ve tam saatinde bildirim teslimi doğrulanmadı. Desteklenen en düşük API 26'da ayrıca cihaz testi yapılmadı.
+- Android arka plan işlerini erteleyebilir. 30 dakika bir tercih aralığıdır; kesin periyodik teslim garantisi değildir. İlk sürümde sesli konuşarak hatırlatma veya tahmin doğruluğu karşılaştırma ekranı yoktur.
+
+## Tekrar çalıştırma
+
+README'deki Gradle ve instrumentation komutlarını kullan. Ağsız test için yalnızca kendine ait test emülatöründe ağı kapatıp `adb -s SERIAL shell am instrument -w -e offline true com.semih.havapusulasi.test/com.semih.havapusulasi.WeatherInstrumentation` çalıştır; sonunda önceki ağ durumunu geri getir. Gerçek alarm testi `-e phase alarm-smoke` ile çalışır ve önceki bildirim tercihlerini geri yükler. Reboot hazırlık aşaması yalnızca boş test kurulumunu kabul eder; kişisel veri olan cihazda çalıştırılmaz.

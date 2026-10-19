@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "note": "Belgeleme örneğidir; uygulamaya otomatik aktarılmaz. Ayarları ekrandan seçin.",
+  "theme": "system",
+  "units": {"temperature":"celsius","wind":"km/h","precipitation":"mm"},
+  "max_cities":12,
+  "notifications":{"enabled":false,"hour":8,"minute":0,"timezone":"device","scope":"all_saved_cities"},
+  "background_refresh":{"enabled":false,"network":"unmetered","interval_minutes":30,"available_intervals_minutes":[30,60,180],"max_cities_per_run":12,"stop_after_consecutive_failures":2},
+  "widgets":{"city_per_widget":true,"follow_app_city":true,"cache_display_interval_minutes":30},
+  "api_key_required":false
+}
