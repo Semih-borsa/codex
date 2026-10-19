@@ -1,14 +1,21 @@
-# Nöbet Çizelgesi 1.1 — Android
+# Nöbet Çizelgesi 1.2 — Android
 
 Çevrimdışı personel, görev yeri, mazeret ve haftalık nöbet planlama uygulaması.
 
-[APK 1.1 indir](../downloads/NobetCizelgesi-1.1.apk) · [Android Studio ZIP](../downloads/NobetCizelgesi-Android-Studio.zip) · [Test sonuçları](docs/TESTLER.md)
+[APK 1.2 indir](../downloads/NobetCizelgesi-1.2.apk) · [Android Studio ZIP](../downloads/NobetCizelgesi-Android-Studio.zip) · [Test sonuçları](docs/TESTLER.md)
 
-Android 8.0 ve üzeri. 1.0 kuruluysa **uygulamayı kaldırmadan** 1.1 APK'sını açarak güncelleyin. Aynı paket adı ve imza kullanılır; eski kayıtlar okunur. Kaldırmak veya uygulama verilerini silmek kayıtları siler.
+Android 8.0 ve üzeri. 1.0 veya 1.1 kuruluysa **uygulamayı kaldırmadan** 1.2 APK'sını açarak güncelleyin. Aynı paket adı ve imza kullanılır; eski kayıtlar okunur. Kaldırmak veya uygulama verilerini silmek kayıtları siler.
 
-## 1.1 yenilikleri
+## 1.2 yenilikleri
 
-- **Ayarlar:** İşyeri/Şube adları değiştirilebilir. Yeni görev yeri/şube eklenebilir; çalışma günleri, kişi başı haftalık üst sınırı (0=sınırsız) ve otomatik/yalnız manuel dağıtım seçilebilir. En fazla 20 yer desteklenir. İlk iki yerin ana döngü ve hafta içi kuralları korunur, adları serbesttir.
+- **Eklenen şubeyi silme:** Ayarlar → ilgili şube → Şubeyi sil. Silinen yer yeni dağıtımlardan çıkar; yarın ve sonraki atamaları kaldırılır. Geçmiş ve bugünkü kayıtları/istatistikleri korunur. Silinen görev yerleri düğmesinden geri alınabilir; eski gelecek atamalar otomatik geri gelmez. İlk iki temel yer silinmez, adı/günleri değiştirilebilir.
+- **İlk iki yerin günleri de değiştirilebilir.** Hiç gün seçilmezse o yere yeni atama yapılmaz. Ana yerde yalnız cumartesi veya yalnız pazar da seçilebilir; yalnız seçili güne atama yapılır. İki hafta sonu günü seçiliyse aynı kişi atanır. Ana yerin hafta sonu nöbetçisi perşembe/cuma dinlenir. İlk şubenin hafta sonu günleri de seçilebilir. Gün değişikliği mevcut kayıtları silmez; yeni önerilerde uygulanır.
+- **Çizelgede gösterilecek şubeler:** otomatik/manuel liste oluştururken sorulur; kaydedilmiş listede aynı düğmeyle değiştirilebilir. İşareti kaldırılan şube yalnız çizelge/PDF'de gizlenir. Atamaları ve istatistikleri korunur; otomatik dağıtım devam eder. Ana yer görünür kalır. Görünüm seçimi cihazda hatırlanır ve tüm haftalar için geçerlidir.
+- Mavi, beyaz yazıyla okunabilen daha açık **kurumsal mavi** tona (#2A6FB1) güncellendi.
+
+## Önceki sürümden korunan özellikler
+
+- **Ayarlar:** İşyeri/Şube adları değiştirilebilir. Yeni görev yeri/şube eklenebilir; çalışma günleri, kişi başı haftalık üst sınırı (0=sınırsız) ve otomatik/yalnız manuel dağıtım seçilebilir. En fazla 20 yer desteklenir. İlk iki yerin adları ve günleri serbesttir; mevcut kişi başı sınırları korunur.
 - Yer kimliği sabittir: ad değişse de geçmiş nöbetler, mazeret bağlantıları ve sayımlar korunur. Çizelge/PDF/istatistikler yeni adı gösterir.
 - Açık temanın düğmeleri **mavi zemin/beyaz yazı**; bilgi bildirimleri uygulama içinde aynı renklerde gösterilir. Açık/koyu/sistem seçimi hatırlanır.
 - Kaydedilmiş haftada **Kaydedilmiş listeyi düzenle** veya gün/yer alanına dokunun. Düzenlemeyi **Değişiklikleri kaydet** ile onaylayın. Yalnız o hafta değiştirilir; diğer haftalar silinmez. Sayımlar güncel kayıtlardan hesaplanır; tekrar kaydetmek mükerrer sayım üretmez.
@@ -18,10 +25,10 @@ Android 8.0 ve üzeri. 1.0 kuruluysa **uygulamayı kaldırmadan** 1.1 APK'sını
 ## Kullanım
 
 1. **Personel:** İsimleri ilk hafta sonu sırasına göre ekleyin. Personel çıkarma pasife alma şeklindedir; geçmişi korunur, bugün/gelecek atamaları kaldırılır. Yeniden etkinleştirebilirsiniz.
-2. **Ayarlar:** Yer adlarını ve yeni şubeleri tanımlayın. Yeni yer eklemek eski haftalara kendiliğinden personel yazmaz; ilgili haftayı düzenleyin veya yeni öneri üretin.
+2. **Ayarlar:** Yer adlarını ve yeni şubeleri tanımlayın. Yeni yer eklemek/gün değiştirmek eski haftalara kendiliğinden personel yazmaz; ilgili haftayı düzenleyin veya yeni öneri üretin.
 3. **Mazeret:** Senelik izin/rapor/genel mazeret, başlangıç ve bitiş dahil **tüm yerlerde** atamayı engeller. İsterseniz yalnız seçtiğiniz yere kısıt girin. Mazeret eklenince yalnız çakışan atamalar kaldırılır; diğer haftaların çakışmayan kayıtları korunur. Boşalan günler ayrıca düzenlenebilir veya yeniden dağıtılabilir.
-4. **Çizelge:** Hafta seçin → otomatik öneri veya boş manuel çizelge açın. Ana yerde her gün bir kişi; varsayılan şubede hafta içi kişi başı bir gün. Yeni yerlerde ayarladığınız gün/sınırlar kullanılır. Uygun kişi yoksa zorla atama yapılmaz; eksik günler bildirilir ve kayıttan önce teyit edilir.
-5. Cumartesi+pazar ana yerde aynı kişidir. Bu kişi aynı haftanın perşembe/cuma günleri **tüm yerlerde** dinlenir. Manuel listede önce hafta sonunu seçmek kolaylık sağlar. Çakışan eski alanı önce boşaltın.
+4. **Çizelge:** Hafta seçin → otomatik öneri veya boş manuel çizelge açın. Varsayılan olarak ana yerde her gün bir kişi; ilk şubede hafta içi kişi başı bir gün. Bu yerlerin günleri de Ayarlar’dan değiştirilebilir. Yeni yerlerde ayarladığınız gün/sınırlar kullanılır. Uygun kişi yoksa zorla atama yapılmaz; eksik günler bildirilir ve kayıttan önce teyit edilir.
+5. Ana yerde cumartesi+pazar seçiliyse aynı kişidir; yalnız biri seçiliyse o gün atanır. Bu kişi aynı haftanın perşembe/cuma günleri **tüm yerlerde** dinlenir. Manuel listede önce hafta sonunu seçmek kolaylık sağlar. Çakışan eski alanı önce boşaltın.
 6. Hafta sonunu atlamak veya devretmek için mazeret bitiş tarihini girin. Atlanan kişi bitişten sonraki ilk uygun hafta sonuna önceliklidir. Birden çok bekleyen varsa en erken mazereti biten uygun kişi önceliklidir; diğerlerinin sırası korunur. Sonradan eski hafta düzenlense de bekleyen haklar, geçmiş kayıtlar üzerinden takip edilir.
 7. Onaylı haftada **PDF oluştur ve paylaş** → WhatsApp veya başka uygulamayı seçin. Alıcıyı siz belirlersiniz; otomatik mesaj gönderilmez.
 

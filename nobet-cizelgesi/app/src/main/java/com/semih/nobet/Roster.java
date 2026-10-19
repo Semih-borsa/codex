@@ -12,6 +12,7 @@ public final class Roster {
     public String id, name;
     public int days, limit;
     public boolean automatic = true;
+    public boolean deleted = false;
 
     public Place(String id, String name, int days, int limit) {
       this.id = id;
@@ -92,6 +93,7 @@ public final class Roster {
   }
 
   public static final class State {
+    public Set<String> hiddenPlaces = new HashSet<>();
     public List<Place> places =
         new ArrayList<>(
             Arrays.asList(new Place(WORK, WORK, 127, 0), new Place(BRANCH, BRANCH, 31, 1)));
@@ -175,7 +177,7 @@ public final class Roster {
                                 x ->
                                     x.person.equals(d.person)
                                         && x.place.equals(WORK)
-                                        && x.date.getDayOfWeek() == DayOfWeek.SATURDAY
+                                        && weekend(x.date)
                                         && x.date.isAfter(d.end)));
         if (!served) {
           Debt old = result.get(d.person);
@@ -190,6 +192,37 @@ public final class Roster {
     Debt old = w.debts.stream().filter(d -> d.person.equals(p)).findFirst().orElse(null);
     if (old == null) w.debts.add(new Debt(p, end));
     else if (end.isAfter(old.end)) old.end = end;
+  }
+
+  public static List<LocalDate> workWeekendDays(State s, LocalDate monday) {
+    List<LocalDate> result = new ArrayList<>();
+    for (int i = 5; i < 7; i++) {
+      LocalDate d = monday.plusDays(i);
+      if (s.place(WORK).on(d)) result.add(d);
+    }
+    return result;
+  }
+
+  public static boolean weekendAvailable(State s, String person, LocalDate monday) {
+    for (LocalDate d : workWeekendDays(s, monday)) if (!available(s, person, WORK, d)) return false;
+    return true;
+  }
+
+  public static void deletePlace(State s, String id, LocalDate today) {
+    if (id.equals(WORK) || id.equals(BRANCH))
+      throw new IllegalArgumentException(
+          "İlk iki yer silinmez; adını/günlerini düzenleyebilirsiniz.");
+    Place p = s.place(id);
+    p.deleted = true;
+    for (Week w : s.weeks) w.duties.removeIf(d -> d.place.equals(id) && d.date.isAfter(today));
+  }
+
+  public static List<Place> displayPlaces(State s, Week w) {
+    List<Place> list = new ArrayList<>();
+    for (Place p : s.places)
+      if ((!p.deleted || w.duties.stream().anyMatch(d -> d.place.equals(p.id)))
+          && !s.hiddenPlaces.contains(p.id)) list.add(p);
+    return list;
   }
 
   public static Week generate(State s, LocalDate date) {
@@ -213,70 +246,74 @@ public final class Roster {
     w.debts.addAll(pendingDebts(s, w.monday));
     // Reserve the weekend block first; an owed turn never consumes the regular rotation.
     LocalDate sat = w.monday.plusDays(5), sun = sat.plusDays(1);
-    Person chosen = null;
-    List<Debt> due = new ArrayList<>(w.debts);
-    due.sort(Comparator.comparing(d -> d.end));
-    for (Debt d : due)
-      if (d.end.isBefore(sat)) {
-        Person p = active.stream().filter(x -> x.id.equals(d.person)).findFirst().orElse(null);
-        if (p != null && available(s, p.id, WORK, sat) && available(s, p.id, WORK, sun)) {
-          chosen = p;
-          break;
+    List<LocalDate> weekendDates = workWeekendDays(s, w.monday);
+    if (!weekendDates.isEmpty()) {
+      LocalDate firstWeekend = weekendDates.get(0);
+      Person chosen = null;
+      List<Debt> due = new ArrayList<>(w.debts);
+      due.sort(Comparator.comparing(d -> d.end));
+      for (Debt d : due)
+        if (d.end.isBefore(firstWeekend)) {
+          Person p = active.stream().filter(x -> x.id.equals(d.person)).findFirst().orElse(null);
+          if (p != null && weekendAvailable(s, p.id, w.monday)) {
+            chosen = p;
+            break;
+          }
         }
-      }
-    if (chosen != null && due.stream().filter(d -> d.end.isBefore(sat)).count() > 1)
-      w.warnings.add(
-          "Birden fazla bekleyen hafta sonu var. En erken mazereti biten uygun kişi öncelikli;"
-              + " diğerleri sırada tutuluyor.");
-    if (chosen == null) {
-      int last = -1;
-      for (int i = 0; i < s.people.size(); i++) if (s.people.get(i).id.equals(w.cursor)) last = i;
-      for (int n = 1; n <= s.people.size(); n++) {
-        Person p = s.people.get((last + n) % s.people.size());
-        if (!p.active) continue;
-        w.cursor = p.id;
-        if (available(s, p.id, WORK, sat) && available(s, p.id, WORK, sun)) {
-          chosen = p;
-          break;
-        }
-        LocalDate until =
-            s.leaves.stream()
-                .filter(l -> l.blocks(p.id, WORK, sat) || l.blocks(p.id, WORK, sun))
-                .map(l -> l.end)
-                .max(Comparator.naturalOrder())
-                .orElse(sun);
-        debt(w, p.id, until);
+      if (chosen != null && due.stream().filter(d -> d.end.isBefore(firstWeekend)).count() > 1)
         w.warnings.add(
-            s.name(p.id)
-                + " hafta sonu atlandı; mazeret sonu "
-                + until
-                + ". İlk uygun hafta sonuna öncelikli.");
+            "Birden fazla bekleyen hafta sonu var. En erken mazereti biten uygun kişi öncelikli;"
+                + " diğerleri sırada tutuluyor.");
+      if (chosen == null) {
+        int last = -1;
+        for (int i = 0; i < s.people.size(); i++) if (s.people.get(i).id.equals(w.cursor)) last = i;
+        for (int n = 1; n <= s.people.size(); n++) {
+          Person p = s.people.get((last + n) % s.people.size());
+          if (!p.active) continue;
+          w.cursor = p.id;
+          if (weekendAvailable(s, p.id, w.monday)) {
+            chosen = p;
+            break;
+          }
+          LocalDate until =
+              s.leaves.stream()
+                  .filter(l -> weekendDates.stream().anyMatch(d -> l.blocks(p.id, WORK, d)))
+                  .map(l -> l.end)
+                  .max(Comparator.naturalOrder())
+                  .orElse(sun);
+          debt(w, p.id, until);
+          w.warnings.add(
+              s.name(p.id)
+                  + " hafta sonu atlandı; mazeret sonu "
+                  + until
+                  + ". İlk uygun hafta sonuna öncelikli.");
+        }
       }
-    }
-    if (replacement != null) {
-      Person requested =
-          active.stream()
-              .filter(p -> p.id.equals(replacement))
-              .findFirst()
-              .orElseThrow(() -> new IllegalArgumentException("Aktif personel seçin."));
-      if (!available(s, requested.id, WORK, sat) || !available(s, requested.id, WORK, sun))
-        throw new IllegalArgumentException("Seçilen kişinin hafta sonunda mazereti var.");
-      if (chosen != null && !chosen.id.equals(requested.id)) {
-        // Manual cover does not erase the proposed person's turn; retain it as a pending turn.
-        debt(w, chosen.id, sun);
+      if (replacement != null) {
+        Person requested =
+            active.stream()
+                .filter(p -> p.id.equals(replacement))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Aktif personel seçin."));
+        if (!weekendAvailable(s, requested.id, w.monday))
+          throw new IllegalArgumentException("Seçilen kişinin hafta sonunda mazereti var.");
+        if (chosen != null && !chosen.id.equals(requested.id)) {
+          // Manual cover does not erase the proposed person's turn; retain it as a pending turn.
+          debt(w, chosen.id, sun);
+        }
+        chosen = requested;
+        w.warnings.add("Hafta sonu elle seçildi; yerini devreden personelin sırası korunur.");
       }
-      chosen = requested;
-      w.warnings.add("Hafta sonu elle seçildi; yerini devreden personelin sırası korunur.");
+      if (chosen != null) {
+        for (LocalDate day : weekendDates) w.duties.add(new Duty(day, WORK, chosen.id));
+        String id = chosen.id;
+        w.debts.removeIf(d -> d.person.equals(id));
+      } else w.warnings.add("Hafta sonu uygun personel yok; işyeri iki gün BOŞ.");
     }
-    if (chosen != null) {
-      w.duties.add(new Duty(sat, WORK, chosen.id));
-      w.duties.add(new Duty(sun, WORK, chosen.id));
-      String id = chosen.id;
-      w.debts.removeIf(d -> d.person.equals(id));
-    } else w.warnings.add("Hafta sonu uygun personel yok; işyeri iki gün BOŞ.");
     assignPlace(s, w, s.place(BRANCH), active);
     for (int i = 0; i < 5; i++) {
       LocalDate d = w.monday.plusDays(i);
+      if (!s.place(WORK).on(d)) continue;
       Person p =
           active.stream()
               .filter(x -> free(s, w, x, WORK, d))
@@ -290,7 +327,8 @@ public final class Roster {
     for (Place place : s.places)
       if (!place.id.equals(WORK) && !place.id.equals(BRANCH)) assignPlace(s, w, place, active);
     for (Person p : active)
-      if (w.duties.stream().noneMatch(d -> d.person.equals(p.id) && d.place.equals(BRANCH)))
+      if (s.place(BRANCH).days != 0
+          && w.duties.stream().noneMatch(d -> d.person.equals(p.id) && d.place.equals(BRANCH)))
         w.warnings.add(
             p.name
                 + " bu hafta şubeye atanmadı ("
@@ -301,7 +339,7 @@ public final class Roster {
   }
 
   static void assignPlace(State s, Week w, Place place, List<Person> people) {
-    if (!place.automatic) return;
+    if (place.deleted || !place.automatic) return;
     List<LocalDate> days = new ArrayList<>();
     for (int i = 0; i < 7; i++) {
       LocalDate d = w.monday.plusDays(i);
@@ -362,7 +400,7 @@ public final class Roster {
 
   public static long expectedSlots(State s) {
     long count = 0;
-    for (Place p : s.places) count += Integer.bitCount(p.days);
+    for (Place p : s.places) if (!p.deleted) count += Integer.bitCount(p.days);
     return count;
   }
 
@@ -389,7 +427,12 @@ public final class Roster {
 
   public static List<Place> statisticPlaces(State s) {
     List<Place> places = new ArrayList<>();
-    for (Place p : s.places) if (!p.id.equals(WORK)) places.add(p);
+    for (Place p : s.places)
+      if (!p.id.equals(WORK)
+          && (!p.deleted
+              || s.weeks.stream()
+                  .anyMatch(w -> w.duties.stream().anyMatch(d -> d.place.equals(p.id)))))
+        places.add(p);
     return places;
   }
 
@@ -445,15 +488,14 @@ public final class Roster {
                       old.place.equals(d.place)
                           && old.person.equals(d.person)
                           && old.date.equals(d.date));
+      if (location.deleted && !recorded)
+        errors.add(location.name + " silinmiş; yeni atama yapılamaz.");
       if (!location.on(d.date) && !recorded) errors.add(location.name + " seçilen gün kapalı.");
       if (location.limit > 0) {
         String key = d.place + "|" + d.person;
         int n = branch.merge(key, 1, Integer::sum);
         if (n > location.limit && !w.limitOverrides.contains(key))
           errors.add(location.name + " kişi başı haftalık sınırı aşıldı.");
-      }
-      if (d.place.equals(BRANCH)) {
-        if (weekend(d.date)) errors.add("Hafta sonu şube nöbeti olamaz.");
       }
     }
 
@@ -469,7 +511,8 @@ public final class Roster {
             .map(d -> d.person)
             .findFirst()
             .orElse("");
-    if (!sat.equals(sun)) errors.add("Cumartesi ve pazar aynı kişi olmalı.");
+    if ((workWeekendDays(s, w.monday).size() == 2 || (!sat.isEmpty() && !sun.isEmpty()))
+        && !sat.equals(sun)) errors.add("Cumartesi ve pazar aynı kişi olmalı.");
     return errors;
   }
 

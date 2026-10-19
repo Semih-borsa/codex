@@ -37,9 +37,10 @@ final class PdfExport {
                 + ".pdf");
     PdfDocument pdf = new PdfDocument();
     try {
-      int pages = (s.places.size() + 2) / 3;
+      List<Place> shown = displayPlaces(s, w);
+      int pages = (shown.size() + 2) / 3;
       for (int part = 0; part < pages; part++) {
-        List<Place> locations = s.places.subList(part * 3, Math.min(s.places.size(), part * 3 + 3));
+        List<Place> locations = shown.subList(part * 3, Math.min(shown.size(), part * 3 + 3));
         int columnWidth = 570 / locations.size();
         PdfDocument.Page page =
             pdf.startPage(new PdfDocument.PageInfo.Builder(842, 595, part + 1).create());
@@ -53,7 +54,7 @@ final class PdfExport {
         p.setTypeface(Typeface.DEFAULT);
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd.MM.yyyy");
         c.drawText(w.monday.format(fmt) + " – " + w.monday.plusDays(6).format(fmt), 36, 77, p);
-        p.setColor(Color.rgb(31, 90, 137));
+        p.setColor(Color.rgb(42, 111, 177));
         c.drawRect(36, 98, 806, 131, p);
         p.setColor(Color.WHITE);
         p.setTypeface(Typeface.DEFAULT_BOLD);

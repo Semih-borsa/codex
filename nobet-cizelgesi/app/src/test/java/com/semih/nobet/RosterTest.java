@@ -418,6 +418,142 @@ public class RosterTest {
   }
 
   @Test
+  public void originalWorkDaysAreRespected() {
+    State s = people(5);
+    s.place(WORK).days = 5;
+    Week w = generate(s, mon);
+    assertEquals(2, w.duties.stream().filter(d -> d.place.equals(WORK)).count());
+    assertTrue(
+        w.duties.stream()
+            .filter(d -> d.place.equals(WORK))
+            .allMatch(d -> d.date.equals(mon) || d.date.equals(mon.plusDays(2))));
+    assertTrue(validate(s, w).isEmpty());
+    assertEquals(7, expectedSlots(s));
+  }
+
+  @Test
+  public void originalBranchCanSelectWeekendDays() {
+    State s = people(5);
+    s.place(BRANCH).days = 96;
+    Week w = generate(s, mon);
+    assertEquals(2, w.duties.stream().filter(d -> d.place.equals(BRANCH)).count());
+    assertTrue(
+        w.duties.stream().filter(d -> d.place.equals(BRANCH)).allMatch(d -> weekend(d.date)));
+    assertTrue(validate(s, w).isEmpty());
+  }
+
+  @Test
+  public void saturdayOnlyMainWeekendIsValid() {
+    State s = people(5);
+    s.place(WORK).days = 63;
+    Week w = generate(s, mon);
+    assertEquals(6, w.duties.stream().filter(d -> d.place.equals(WORK)).count());
+    assertFalse(
+        w.duties.stream()
+            .anyMatch(d -> d.place.equals(WORK) && d.date.getDayOfWeek() == DayOfWeek.SUNDAY));
+    assertTrue(validate(s, w).isEmpty());
+  }
+
+  @Test
+  public void sundayOnlyIgnoresClosedSaturdayLeave() {
+    State s = people(5);
+    s.place(WORK).days = 64;
+    s.leaves.add(new Leave("p0", ALL, mon.plusDays(5), mon.plusDays(5), "Rapor"));
+    Week w = generate(s, mon);
+    assertTrue(
+        w.duties.stream()
+            .anyMatch(
+                d ->
+                    d.place.equals(WORK)
+                        && d.person.equals("p0")
+                        && d.date.equals(mon.plusDays(6))));
+    assertTrue(validate(s, w).isEmpty());
+  }
+
+  @Test
+  public void sundayOnlySettlesPendingTurn() {
+    State s = people(5);
+    s.place(WORK).days = 64;
+    Week previous = new Week(mon.minusWeeks(1));
+    previous.cursor = "p1";
+    previous.debts.add(new Debt("p0", mon.plusDays(5)));
+    s.weeks.add(previous);
+    Week w = generate(s, mon);
+    assertTrue(w.duties.stream().anyMatch(d -> d.place.equals(WORK) && d.person.equals("p0")));
+    approve(s, w);
+    assertTrue(pendingDebts(s, mon.plusWeeks(1)).isEmpty());
+  }
+
+  @Test
+  public void allDaysCanBeTurnedOffWithoutAdvancingRotation() {
+    State s = people(5);
+    s.place(WORK).days = 0;
+    s.place(BRANCH).days = 0;
+    Week w = generate(s, mon);
+    assertTrue(w.duties.isEmpty());
+    assertTrue(w.cursor.isEmpty());
+    assertEquals(0, expectedSlots(s));
+    assertTrue(validate(s, w).isEmpty());
+  }
+
+  @Test
+  public void deletingExtraPlaceRetainsPastAndClearsOnlyFuture() {
+    State s = people(5);
+    s.places.add(new Place("extra", "Ek", 31, 1));
+    Week old = new Week(mon);
+    old.duties.add(new Duty(mon, "extra", "p0"));
+    old.duties.add(new Duty(mon.plusDays(3), "extra", "p1"));
+    s.weeks.add(old);
+    deletePlace(s, "extra", mon.plusDays(2));
+    assertTrue(s.place("extra").deleted);
+    assertEquals(1, old.duties.size());
+    assertEquals(1, totals(s, "p0", "extra", mon.plusDays(2))[0]);
+    assertTrue(statisticPlaces(s).stream().anyMatch(p -> p.id.equals("extra")));
+    Week next = generate(s, mon.plusWeeks(1));
+    assertFalse(next.duties.stream().anyMatch(d -> d.place.equals("extra")));
+    assertFalse(displayPlaces(s, next).stream().anyMatch(p -> p.id.equals("extra")));
+    assertTrue(displayPlaces(s, old).stream().anyMatch(p -> p.id.equals("extra")));
+    s.place("extra").deleted = false;
+    assertEquals(
+        5,
+        generate(s, mon.plusWeeks(1)).duties.stream().filter(d -> d.place.equals("extra")).count());
+    assertEquals(1, old.duties.size());
+  }
+
+  @Test
+  public void hiddenBranchesKeepDutiesAndStatistics() {
+    State s = people(5);
+    s.places.add(new Place("extra", "Ek", 31, 1));
+    Week w = generate(s, mon);
+    approve(s, w);
+    long[] before = totals(s, "p0", "extra", mon.plusDays(6));
+    s.hiddenPlaces.add(BRANCH);
+    s.hiddenPlaces.add("extra");
+    assertEquals(1, displayPlaces(s, w).size());
+    assertEquals(17, w.duties.size());
+    assertEquals(2, statisticPlaces(s).size());
+    assertArrayEquals(before, totals(s, "p0", "extra", mon.plusDays(6)));
+    assertEquals(17, generate(s, mon.plusWeeks(1)).duties.size());
+  }
+
+  @Test
+  public void originalRolesCannotBeDeleted() {
+    State s = people(5);
+    try {
+      deletePlace(s, WORK, mon);
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertFalse(s.place(WORK).deleted);
+    }
+    try {
+      deletePlace(s, BRANCH, mon);
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertFalse(s.place(BRANCH).deleted);
+    }
+  }
+
+  @Test
   public void cloneIsIndependent() {
     State s = people(5);
     Week w = generate(s, mon);

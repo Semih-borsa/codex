@@ -28,9 +28,9 @@ public final class MainActivity extends Activity {
   private boolean failed = false;
   private Week draft;
   private int ink = Color.rgb(19, 38, 60),
-      teal = Color.rgb(31, 90, 137),
+      teal = Color.rgb(42, 111, 177),
       muted = Color.rgb(85, 105, 124),
-      surface = Color.rgb(242, 246, 250),
+      surface = Color.rgb(237, 245, 253),
       cardColor = Color.WHITE,
       warningColor = Color.rgb(155, 83, 0);
   private int themeMode;
@@ -123,7 +123,7 @@ public final class MainActivity extends Activity {
     b.setText(s);
     b.setTextSize(14);
     b.setTextColor(Color.WHITE);
-    b.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(31, 90, 137)));
+    b.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(42, 111, 177)));
     b.setAllCaps(false);
     b.setOnClickListener(
         v -> {
@@ -255,7 +255,7 @@ public final class MainActivity extends Activity {
     notice = text(noticeText, 14, Color.WHITE);
     notice.setPadding(dp(12), dp(10), dp(12), dp(10));
     GradientDrawable noticeBg = new GradientDrawable();
-    noticeBg.setColor(Color.rgb(31, 90, 137));
+    noticeBg.setColor(Color.rgb(42, 111, 177));
     noticeBg.setCornerRadius(dp(12));
     notice.setBackground(noticeBg);
     notice.setVisibility(noticeText.isEmpty() ? View.GONE : View.VISIBLE);
@@ -303,12 +303,10 @@ public final class MainActivity extends Activity {
         new LinearLayout.LayoutParams(0, dp(52), 1));
     body.addView(nav);
     note(
-        state.placeName(WORK)
-            + " her gün • "
-            + state.placeName(BRANCH)
-            + " hafta içi, kişi başı en fazla 1 gün. Hafta sonu aynı kişi; perşembe ve cuma tüm"
-            + " görev yerlerinde izinli. Diğer yerler Ayarlar bölümündeki gün ve sınırlarla"
-            + " planlanır.");
+        "Görev yerlerinin günleri Ayarlar bölümünden belirlenir. Ana yerde seçili hafta sonu"
+            + " günleri aynı kişiye verilir; bu kişi perşembe/cuma tüm yerlerde izinli olur.");
+    action("Çizelgede gösterilecek şubeler", () -> chooseVisiblePlaces(null));
+    note("Gizlenen şubeler yalnız çizelge/PDF'de görünmez; atamaları ve istatistikleri korunur.");
     if (state.people.stream().noneMatch(p -> p.active)) {
       note(
           "Başlamak için Personel bölümüne 5 kişinin adını ekleyin. Sonradan ekleyebilir, pasife"
@@ -323,36 +321,43 @@ public final class MainActivity extends Activity {
     }
     action(
         "Otomatik dağıtım öner",
-        () -> {
-          try {
-            draft = generate(state, selected);
-            render();
-          } catch (IllegalArgumentException e) {
-            toast(e.getMessage());
-          }
-        });
+        () ->
+            chooseVisiblePlaces(
+                () -> {
+                  try {
+                    draft = generate(state, selected);
+                    render();
+                  } catch (IllegalArgumentException e) {
+                    toast(e.getMessage());
+                  }
+                }));
     action(
         "Boş çizelge aç • manuel oluştur",
         () ->
-            confirm(
-                "Manuel çizelge",
-                "Bu hafta için boş bir öneri açılacak. Mevcut kayıt, siz onaylayana kadar"
-                    + " değişmeyecek. Günlerdeki işyeri/şube alanlarına dokunarak personel seçin.",
-                () -> {
-                  draft = new Week(selected);
-                  Week previous =
-                      state.weeks.stream()
-                          .filter(x -> x.monday.isBefore(selected))
-                          .max(Comparator.comparing(x -> x.monday))
-                          .orElse(null);
-                  if (previous != null) {
-                    draft.cursor = previous.cursor;
-                    for (Debt d : previous.debts) draft.debts.add(new Debt(d.person, d.end));
-                  }
-                  draft.warnings.add(
-                      "Manuel çizelge: boş alanları ve mazeretleri kontrol ederek onaylayın.");
-                  render();
-                }));
+            chooseVisiblePlaces(
+                () ->
+                    confirm(
+                        "Manuel çizelge",
+                        "Bu hafta için boş bir öneri açılacak. Mevcut kayıt, siz onaylayana kadar"
+                            + " değişmeyecek. Günlerdeki işyeri/şube alanlarına dokunarak personel"
+                            + " seçin.",
+                        () -> {
+                          draft = new Week(selected);
+                          Week previous =
+                              state.weeks.stream()
+                                  .filter(x -> x.monday.isBefore(selected))
+                                  .max(Comparator.comparing(x -> x.monday))
+                                  .orElse(null);
+                          if (previous != null) {
+                            draft.cursor = previous.cursor;
+                            for (Debt d : previous.debts)
+                              draft.debts.add(new Debt(d.person, d.end));
+                          }
+                          draft.warnings.add(
+                              "Manuel çizelge: boş alanları ve mazeretleri kontrol ederek"
+                                  + " onaylayın.");
+                          render();
+                        })));
     Week w = draft != null ? draft : saved();
     if (w == null) {
       note("Bu hafta için henüz onaylı çizelge yok.");
@@ -368,7 +373,12 @@ public final class MainActivity extends Activity {
             render();
             toast("Gün/yer alanlarına dokunup düzenleyin; ardından değişiklikleri kaydedin.");
           });
-    LocalDate sat = selected.plusDays(5);
+    LocalDate sat =
+        w.duties.stream()
+            .filter(d -> d.place.equals(WORK) && weekend(d.date))
+            .map(d -> d.date)
+            .min(Comparator.naturalOrder())
+            .orElse(selected.plusDays(5));
     String weekendPerson = PdfExport.person(state, w, sat, WORK);
     note("Hafta sonu: " + weekendPerson + "\nPerşembe/cuma dinlenme: " + weekendPerson);
     DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd MMMM EEEE", new Locale("tr", "TR"));
@@ -387,13 +397,14 @@ public final class MainActivity extends Activity {
       TextView dayTitle = text(day.format(fmt), 16, ink);
       dayTitle.setTypeface(null, Typeface.BOLD);
       card.addView(dayTitle);
-      for (Place location : state.places) {
+      for (Place location : displayPlaces(state, w)) {
         String place = location.id;
-        if (!location.on(day)
+        if ((location.deleted || !location.on(day))
             && w.duties.stream().noneMatch(d -> d.date.equals(day) && d.place.equals(place)))
           continue;
         String label = location.name + ": " + PdfExport.person(state, w, day, place);
-        card.addView(button(label + "  ✎", () -> edit(day, place)));
+        if (location.deleted) card.addView(text(label + " (silindi)", 14, ink));
+        else card.addView(button(label + "  ✎", () -> edit(day, place)));
       }
       if (day.getDayOfWeek().getValue() == 4 || day.getDayOfWeek().getValue() == 5)
         card.addView(text("Dinlenme: " + weekendPerson, 13, muted));
@@ -450,11 +461,9 @@ public final class MainActivity extends Activity {
     }
     long missing = Math.max(0, expectedSlots(state) - draft.duties.size());
     String msg =
-        state.placeName(WORK)
-            + " her gün, "
-            + state.placeName(BRANCH)
-            + " hafta içi kişi başı en fazla 1 gün; hafta sonu nöbetçisi perşembe/cuma tüm yerlerde"
-            + " izinli. Ek görev yerleri Ayarlardaki kurallarla atanır.\n\n"
+        "Atamalar Ayarlar'daki seçili günlere ve haftalık sınırlara göre yapılır. Ana yerde iki"
+            + " hafta sonu günü de seçiliyse aynı kişi atanır; bu kişi perşembe/cuma izinlidir."
+            + " Gizli şubelerin atamaları ve istatistikleri korunur.\n\n"
             + (missing > 0
                 ? missing + " boş nöbet alanı var. Eksik çizelge olarak kaydedilecek.\n\n"
                 : "")
@@ -659,12 +668,16 @@ public final class MainActivity extends Activity {
       for (int i = 0; i < list.size(); i++)
         if (list.get(i).id.equals(existing.person)) who.setSelection(i);
     List<String> types = new ArrayList<>(Arrays.asList("Senelik izin", "Rapor", "Diğer mazeret"));
-    for (Place location : state.places) types.add("Yalnız " + location.name + " kısıtı");
+    List<Place> locations =
+        state.places.stream()
+            .filter(p -> !p.deleted || existing != null && p.id.equals(existing.place))
+            .collect(java.util.stream.Collectors.toList());
+    for (Place location : locations) types.add("Yalnız " + location.name + " kısıtı");
     Spinner type = spinner(types.toArray(new String[0]));
     int index = reason.equals("Rapor") ? 1 : reason.equals("Senelik izin") ? 0 : 2;
     if (!place.equals(ALL))
-      for (int i = 0; i < state.places.size(); i++)
-        if (state.places.get(i).id.equals(place)) index = 3 + i;
+      for (int i = 0; i < locations.size(); i++)
+        if (locations.get(i).id.equals(place)) index = 3 + i;
     type.setSelection(index);
     box.addView(type);
     LocalDate[] dates = {start, end};
@@ -707,7 +720,7 @@ public final class MainActivity extends Activity {
                       }
                       String person = list.get(who.getSelectedItemPosition()).id;
                       int t = type.getSelectedItemPosition();
-                      String target = t >= 3 ? state.places.get(t - 3).id : ALL;
+                      String target = t >= 3 ? locations.get(t - 3).id : ALL;
                       String label = type.getSelectedItem().toString();
                       confirm(
                           "Mazereti kaydet",
@@ -792,7 +805,7 @@ public final class MainActivity extends Activity {
                               list.get(i).id,
                               BRANCH,
                               selected,
-                              selected.plusDays(4),
+                              selected.plusDays(6),
                               "Haftalık şube muafiyeti");
                       state.leaves.add(leave);
                       removeConflicts(leave);
@@ -808,7 +821,7 @@ public final class MainActivity extends Activity {
   private void skip(Week w) {
     String id =
         w.duties.stream()
-            .filter(d -> d.date.equals(selected.plusDays(5)) && d.place.equals(WORK))
+            .filter(d -> weekend(d.date) && d.place.equals(WORK))
             .map(d -> d.person)
             .findFirst()
             .orElse("");
@@ -816,26 +829,32 @@ public final class MainActivity extends Activity {
       toast("Atlanacak hafta sonu nöbetçisi yok.");
       return;
     }
+    LocalDate start =
+        w.duties.stream()
+            .filter(d -> weekend(d.date) && d.place.equals(WORK))
+            .map(d -> d.date)
+            .min(Comparator.naturalOrder())
+            .orElse(selected.plusDays(5));
     dateTitled(
         "Mazeret bitiş tarihini seçin",
         selected.plusDays(6),
         end -> {
-          if (end.isBefore(selected.plusDays(5))) {
-            toast("Bitiş en az cumartesi olmalı.");
+          if (end.isBefore(start)) {
+            toast("Bitiş ilk nöbet gününden önce olamaz.");
             return;
           }
           confirm(
               "Hafta sonu sırasını atla",
               state.name(id)
                   + " için "
-                  + selected.plusDays(5).format(shortDate)
+                  + start.format(shortDate)
                   + " – "
                   + end.format(shortDate)
                   + " tüm görev yerlerinde mazeret kaydedilsin mi?\n"
                   + "Mazeret bittikten sonraki ilk uygun hafta sonu öncelikli atanacak. Diğer"
                   + " haftaların çakışmayan atamaları korunur.",
               () -> {
-                Leave leave = new Leave(id, ALL, selected.plusDays(5), end, "Hafta sonu mazereti");
+                Leave leave = new Leave(id, ALL, start, end, "Hafta sonu mazereti");
                 state.leaves.add(leave);
                 removeConflicts(leave);
                 if (save()) {
@@ -922,17 +941,21 @@ public final class MainActivity extends Activity {
       toast("Başka aktif personel yok.");
       return;
     }
+    List<LocalDate> weekendDays = workWeekendDays(state, selected);
+    if (weekendDays.isEmpty()) {
+      toast("Ana görev yerinde hafta sonu günü seçili değil; Ayarlar'dan düzenleyin.");
+      return;
+    }
     if (old.isEmpty()) {
       new AlertDialog.Builder(this)
-          .setTitle("Cumartesi + pazar • manuel atama")
+          .setTitle("Seçili hafta sonu günleri • manuel atama")
           .setItems(
               options.stream().map(p -> p.name).toArray(String[]::new),
               (dialog, i) -> {
                 Week manual = copy(original);
                 Person p = options.get(i);
                 manual.duties.removeIf(d -> weekend(d.date) && d.place.equals(WORK));
-                manual.duties.add(new Duty(selected.plusDays(5), WORK, p.id));
-                manual.duties.add(new Duty(selected.plusDays(6), WORK, p.id));
+                for (LocalDate day : weekendDays) manual.duties.add(new Duty(day, WORK, p.id));
                 manual.cursor = p.id;
                 manual.debts.removeIf(d -> d.person.equals(p.id));
                 List<String> errors = validate(state, manual);
@@ -948,13 +971,12 @@ public final class MainActivity extends Activity {
       return;
     }
     new AlertDialog.Builder(this)
-        .setTitle("Cumartesi + pazar devralacak kişi")
+        .setTitle("Seçili hafta sonu günlerini devralacak kişi")
         .setItems(
             options.stream().map(p -> p.name).toArray(String[]::new),
             (dialog, i) -> {
               Person replacement = options.get(i);
-              if (!available(state, replacement.id, WORK, selected.plusDays(5))
-                  || !available(state, replacement.id, WORK, selected.plusDays(6))) {
+              if (!weekendAvailable(state, replacement.id, selected)) {
                 toast("Seçilen kişinin hafta sonunda mazereti var.");
                 return;
               }
@@ -962,8 +984,8 @@ public final class MainActivity extends Activity {
                   "Devreden kişinin mazeret bitişi",
                   selected.plusDays(6),
                   end -> {
-                    if (end.isBefore(selected.plusDays(5))) {
-                      toast("Bitiş cumartesiden önce olamaz.");
+                    if (end.isBefore(weekendDays.get(0))) {
+                      toast("Bitiş ilk seçili nöbet gününden önce olamaz.");
                       return;
                     }
                     confirm(
@@ -971,7 +993,8 @@ public final class MainActivity extends Activity {
                         state.name(old)
                             + " yerine "
                             + replacement.name
-                            + " iki gün atanacak. Devreden kişi için mazeret bitişi: "
+                            + " seçili hafta sonu günlerine atanacak. Devreden kişi için mazeret"
+                            + " bitişi: "
                             + end.format(shortDate)
                             + ". İki yerde de mazeret kaydedilir. Perşembe/cuma izinleri ve hafta"
                             + " içi atamalar yeniden hesaplanır. Diğer haftalar korunur; öneri"
@@ -979,7 +1002,7 @@ public final class MainActivity extends Activity {
                         () -> {
                           if (!old.isEmpty()) {
                             Leave leave =
-                                new Leave(old, ALL, selected.plusDays(5), end, "Hafta sonu devri");
+                                new Leave(old, ALL, weekendDays.get(0), end, "Hafta sonu devri");
                             state.leaves.add(leave);
                             removeConflicts(leave);
                           }
@@ -998,19 +1021,55 @@ public final class MainActivity extends Activity {
         .show();
   }
 
+  private void chooseVisiblePlaces(Runnable after) {
+    List<Place> choices = statisticPlaces(state);
+    if (choices.isEmpty()) {
+      if (after != null) after.run();
+      return;
+    }
+    boolean[] checked = new boolean[choices.size()];
+    String[] names = new String[choices.size()];
+    for (int i = 0; i < choices.size(); i++) {
+      Place p = choices.get(i);
+      checked[i] = !state.hiddenPlaces.contains(p.id);
+      names[i] = p.name + (p.deleted ? " (silindi)" : "");
+    }
+    new AlertDialog.Builder(this)
+        .setTitle("Çizelge/PDF'de gösterilecek şubeler")
+        .setMultiChoiceItems(names, checked, (dialog, which, value) -> checked[which] = value)
+        .setNegativeButton("Vazgeç", null)
+        .setPositiveButton(
+            "Görünümü kaydet",
+            (dialog, which) -> {
+              for (int i = 0; i < choices.size(); i++) {
+                String id = choices.get(i).id;
+                if (checked[i]) state.hiddenPlaces.remove(id);
+                else state.hiddenPlaces.add(id);
+              }
+              if (save()) {
+                if (after != null) after.run();
+                else render();
+              }
+            })
+        .show();
+  }
+
   private void settings() {
     heading("Ayarlar • Görev yerleri");
     note(
         "Yer adını değiştirmek geçmiş nöbetleri silmez. Çizelge, PDF ve istatistiklerde yeni ad"
-            + " görünür. İlk yer hafta sonu döngüsünü, ikinci yer mevcut hafta içi/kişi başı 1 gün"
-            + " kuralını korur.");
+            + " görünür. İlk iki yerin de günlerini değiştirebilirsiniz; hiç gün seçmezseniz yeni"
+            + " planlarda atama yapılmaz. Ana yerde seçili iki hafta sonu günü varsa aynı kişi"
+            + " atanır.");
     action("+ Yeni şube / görev yeri ekle", () -> placeDialog(null));
     for (Place place : state.places) {
+      if (place.deleted) continue;
       heading(place.name);
       StringBuilder days = new StringBuilder();
       String[] names = {"Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"};
       for (int i = 0; i < 7; i++)
         if ((place.days & (1 << i)) != 0) days.append(names[i]).append(" ");
+      if (days.length() == 0) days.append("Kapalı (gün seçilmedi)");
       note(
           days
               + " • Kişi başı haftalık: "
@@ -1018,7 +1077,52 @@ public final class MainActivity extends Activity {
               + " • "
               + (place.automatic ? "Otomatik dağıtım" : "Yalnız manuel"));
       action("Adı / kuralları düzenle", () -> placeDialog(place));
+      if (!place.id.equals(WORK) && !place.id.equals(BRANCH))
+        action(
+            "Şubeyi sil",
+            () ->
+                confirm(
+                    "Görev yerini sil",
+                    place.name
+                        + " yeni dağıtımlardan çıkarılacak. Geçmiş ve bugünkü"
+                        + " nöbetler/istatistikler korunur; yarın ve sonraki atamaları kaldırılır."
+                        + " Silinen yerler bölümünden geri alabilirsiniz.",
+                    () -> {
+                      deletePlace(state, place.id, LocalDate.now());
+                      if (save()) {
+                        draft = null;
+                        render();
+                        toast("Şube silindi; geçmiş kayıtlar korundu.");
+                      }
+                    }));
     }
+    List<Place> deleted = new ArrayList<>();
+    for (Place p : state.places) if (p.deleted) deleted.add(p);
+    if (!deleted.isEmpty())
+      action(
+          "Silinen görev yerleri (" + deleted.size() + ")",
+          () ->
+              new AlertDialog.Builder(this)
+                  .setTitle("Geri alınacak görev yerini seçin")
+                  .setItems(
+                      deleted.stream().map(p -> p.name).toArray(String[]::new),
+                      (d, i) -> {
+                        Place p = deleted.get(i);
+                        confirm(
+                            "Şubeyi geri al",
+                            p.name
+                                + " yeniden kullanılabilecek. Kaldırılmış gelecek atamaları"
+                                + " kendiliğinden geri gelmez.",
+                            () -> {
+                              p.deleted = false;
+                              if (save()) {
+                                draft = null;
+                                render();
+                              }
+                            });
+                      })
+                  .setNegativeButton("Vazgeç", null)
+                  .show());
     note(
         "Yeni bir yer eklendiğinde eski listelere kendiliğinden personel yazılmaz. Kaydedilmiş"
             + " haftayı açıp yer alanlarına dokunarak düzenleyebilir veya yeni öneri"
@@ -1026,7 +1130,7 @@ public final class MainActivity extends Activity {
   }
 
   private void placeDialog(Place current) {
-    if (current == null && state.places.size() >= 20) {
+    if (current == null && state.places.stream().filter(p -> !p.deleted).count() >= 20) {
       toast("En fazla 20 görev yeri eklenebilir.");
       return;
     }
@@ -1045,7 +1149,7 @@ public final class MainActivity extends Activity {
       days[i] = new CheckBox(this);
       days[i].setText(labels[i]);
       days[i].setChecked(((current == null ? 31 : current.days) & (1 << i)) != 0);
-      days[i].setEnabled(!fixed);
+      days[i].setEnabled(true);
       box.addView(days[i]);
     }
     TextView limitLabel = text("Kişi başı haftalık üst sınır (0 = sınırsız)", 14, ink);
@@ -1082,7 +1186,9 @@ public final class MainActivity extends Activity {
                       }
                       if (state.places.stream()
                           .anyMatch(p -> p != current && p.name.equalsIgnoreCase(value))) {
-                        name.setError("Bu görev yeri adı zaten var.");
+                        name.setError(
+                            "Bu ad kayıtlı. Silindiyse Silinen görev yerleri bölümünden geri"
+                                + " alın.");
                         return;
                       }
                       int mask = 0;
@@ -1095,10 +1201,7 @@ public final class MainActivity extends Activity {
                         limit.setError("0–7 arasında girin.");
                         return;
                       }
-                      if (mask == 0) {
-                        toast("En az bir gün seçin.");
-                        return;
-                      }
+
                       if (current == null) {
                         Place p = new Place(UUID.randomUUID().toString(), value, mask, max);
                         p.automatic = automatic.isChecked();
@@ -1113,7 +1216,9 @@ public final class MainActivity extends Activity {
                         draft = null;
                         dialog.dismiss();
                         render();
-                        toast("Görev yeri kaydedildi; geçmiş nöbetler korundu.");
+                        toast(
+                            "Kaydedildi. Seçili günler yeni dağıtımlarda uygulanır; mevcut listeler"
+                                + " ve geçmiş korunur.");
                       }
                     }));
     dialog.show();
@@ -1153,7 +1258,7 @@ public final class MainActivity extends Activity {
 
   private void statisticsTable(boolean future) {
     List<String> labels = new ArrayList<>(Arrays.asList("Personel", "Hafta içi", "Hafta sonu"));
-    for (Place p : statisticPlaces(state)) labels.add(p.name);
+    for (Place p : statisticPlaces(state)) labels.add(p.name + (p.deleted ? " (silindi)" : ""));
     TableLayout table = new TableLayout(this);
     TableRow header = new TableRow(this);
     for (int i = 0; i < labels.size(); i++)
@@ -1180,7 +1285,7 @@ public final class MainActivity extends Activity {
     cell.setMinWidth(dp(name ? 180 : 115));
     cell.setPadding(dp(12), dp(12), dp(12), dp(12));
     cell.setGravity((name ? Gravity.START : Gravity.CENTER_HORIZONTAL) | Gravity.CENTER_VERTICAL);
-    cell.setBackgroundColor(header ? Color.rgb(31, 90, 137) : stripe ? surface : cardColor);
+    cell.setBackgroundColor(header ? Color.rgb(42, 111, 177) : stripe ? surface : cardColor);
     if (header) cell.setTypeface(null, Typeface.BOLD);
     return cell;
   }
