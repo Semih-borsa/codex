@@ -781,4 +781,42 @@ public class RosterTest {
       approve(s, w);
     }
   }
+
+  @Test
+  public void weeklyRestrictionUsesActualDateAcrossYears() {
+    Leave l = new Leave("p0", ALL, LocalDate.of(2026, 12, 1), LocalDate.MAX, "Haftalık Kısıt", 5);
+    LocalDate start = LocalDate.of(2026, 12, 20);
+    for (int i = 0; i < 420; i++) {
+      LocalDate day = start.plusDays(i);
+      boolean blocked =
+          day.getDayOfWeek() == DayOfWeek.MONDAY || day.getDayOfWeek() == DayOfWeek.WEDNESDAY;
+      assertEquals(blocked, l.blocks("p0", WORK, day));
+      assertEquals(blocked, l.blocks("p0", BRANCH, day));
+    }
+  }
+
+  @Test
+  public void independentWeeklyRowsApplyOnlyTheirOwnLocationsAndDays() {
+    State s = people(5);
+    s.leaves.add(new Leave("p0", BRANCH, mon, LocalDate.MAX, "Haftalık Kısıt", 5));
+    s.leaves.add(new Leave("p0", WORK, mon, LocalDate.MAX, "Haftalık Kısıt", 16));
+    for (int week = 0; week < 6; week++) {
+      LocalDate start = mon.plusWeeks(week);
+      assertFalse(available(s, "p0", BRANCH, start));
+      assertTrue(available(s, "p0", WORK, start));
+      assertFalse(available(s, "p0", WORK, start.plusDays(4)));
+      assertTrue(available(s, "p0", BRANCH, start.plusDays(4)));
+      Week w = generate(s, start);
+      assertTrue(validate(s, w).isEmpty());
+      for (Duty d : w.duties)
+        if (d.person.equals("p0")) {
+          assertFalse(
+              d.place.equals(BRANCH)
+                  && (d.date.getDayOfWeek() == DayOfWeek.MONDAY
+                      || d.date.getDayOfWeek() == DayOfWeek.WEDNESDAY));
+          assertFalse(d.place.equals(WORK) && d.date.getDayOfWeek() == DayOfWeek.FRIDAY);
+        }
+      approve(s, w);
+    }
+  }
 }

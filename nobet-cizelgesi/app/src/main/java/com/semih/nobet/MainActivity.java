@@ -702,7 +702,49 @@ public final class MainActivity extends Activity {
     List<String> selectedDays = new ArrayList<>();
     for (int i = 0; i < 7; i++)
       if ((leave.days & (1 << i)) != 0) selectedDays.add("Her " + names[i]);
-    return String.join(", ", selectedDays) + "\n" + period;
+    return String.join(", ", selectedDays)
+        + (leave.end.equals(LocalDate.MAX) ? "" : " • Eski Tarihli Kayıt");
+  }
+
+  private final class WeeklyRestrictionRow {
+    final LinearLayout view = new LinearLayout(MainActivity.this);
+    final Spinner location;
+    final CheckBox[] days = new CheckBox[7];
+
+    WeeklyRestrictionRow(List<Place> locations, String selectedPlace, int mask) {
+      view.setOrientation(LinearLayout.VERTICAL);
+      view.setTag("weekly-restriction-row");
+      view.setPadding(0, dp(6), 0, dp(6));
+      List<String> names = new ArrayList<>();
+      names.add("Tüm Görev Yerleri");
+      for (Place p : locations) names.add(p.name);
+      location = spinner(names.toArray(new String[0]));
+      for (int i = 0; i < locations.size(); i++)
+        if (locations.get(i).id.equals(selectedPlace)) location.setSelection(i + 1);
+      view.addView(location);
+      String[] weekdays = {
+        "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"
+      };
+      for (int i = 0; i < 7; i += 2) {
+        LinearLayout line = new LinearLayout(MainActivity.this);
+        for (int j = i; j < Math.min(i + 2, 7); j++) {
+          days[j] = new CheckBox(MainActivity.this);
+          days[j].setText(getString(R.string.each_weekday, weekdays[j]));
+          days[j].setTextSize(13);
+          days[j].setTextColor(ink);
+          days[j].setTag("leave-day-" + j);
+          days[j].setChecked((mask & (1 << j)) != 0);
+          line.addView(days[j], new LinearLayout.LayoutParams(0, -2, 1));
+        }
+        view.addView(line);
+      }
+    }
+
+    int mask() {
+      int value = 0;
+      for (int i = 0; i < days.length; i++) if (days[i].isChecked()) value |= 1 << i;
+      return value;
+    }
   }
 
   private AlertDialog leaveDialog(
@@ -761,50 +803,53 @@ public final class MainActivity extends Activity {
     weekly.setTag("leave-weekly");
     weekly.setChecked(existing != null && existing.days != 0);
     box.addView(weekly);
-    LinearLayout dayChoices = new LinearLayout(this);
-    dayChoices.setOrientation(LinearLayout.VERTICAL);
-    CheckBox[] weekdays = new CheckBox[7];
-    String[] dayNames = {"Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"};
-    for (int i = 0; i < 7; i++) {
-      weekdays[i] = new CheckBox(this);
-      weekdays[i].setText(getString(R.string.each_weekday, dayNames[i]));
-      weekdays[i].setTextColor(ink);
-      weekdays[i].setTag("leave-day-" + i);
-      weekdays[i].setChecked(existing != null && (existing.days & (1 << i)) != 0);
-      dayChoices.addView(weekdays[i]);
-    }
-    box.addView(dayChoices);
+    LinearLayout recurring = new LinearLayout(this);
+    recurring.setOrientation(LinearLayout.VERTICAL);
+    LinearLayout rowsBox = new LinearLayout(this);
+    rowsBox.setOrientation(LinearLayout.VERTICAL);
+    recurring.addView(rowsBox);
+    List<WeeklyRestrictionRow> rows = new ArrayList<>();
+    java.util.function.BiConsumer<String, Integer> addRow =
+        (selectedPlace, mask) -> {
+          WeeklyRestrictionRow row = new WeeklyRestrictionRow(locations, selectedPlace, mask);
+          Button remove =
+              button(
+                  "− Kısıtı Kaldır",
+                  () -> {
+                    if (rows.size() == 1) {
+                      toast("En az bir kısıt satırı kalmalı.");
+                      return;
+                    }
+                    rows.remove(row);
+                    rowsBox.removeView(row.view);
+                  });
+          remove.setTag("weekly-remove-row");
+          row.view.addView(remove);
+          rows.add(row);
+          rowsBox.addView(row.view);
+        };
+    addRow.accept(place, existing == null ? 0 : existing.days);
+    Button plus = button("+ Kısıt Ekle", () -> addRow.accept(ALL, 0));
+    plus.setTag("weekly-add-row");
+    recurring.addView(plus);
+    box.addView(recurring);
     box.addView(from);
-    CheckBox hasEnd = new CheckBox(this);
-    hasEnd.setText(R.string.has_end);
-    hasEnd.setTextColor(ink);
-    hasEnd.setChecked(existing != null && !existing.end.equals(LocalDate.MAX));
-    box.addView(hasEnd);
     box.addView(to);
+    from.setTag("leave-start-date");
+    to.setTag("leave-end-date");
     Runnable updateMode =
         () -> {
-          dayChoices.setVisibility(weekly.isChecked() ? View.VISIBLE : View.GONE);
-          hasEnd.setVisibility(weekly.isChecked() ? View.VISIBLE : View.GONE);
-          to.setVisibility(!weekly.isChecked() || hasEnd.isChecked() ? View.VISIBLE : View.GONE);
+          recurring.setVisibility(weekly.isChecked() ? View.VISIBLE : View.GONE);
+          type.setVisibility(weekly.isChecked() ? View.GONE : View.VISIBLE);
+          from.setVisibility(weekly.isChecked() ? View.GONE : View.VISIBLE);
+          to.setVisibility(weekly.isChecked() ? View.GONE : View.VISIBLE);
         };
     weekly.setOnCheckedChangeListener(
         (view, checked) -> {
-          if (existing == null && checked) {
+          if (!checked && dates[1].equals(LocalDate.MAX)) {
             dates[0] = LocalDate.now();
             dates[1] = dates[0].plusDays(6);
             from.setText(getString(R.string.starts, dates[0].format(shortDate)));
-            to.setText(getString(R.string.ends, dates[1].format(shortDate)));
-            if (type.getSelectedItemPosition() < 3) type.setSelection(2);
-          } else if (!checked && dates[1].equals(LocalDate.MAX)) {
-            dates[1] = dates[0].plusDays(6);
-            to.setText(getString(R.string.ends, dates[1].format(shortDate)));
-          }
-          updateMode.run();
-        });
-    hasEnd.setOnCheckedChangeListener(
-        (view, checked) -> {
-          if (checked && dates[1].equals(LocalDate.MAX)) {
-            dates[1] = dates[0].plusDays(6);
             to.setText(getString(R.string.ends, dates[1].format(shortDate)));
           }
           updateMode.run();
@@ -825,34 +870,55 @@ public final class MainActivity extends Activity {
                 .getButton(-1)
                 .setOnClickListener(
                     v -> {
-                      int mask = 0;
-                      if (weekly.isChecked())
-                        for (int i = 0; i < 7; i++) if (weekdays[i].isChecked()) mask |= 1 << i;
-                      if (weekly.isChecked() && mask == 0) {
-                        toast("En az bir tekrar günü seçin.");
-                        return;
-                      }
-                      LocalDate until =
-                          weekly.isChecked() && !hasEnd.isChecked() ? LocalDate.MAX : dates[1];
-                      if (until.isBefore(dates[0])) {
-                        toast("Bitiş tarihi başlangıçtan önce olamaz.");
-                        return;
-                      }
                       String person = list.get(who.getSelectedItemPosition()).id;
-                      int t = type.getSelectedItemPosition();
-                      String target = t >= 3 ? locations.get(t - 3).id : ALL;
-                      String label = type.getSelectedItem().toString();
-                      Leave newLeave = new Leave(person, target, dates[0], until, label, mask);
+                      List<Leave> newLeaves = new ArrayList<>();
+                      if (weekly.isChecked()) {
+                        for (int i = 0; i < rows.size(); i++) {
+                          WeeklyRestrictionRow row = rows.get(i);
+                          if (row.mask() == 0) {
+                            toast((i + 1) + ". kısıt için en az bir gün seçin.");
+                            return;
+                          }
+                          int selectedLocation = row.location.getSelectedItemPosition();
+                          String target =
+                              selectedLocation == 0 ? ALL : locations.get(selectedLocation - 1).id;
+                          newLeaves.add(
+                              new Leave(
+                                  person,
+                                  target,
+                                  LocalDate.now(),
+                                  LocalDate.MAX,
+                                  "Haftalık Kısıt",
+                                  row.mask()));
+                        }
+                      } else {
+                        if (dates[1].isBefore(dates[0])) {
+                          toast("Bitiş tarihi başlangıçtan önce olamaz.");
+                          return;
+                        }
+                        int t = type.getSelectedItemPosition();
+                        String target = t >= 3 ? locations.get(t - 3).id : ALL;
+                        newLeaves.add(
+                            new Leave(
+                                person,
+                                target,
+                                dates[0],
+                                dates[1],
+                                type.getSelectedItem().toString()));
+                      }
+                      StringBuilder summary = new StringBuilder(state.name(person));
+                      for (Leave leave : newLeaves)
+                        summary
+                            .append("\n\n")
+                            .append(leavePeriod(leave))
+                            .append("\n")
+                            .append(state.placeName(leave.place));
                       confirm(
                           "Mazereti Kaydet",
-                          state.name(person)
-                              + "\n"
-                              + leavePeriod(newLeave)
-                              + "\n"
-                              + state.placeName(target)
-                              + " için atanmayacak.\n"
-                              + "Yalnız mazeretle çakışan atamalar kaldırılır; diğer haftalar"
-                              + " korunur. Yeniden dağıtım onayınızı ister.",
+                          summary
+                              + "\n\n"
+                              + "Seçili günlerde atanmayacak. Yalnız çakışan atamalar kaldırılır;"
+                              + " boşalan yerleri yeniden planlayın.",
                           () -> {
                             if (existing != null) {
                               state.leaves.remove(existing);
@@ -862,8 +928,10 @@ public final class MainActivity extends Activity {
                                       && debt.end.equals(existing.end))
                                     debt.end = LocalDate.now().minusDays(1);
                             }
-                            state.leaves.add(newLeave);
-                            removeConflicts(newLeave);
+                            for (Leave leave : newLeaves) {
+                              state.leaves.add(leave);
+                              removeConflicts(leave);
+                            }
                             if (save()) {
                               dialog.dismiss();
                               draft = null;

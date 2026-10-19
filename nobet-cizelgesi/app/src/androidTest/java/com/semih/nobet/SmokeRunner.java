@@ -687,18 +687,20 @@ public class SmokeRunner extends Instrumentation {
           truth(available(restored, "legacy", WORK, mon.plusDays(7)));
         });
     check(
-        "Weekly restriction dialog exposes selectable recurring weekdays",
+        "Weekly restrictions hide dates and add independent rows with plus",
         () -> {
           Activity activity =
               startActivitySync(
                   new Intent(target, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
           android.app.AlertDialog[] dialog = new android.app.AlertDialog[1];
+          State[] sampleState = new State[1];
           try {
             waitForIdleSync();
             runOnMainSync(
                 () -> {
                   try {
                     State sample = new State();
+                    sampleState[0] = sample;
                     sample.people.add(new Person("dialog", "Deneme Personel"));
                     java.lang.reflect.Field field = MainActivity.class.getDeclaredField("state");
                     field.setAccessible(true);
@@ -740,9 +742,42 @@ public class SmokeRunner extends Instrumentation {
                   truth(monday.isChecked() && wednesday.isChecked());
                   truth(
                       !((android.widget.CheckBox) root.findViewWithTag("leave-day-6")).isChecked());
-                  android.widget.CheckBox hasEnd =
-                      (android.widget.CheckBox) findText(root, "Bitiş Tarihi Olsun");
-                  truth(hasEnd != null && !hasEnd.isChecked());
+                  truth(
+                      root.findViewWithTag("leave-start-date").getVisibility()
+                          == android.view.View.GONE);
+                  truth(
+                      root.findViewWithTag("leave-end-date").getVisibility()
+                          == android.view.View.GONE);
+                  truth(findText(root, "Bitiş Tarihi Olsun") == null);
+                  android.view.ViewGroup first =
+                      (android.view.ViewGroup) root.findViewWithTag("weekly-restriction-row");
+                  android.view.ViewGroup rows = (android.view.ViewGroup) first.getParent();
+                  truth(rows.getChildCount() == 1);
+                  root.findViewWithTag("weekly-add-row").performClick();
+                  truth(rows.getChildCount() == 2);
+                  dialog[0]
+                      .getButton(android.content.DialogInterface.BUTTON_POSITIVE)
+                      .performClick();
+                  truth(sampleState[0].leaves.isEmpty());
+                  android.view.ViewGroup second = (android.view.ViewGroup) rows.getChildAt(1);
+                  android.widget.CheckBox friday =
+                      (android.widget.CheckBox) second.findViewWithTag("leave-day-4");
+                  friday.performClick();
+                  truth(friday.isChecked() && monday.isChecked() && wednesday.isChecked());
+                  truth(
+                      !((android.widget.CheckBox) second.findViewWithTag("leave-day-0"))
+                          .isChecked());
+                  second.findViewWithTag("weekly-remove-row").performClick();
+                  truth(rows.getChildCount() == 1 && monday.isChecked() && wednesday.isChecked());
+                  weekly.performClick();
+                  truth(
+                      root.findViewWithTag("leave-start-date").getVisibility()
+                          == android.view.View.VISIBLE);
+                  truth(
+                      root.findViewWithTag("leave-end-date").getVisibility()
+                          == android.view.View.VISIBLE);
+                  weekly.performClick();
+                  truth(monday.isChecked() && wednesday.isChecked());
                 });
           } finally {
             runOnMainSync(
