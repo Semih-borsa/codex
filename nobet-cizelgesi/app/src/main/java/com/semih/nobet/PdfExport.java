@@ -62,6 +62,7 @@ final class PdfExport {
         c.drawText("Tarih / Gün", 26, 90, p);
         for (int col = 0; col < locations.size(); col++)
           fit(c, p, locations.get(col).name, 208 + col * columnWidth, 90, columnWidth - 12);
+        horizontalRule(c, p, 18, 682, 100);
         DateTimeFormatter day = DateTimeFormatter.ofPattern("dd.MM • EEEE", new Locale("tr", "TR"));
         for (int i = 0; i < 6; i++) {
           LocalDate date = w.monday.plusDays(i);
@@ -80,6 +81,7 @@ final class PdfExport {
                 208 + col * columnWidth,
                 y + 22,
                 columnWidth - 12);
+          horizontalRule(c, p, 18, 682, y + 33);
         }
         pdf.finishPage(page);
       }
@@ -188,6 +190,7 @@ final class PdfExport {
               x += col == 0 ? 220 : 110;
             }
             int y = 36 + headerHeight;
+            horizontalRule(canvas, paint, 12, 12 + width, y);
             paint.setTypeface(Typeface.DEFAULT);
             for (int row = start; row < stop; row++) {
               List<String> lines = names.get(row - start);
@@ -208,6 +211,7 @@ final class PdfExport {
                     paint);
               }
               y += rowHeight;
+              horizontalRule(canvas, paint, 12, 12 + width, y);
             }
             document.finishPage(page);
           }
@@ -220,6 +224,16 @@ final class PdfExport {
       document.close();
     }
     return out;
+  }
+
+  private static void horizontalRule(Canvas canvas, Paint paint, int left, int right, int y) {
+    int oldColor = paint.getColor();
+    float oldWidth = paint.getStrokeWidth();
+    paint.setColor(Color.BLACK);
+    paint.setStrokeWidth(1);
+    canvas.drawLine(left, y, right, y, paint);
+    paint.setColor(oldColor);
+    paint.setStrokeWidth(oldWidth);
   }
 
   private static List<String> wrap(String value, Paint paint, int width) {

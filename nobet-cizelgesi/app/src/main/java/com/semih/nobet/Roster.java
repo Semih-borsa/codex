@@ -362,19 +362,7 @@ public final class Roster {
       } else w.warnings.add("Hafta sonu uygun personel yok; işyeri iki gün BOŞ.");
     }
     assignPlace(s, w, s.place(BRANCH), active);
-    for (int i = 0; i < 5; i++) {
-      LocalDate d = w.monday.plusDays(i);
-      if (!s.place(WORK).on(d)) continue;
-      Person p =
-          active.stream()
-              .filter(x -> free(s, w, x, WORK, d))
-              .min(
-                  Comparator.<Person>comparingLong(x -> count(s, w, x.id, WORK, false))
-                      .thenComparingLong(x -> count(s, w, x.id, BRANCH, false)))
-              .orElse(null);
-      if (p != null) w.duties.add(new Duty(d, WORK, p.id));
-      else w.warnings.add(d + " işyeri BOŞ: uygun personel yok.");
-    }
+    assignPlace(s, w, s.place(WORK), active);
     for (Place place : s.places)
       if (!place.id.equals(WORK) && !place.id.equals(BRANCH)) assignPlace(s, w, place, active);
     for (Person p : active)
@@ -389,33 +377,103 @@ public final class Roster {
     return w;
   }
 
+  /** Maximum coverage, then weekly fairness, then history. A constrained day is never bypassed. */
   static void assignPlace(State s, Week w, Place place, List<Person> people) {
     if (place.deleted || !place.automatic) return;
     List<LocalDate> days = new ArrayList<>();
-    for (int i = 0; i < 7; i++) {
-      LocalDate d = w.monday.plusDays(i);
-      if (place.on(d)) days.add(d);
+    for (int i = 0; i < (place.id.equals(WORK) ? 5 : 7); i++) {
+      LocalDate day = w.monday.plusDays(i);
+      if (place.on(day)
+          && w.duties.stream().noneMatch(d -> d.place.equals(place.id) && d.date.equals(day)))
+        days.add(day);
     }
+    if (days.isEmpty()) return;
+    // Fewest alternatives first, for both dates and people. The residual network can move an
+    // earlier flexible assignment instead of stranding a person who has only one suitable day.
     days.sort(
+        Comparator.<LocalDate>comparingLong(
+                day -> people.stream().filter(p -> free(s, w, p, place.id, day)).count())
+            .thenComparing(day -> day));
+    List<Person> ordered = new ArrayList<>(people);
+    ordered.sort(
         Comparator.comparingLong(
-            d -> people.stream().filter(p -> free(s, w, p, place.id, d)).count()));
-    if (!placeSearch(s, w, place, days, people, 0, new int[] {0})) {
-      w.duties.removeIf(d -> d.place.equals(place.id));
-      for (LocalDate date : days) {
-        Person p =
-            people.stream()
-                .filter(x -> free(s, w, x, place.id, date) && belowLimit(w, x.id, place))
-                .min(
-                    Comparator.comparingLong(
-                        x ->
-                            count(s, w, x.id, place.id, false) + count(s, w, x.id, place.id, true)))
-                .orElse(null);
-        if (p != null) w.duties.add(new Duty(date, place.id, p.id));
-        else
-          w.warnings.add(
-              date + " " + place.name + " BOŞ: uygun personel veya haftalık kapasite yok.");
+            p -> days.stream().filter(d -> free(s, w, p, place.id, d)).count()));
+    List<Long> histories = new ArrayList<>();
+    for (Person p : ordered)
+      histories.add(
+          count(s, w, p.id, place.id, false)
+              + (place.id.equals(WORK) ? 0 : count(s, w, p.id, place.id, true)));
+    List<Long> ranks = new ArrayList<>(new TreeSet<>(histories));
+    int source = 0,
+        firstPerson = 1,
+        firstDay = firstPerson + ordered.size(),
+        sink = firstDay + days.size();
+    DutyFlow flow = new DutyFlow(sink + 1);
+    long weekWeight = days.size() * (ordered.size() * 8L + 8 + s.places.size() * 7L) + 1;
+    long coverageBonus = weekWeight * 225; // More than every possible seven-day repeat cost.
+    List<DutyFlow.Edge> assignments = new ArrayList<>();
+    List<Duty> choices = new ArrayList<>();
+    for (int i = 0; i < ordered.size(); i++) {
+      Person person = ordered.get(i);
+      int existingAll =
+          (int)
+              w.duties.stream()
+                  .filter(d -> d.place.equals(place.id) && d.person.equals(person.id))
+                  .count();
+      int existing =
+          (int)
+              w.duties.stream()
+                  .filter(
+                      d ->
+                          d.place.equals(place.id)
+                              && d.person.equals(person.id)
+                              && (!place.id.equals(WORK) || !weekend(d.date)))
+                  .count();
+      int capacity = place.limit == 0 ? days.size() : Math.max(0, place.limit - existingAll);
+      int opportunity = (int) days.stream().filter(d -> free(s, w, person, place.id, d)).count();
+      long tie = opportunity * (ordered.size() + 1L) + ranks.indexOf(histories.get(i));
+      for (int n = 0; n < Math.min(capacity, opportunity); n++) {
+        int weeklyCount = existing + n;
+        flow.add(
+            source,
+            firstPerson + i,
+            1,
+            weeklyCount == 0 ? -coverageBonus + tie : weeklyCount * weekWeight + tie);
       }
+      for (int j = 0; j < days.size(); j++)
+        if (free(s, w, person, place.id, days.get(j))) {
+          long reserve = 0;
+          LocalDate candidate = days.get(j);
+          for (Place other : s.places)
+            if (!other.id.equals(place.id)
+                && !other.deleted
+                && other.automatic
+                && other.on(candidate)
+                && w.duties.stream()
+                    .noneMatch(d -> d.place.equals(other.id) && d.date.equals(candidate))) {
+              int alternatives = 0;
+              for (int n = 0; n < (other.id.equals(WORK) ? 5 : 7); n++) {
+                LocalDate d = w.monday.plusDays(n);
+                if (other.on(d)
+                    && free(s, w, person, other.id, d)
+                    && w.duties.stream()
+                        .noneMatch(slot -> slot.place.equals(other.id) && slot.date.equals(d)))
+                  alternatives++;
+              }
+              if (free(s, w, person, other.id, candidate) && alternatives > 0)
+                reserve += 7 - alternatives;
+            }
+          assignments.add(flow.add(firstPerson + i, firstDay + j, 1, reserve));
+          choices.add(new Duty(days.get(j), place.id, person.id));
+        }
     }
+    for (int j = 0; j < days.size(); j++) flow.add(firstDay + j, sink, 1, 0);
+    flow.fill(source, sink);
+    for (int i = 0; i < assignments.size(); i++)
+      if (assignments.get(i).capacity == 0) w.duties.add(choices.get(i));
+    for (LocalDate day : days)
+      if (w.duties.stream().noneMatch(d -> d.place.equals(place.id) && d.date.equals(day)))
+        w.warnings.add(day + " " + place.name + " BOŞ: uygun personel veya haftalık kapasite yok.");
   }
 
   static boolean belowLimit(Week w, String id, Place p) {
@@ -424,29 +482,69 @@ public final class Roster {
             < p.limit;
   }
 
-  static boolean placeSearch(
-      State s,
-      Week w,
-      Place place,
-      List<LocalDate> days,
-      List<Person> people,
-      int index,
-      int[] nodes) {
-    if (index == days.size()) return true;
-    if (++nodes[0] > 100000) return false;
-    LocalDate date = days.get(index);
-    List<Person> options = new ArrayList<>(people);
-    options.sort(
-        Comparator.comparingLong(
-            p -> count(s, w, p.id, place.id, false) + count(s, w, p.id, place.id, true)));
-    for (Person p : options)
-      if (free(s, w, p, place.id, date) && belowLimit(w, p.id, place)) {
-        Duty duty = new Duty(date, place.id, p.id);
-        w.duties.add(duty);
-        if (placeSearch(s, w, place, days, people, index + 1, nodes)) return true;
-        w.duties.remove(duty);
+  /** Successive shortest augmenting paths; at most seven units, no search cutoff or fallback. */
+  private static final class DutyFlow {
+    static final class Edge {
+      final int to, reverse;
+      final long cost;
+      int capacity;
+
+      Edge(int to, int reverse, int capacity, long cost) {
+        this.to = to;
+        this.reverse = reverse;
+        this.capacity = capacity;
+        this.cost = cost;
       }
-    return false;
+    }
+
+    final List<List<Edge>> graph = new ArrayList<>();
+
+    DutyFlow(int size) {
+      for (int i = 0; i < size; i++) graph.add(new ArrayList<>());
+    }
+
+    Edge add(int from, int to, int capacity, long cost) {
+      Edge edge = new Edge(to, graph.get(to).size(), capacity, cost);
+      Edge reverse = new Edge(from, graph.get(from).size(), 0, -cost);
+      graph.get(from).add(edge);
+      graph.get(to).add(reverse);
+      return edge;
+    }
+
+    void fill(int source, int sink) {
+      while (true) {
+        long[] distance = new long[graph.size()];
+        Arrays.fill(distance, Long.MAX_VALUE);
+        int[] previous = new int[graph.size()], via = new int[graph.size()];
+        boolean[] queued = new boolean[graph.size()];
+        ArrayDeque<Integer> queue = new ArrayDeque<>();
+        distance[source] = 0;
+        queue.add(source);
+        queued[source] = true;
+        while (!queue.isEmpty()) {
+          int from = queue.removeFirst();
+          queued[from] = false;
+          for (int i = 0; i < graph.get(from).size(); i++) {
+            Edge e = graph.get(from).get(i);
+            if (e.capacity > 0 && distance[e.to] > distance[from] + e.cost) {
+              distance[e.to] = distance[from] + e.cost;
+              previous[e.to] = from;
+              via[e.to] = i;
+              if (!queued[e.to]) {
+                queue.addLast(e.to);
+                queued[e.to] = true;
+              }
+            }
+          }
+        }
+        if (distance[sink] == Long.MAX_VALUE) return;
+        for (int to = sink; to != source; to = previous[to]) {
+          Edge e = graph.get(previous[to]).get(via[to]);
+          e.capacity--;
+          graph.get(to).get(e.reverse).capacity++;
+        }
+      }
+    }
   }
 
   public static long expectedSlots(State s) {

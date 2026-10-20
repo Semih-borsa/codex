@@ -1,12 +1,18 @@
-# Nöbet Çizelgesi 2.2 — Android
+# Nöbet Çizelgesi 2.3 — Android
 
 **Yeni arayüz:** Bütçe Takip’ten ilham alan kurumsal mavi özet kartı, çizgi simgeler, yüzen alt menü, personel kartları ve açık/koyu tema. [Ekran görüntüleri](docs/TASARIM-2.0.md)
 
 Yerel listeyle veya yetkili ortak ekiple personel, görev yeri, mazeret ve haftalık nöbet planlama uygulaması.
 
-[APK 2.2 indir](../downloads/NobetCizelgesi-2.2.apk) · [Android Studio ZIP](../downloads/NobetCizelgesi-Android-Studio.zip) · [Test sonuçları](docs/TESTLER.md)
+[APK 2.3 indir](../downloads/NobetCizelgesi-2.3.apk) · [Android Studio ZIP](../downloads/NobetCizelgesi-Android-Studio.zip) · [Test sonuçları](docs/TESTLER.md)
 
-Android 8.0 ve üzeri. Önceki sürümlerden biri kuruluysa **uygulamayı kaldırmadan** 2.2 APK'sını açarak güncelleyin. Aynı paket adı ve imza kullanılır; eski kayıtlar okunur. Kaldırmak veya uygulama verilerini silmek kayıtları siler.
+Android 8.0 ve üzeri. Önceki sürümlerden biri kuruluysa **uygulamayı kaldırmadan** 2.3 APK'sını açarak güncelleyin. Aynı paket adı ve imza kullanılır; eski kayıtlar okunur. Kaldırmak veya uygulama verilerini silmek kayıtları siler.
+
+## 2.3 — Dengeli Dağıtım Ve Açılır Mazeretler
+
+Haftalık denge geçmiş toplamların önüne alınır: dört uygun personel/beş gün, haftalık sınır izin veriyorsa **1–1–1–2**. Kısıtlı personelin az sayıdaki uygun günü öncelikle değerlendirilir; gereksiz boşluk bırakmamak için geçici atamalar yeniden yerleştirilebilir. İzin ve haftalık üst sınırlar kendiliğinden aşılmaz. Mazeretler alfabetik personel → tür → kayıt şeklinde açılır başlıklarda gösterilir. Tema simgesi ortalandı; çizelge/istatistik/PDF satırları siyah çizgilerle ayrılır. [Kullanım ve sınırlar](docs/DAGITIM-2.3.md).
+
+Eski onaylı listeler değişmez; yeniden dağıtmak için ilgili haftada yeni öneri üretip onaylayın. İptal edilen e-postasız giriş geliştirmesi bu sürümde yoktur.
 
 ## 2.2 — Kullanıcılar, Ortak Ekip Ve Tablo
 

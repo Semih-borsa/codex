@@ -1,10 +1,13 @@
-# Nöbet Çizelgesi 2.2
+# Nöbet Çizelgesi 2.3
+
+**2.3:** dengeli haftalık dağıtım (uygun dört personel/beş gün: 1–1–1–2), kısıtlı günlerin öncelikli değerlendirilmesi, alfabetik personel ve mazeret türü başlıklarıyla açılır liste, ortalanmış ay/güneş tema simgesi ve çizelge/istatistik/PDF satırlarında siyah çizgiler. [Ayrıntılar](../nobet-cizelgesi/docs/DAGITIM-2.3.md). Önceden onaylı haftaları değiştirmek için yeni dağıtım önerip kaydedin.
+
 
 **2.2:** ekrana sığan haftalık tablo, tek hafta sonu nöbetçisi satırı; Supabase hesap/giriş, e-posta kodu, davet, yönetici yetkisi ve sürüm kontrollü eşitleme istemcisi. [Tablo görünümü](../nobet-cizelgesi/docs/TABLO-2.2.md) · [Sunucu kurulumu](../nobet-cizelgesi/docs/ORTAK-KULLANIM.md). **Henüz canlı proje bağlı değil; iki gerçek telefonda bulut eşitlemesi doğrulanmadı.**
 
 **Yeni arayüz:** Bütçe Takip’ten ilham alan kurumsal mavi özet kartı, çizgi simgeler, yüzen alt menü, personel kartları ve açık/koyu tema. [Ekran görüntüleri](../nobet-cizelgesi/docs/TASARIM-2.0.md)
 
-- [APK 2.2 indir](NobetCizelgesi-2.2.apk)
+- [APK 2.3 indir](NobetCizelgesi-2.3.apk)
 - [Güncel APK](NobetCizelgesi.apk)
 - [Android Studio kaynak ZIP](NobetCizelgesi-Android-Studio.zip)
 - [Kullanım](../nobet-cizelgesi/README.md) · [Testler](../nobet-cizelgesi/docs/TESTLER.md)

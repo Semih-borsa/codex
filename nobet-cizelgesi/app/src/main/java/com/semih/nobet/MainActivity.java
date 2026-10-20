@@ -29,6 +29,8 @@ public final class MainActivity extends Activity implements CloudController.Host
   private boolean failed = false;
   private Week draft;
   private ArrayList<String> weekendOrderDraft;
+  private final Set<String> expandedLeavePeople = new HashSet<>(),
+      expandedLeaveTypes = new HashSet<>();
   private int ink = Color.rgb(19, 38, 60),
       teal = Color.rgb(42, 111, 177),
       muted = Color.rgb(85, 105, 124),
@@ -81,6 +83,10 @@ public final class MainActivity extends Activity implements CloudController.Host
       }
       selected = LocalDate.parse(b.getString("week", selected.toString()));
       screen = b.getInt("screen", 0);
+      if (b.getStringArrayList("expandedLeavePeople") != null)
+        expandedLeavePeople.addAll(b.getStringArrayList("expandedLeavePeople"));
+      if (b.getStringArrayList("expandedLeaveTypes") != null)
+        expandedLeaveTypes.addAll(b.getStringArrayList("expandedLeaveTypes"));
       if (cloud.key().equals(b.getString("cloudKey", "local"))
           && (!cloud.active()
               || (b.getLong("cloudRevision", -1) == cloud.revision && "admin".equals(cloud.role))))
@@ -100,6 +106,8 @@ public final class MainActivity extends Activity implements CloudController.Host
   @Override
   public void onSaveInstanceState(Bundle b) {
     super.onSaveInstanceState(b);
+    b.putStringArrayList("expandedLeavePeople", new ArrayList<>(expandedLeavePeople));
+    b.putStringArrayList("expandedLeaveTypes", new ArrayList<>(expandedLeaveTypes));
     b.putString("cloudKey", cloud == null ? "local" : cloud.key());
     b.putLong("cloudRevision", cloud != null && cloud.active() ? cloud.revision : -1);
     b.putString("week", selected.toString());
@@ -400,16 +408,14 @@ public final class MainActivity extends Activity implements CloudController.Host
     };
     brand.addView(text(subtitles[screen], 11, muted));
     header.addView(brand, new LinearLayout.LayoutParams(0, -2, 1));
-    Button theme = button("", this::appearance);
+    ImageButton theme = new ImageButton(this);
+    theme.setOnClickListener(v -> appearance());
     theme.setTag("theme-control");
-    theme.setContentDescription(
-        "Görünüm: " + (themeMode == 0 ? "Sistem" : themeMode == 1 ? "Açık" : "Koyu"));
+    theme.setContentDescription("Renk Teması Seç • Şu An: " + (darkMode ? "Koyu" : "Açık"));
     theme.setTooltipText("Renk Teması");
-    theme.setMinWidth(0);
-    theme.setMinimumWidth(0);
     theme.setPadding(dp(12), dp(12), dp(12), dp(12));
-    theme.setCompoundDrawablesWithIntrinsicBounds(
-        new Visuals.Icon("moon", teal, dp(22)), null, null, null);
+    theme.setScaleType(ImageView.ScaleType.CENTER);
+    theme.setImageDrawable(new Visuals.Icon(darkMode ? "sun" : "moon", teal, dp(24)));
     theme.setBackground(Visuals.touch(cardColor, dp(16), lineColor));
     header.addView(theme, new LinearLayout.LayoutParams(dp(48), dp(48)));
     root.addView(header);
@@ -608,7 +614,9 @@ public final class MainActivity extends Activity implements CloudController.Host
         LinearLayout line = row();
         line.setBaselineAligned(false);
         line.setTag("roster-day-" + day + (part == 0 ? "" : "-part" + part));
-        line.setBackgroundColor(index % 2 == 0 ? cardColor : (darkMode ? 0xFF182B42 : 0xFFE7F1FD));
+        line.setBackground(
+            new Visuals.TableRow(
+                index % 2 == 0 ? cardColor : (darkMode ? 0xFF182B42 : 0xFFE7F1FD), dp(1)));
         String label =
             index == 5
                 ? "Hafta Sonu\nNöbetçisi"
@@ -669,7 +677,7 @@ public final class MainActivity extends Activity implements CloudController.Host
     cell.setMinHeight(dp(header ? 36 : 48));
     if (header) cell.setTypeface(null, Typeface.BOLD);
     if (change != null) {
-      cell.setBackground(Visuals.touch(Color.TRANSPARENT, 0, lineColor));
+      cell.setBackground(Visuals.touch(Color.TRANSPARENT, 0, 0));
     }
     line.addView(cell, new LinearLayout.LayoutParams(0, -1, day ? 1.05f : 1.5f));
     return cell;
@@ -1128,56 +1136,135 @@ public final class MainActivity extends Activity implements CloudController.Host
     action(
         "+ Mazeret / Kısıt Ekle",
         () -> leaveDialog(null, ALL, selected, selected.plusDays(6), "Senelik izin"));
-    for (Leave l : state.leaves) {
+    java.text.Collator collator = java.text.Collator.getInstance(new Locale("tr", "TR"));
+    Set<String> ids = new LinkedHashSet<>();
+    for (Person p : state.people) if (p.active) ids.add(p.id);
+    for (Leave l : state.leaves) ids.add(l.person);
+    List<String> people = new ArrayList<>(ids);
+    people.sort((a, b) -> collator.compare(state.name(a), state.name(b)));
+    for (String id : people) {
+      List<Leave> records = new ArrayList<>();
+      for (Leave l : state.leaves) if (l.person.equals(id)) records.add(l);
       LinearLayout card = panel();
-      TextView t =
-          text(
-              state.name(l.person)
-                  + " • "
-                  + l.reason
-                  + "\n"
-                  + leavePeriod(l)
-                  + " • "
-                  + state.placeName(l.place),
-              14,
-              ink);
-      t.setLineSpacing(dp(3), 1);
-      t.setCompoundDrawablesWithIntrinsicBounds(
-          new Visuals.Icon("leave", teal, dp(23)), null, null, null);
-      t.setCompoundDrawablePadding(dp(10));
-      card.addView(t);
-      LinearLayout row = new LinearLayout(this);
-      row.addView(button("Düzenle", () -> leaveDialog(l, l.place, l.start, l.end, l.reason)));
-      row.addView(
-          button(
-              "Sil",
-              () ->
-                  confirm(
-                      "Mazereti Sil",
-                      "Bu mazeret kaldırılacak. Mevcut çizelgeleri yeniden üretmeden atamalar"
-                          + " değişmez.",
-                      () -> {
-                        state.leaves.remove(l);
-                        for (Week wk : state.weeks)
-                          for (Debt debt : wk.debts)
-                            if (debt.person.equals(l.person) && debt.end.equals(l.end))
-                              debt.end = LocalDate.now().minusDays(1);
-                        if (save()) {
-                          draft = null;
-                          render();
-                        }
-                      })));
-      for (int i = 0; i < row.getChildCount(); i++) {
-        Button control = (Button) row.getChildAt(i);
-        soft(control, i == 0 ? "edit" : "leave");
-        control.setCompoundDrawablesWithIntrinsicBounds(
-            new Visuals.Icon(i == 0 ? "edit" : "leave", teal, dp(16)), null, null, null);
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, -2, 1);
-        lp.setMargins(i == 0 ? 0 : dp(6), dp(10), 0, 0);
-        control.setLayoutParams(lp);
+      LinearLayout details = column();
+      details.setTag("leave-person-details-" + id);
+      Button person =
+          accordion(
+              card,
+              details,
+              state.name(id) + " • " + records.size() + " Kayıt",
+              id,
+              expandedLeavePeople);
+      person.setTag("leave-person-" + id);
+      Map<String, List<Leave>> types = new TreeMap<>(collator);
+      for (Leave l : records)
+        types
+            .computeIfAbsent(
+                l.days == 0 ? proper(l.reason) : "Haftalık Kısıt", key -> new ArrayList<>())
+            .add(l);
+      for (Map.Entry<String, List<Leave>> entry : types.entrySet()) {
+        LinearLayout typeDetails = column();
+        String key = id + "|" + entry.getKey();
+        typeDetails.setTag("leave-type-details-" + key);
+        Button type =
+            accordion(
+                details,
+                typeDetails,
+                entry.getKey() + " • " + entry.getValue().size(),
+                key,
+                expandedLeaveTypes);
+        type.setTag("leave-type-" + key);
+        entry
+            .getValue()
+            .sort(Comparator.comparing((Leave l) -> l.start).reversed().thenComparing(l -> l.end));
+        for (Leave l : entry.getValue()) leaveCard(typeDetails, l);
+        details.addView(typeDetails);
       }
-      card.addView(row);
+      if (records.isEmpty()) details.addView(text("Kayıtlı Mazeret Veya Kısıt Yok.", 13, muted));
+      card.addView(details);
     }
+  }
+
+  private Button accordion(
+      LinearLayout parent, LinearLayout details, String title, String key, Set<String> expanded) {
+    Button toggle = button(title, () -> {});
+    toggle.setAllCaps(false);
+    toggle.setGravity(Gravity.CENTER_VERTICAL | Gravity.START);
+    toggle.setPadding(dp(10), dp(8), dp(10), dp(8));
+    toggle.setTextColor(ink);
+    toggle.setBackground(Visuals.touch(Color.TRANSPARENT, dp(10), 0));
+    Runnable update =
+        () -> {
+          boolean open = expanded.contains(key);
+          details.setVisibility(open ? View.VISIBLE : View.GONE);
+          toggle.setCompoundDrawablesWithIntrinsicBounds(
+              null,
+              null,
+              new Visuals.Icon(open ? "chevron-up" : "chevron-down", teal, dp(20)),
+              null);
+          toggle.setContentDescription(title + (open ? " • Daralt" : " • Genişlet"));
+        };
+    toggle.setOnClickListener(
+        v -> {
+          if (!expanded.add(key)) expanded.remove(key);
+          update.run();
+        });
+    update.run();
+    parent.addView(toggle, new LinearLayout.LayoutParams(-1, -2));
+    return toggle;
+  }
+
+  private void leaveCard(LinearLayout parent, Leave l) {
+    LinearLayout card = column();
+    card.setPadding(dp(6), dp(6), dp(6), dp(6));
+    parent.addView(card);
+    TextView t =
+        text(
+            state.name(l.person)
+                + " • "
+                + l.reason
+                + "\n"
+                + leavePeriod(l)
+                + " • "
+                + state.placeName(l.place),
+            14,
+            ink);
+    t.setLineSpacing(dp(3), 1);
+    t.setCompoundDrawablesWithIntrinsicBounds(
+        new Visuals.Icon("leave", teal, dp(23)), null, null, null);
+    t.setCompoundDrawablePadding(dp(10));
+    card.addView(t);
+    LinearLayout row = new LinearLayout(this);
+    row.addView(button("Düzenle", () -> leaveDialog(l, l.place, l.start, l.end, l.reason)));
+    row.addView(
+        button(
+            "Sil",
+            () ->
+                confirm(
+                    "Mazereti Sil",
+                    "Bu mazeret kaldırılacak. Mevcut çizelgeleri yeniden üretmeden atamalar"
+                        + " değişmez.",
+                    () -> {
+                      state.leaves.remove(l);
+                      for (Week wk : state.weeks)
+                        for (Debt debt : wk.debts)
+                          if (debt.person.equals(l.person) && debt.end.equals(l.end))
+                            debt.end = LocalDate.now().minusDays(1);
+                      if (save()) {
+                        draft = null;
+                        render();
+                      }
+                    })));
+    for (int i = 0; i < row.getChildCount(); i++) {
+      Button control = (Button) row.getChildAt(i);
+      soft(control, i == 0 ? "edit" : "leave");
+      control.setCompoundDrawablesWithIntrinsicBounds(
+          new Visuals.Icon(i == 0 ? "edit" : "leave", teal, dp(16)), null, null, null);
+      LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, -2, 1);
+      lp.setMargins(i == 0 ? 0 : dp(6), dp(10), 0, 0);
+      control.setLayoutParams(lp);
+    }
+    card.addView(row);
   }
 
   private void date(LocalDate initial, java.util.function.Consumer<LocalDate> consumer) {
@@ -1276,6 +1363,8 @@ public final class MainActivity extends Activity implements CloudController.Host
       toast("Önce personel ekleyin.");
       return null;
     }
+    java.text.Collator leaveNames = java.text.Collator.getInstance(new Locale("tr", "TR"));
+    list.sort((a, b) -> leaveNames.compare(a.name, b.name));
     LinearLayout box = new LinearLayout(this);
     box.setPadding(dp(20), dp(8), dp(20), dp(8));
     box.setOrientation(LinearLayout.VERTICAL);
@@ -2439,7 +2528,9 @@ public final class MainActivity extends Activity implements CloudController.Host
     cell.setPadding(dp(5), dp(7), dp(5), dp(7));
     cell.setMinWidth(0);
     cell.setGravity((name ? Gravity.START : Gravity.CENTER_HORIZONTAL) | Gravity.CENTER_VERTICAL);
-    cell.setBackgroundColor(header ? Color.rgb(42, 111, 177) : stripe ? surface : cardColor);
+    cell.setBackground(
+        new Visuals.TableRow(
+            header ? Color.rgb(42, 111, 177) : stripe ? surface : cardColor, dp(1)));
     if (header) cell.setTypeface(null, Typeface.BOLD);
     row.addView(cell, new LinearLayout.LayoutParams(0, -1, name ? 1.85f : 1f));
   }

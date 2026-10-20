@@ -19,6 +19,41 @@ final class Visuals {
         ColorStateList.valueOf(0x243D91DE), surface(color, radius, border), null);
   }
 
+  /** Full-width black separator remains legible in light and dark table rows. */
+  static final class TableRow extends Drawable {
+    final Paint paint = new Paint();
+    final int color, thickness;
+
+    TableRow(int color, int thickness) {
+      this.color = color;
+      this.thickness = thickness;
+    }
+
+    @Override
+    public void draw(Canvas canvas) {
+      Rect r = getBounds();
+      paint.setColor(color);
+      canvas.drawRect(r, paint);
+      paint.setColor(Color.BLACK);
+      canvas.drawRect(r.left, r.bottom - thickness, r.right, r.bottom, paint);
+    }
+
+    @Override
+    public void setAlpha(int alpha) {
+      paint.setAlpha(alpha);
+    }
+
+    @Override
+    public void setColorFilter(ColorFilter filter) {
+      paint.setColorFilter(filter);
+    }
+
+    @Override
+    public int getOpacity() {
+      return PixelFormat.OPAQUE;
+    }
+  }
+
   static final class Hero extends Drawable {
     final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
     final float radius;
@@ -148,8 +183,33 @@ final class Visuals {
           }
           break;
         case "moon":
-          c.drawArc(4, 3, 21, 21, 55, 280, false, p);
-          c.drawArc(10, 0, 25, 16, 100, 135, false, p);
+          Path moon = new Path();
+          moon.moveTo(19.5f, 15.4f);
+          moon.cubicTo(12, 18, 6, 11, 9.5f, 4);
+          moon.cubicTo(3, 6, 2, 15, 8, 19);
+          moon.cubicTo(12, 22, 18, 20, 19.5f, 15.4f);
+          moon.close();
+          c.drawPath(moon, p);
+          break;
+        case "sun":
+          c.drawCircle(12, 12, 4, p);
+          for (int i = 0; i < 8; i++) {
+            double angle = i * Math.PI / 4;
+            line(
+                c,
+                12 + (float) Math.cos(angle) * 7,
+                12 + (float) Math.sin(angle) * 7,
+                12 + (float) Math.cos(angle) * 10,
+                12 + (float) Math.sin(angle) * 10);
+          }
+          break;
+        case "chevron-down":
+          line(c, 6, 9, 12, 15);
+          line(c, 12, 15, 18, 9);
+          break;
+        case "chevron-up":
+          line(c, 6, 15, 12, 9);
+          line(c, 12, 9, 18, 15);
           break;
         case "edit":
           line(c, 5, 16, 15, 6);

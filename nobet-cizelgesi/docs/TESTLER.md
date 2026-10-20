@@ -1,3 +1,25 @@
+# Doğrulama — Nöbet Çizelgesi 2.3 / 20 Ekim 2026
+
+- `testDebugUnitTest`: **106 test, 0 başarısız, 0 atlanan** (96 mevcut + 10 yeni dağıtım testi).
+- `lintDebug`, APK ve Android test APK derlemeleri başarılı.
+- Android 11 / API 30 emülatöründe tam koşu: **45 kontrol geçti, 0 başarısız, 0 atlanan**. Önceki sürüm üzerine güncelleme başarılı. Fiziksel telefon testi yapılmadı.
+- Paket `com.semih.nobet`, sürüm kodu 16; önceki sürümle aynı imza. Güncelleme `adb install -r` ile yapılır.
+- APK SHA-256: `8ba9bdab73c637ad6e835c5087db287d9e517d4e4f983c4b57896ac9051dece6`.
+
+## 2.3 Dağıtım Regresyonları
+
+Dört kişi/beş gün 1–1–1–2; çok farklı geçmiş toplamların haftalık dengeyi bozamaması; tek uygun günü olan kişi; çakışan uygunluklarda yeniden yerleştirme; haftalık üst sınırın aşılmaması ve boş gün uyarısı; izin/pasif personel; hafta sonunu hafta içi adalet sayımından ayırma ve dinlenmeyi koruma; başka görev yerinin dar uygun gününü tüketmeme; otomatik dağıtımı kapalı işyerinde hafta içi görev üretmeme.
+
+Onuncu test, sabit tohumlu **180 farklı dört personel/beş gün uygunluk ve haftalık sınır örneğini**, boş bırakma dahil bütün olası atamaları deneyen bağımsız bir sayımla karşılaştırır. Doldurulan gün sayısı, görev alan kişi sayısı ve haftalık dağılım dengesi kontrol edilir. Bu karşılaştırma tek görev yerini mevcut atamalar çerçevesinde doğrular; bütün görev yerleri birlikte küresel optimum iddiası değildir.
+
+Yeni testler eski 2.2 motoruyla da çalıştırıldı: **10 testin 4'ü başarısız**. Geçmişi az kişiye beş günün tamamının verilmesi (0–0–0–5), uygun dört gün varken üçünün doldurulması, başka yere ait tek uygun günün tüketilmesi ve hafta içi otomatik kapatma hatası yeniden oluşturuldu. Düzeltilmiş kodda aynı 10 test geçer.
+
+İki yeni Android kontrolü: açık/koyu temada ortalı ve görünür ay/güneş simgesi; Türkçe alfabetik personel sırası; personel ve tür başlıklarının kapalı başlaması, bağımsız açılıp kapanması; çizelge/istatistik ekran satırlarının siyah olması. Haftalık, normal istatistik ve resmî tatil PDF'leri PDF renderer ile rasterleştirilip tam satır boyunca siyah ayraç pikselleri kontrol edilir. Sentetik ekran görüntüleri üretilir; gerçek personel kullanılmaz.
+
+İptal edilen e-postasız hesap geliştirmesi bu sürüme alınmadı. CloudApi/CloudController/sunucu SQL değişmez; canlı Supabase kurulumu veya fiziksel telefonda doğrulama yapılmadı. Önceki onaylı haftalar otomatik değiştirilmez.
+
+---
+
 # Doğrulama — Nöbet Çizelgesi 2.2 / 20 Ekim 2026
 
 - JDK 17.0.17, Android SDK 35, build-tools 35.0.0, Gradle 8.9, AGP 8.7.3.

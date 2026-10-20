@@ -87,7 +87,7 @@ public class SmokeRunner extends Instrumentation {
     }
   }
 
-  private void waitForFrames(Activity activity) throws InterruptedException {
+  void waitForFrames(Activity activity) throws InterruptedException {
     java.util.concurrent.CountDownLatch frame = new java.util.concurrent.CountDownLatch(1);
     runOnMainSync(
         () ->
@@ -100,7 +100,7 @@ public class SmokeRunner extends Instrumentation {
     waitForIdleSync();
   }
 
-  private Activity launchActivity(Intent intent) throws InterruptedException {
+  Activity launchActivity(Intent intent) throws InterruptedException {
     Activity activity = startActivitySync(intent);
     waitForFrames(activity);
     waitForFocus(activity);
@@ -145,6 +145,7 @@ public class SmokeRunner extends Instrumentation {
     Week week = generate(s, mon);
     approve(s, week);
     CloudChecks.run(this, context);
+    DistributionUiChecks.run(this, context, isolated);
     check(
         "Holiday overrides persist and legacy data enables only automatic calendar",
         () -> {
