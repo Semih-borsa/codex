@@ -1,0 +1,22 @@
+✔ BILDIRIM-01 — Eski biçim 0 ekstre için alarm yok (7.073714ms)
+✔ BILDIRIM-01 — Eski biçim 0 ekstre için alarm yok (6.841269ms)
+✔ BILDIRIM-01 — Eski biçim undefined ekstre için alarm yok (3.490207ms)
+✔ BILDIRIM-02 — Ödenmemiş kimlikli ekstrenin doğru tutarı ve vadesi (2.103714ms)
+✔ BILDIRIM-03 — Tam ödenen ekstrenin alarmı kaldırılır (1.990789ms)
+✔ BILDIRIM-04 — Kısmi ödemeden sonra yalnız kalan tutar (1.927027ms)
+✔ BILDIRIM-05 — Ödeme geri alınınca kalan borç tekrar hatırlatılır (2.350317ms)
+✔ BILDIRIM-06 — Başka kart/ekstre ödemesi bu borcu kapatmaz (3.195512ms)
+✔ BILDIRIM-07 — Eski ödenmemiş ekstre kendi vadesinde korunur; sıfır yeni ekstre alarm üretmez (1.3121ms)
+✔ BILDIRIM-08 — Gelecekteki ödeme bugünkü borcu kapatmaz (1.813326ms)
+✔ BILDIRIM-09 — Kesilmemiş veya geçersiz vadeli ekstre için alarm yok (2.084576ms)
+✔ BILDIRIM-10 — Kayıtlı eski biçim pozitif ekstre ve gün bazlı eski kart uyumu (3.023192ms)
+✔ BILDIRIM-11 — Seçilen 10:00 ve 18:00 saatleri ve gün seçimi korunur (3.270264ms)
+✔ BILDIRIM-12 — Sıfır borç plan üretmez; giriş kayıtları değişmez (2.755723ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 409.943644

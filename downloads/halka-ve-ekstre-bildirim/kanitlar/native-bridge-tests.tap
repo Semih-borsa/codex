@@ -1,0 +1,11 @@
+✔ UI-BILDIRIM-sıfır — Native köprü planlama/iptal, saatler ve kayıt güvenliği (1743.409514ms)
+✔ UI-BILDIRIM-tam ödenmiş — Native köprü planlama/iptal, saatler ve kayıt güvenliği (703.795769ms)
+✔ UI-BILDIRIM-kısmi ödenmiş — Native köprü planlama/iptal, saatler ve kayıt güvenliği (676.630957ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3552.855116

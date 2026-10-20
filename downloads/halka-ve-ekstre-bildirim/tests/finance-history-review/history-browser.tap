@@ -1,0 +1,143 @@
+TAP version 13
+# Subtest: UI-H01 — Doğru sıfır arşivi Eylülde 0; güncele dönünce borç/bakiye/kayıtlar aynı
+ok 1 - UI-H01 — Doğru sıfır arşivi Eylülde 0; güncele dönünce borç/bakiye/kayıtlar aynı
+  ---
+  duration_ms: 1505.10298
+  type: 'test'
+  ...
+# Subtest: UI-H02 — Geçmiş kayıt yoksa kartın ana borç alanında bilinmiyor gösterilir
+ok 2 - UI-H02 — Geçmiş kayıt yoksa kartın ana borç alanında bilinmiyor gösterilir
+  ---
+  duration_ms: 1558.699439
+  type: 'test'
+  ...
+# Subtest: UI-H03 — Eski gövde geri dönüşü ekranda Eylül sıfır yerine 15.000 göstermemeli
+not ok 3 - UI-H03 — Eski gövde geri dönüşü ekranda Eylül sıfır yerine 15.000 göstermemeli
+  ---
+  duration_ms: 1596.867419
+  type: 'test'
+  location: '/workspace/codex/tests/finance-history-review/history.browser.test.mjs:69:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input was expected to not match the regular expression /15\.000/. Input:
+    
+    '₺15.000,00\n(Önceki dönem verisi yok)'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    ₺15.000,00
+    (Önceki dönem verisi yok)
+  operator: 'doesNotMatch'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/codex/tests/finance-history-review/history.browser.test.mjs:71:34)
+    async Test.run (node:internal/test_runner/test:1389:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+  ...
+# Subtest: UI-H04 — Doğrulanmış sıfır toplamın eski alt ekstre listesi kartta 15.000 göstermemeli
+not ok 4 - UI-H04 — Doğrulanmış sıfır toplamın eski alt ekstre listesi kartta 15.000 göstermemeli
+  ---
+  duration_ms: 1359.443026
+  type: 'test'
+  location: '/workspace/codex/tests/finance-history-review/history.browser.test.mjs:73:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input was expected to not match the regular expression /15\.000/. Input:
+    
+    'Ekstre borcu\n₺15.000,00\nDönem içi\n₺0,00\nProvizyon\n₺0,00'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    Ekstre borcu
+    ₺15.000,00
+    Dönem içi
+    ₺0,00
+    Provizyon
+    ₺0,00
+  operator: 'doesNotMatch'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/codex/tests/finance-history-review/history.browser.test.mjs:75:120)
+    async Test.run (node:internal/test_runner/test:1389:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+  ...
+# Subtest: UI-H05 — Sonraki kesim tarihli erken kaydedilmiş ekstre geçmiş kartta görünmemeli
+not ok 5 - UI-H05 — Sonraki kesim tarihli erken kaydedilmiş ekstre geçmiş kartta görünmemeli
+  ---
+  duration_ms: 1338.604665
+  type: 'test'
+  location: '/workspace/codex/tests/finance-history-review/history.browser.test.mjs:77:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input was expected to not match the regular expression /15\.000/. Input:
+    
+    '₺15.000,00\n(Önceki dönem verisi yok)'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    ₺15.000,00
+    (Önceki dönem verisi yok)
+  operator: 'doesNotMatch'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/codex/tests/finance-history-review/history.browser.test.mjs:79:34)
+    async Test.run (node:internal/test_runner/test:1389:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+  ...
+# Subtest: UI-H06 — Sorunlu geçmiş görünümden güncele dönmek gerçek veriyi/bakiyeyi değiştirmez
+ok 6 - UI-H06 — Sorunlu geçmiş görünümden güncele dönmek gerçek veriyi/bakiyeyi değiştirmez
+  ---
+  duration_ms: 1740.80672
+  type: 'test'
+  ...
+# Subtest: UI-H07 — Borç geçmişi bilinmiyorken üst toplu özette kesin sıfır toplam gösterilmemeli
+not ok 7 - UI-H07 — Borç geçmişi bilinmiyorken üst toplu özette kesin sıfır toplam gösterilmemeli
+  ---
+  duration_ms: 1417.223002
+  type: 'test'
+  location: '/workspace/codex/tests/finance-history-review/history.browser.test.mjs:86:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input was expected to not match the regular expression /₺0,00/. Input:
+    
+    'Ekstre toplamı\n' +
+      '₺0,00\n' +
+      'Tüm kartların kesilmiş ekstreleri\n' +
+      'Dönem içi ve provizyon\n' +
+      '₺0,00\n' +
+      'Dönem içi + provizyon'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    Ekstre toplamı
+    ₺0,00
+    Tüm kartların kesilmiş ekstreleri
+    Dönem içi ve provizyon
+    ₺0,00
+    Dönem içi + provizyon
+  operator: 'doesNotMatch'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/codex/tests/finance-history-review/history.browser.test.mjs:88:96)
+    async Test.run (node:internal/test_runner/test:1389:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+  ...
+# Subtest: UI-H08 — Önceki dönemden gerçekten devreden 5.000 kartta korunur
+ok 8 - UI-H08 — Önceki dönemden gerçekten devreden 5.000 kartta korunur
+  ---
+  duration_ms: 1389.385777
+  type: 'test'
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 4
+# fail 4
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 12451.287959

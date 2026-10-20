@@ -1,0 +1,298 @@
+✖ BILDIRIM-01 — Eski biçim 0 ekstre için alarm yok (11.787231ms)
+✖ BILDIRIM-01 — Eski biçim 0 ekstre için alarm yok (5.468295ms)
+✖ BILDIRIM-01 — Eski biçim undefined ekstre için alarm yok (0.893299ms)
+✖ BILDIRIM-02 — Ödenmemiş kimlikli ekstrenin doğru tutarı ve vadesi (0.816182ms)
+✖ BILDIRIM-03 — Tam ödenen ekstrenin alarmı kaldırılır (3.512872ms)
+✖ BILDIRIM-04 — Kısmi ödemeden sonra yalnız kalan tutar (1.181664ms)
+✖ BILDIRIM-05 — Ödeme geri alınınca kalan borç tekrar hatırlatılır (1.148844ms)
+✖ BILDIRIM-06 — Başka kart/ekstre ödemesi bu borcu kapatmaz (0.828641ms)
+✖ BILDIRIM-07 — Eski ödenmemiş ekstre kendi vadesinde korunur; sıfır yeni ekstre alarm üretmez (1.034742ms)
+✖ BILDIRIM-08 — Gelecekteki ödeme bugünkü borcu kapatmaz (0.95422ms)
+✖ BILDIRIM-09 — Kesilmemiş veya geçersiz vadeli ekstre için alarm yok (0.932288ms)
+✖ BILDIRIM-10 — Kayıtlı eski biçim pozitif ekstre ve gün bazlı eski kart uyumu (0.970695ms)
+✔ BILDIRIM-11 — Seçilen 10:00 ve 18:00 saatleri ve gün seçimi korunur (1.970384ms)
+✖ BILDIRIM-12 — Sıfır borç plan üretmez; giriş kayıtları değişmez (1.041913ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 1
+ℹ fail 13
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 638.771847
+
+✖ failing tests:
+
+test at tests/finance-baseline/card-notifications.test.mjs:9:36
+✖ BILDIRIM-01 — Eski biçim 0 ekstre için alarm yok (11.787231ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///workspace/codex/tests/finance-baseline/card-notifications.test.mjs:9:116)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.start (node:internal/test_runner/test:1242:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/finance-baseline/card-notifications.test.mjs:9:36
+✖ BILDIRIM-01 — Eski biçim 0 ekstre için alarm yok (5.468295ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///workspace/codex/tests/finance-baseline/card-notifications.test.mjs:9:116)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/finance-baseline/card-notifications.test.mjs:9:36
+✖ BILDIRIM-01 — Eski biçim undefined ekstre için alarm yok (0.893299ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///workspace/codex/tests/finance-baseline/card-notifications.test.mjs:9:116)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/finance-baseline/card-notifications.test.mjs:10:1
+✖ BILDIRIM-02 — Ödenmemiş kimlikli ekstrenin doğru tutarı ve vadesi (0.816182ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  0 !== 5000
+  
+      at TestContext.<anonymous> (file:///workspace/codex/tests/finance-baseline/card-notifications.test.mjs:10:134)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 5000,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/finance-baseline/card-notifications.test.mjs:11:1
+✖ BILDIRIM-03 — Tam ödenen ekstrenin alarmı kaldırılır (3.512872ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///workspace/codex/tests/finance-baseline/card-notifications.test.mjs:11:72)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/finance-baseline/card-notifications.test.mjs:12:1
+✖ BILDIRIM-04 — Kısmi ödemeden sonra yalnız kalan tutar (1.181664ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  0 !== 3000
+  
+      at TestContext.<anonymous> (file:///workspace/codex/tests/finance-baseline/card-notifications.test.mjs:12:73)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 3000,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/finance-baseline/card-notifications.test.mjs:13:1
+✖ BILDIRIM-05 — Ödeme geri alınınca kalan borç tekrar hatırlatılır (1.148844ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///workspace/codex/tests/finance-baseline/card-notifications.test.mjs:13:85)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/finance-baseline/card-notifications.test.mjs:14:1
+✖ BILDIRIM-06 — Başka kart/ekstre ödemesi bu borcu kapatmaz (0.828641ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  0 !== 5000
+  
+      at TestContext.<anonymous> (file:///workspace/codex/tests/finance-baseline/card-notifications.test.mjs:14:78)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 5000,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/finance-baseline/card-notifications.test.mjs:15:1
+✖ BILDIRIM-07 — Eski ödenmemiş ekstre kendi vadesinde korunur; sıfır yeni ekstre alarm üretmez (1.034742ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + '2026-11-20'
+  - '2026-10-20'
+           ^
+  
+      at TestContext.<anonymous> (file:///workspace/codex/tests/finance-baseline/card-notifications.test.mjs:15:291)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '2026-11-20',
+    expected: '2026-10-20',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/finance-baseline/card-notifications.test.mjs:16:1
+✖ BILDIRIM-08 — Gelecekteki ödeme bugünkü borcu kapatmaz (0.95422ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  0 !== 5000
+  
+      at TestContext.<anonymous> (file:///workspace/codex/tests/finance-baseline/card-notifications.test.mjs:16:74)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 5000,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/finance-baseline/card-notifications.test.mjs:17:1
+✖ BILDIRIM-09 — Kesilmemiş veya geçersiz vadeli ekstre için alarm yok (0.932288ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///workspace/codex/tests/finance-baseline/card-notifications.test.mjs:17:88)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/finance-baseline/card-notifications.test.mjs:18:1
+✖ BILDIRIM-10 — Kayıtlı eski biçim pozitif ekstre ve gün bazlı eski kart uyumu (0.970695ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  0 !== 5000
+  
+      at TestContext.<anonymous> (file:///workspace/codex/tests/finance-baseline/card-notifications.test.mjs:18:97)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 5000,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/finance-baseline/card-notifications.test.mjs:20:1
+✖ BILDIRIM-12 — Sıfır borç plan üretmez; giriş kayıtları değişmez (1.041913ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///workspace/codex/tests/finance-baseline/card-notifications.test.mjs:20:231)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

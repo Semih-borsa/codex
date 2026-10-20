@@ -1,0 +1,63 @@
+{
+  "beforeSha256": "76581666d90e2146047daa478e91bcb158ca9a22376a495e5e5d97f18865d6db",
+  "changedExistingDeclarations": [
+    "kartToplamBorcHesapla",
+    "kartBorcDegisimi",
+    "kartKaydiniGuncelle",
+    "islemKaynagi",
+    "yedekVerisiniDogrula",
+    "yedekBaglariniDogrula",
+    "yedegiGuvenleYaz",
+    "Ozet",
+    "donemSonuGiderTahmini",
+    "donemBakiyeHesapla",
+    "IslemlerTab",
+    "AyarlarTab",
+    "App"
+  ],
+  "newHelpers": [
+    "kartKimligi",
+    "kartKayitlari",
+    "kartSonDurum",
+    "kartEkstreKayitlari",
+    "kartEkstreOdemesiMi",
+    "kartEkstreBakiyeleri",
+    "kartAktifEkstreKalani",
+    "kartEkstreleriKoru",
+    "kartEkstreGuncelle",
+    "kartBorcDurumu",
+    "kartBorcGirdisi"
+  ],
+  "protectedUnchanged": [
+    "gunlukFinansHareketleri",
+    "gunlukGiderHareketleri",
+    "krediOdemeKaydiMi",
+    "KredilerTab",
+    "useLocalStorage",
+    "donemDevriHesapla",
+    "kartAnalizHareketleri",
+    "analizIslemleri",
+    "yedekKapsami",
+    "yedekEtkiHesapla",
+    "yedekGuvenlikKopyasiOlustur",
+    "YedekOnizleme",
+    "yerelYedekPaketi",
+    "EsnekRapor",
+    "YillikKategoriKiyas"
+  ],
+  "stylesUnchanged": true,
+  "copies": [
+    {
+      "path": "/workspace/codex/downloads/App.jsx",
+      "sha256": "a5f41129ce3f7f5f47c8ca962f0dd2478d716b5eb9f39d82214ea84355ebf692"
+    },
+    {
+      "path": "/workspace/codex/downloads/finans-takip-bildirim/src/App.jsx",
+      "sha256": "a5f41129ce3f7f5f47c8ca962f0dd2478d716b5eb9f39d82214ea84355ebf692"
+    },
+    {
+      "path": "/workspace/finans-upload/finans-takip/src/App.jsx",
+      "sha256": "a5f41129ce3f7f5f47c8ca962f0dd2478d716b5eb9f39d82214ea84355ebf692"
+    }
+  ]
+}

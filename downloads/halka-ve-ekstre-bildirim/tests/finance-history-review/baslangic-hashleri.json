@@ -1,0 +1,18 @@
+{
+  "downloads/App.jsx": "3d3fa6386aefeee2577c4ccb303c65ff23da8409ee467f336aa2991bb87d3c31",
+  "downloads/finans-takip-bildirim/src/App.jsx": "3d3fa6386aefeee2577c4ccb303c65ff23da8409ee467f336aa2991bb87d3c31",
+  "/workspace/finans-upload/finans-takip/src/App.jsx": "3d3fa6386aefeee2577c4ccb303c65ff23da8409ee467f336aa2991bb87d3c31",
+  "/workspace/finans-upload/finans-takip/android/app/build.gradle": "67a80a7a3bfe2357425109ef25f5a0c1b5be6841f769f25ece768e5181e2cd56",
+  "tests/finance-baseline/phase-a.test.mjs": "a243a99a4ef6d2f12d8d5b01114373bd3735b1909b600a553106eb062f4d8a68",
+  "tests/finance-baseline/backup-export.test.mjs": "9b5de8c1d6f698aeba54988780499d802e24f34e7b4a782a15e43702686e46ea",
+  "tests/finance-baseline/finance.test.mjs": "824ec5a15df6c9d20c6784fe8ed6f35fbf63d9b50e38f14d36e682ec8e8b8f85",
+  "tests/finance-baseline/phase-c.test.mjs": "427334db93b170ff3c61b3afe14d13e6cac41df34d2c56399be07f379d1a23d4",
+  "tests/finance-baseline/phase-c.browser.test.mjs": "cf139ad729670d0c8033fb1717b975185f47ccabd9b21c516fc32fc7047a3752",
+  "tests/finance-baseline/phase-d.test.mjs": "9d8e48cb9ba432c0ea5618d6990d367563d63b74b2c627e62d77551d40d894aa",
+  "tests/finance-baseline/phase-a.browser.test.mjs": "b5b6d0dca375cab9cac4872ecf4449371ad4a654dff0f0a009e886ceaf0ea79e",
+  "tests/finance-baseline/phase-b.browser.test.mjs": "246852d1f4dc9cafa2ff4282e7fd61ba2d28317ec4454e16c3869d5d0bf82c2a",
+  "tests/finance-baseline/phase-b.test.mjs": "f15a728b8e2b6a76a483d59efb54c2e6c794804264aac9cda6da01da669cd3be",
+  "tests/finance-baseline/browser.test.mjs": "bdfa8b2cb4a562bc06976eed72c9177236626cdfc54d2517b3a9a346190e61b7",
+  "tests/finance-baseline/backup-export.browser.test.mjs": "19c3a05403850871c3e9cfe93bcd6d614bdf7045bafe243b1c4c705a774ee023",
+  "tests/finance-baseline/phase-d.browser.test.mjs": "b37924459e848c3a4cca69b12960122f1a002f2e739c70317c1c070f025b3c00"
+}

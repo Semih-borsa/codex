@@ -1,0 +1,10 @@
+{
+  "changedFunctions": [
+    "kartHatirlatmalariniOlustur",
+    "HarcamaGauge"
+  ],
+  "allOtherSourceUnchanged": true,
+  "needleUnchanged": true,
+  "animationDurationMs": 3500,
+  "realUserDataAccessed": false
+}

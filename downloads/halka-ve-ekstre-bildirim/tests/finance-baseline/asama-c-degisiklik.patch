@@ -1,0 +1,209 @@
+--- App.before-phase-c.jsx
++++ App.jsx
+@@ -589,7 +589,9 @@
+     const k=storage.key(i);
+     if(k?.startsWith('ft_') && !k.startsWith('ft_auto_backup') && !k.startsWith('ft_manual_backup')) data[k]=JSON.parse(storage.getItem(k));
+   }
+-  return {format:'finora-v2',surum:'1.7.0',olusturulma:new Date().toISOString(),data};
++  // Varsayılan boş işlem listesi de açıkça yer alır; eksik alanla karıştırılmaz.
++  if(!Object.prototype.hasOwnProperty.call(data,'ft_islemler'))data.ft_islemler=[];
++  return {format:'finora-v2',surum:'1.7.0',yedekTuru:'tam',anahtarlar:Object.keys(data),olusturulma:new Date().toISOString(),data};
+ }
+ function otomatikYedekle(storage=window.localStorage) {
+   const paket=yerelYedekPaketi(storage),gun=yerelTarihAnahtari();
+@@ -614,12 +616,53 @@
+   const secili=liste.filter(h=>(kayitId==null||String(h.kayitId)===String(kayitId))&&(!alan||h.key===alan)).slice().reverse();
+   return <details className="calculation-help"><summary>Değişiklik geçmişi ({secili.length})</summary><p className="tools-note">Bu güncellemeden sonraki son 300 kayıt değişikliği cihazda tutulur. Eski değişiklikler geriye dönük oluşturulmaz.</p>{secili.map((h,n)=><details key={n}><summary>{h.islem} · {(h.yeni||h.onceki)?.aciklama||(h.yeni||h.onceki)?.kategori||(h.yeni||h.onceki)?.isim||'Kart'} · {new Date(h.zaman).toLocaleString('tr-TR')}</summary>{[['Önceki',h.onceki],['Sonraki',h.yeni]].map(([ad,i])=><p className="tools-note" key={ad}>{ad}: {i?`${i.aciklama||i.kategori||i.isim||'Kayıt'} · ${i.tarih||''} · ${fmtTL(i.tutar??i.ekstre??0)}${i.kartHarcama?` · Dönem içi ${fmtTL(i.donemIci||0)} · Provizyon ${fmtTL(i.provizyon||0)}`:''} · ${islemKaynagi(i)}`:'Kayıt yok'}</p>)}</details>)}</details>;
+ }
++// Yedekte olmayan bölüm korunur; yalnız açıkça bulunan bölüm değiştirilir.
++function yedekKapsami(data,paket={}) {
++  const tam=paket.yedekTuru!=='kismi' && Object.prototype.hasOwnProperty.call(data,'ft_islemler') && Array.isArray(data.ft_islemler);
++  return {tam,ad:!tam?'Kısmi veri paketi':paket.yedekTuru==='tam'?'Tam yedek':'Eski biçim yedek',
++    uyari:!tam?'Bu paket tam geri yükleme için uygun değil. İşlem listesi eksik veya paket kısmi olarak işaretlenmiş; yükleme engellendi.':''};
++}
++function yedekEtkiHesapla(mevcut,data) {
++  return [...new Set([...Object.keys(mevcut),...Object.keys(data)])].sort().map(key=>{
++    const onceki=mevcut[key],sonraki=data[key],varMi=Object.prototype.hasOwnProperty.call(data,key);
++    if(!varMi)return {key,korunacak:true};
++    const kayitListesi=v=>Array.isArray(v)&&v.every(i=>i&&typeof i==='object'&&i.id!=null);
++    if(kayitListesi(sonraki)&&(onceki==null||kayitListesi(onceki))) {
++      const a=new Map((onceki||[]).map(i=>[String(i.id),i])),b=new Map(sonraki.map(i=>[String(i.id),i]));
++      return {key,tip:'liste',onceki:(onceki||[]).length,sonraki:sonraki.length,
++        eklenecek:sonraki.filter(i=>!a.has(String(i.id))),silinecek:(onceki||[]).filter(i=>!b.has(String(i.id))),
++        degisecek:sonraki.filter(i=>a.has(String(i.id))&&JSON.stringify(a.get(String(i.id)))!==JSON.stringify(i)).map(i=>({onceki:a.get(String(i.id)),sonraki:i}))};
++    }
++    return {key,tip:'ayar',degisecek:JSON.stringify(onceki)!==JSON.stringify(sonraki),onceki,sonraki};
++  });
++}
++function yedekGuvenlikKopyasiOlustur(storage=window.localStorage) {
++  const ham=JSON.stringify(yerelYedekPaketi(storage));
++  try{storage.setItem('ft_auto_backup_restore_before_v2',ham);}catch{throw new Error('Yükleme öncesi güvenlik kopyası oluşturulamadı; yükleme başlatılmadı. Depolama alanını/iznini kontrol et.');}
++  if(storage.getItem('ft_auto_backup_restore_before_v2')!==ham)throw new Error('Yükleme öncesi güvenlik kopyası doğrulanamadı; yükleme başlatılmadı.');
++}
+ function YedekOnizleme({paket,onVazgec,onYukle}) {
+-  const data=paket.data;
+-  const sayim=d=>[['İşlem',d.ft_islemler?.length||0],['Kart',d.ft_kartlar?.length||0],['Ödeme',d.ft_odemeler?.length||0],['Ekstre ödemesi',d.ft_kart_odemeleri?.length||0]];
+-  let mevcut={};try{mevcut=yerelYedekPaketi().data;}catch{}
+-  const simdi=sayim(mevcut),sonra=sayim(data);
+-  return <Modal title="Yedek yükleme önizlemesi" onClose={onVazgec}><p className="tools-note">{paket.olusturulma?`Yedek tarihi: ${new Date(paket.olusturulma).toLocaleString('tr-TR')}`:'Yedek tarihi bilinmiyor.'} Mevcut kayıtlar bu yedekle değiştirilecek.</p>{sonra.map(([ad,n],i)=><div className="tools-row" key={ad}><span>{ad}</span><strong>{simdi[i][1]} → {n}</strong></div>)}<p className="tools-note">Yüklemeden önce mevcut verilerinin kurtarma kopyası cihazda saklanır. Bu işlem kayıtları birleştirmez.</p><Btn onClick={onYukle}>Yedeği yükle ve değiştir</Btn><Btn onClick={onVazgec}>Vazgeç</Btn></Modal>;
++  const data=paket.data,kapsam=yedekKapsami(data,paket);
++  let mevcut={},okumaHatasi=false;try{mevcut=paket.mevcutVeri||yerelYedekPaketi().data;}catch{okumaHatasi=true;}
++  const adlar={ft_islemler:'İşlemler',ft_kartlar:'Kredi kartları',ft_odemeler:'Ödemeler',ft_kart_odemeleri:'Ekstre ödemeleri',ft_krediler:'Krediler',ft_taksitler:'Taksitler',ft_kategoriler:'Kişisel kategoriler',ft_kategori_gorunumleri:'Kategori simge ve renkleri',ft_kayit_gecmisi:'Kayıt geçmişi'};
++  const kayit=i=>`${i.aciklama||i.isim||i.ad||i.kategori||'Kayıt'} · ${i.id}${i.tarih?' · '+i.tarih:''}${i.tutar!=null?' · '+fmtTL(i.tutar):''}`;
++  const metin=v=>JSON.stringify(v,null,2)??'Bu bölüm mevcut değil';
++  return <Modal title="Yedek yükleme önizlemesi" onClose={onVazgec}>
++    <p tabIndex={0} className="tools-note">{kapsam.ad} · {paket.olusturulma?`Yedek tarihi: ${new Date(paket.olusturulma).toLocaleString('tr-TR')}`:'Yedek tarihi bilinmiyor.'}</p>
++    <p className="tools-note">Yedekte bulunan bölümler aşağıdaki gibi değişir. Bulunmayan bölümler korunur; kayıtlar otomatik eşleştirilmez veya birleştirilmez. Açıkça boş verilen liste o bölümün mevcut kayıtlarını siler.</p>
++    {!kapsam.tam&&<p role="alert" className="form-alert">{kapsam.uyari}</p>}
++    {okumaHatasi&&<p role="alert" className="form-alert">Mevcut kayıtlar okunamadı; yükleme engellendi.</p>}
++    {yedekEtkiHesapla(mevcut,data).map(e=><section className="tools-card" key={e.key} aria-label={`${adlar[e.key]||e.key} yükleme etkisi`}>
++      <h4>{adlar[e.key]||e.key}</h4>
++      {e.korunacak?<p className="tools-note">Yedekte yok · Mevcut bölüm korunacak</p>:e.tip==='liste'?<>
++        <p className="tools-note">{e.onceki} → {e.sonraki} kayıt · Eklenecek: {e.eklenecek.length} · Silinecek: {e.silinecek.length} · Değişecek: {e.degisecek.length}</p>
++        {[['Eklenecek',e.eklenecek],['Silinecek',e.silinecek],['Değişecek',e.degisecek]].filter(([,liste])=>liste.length).map(([ad,liste])=><details key={ad}><summary>{ad} ({liste.length})</summary>{liste.slice(0,20).map((i,n)=><div key={n}><p className="tools-note">{ad==='Değişecek'?`${kayit(i.onceki)} → ${kayit(i.sonraki)}`:kayit(i)}</p>{ad==='Değişecek'&&<details><summary>Kayıt değişiklikleri</summary><p className="tools-note">Önceki: {metin(i.onceki).slice(0,2000)}</p><p className="tools-note">Sonraki: {metin(i.sonraki).slice(0,2000)}</p>{Math.max(metin(i.onceki).length,metin(i.sonraki).length)>2000&&<p className="tools-note">Uzun kaydın ilk 2000 karakteri gösteriliyor.</p>}</details>}</div>)}{liste.length>20&&<p className="tools-note">İlk 20 kayıt gösteriliyor; toplam {liste.length} kayıt etkilenecek.</p>}</details>)}
++      </>:<><p className="tools-note">{e.degisecek?'Bu bölüm değişecek':'Değişiklik yok'}</p>{e.degisecek&&<details><summary>Önceki ve sonraki değerler</summary><p className="tools-note">Önceki: {metin(e.onceki).slice(0,2000)}</p><p className="tools-note">Sonraki: {metin(e.sonraki).slice(0,2000)}</p>{Math.max(metin(e.onceki).length,metin(e.sonraki).length)>2000&&<p className="tools-note">Uzun bölümün ilk 2000 karakteri gösteriliyor.</p>}</details>}</>}
++    </section>)}
++    <p className="tools-note">Yüklemeden önce mevcut verilerinin güvenlik kopyası doğrulanır. Kopya alınamazsa yükleme başlamaz.</p>
++    {paket.yuklemeHatasi&&<p role="alert" className="form-alert">{paket.yuklemeHatasi}</p>}
++    <Btn onClick={onYukle} disabled={!kapsam.tam||okumaHatasi}>Yedeği yükle ve değiştir</Btn><Btn onClick={onVazgec}>Vazgeç</Btn>
++  </Modal>;
+ }
+ 
+ // ── LOCALSTORAGE HOOK ─────────────────────────────────────────────────────────
+@@ -701,6 +744,13 @@
+ function yedekVerisiniDogrula(paket) {
+   const nesneMi = v => v !== null && typeof v === "object" && !Array.isArray(v);
+   if (!nesneMi(paket) || !["finora-v2", "finora-v1", "butce-takip-v1"].includes(paket.format) || !nesneMi(paket.data)) throw new Error("Yedek biçimi geçersiz.");
++  if(paket.yedekTuru!=null&&!['tam','kismi'].includes(paket.yedekTuru))throw new Error('Yedek kapsamı geçersiz.');
++  if(paket.anahtarlar!=null) {
++    const keys=Object.keys(paket.data).filter(k=>k.startsWith('ft_')&&!k.startsWith('ft_auto_backup')&&!k.startsWith('ft_manual_backup'));
++    if(!Array.isArray(paket.anahtarlar)||paket.anahtarlar.some(k=>typeof k!=='string')||new Set(paket.anahtarlar).size!==paket.anahtarlar.length
++      ||JSON.stringify([...paket.anahtarlar].sort())!==JSON.stringify(keys.sort()))throw new Error('Yedeğin alan listesi dosya içeriğiyle eşleşmiyor; eksik veya değiştirilmiş paket.');
++  }
++  if(paket.yedekTuru==='tam'&&(!Array.isArray(paket.anahtarlar)||!Object.prototype.hasOwnProperty.call(paket.data,'ft_islemler')))throw new Error('Tam yedekte işlem listesi veya alan listesi eksik.');
+   const diziAnahtarlari = ["ft_islemler", "ft_odemeler", "ft_kartlar", "ft_kart_odemeleri", "ft_hizli_sablonlar", "ft_tekrarlayan", "ft_krediler", "ft_taksitler"];
+   const nesneAnahtarlari = ["ft_butceler", "ft_kategoriler", "ft_sabit_log", "ft_zamlar", "ft_enflasyon", "ft_maas_ayarlar", "ft_bildirim_ayarlari"];
+   const temiz = {};
+@@ -725,6 +775,7 @@
+         if (["ft_islemler", "ft_odemeler", "ft_kart_odemeleri", "ft_hizli_sablonlar", "ft_tekrarlayan"].includes(key) && !tutarGecerli(kayit.tutar, true)) throw new Error(`${key}: geçersiz tutar.`);
+         if (["ft_islemler", "ft_odemeler", "ft_kart_odemeleri"].includes(key) && !yerelTarihOku(kayit.tarih)) throw new Error(`${key}: geçersiz tarih.`);
+         if (key === "ft_islemler" && !["gelir", "gider"].includes(kayit.tip)) throw new Error("İşlem türü geçersiz.");
++        if(key==='ft_islemler'&&kayit.kaynak==='kredi_taksiti'&&(kayit.tip!=='gider'||kayit.krediId==null||!['string','number'].includes(typeof kayit.krediId)||String(kayit.krediId)===''||!tamSayiGecerli(kayit.taksitNo,1,1200)))throw new Error('Kredi ödeme bağlantısı geçersiz.');
+         if (key === "ft_odemeler" && kayit.odendi != null && typeof kayit.odendi !== "boolean") throw new Error("Ödeme durumu geçersiz.");
+         if (key === "ft_kartlar" && typeof kayit.isim !== "string") throw new Error("Kart adı geçersiz.");
+         if (key === "ft_hizli_sablonlar" && kayit.tip!=null && !["gelir","gider"].includes(kayit.tip)) throw new Error("Hızlı işlem türü geçersiz.");
+@@ -733,6 +784,7 @@
+         if (key === "ft_taksitler" && (!tutarGecerli(kayit.aylikTutar) || !tamSayiGecerli(kayit.vade, 1, 1200) || !tamSayiGecerli(kayit.odenen ?? 0, 0, Number(kayit.vade)))) throw new Error("Taksit kaydı geçersiz.");
+         if (key === "ft_krediler") {
+           if (!Array.isArray(kayit.taksitler) || !tamSayiGecerli(kayit.vade, 1, 1200) || kayit.taksitler.length !== Number(kayit.vade)) throw new Error("Kredi planı geçersiz.");
++          if(new Set(kayit.taksitler.map(t=>String(t?.no))).size!==kayit.taksitler.length)throw new Error('Kredi taksit numarası yineleniyor.');
+           kayit.taksitler.forEach(t => { if (!nesneMi(t) || !tutarGecerli(t.tutar) || !yerelTarihOku(t.tarih) || typeof t.odendi !== "boolean" || !tamSayiGecerli(t.no, 1, Number(kayit.vade))) throw new Error("Kredi taksiti geçersiz."); });
+         }
+         for (const alan of ["isim", "ad", "aciklama", "kategori", "kart", "kartAdi", "baslangic", "bitis", "sonOdemeTarihi", "hesapKesimTarihi"]) {
+@@ -785,19 +837,43 @@
+     }) : value;
+   }
+   if (!diziAnahtarlari.some(key => Object.prototype.hasOwnProperty.call(temiz, key))) throw new Error("Yedekte uygulama kayıtları bulunamadı.");
++  yedekBaglariniDogrula(temiz);
+   return temiz;
+ }
++// Yalnız açık kredi ödeme bağlarını doğrular; manuel kayıtları eşleştirmez.
++function yedekBaglariniDogrula(data) {
++  const rows=data.ft_islemler,loans=data.ft_krediler;
++  if(rows===undefined||loans===undefined)return;
++  if(!Array.isArray(rows)||!Array.isArray(loans))throw new Error('İşlem veya kredi listesi bozuk; yükleme başlatılmadı.');
++  const baglar=new Set();
++  for(const i of rows.filter(i=>i.kaynak==='kredi_taksiti')) {
++    const k=loans.find(k=>String(k.id)===String(i.krediId)),t=k?.taksitler?.find(t=>Number(t.no)===Number(i.taksitNo));
++    const bag=JSON.stringify([String(i.krediId),Number(i.taksitNo)]);
++    if(!krediOdemeKaydiMi(i)||!t||!t.odendi||paraKurus(t.tutar)!==paraKurus(i.tutar)||baglar.has(bag)
++      ||(t.odemeIslemId!=null&&String(t.odemeIslemId)!==String(i.id)))throw new Error('Kredi ödeme bağlantıları tutarsız; yedek uygulanmadı.');
++    baglar.add(bag);
++  }
++  for(const k of loans)for(const t of k.taksitler||[])if(t.odemeIslemId!=null) {
++    if(!t.odendi||!rows.some(i=>String(i.id)===String(t.odemeIslemId)&&krediOdemeKaydiMi(i,k.id,t.no)))throw new Error('Bağlı kredi ödeme işlemi eksik; yedek uygulanmadı.');
++  }
++}
+ function yedegiGuvenleYaz(data, storage = window.localStorage) {
+-  const onceki = Object.fromEntries(Object.keys(storage).filter(k => k.startsWith("ft_")).map(k => [k, storage.getItem(k)]));
+-  const yeni = Object.fromEntries(Object.entries(data).map(([k, v]) => [k, JSON.stringify(v)]));
++  const temiz=yedekVerisiniDogrula({format:'finora-v2',data});
++  if(!yedekKapsami(temiz).tam)throw new Error('İşlem listesi eksik; kısmi paket tam geri yükleme yapamaz.');
++  yedekBaglariniDogrula({...temiz,ft_krediler:temiz.ft_krediler??JSON.parse(storage.getItem('ft_krediler')||'[]')});
++  const onceki={};
++  for(let i=0;i<storage.length;i++) {const k=storage.key(i);if(k?.startsWith('ft_'))onceki[k]=storage.getItem(k);}
++  const yeni = Object.fromEntries(Object.entries(temiz).map(([k, v]) => [k, JSON.stringify(v)]));
+   try {
+-    // Eski kayıtları peşinen silme. Yeni kayıtlar başarıyla yazıldıktan sonra artık kullanılmayanları kaldır.
+-    Object.entries(yeni).forEach(([k, v]) => storage.setItem(k, v));
+-    Object.keys(onceki).filter(k => !k.startsWith("ft_auto_backup") && !k.startsWith("ft_manual_backup") && !Object.prototype.hasOwnProperty.call(yeni, k)).forEach(k => storage.removeItem(k));
++    // Eksik bölüm korunur. Silme yalnız açıkça verilen boş liste/nesne ile olur.
++    Object.entries(yeni).forEach(([k, v]) => {
++      storage.setItem(k,v);
++      if(storage.getItem(k)!==v)throw new Error('Yazılan kayıt doğrulanamadı.');
++    });
+   } catch (hata) {
+     try {
+       Object.keys(yeni).filter(k => !Object.prototype.hasOwnProperty.call(onceki, k)).forEach(k => storage.removeItem(k));
+-      Object.entries(onceki).forEach(([k, v]) => storage.setItem(k, v));
++      Object.entries(onceki).forEach(([k, v]) => {if(storage.getItem(k)!==v)storage.setItem(k,v);});
+     } catch {
+       const kurtarma = { format: "finora-v2", olusturulma: new Date().toISOString(), data: {} };
+       Object.entries(onceki).forEach(([k, v]) => { try { kurtarma.data[k] = JSON.parse(v); } catch { kurtarma.data[k] = v; } });
+@@ -2886,9 +2962,14 @@
+   const yedekUygula=()=>{
+     try{
+       const data=yedekVerisiniDogrula(bekleyenYedek);
+-      localStorage.setItem('ft_auto_backup_restore_before_v2',JSON.stringify(yerelYedekPaketi()));
++      const mevcut=yerelYedekPaketi().data;
++      if(bekleyenYedek.mevcutVeri&&JSON.stringify(bekleyenYedek.mevcutVeri)!==JSON.stringify(mevcut))throw new Error('Önizlemeden sonra mevcut kayıtlar değişti. Dosyayı yeniden seçip değişiklikleri kontrol et.');
++      yedekGuvenlikKopyasiOlustur();
++      const kapsam=yedekKapsami(data,bekleyenYedek);
++      if(!kapsam.tam)throw new Error(kapsam.uyari);
++      yedekBaglariniDogrula({ft_krediler:[],...mevcut,...data});
+       yedegiGuvenleYaz(data);setBekleyenYedek(null);toast('Yedek geri yüklendi');setTimeout(()=>window.location.reload(),500);
+-    }catch(e){toast(e.message||'Yedek yüklenemedi; mevcut verilerin korundu.','hata');}
++    }catch(e){const mesaj=e.message||'Yedek yüklenemedi; mevcut verilerin korundu.';setBekleyenYedek(p=>p?{...p,yuklemeHatasi:mesaj}:p);toast(mesaj,'hata');}
+   };
+   const bildirimTest = async () => {
+     setBildirimDurum("Kontrol ediliyor...");
+@@ -3027,14 +3108,8 @@
+ 
+   const yedekIndir = async () => {
+     try {
+-      const data = {};
+-      for (let i = 0; i < window.localStorage.length; i++) {
+-        const key = window.localStorage.key(i);
+-        if (key && key.startsWith("ft_") && !key.startsWith("ft_manual_backup") && !key.startsWith("ft_auto_backup")) {
+-          data[key] = JSON.parse(window.localStorage.getItem(key));
+-        }
+-      }
+-      const paket = { format: "finora-v2", surum: "1.7.0", olusturulma: new Date().toISOString(), data };
++      const paket = yerelYedekPaketi();
++      yedekVerisiniDogrula(paket);
+       const json = JSON.stringify(paket, null, 2);
+ 
+       // Önce uygulama içinde güvenli bir kopya tut. Android WebView indirmeyi
+@@ -3082,11 +3157,12 @@
+     const file = event.target.files && event.target.files[0];
+     event.target.value = "";
+     if (!file) return;
++    setBekleyenYedek(null);
+     try {
+       if (file.size > 10 * 1024 * 1024) throw new Error("Yedek dosyası 10 MB sınırını aşıyor.");
+       const paket = JSON.parse(await file.text());
+       const data = yedekVerisiniDogrula(paket);
+-      setBekleyenYedek({...paket,data});
++      setBekleyenYedek({...paket,data,mevcutVeri:yerelYedekPaketi().data});
+     } catch (e) {
+       toast(e instanceof SyntaxError ? "Dosya geçerli JSON değil; mevcut kayıtlar değiştirilmedi." : (e.message || "Yedek yüklenemedi; mevcut kayıtlar değiştirilmedi."), "hata");
+     }
+@@ -3136,7 +3212,7 @@
+         </div>
+       </div>
+ 
+-      <section className="tools-card"><h3>Otomatik güvenlik kopyaları</h3><p className="tools-note">Son 3 kayıt gününün kopyası yalnız bu cihazda tutulur. Uygulamayı silmek veya cihazı kaybetmek bunları da silebilir; dosya yedeğini ayrıca sakla.</p><Btn onClick={()=>{try{setOtomatikler(otomatikYedekle());toast('Güvenlik kopyası güncellendi');}catch{toast('Güvenlik kopyası yazılamadı; dosya yedeği al.','hata');}}}>Şimdi güvenlik kopyası al</Btn>{otomatikler.slice().reverse().map(p=><div className="tools-row" key={p.gun}><span>{p.gun} · {p.data.ft_islemler?.length||0} işlem</span><Btn onClick={()=>{try{setBekleyenYedek({...p,data:yedekVerisiniDogrula(p)});}catch(e){toast(e.message,'hata');}}}>Önizle</Btn></div>)}{kurtarma&&<Btn onClick={()=>{try{setBekleyenYedek({...kurtarma,data:yedekVerisiniDogrula(kurtarma)});}catch(e){toast(e.message,'hata');}}}>Son yüklemeden önceki verileri önizle</Btn>}</section>
++      <section className="tools-card"><h3>Otomatik güvenlik kopyaları</h3><p className="tools-note">Son 3 kayıt gününün kopyası yalnız bu cihazda tutulur. Uygulamayı silmek veya cihazı kaybetmek bunları da silebilir; dosya yedeğini ayrıca sakla.</p><Btn onClick={()=>{try{setOtomatikler(otomatikYedekle());toast('Güvenlik kopyası güncellendi');}catch{toast('Güvenlik kopyası yazılamadı; dosya yedeği al.','hata');}}}>Şimdi güvenlik kopyası al</Btn>{otomatikler.slice().reverse().map(p=><div className="tools-row" key={p.gun}><span>{p.gun} · {p.data.ft_islemler?.length||0} işlem</span><Btn onClick={()=>{try{setBekleyenYedek({...p,data:yedekVerisiniDogrula(p),mevcutVeri:yerelYedekPaketi().data});}catch(e){toast(e.message,'hata');}}}>Önizle</Btn></div>)}{kurtarma&&<Btn onClick={()=>{try{setBekleyenYedek({...kurtarma,data:yedekVerisiniDogrula(kurtarma),mevcutVeri:yerelYedekPaketi().data});}catch(e){toast(e.message,'hata');}}}>Son yüklemeden önceki verileri önizle</Btn>}</section>
+       {bekleyenYedek&&<YedekOnizleme paket={bekleyenYedek} onVazgec={()=>setBekleyenYedek(null)} onYukle={yedekUygula}/>}
+       {/* Bildirim testi */}
+       <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "18px 16px", marginBottom: 14 }}>
