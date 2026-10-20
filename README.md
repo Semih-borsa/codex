@@ -265,3 +265,13 @@ Aşağıdaki tutarlar emülatörde girilen test kayıtlarıdır; uygulama boş v
 Web referansı: [mobil](docs/screenshots/web-mobile.png) · [masaüstü](docs/screenshots/web-desktop.png).
 
 Derleme, Android/web testleri, 100.000 kayıt ve UI kontrolü sonuçları: [Doğrulama kaydı](docs/VALIDATION.md).
+
+
+## GünPlan
+
+Modern, açık/koyu temalı Android görev ve hatırlatma uygulaması. Günlük, seçili hafta günleri ve aylık tekrar; uygulama kapalıyken Android bildirimi, erteleme, takvim ve yerel yedekleme.
+
+- [GünPlan 1.0.0 APK](downloads/GunPlan-1.0.0.apk)
+- [Kaynak ve kurulum bilgileri](gunplan/README.md) · [Doğrulama](gunplan/VALIDATION.md)
+
+İlk kurulumdan sonra bildirim ve zamanında hatırlatma izinlerini uygulamanın Ayarlar bölümünden açın.
