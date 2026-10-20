@@ -43,7 +43,7 @@ final class PdfExport {
         List<Place> locations = shown.subList(part * 3, Math.min(shown.size(), part * 3 + 3));
         int columnWidth = 470 / locations.size();
         PdfDocument.Page page =
-            pdf.startPage(new PdfDocument.PageInfo.Builder(700, 358, part + 1).create());
+            pdf.startPage(new PdfDocument.PageInfo.Builder(700, 324, part + 1).create());
         Canvas c = page.getCanvas();
         Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
         p.setColor(Color.rgb(16, 35, 57));
@@ -63,7 +63,7 @@ final class PdfExport {
         for (int col = 0; col < locations.size(); col++)
           fit(c, p, locations.get(col).name, 208 + col * columnWidth, 90, columnWidth - 12);
         DateTimeFormatter day = DateTimeFormatter.ofPattern("dd.MM • EEEE", new Locale("tr", "TR"));
-        for (int i = 0; i < 7; i++) {
+        for (int i = 0; i < 6; i++) {
           LocalDate date = w.monday.plusDays(i);
           int y = 101 + i * 34;
           p.setColor(i % 2 == 0 ? Color.rgb(240, 246, 249) : Color.WHITE);
@@ -71,12 +71,12 @@ final class PdfExport {
           p.setColor(Color.rgb(16, 35, 57));
           p.setTypeface(Typeface.DEFAULT);
           p.setTextSize(12);
-          c.drawText(titleDay(date.format(day)), 26, y + 22, p);
+          c.drawText(i == 5 ? "Hafta Sonu Nöbetçisi" : titleDay(date.format(day)), 26, y + 22, p);
           for (int col = 0; col < locations.size(); col++)
             fit(
                 c,
                 p,
-                person(s, w, date, locations.get(col).id),
+                ScheduleTable.person(s, w, i, locations.get(col).id).replace("\n", " / "),
                 208 + col * columnWidth,
                 y + 22,
                 columnWidth - 12);

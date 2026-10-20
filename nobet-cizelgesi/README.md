@@ -1,12 +1,20 @@
-# Nöbet Çizelgesi 2.1 — Android
+# Nöbet Çizelgesi 2.2 — Android
 
 **Yeni arayüz:** Bütçe Takip’ten ilham alan kurumsal mavi özet kartı, çizgi simgeler, yüzen alt menü, personel kartları ve açık/koyu tema. [Ekran görüntüleri](docs/TASARIM-2.0.md)
 
-Çevrimdışı personel, görev yeri, mazeret ve haftalık nöbet planlama uygulaması.
+Yerel listeyle veya yetkili ortak ekiple personel, görev yeri, mazeret ve haftalık nöbet planlama uygulaması.
 
-[APK 2.1 indir](../downloads/NobetCizelgesi-2.1.apk) · [Android Studio ZIP](../downloads/NobetCizelgesi-Android-Studio.zip) · [Test sonuçları](docs/TESTLER.md)
+[APK 2.2 indir](../downloads/NobetCizelgesi-2.2.apk) · [Android Studio ZIP](../downloads/NobetCizelgesi-Android-Studio.zip) · [Test sonuçları](docs/TESTLER.md)
 
-Android 8.0 ve üzeri. Önceki sürümlerden biri kuruluysa **uygulamayı kaldırmadan** 2.1 APK'sını açarak güncelleyin. Aynı paket adı ve imza kullanılır; eski kayıtlar okunur. Kaldırmak veya uygulama verilerini silmek kayıtları siler.
+Android 8.0 ve üzeri. Önceki sürümlerden biri kuruluysa **uygulamayı kaldırmadan** 2.2 APK'sını açarak güncelleyin. Aynı paket adı ve imza kullanılır; eski kayıtlar okunur. Kaldırmak veya uygulama verilerini silmek kayıtları siler.
+
+## 2.2 — Kullanıcılar, Ortak Ekip Ve Tablo
+
+Çizelge ekranında ekrana sığan beş hafta içi satırı ve cuma sonrası tek **Hafta Sonu Nöbetçisi** satırı var. Hücreye dokunarak düzenleme korunur. Gerçek iki günlük görev kayıtları ve sayımlar değişmez; çok şube alt alta tablo gruplarında gösterilir. [Yeni görünüm](docs/TABLO-2.2.md).
+
+**Ayarlar → Kullanıcılar Ve Ortak Ekip** üzerinden Supabase bağlantısı, kayıt/giriş, e-posta kodu doğrulama, ekip daveti ve yönetici yetkisi yönetilir. Sunucu yalnız yöneticinin değişiklik yapmasına izin verir; her yönetici yeni yönetici atayabilir. İlk yönetici, proje sahibince kendi doğrulanmış UUID/e-posta kimliğiyle tanımlanır. Ortak liste yaklaşık 10 saniyelik ön plan kontrolleriyle yenilenir; çakışmalar sessizce üzerine yazılmaz.
+
+**Canlı proje bağlanmadı; gerçek Supabase/iki fiziksel telefon eşitlemesi doğrulanmadı.** Proje kurulana kadar yerel liste kullanılabilir. [Adım adım Supabase kurulumu](docs/ORTAK-KULLANIM.md) · [Sunucu SQL](backend/001-supabase.sql) · [İlk yönetici SQL](backend/002-first-owner.sql). APK'ya özel sunucu anahtarı konulmaz. Eski kişisel dosya, ortak ekipten ayrı korunur; ilk aktarım açık teyitle yapılır.
 
 ## 2.1 — Resmî Tatiller
 
@@ -115,7 +123,7 @@ Bugün ve öncesindeki onaylı atamalar ile gelecek atamalar ayrı tablolardadı
 
 ## Gizlilik ve ortak kullanım
 
-İnternet izni, reklam veya kişisel veri günlüğü yoktur. Veriler cihazın özel alanında atomik dosya güncellemesiyle tutulur; otomatik bulut yedeği kapalıdır. PDF yalnız kullanıcı paylaşımıyla seçilen uygulamaya okunabilir URI üzerinden verilir. PDF kayıtların yedeği değildir. Telefonlar kendi yerel verilerini tutar; **canlı eşitleme ve yönetici hesapları bu sürümde yoktur**. Kabul edilen yetki düzeni [ORTAK-KULLANIM.md](docs/ORTAK-KULLANIM.md) içindedir.
+Reklam veya kişisel veri günlüğü yoktur. Yerel liste atomik dosyada cihazda saklanır. 2.2 sürümünde isteğe bağlı ortak ekip için internet izni vardır: Supabase bağlantısı/giriş/ekip kurulmadan yerel liste kendiliğinden paylaşılmaz. Ortak ekibe geçince onaylanan değişiklikler bağlı HTTPS sunucusuyla paylaşılır; oturum ve ortak cache cihazda şifrelenir. Eski kişisel dosya ayrı kalır. Otomatik cihaz bulut yedeği kapalıdır. PDF yalnız kullanıcı paylaşımıyla seçilen uygulamaya okunabilir URI üzerinden verilir; veri yedeği değildir. [Ortak kullanım kurulumu, veri kapsamı ve doğrulama sınırı](docs/ORTAK-KULLANIM.md).
 
 ## Derleme
 

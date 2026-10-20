@@ -144,6 +144,7 @@ public class SmokeRunner extends Instrumentation {
     LocalDate mon = LocalDate.of(2026, 10, 19);
     Week week = generate(s, mon);
     approve(s, week);
+    CloudChecks.run(this, context);
     check(
         "Holiday overrides persist and legacy data enables only automatic calendar",
         () -> {
@@ -359,10 +360,10 @@ public class SmokeRunner extends Instrumentation {
               PdfRenderer renderer = new PdfRenderer(fd)) {
             truth(renderer.getPageCount() == 1);
             try (PdfRenderer.Page page = renderer.openPage(0)) {
-              truth(page.getWidth() == 700 && page.getHeight() == 358);
+              truth(page.getWidth() == 700 && page.getHeight() == 324);
               android.graphics.Bitmap bitmap =
                   android.graphics.Bitmap.createBitmap(
-                      700, 358, android.graphics.Bitmap.Config.ARGB_8888);
+                      700, 324, android.graphics.Bitmap.Config.ARGB_8888);
               page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
               bitmap.recycle();
             }
@@ -1131,7 +1132,12 @@ public class SmokeRunner extends Instrumentation {
                     truth(
                         scroll.getScrollY() > 0
                             && Math.abs(day.getTop() - scroll.getScrollY() - offset[0]) <= 2);
-                    truth(findText(day, sample.placeName(BRANCH) + ": —") != null);
+                    truth(
+                        ((android.widget.TextView)
+                                day.findViewWithTag("assignment-" + mon.plusDays(3) + "-" + BRANCH))
+                            .getText()
+                            .toString()
+                            .equals("—"));
                     findText(activity.getWindow().getDecorView(), "Personel").performClick();
                   } catch (ReflectiveOperationException e) {
                     throw new AssertionError(e);
@@ -1505,7 +1511,8 @@ public class SmokeRunner extends Instrumentation {
                             truth(item.getCurrentTextColor() == android.graphics.Color.WHITE);
                         }
                         truth(root.findViewWithTag("theme-control") != null);
-                        if (index == 0) truth(root.findViewWithTag("week-hero") != null);
+                        if (index == 0)
+                          truth(root.findViewWithTag("schedule-table-header") != null);
                       });
                   // Allow the emulated GPU compositor to present the completed frame.
                   Thread.sleep(1000);
@@ -1558,6 +1565,133 @@ public class SmokeRunner extends Instrumentation {
           } finally {
             if (had) prefs.edit().putInt("theme", previous).commit();
             else prefs.edit().remove("theme").commit();
+          }
+        });
+    check(
+        "Table compact six rows fit phone preserve weekend duties and multiple branch widths",
+        () -> {
+          Activity activity =
+              launchActivity(
+                  new Intent(target, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+          State sample = new State();
+          for (int i = 0; i < 5; i++) sample.people.add(new Person("table" + i, "Deneme " + i));
+          Week w = generate(sample, mon);
+          approve(sample, w);
+          java.lang.reflect.Field stateField = MainActivity.class.getDeclaredField("state");
+          stateField.setAccessible(true);
+          java.lang.reflect.Field selectedField = MainActivity.class.getDeclaredField("selected");
+          selectedField.setAccessible(true);
+          java.lang.reflect.Field scrollField = MainActivity.class.getDeclaredField("pageScroll");
+          scrollField.setAccessible(true);
+          java.lang.reflect.Method render = MainActivity.class.getDeclaredMethod("render");
+          render.setAccessible(true);
+          try {
+            runOnMainSync(
+                () -> {
+                  try {
+                    stateField.set(activity, sample);
+                    selectedField.set(activity, mon);
+                    render.invoke(activity);
+                  } catch (Exception e) {
+                    throw new AssertionError(e);
+                  }
+                });
+            waitForFrames(activity);
+            runOnMainSync(
+                () -> {
+                  try {
+                    android.view.View root = activity.getWindow().getDecorView();
+                    truth(root.findViewWithTag("schedule-table-header") != null);
+                    truth(findText(root, "Hafta Sonu\nNöbetçisi") != null);
+                    truth(findText(root, "Cumartesi") == null && findText(root, "Pazar") == null);
+                    truth(root.findViewWithTag("roster-day-" + mon.plusDays(6)) == null);
+                    android.widget.ScrollView scroll =
+                        (android.widget.ScrollView) scrollField.get(activity);
+                    android.view.View weekend =
+                        root.findViewWithTag("roster-day-" + mon.plusDays(5));
+                    truth(weekend.getBottom() <= scroll.getHeight());
+                    truth(
+                        w.duties.stream()
+                                .filter(d -> weekend(d.date) && d.place.equals(WORK))
+                                .count()
+                            == 2);
+                  } catch (Exception e) {
+                    throw new AssertionError(e);
+                  }
+                });
+            Thread.sleep(1000);
+            android.graphics.Bitmap bitmap = getUiAutomation().takeScreenshot();
+            truth(bitmap != null);
+            try (FileOutputStream stream =
+                new FileOutputStream(new File(isolated, "compact-table-2.2.png"))) {
+              bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, stream);
+            }
+            bitmap.recycle();
+            runOnMainSync(
+                () -> {
+                  try {
+                    java.lang.reflect.Field cloudField =
+                        MainActivity.class.getDeclaredField("cloud");
+                    cloudField.setAccessible(true);
+                    ((CloudController) cloudField.get(activity)).open();
+                  } catch (Exception e) {
+                    throw new AssertionError(e);
+                  }
+                });
+            waitForFrames(activity);
+            Thread.sleep(1000);
+            bitmap = getUiAutomation().takeScreenshot();
+            truth(bitmap != null);
+            try (FileOutputStream stream =
+                new FileOutputStream(new File(isolated, "cloud-setup-2.2.png"))) {
+              bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, stream);
+            }
+            bitmap.recycle();
+            runOnMainSync(
+                () -> {
+                  try {
+                    java.lang.reflect.Field cloudField =
+                        MainActivity.class.getDeclaredField("cloud");
+                    cloudField.setAccessible(true);
+                    ((CloudController) cloudField.get(activity)).panel.dismiss();
+                    for (int i = 0; i < 3; i++)
+                      sample.places.add(new Place("table-extra" + i, "Ek Şube " + i, 127, 1));
+                    render.invoke(activity);
+                  } catch (Exception e) {
+                    throw new AssertionError(e);
+                  }
+                });
+            waitForFrames(activity);
+            for (int width : new int[] {280, 320, 360, 600}) {
+              runOnMainSync(
+                  () -> {
+                    android.view.View root = activity.getWindow().getDecorView();
+                    float density = activity.getResources().getDisplayMetrics().density;
+                    root.measure(
+                        android.view.View.MeasureSpec.makeMeasureSpec(
+                            (int) (width * density), android.view.View.MeasureSpec.EXACTLY),
+                        android.view.View.MeasureSpec.makeMeasureSpec(
+                            (int) (800 * density), android.view.View.MeasureSpec.EXACTLY));
+                    root.layout(0, 0, root.getMeasuredWidth(), root.getMeasuredHeight());
+                    for (int part : new int[] {0, 2, 4})
+                      for (int day = 0; day < 6; day++) {
+                        android.view.ViewGroup row =
+                            root.findViewWithTag(
+                                "roster-day-"
+                                    + mon.plusDays(day)
+                                    + (part == 0 ? "" : "-part" + part));
+                        truth(row != null);
+                        for (int cell = 0; cell < row.getChildCount(); cell++)
+                          truth(
+                              row.getChildAt(cell).getWidth() > 0
+                                  && row.getChildAt(cell).getRight() <= row.getWidth());
+                      }
+                    root.requestLayout();
+                  });
+              waitForFrames(activity);
+            }
+          } finally {
+            runOnMainSync(activity::finish);
           }
         });
     Bundle result = new Bundle();

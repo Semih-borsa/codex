@@ -1,8 +1,10 @@
-# Nöbet Çizelgesi 2.1
+# Nöbet Çizelgesi 2.2
+
+**2.2:** ekrana sığan haftalık tablo, tek hafta sonu nöbetçisi satırı; Supabase hesap/giriş, e-posta kodu, davet, yönetici yetkisi ve sürüm kontrollü eşitleme istemcisi. [Tablo görünümü](../nobet-cizelgesi/docs/TABLO-2.2.md) · [Sunucu kurulumu](../nobet-cizelgesi/docs/ORTAK-KULLANIM.md). **Henüz canlı proje bağlı değil; iki gerçek telefonda bulut eşitlemesi doğrulanmadı.**
 
 **Yeni arayüz:** Bütçe Takip’ten ilham alan kurumsal mavi özet kartı, çizgi simgeler, yüzen alt menü, personel kartları ve açık/koyu tema. [Ekran görüntüleri](../nobet-cizelgesi/docs/TASARIM-2.0.md)
 
-- [APK 2.1 indir](NobetCizelgesi-2.1.apk)
+- [APK 2.2 indir](NobetCizelgesi-2.2.apk)
 - [Güncel APK](NobetCizelgesi.apk)
 - [Android Studio kaynak ZIP](NobetCizelgesi-Android-Studio.zip)
 - [Kullanım](../nobet-cizelgesi/README.md) · [Testler](../nobet-cizelgesi/docs/TESTLER.md)
@@ -29,4 +31,4 @@ Android 8.0 ve üzeri. Mevcut uygulamayı **kaldırmadan** APK üzerinden günce
 
 Ayarlar'dan eklenen şubeyi silebilir/geri alabilir, ilk iki yer dahil çalışma günlerini değiştirebilirsiniz. Geçmiş kayıtlar ve sayımlar korunur. Gün ayarları yeni dağıtımlarda kullanılır. Görünüm seçimi liste oluştururken sorulur: gizlenen şubeler yalnız çizelge/PDF'den çıkar; kayıt ve istatistikleri kalır. Mavi daha açık kurumsal tona güncellendi.
 
-Canlı telefon eşitlemesi/yönetici hesapları bu sürümde etkin değildir. Uygulamayı kaldırmak/verilerini silmek kayıtları siler; PDF veri yedeği değildir.
+Hesap/yönetici/eşitleme kodu vardır; canlı kullanmak için size ait Supabase projesini kurup bağlamanız ve kendi projenizde doğrulamanız gerekir. Uygulamayı kaldırmak/verilerini silmek kayıtları siler; PDF veri yedeği değildir.

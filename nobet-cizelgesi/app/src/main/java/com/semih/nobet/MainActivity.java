@@ -15,7 +15,8 @@ import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-public final class MainActivity extends Activity {
+public final class MainActivity extends Activity implements CloudController.Host {
+  private CloudController cloud;
   private State state;
   private Store store;
   private LinearLayout root, body, tabs;
@@ -67,14 +68,23 @@ public final class MainActivity extends Activity {
       state = new State();
       failed = true;
     }
+    cloud = new CloudController(this, this);
     if (b != null) {
       try {
-        if (b.containsKey("draft")) draft = Store.decode(b.getString("draft")).weeks.get(0);
+        if (b.containsKey("draft")
+            && cloud.key().equals(b.getString("cloudKey", "local"))
+            && (!cloud.active()
+                || (b.getLong("cloudRevision", -1) == cloud.revision
+                    && "admin".equals(cloud.role))))
+          draft = Store.decode(b.getString("draft")).weeks.get(0);
       } catch (Exception ignored) {
       }
       selected = LocalDate.parse(b.getString("week", selected.toString()));
       screen = b.getInt("screen", 0);
-      weekendOrderDraft = b.getStringArrayList("weekendOrderDraft");
+      if (cloud.key().equals(b.getString("cloudKey", "local"))
+          && (!cloud.active()
+              || (b.getLong("cloudRevision", -1) == cloud.revision && "admin".equals(cloud.role))))
+        weekendOrderDraft = b.getStringArrayList("weekendOrderDraft");
     }
     render();
     if (failed)
@@ -90,6 +100,8 @@ public final class MainActivity extends Activity {
   @Override
   public void onSaveInstanceState(Bundle b) {
     super.onSaveInstanceState(b);
+    b.putString("cloudKey", cloud == null ? "local" : cloud.key());
+    b.putLong("cloudRevision", cloud != null && cloud.active() ? cloud.revision : -1);
     b.putString("week", selected.toString());
     b.putInt("screen", screen);
     if (weekendOrderDraft != null) b.putStringArrayList("weekendOrderDraft", weekendOrderDraft);
@@ -100,6 +112,62 @@ public final class MainActivity extends Activity {
         b.putString("draft", Store.encode(temp));
       } catch (Exception ignored) {
       }
+  }
+
+  @Override
+  public State cloudState() {
+    return state;
+  }
+
+  @Override
+  public void cloudState(State next) {
+    state = next;
+    draft = null;
+    weekendOrderDraft = null;
+  }
+
+  @Override
+  public boolean cloudDraft() {
+    return draft != null || weekendOrderDraft != null;
+  }
+
+  @Override
+  public State localState() throws Exception {
+    return store.load();
+  }
+
+  @Override
+  public void cloudRender() {
+    if (root != null) renderKeepingPosition();
+  }
+
+  @Override
+  public void cloudNotice(String message) {
+    toast(message);
+  }
+
+  @Override
+  public void onResume() {
+    super.onResume();
+    if (cloud != null) cloud.start();
+  }
+
+  @Override
+  public void onPause() {
+    if (cloud != null) cloud.stop();
+    super.onPause();
+  }
+
+  @Override
+  public void onDestroy() {
+    if (cloud != null) cloud.destroy();
+    super.onDestroy();
+  }
+
+  private boolean mayEdit() {
+    if (cloud == null || cloud.canEdit()) return true;
+    toast(cloud.editDeniedMessage());
+    return false;
   }
 
   private int dp(float n) {
@@ -176,6 +244,10 @@ public final class MainActivity extends Activity {
         v -> {
           if (failed) {
             toast("Kayıtlar okunamadığı için değişiklikler kapalı.");
+            return;
+          }
+          if (cloud != null && !cloud.canEdit() && !CloudController.readAction(value)) {
+            toast(cloud.editDeniedMessage());
             return;
           }
           action.run();
@@ -277,6 +349,11 @@ public final class MainActivity extends Activity {
   }
 
   private boolean save() {
+    if (cloud != null && cloud.active()) {
+      boolean saved = cloud.stage(state);
+      if (!saved) cloud.restoreVisible();
+      return saved;
+    }
     try {
       store.save(state);
       return true;
@@ -305,7 +382,7 @@ public final class MainActivity extends Activity {
           return insets;
         });
     LinearLayout header = row();
-    header.setPadding(dp(18), dp(9), dp(18), dp(8));
+    header.setPadding(dp(18), dp(7), dp(18), dp(6));
     ImageView mark = new ImageView(this);
     mark.setImageDrawable(new Visuals.Icon("calendar", Color.WHITE, dp(23)));
     mark.setPadding(dp(9), dp(9), dp(9), dp(9));
@@ -336,6 +413,7 @@ public final class MainActivity extends Activity {
     theme.setBackground(Visuals.touch(cardColor, dp(16), lineColor));
     header.addView(theme, new LinearLayout.LayoutParams(dp(48), dp(48)));
     root.addView(header);
+    if (cloud != null) cloud.banner(root, darkMode);
     pageScroll = new ScrollView(this);
     pageScroll.setClipToPadding(false);
     pageScroll.setVerticalScrollBarEnabled(false);
@@ -382,7 +460,7 @@ public final class MainActivity extends Activity {
       tab.setCompoundDrawablesWithIntrinsicBounds(
           null, new Visuals.Icon(icons[i], color, dp(21)), null, null);
       tab.setCompoundDrawablePadding(dp(3));
-      tabs.addView(tab, new LinearLayout.LayoutParams(0, dp(62), 1));
+      tabs.addView(tab, new LinearLayout.LayoutParams(0, dp(52), 1));
     }
     LinearLayout.LayoutParams navParams = new LinearLayout.LayoutParams(-1, -2);
     navParams.setMargins(dp(14), dp(4), dp(14), dp(9));
@@ -501,6 +579,102 @@ public final class MainActivity extends Activity {
     body.addView(hero, lp);
   }
 
+  private void scheduleTable(Week savedWeek) {
+    Week week = savedWeek == null ? new Week(selected) : savedWeek;
+    List<Place> places = displayPlaces(state, week);
+    TextView caption = bold("Haftalık Nöbet Planı", 16, ink);
+    caption.setPadding(0, dp(4), 0, 0);
+    body.addView(caption);
+    int groupSize =
+        getResources().getDisplayMetrics().widthPixels / getResources().getDisplayMetrics().density
+                < 400
+            ? 2
+            : 3;
+    for (int part = 0; part < Math.max(1, places.size()); part += groupSize) {
+      List<Place> group = places.subList(part, Math.min(places.size(), part + groupSize));
+      LinearLayout header = row();
+      header.setBaselineAligned(false);
+      header.setTag(part == 0 ? "schedule-table-header" : "schedule-table-header-" + part);
+      header.setBackground(Visuals.surface(0xFF2A6FB1, dp(10), 0));
+      scheduleCell(header, "Gün / Tarih", true, true, null);
+      for (Place place : group)
+        scheduleCell(header, place.name + (place.deleted ? " (Silindi)" : ""), false, true, null);
+      LinearLayout.LayoutParams hp = new LinearLayout.LayoutParams(-1, -2);
+      hp.topMargin = dp(4);
+      body.addView(header, hp);
+      for (int index = 0; index < 6; index++) {
+        final int number = index;
+        LocalDate day = week.monday.plusDays(index);
+        LinearLayout line = row();
+        line.setBaselineAligned(false);
+        line.setTag("roster-day-" + day + (part == 0 ? "" : "-part" + part));
+        line.setBackgroundColor(index % 2 == 0 ? cardColor : (darkMode ? 0xFF182B42 : 0xFFE7F1FD));
+        String label =
+            index == 5
+                ? "Hafta Sonu\nNöbetçisi"
+                : proper(
+                        day.getDayOfWeek()
+                            .getDisplayName(
+                                java.time.format.TextStyle.FULL, new Locale("tr", "TR")))
+                    + "\n"
+                    + day.format(DateTimeFormatter.ofPattern("dd.MM"));
+        TextView dayCell = scheduleCell(line, label, true, false, null);
+        if (!Holidays.on(state, day).isEmpty()
+            || (index == 5 && !Holidays.on(state, day.plusDays(1)).isEmpty()))
+          dayCell.setTextColor(teal);
+        for (Place place : group) {
+          String value = ScheduleTable.person(state, week, index, place.id);
+          Runnable editAction =
+              savedWeek == null || place.deleted
+                  ? null
+                  : () -> {
+                    if (number < 5) edit(day, place.id);
+                    else if (place.id.equals(WORK)) edit(day, place.id);
+                    else
+                      new AlertDialog.Builder(this)
+                          .setTitle(place.name + " • Hafta Sonu")
+                          .setItems(
+                              new String[] {"Cumartesi", "Pazar"},
+                              (d, which) -> edit(day.plusDays(which), place.id))
+                          .setNegativeButton("Vazgeç", null)
+                          .show();
+                  };
+          TextView cell = scheduleCell(line, value, false, false, editAction);
+          cell.setTag("assignment-" + day + "-" + place.id);
+          cell.setContentDescription(
+              label.replace('\n', ' ')
+                  + " • "
+                  + place.name
+                  + ": "
+                  + value
+                  + (editAction == null ? "" : ", Düzenle"));
+        }
+        body.addView(line, new LinearLayout.LayoutParams(-1, -2));
+      }
+    }
+  }
+
+  private TextView scheduleCell(
+      LinearLayout line, String value, boolean day, boolean header, Runnable change) {
+    TextView cell =
+        change == null
+            ? text(value, header ? 11 : 12, header ? Color.WHITE : ink)
+            : button(value, change);
+    cell.setTextSize(header ? 11 : 12);
+    cell.setTextColor(header ? Color.WHITE : ink);
+    cell.setGravity(Gravity.CENTER);
+    cell.setMinWidth(0);
+    cell.setMinimumWidth(0);
+    cell.setPadding(dp(5), dp(7), dp(5), dp(7));
+    cell.setMinHeight(dp(header ? 36 : 48));
+    if (header) cell.setTypeface(null, Typeface.BOLD);
+    if (change != null) {
+      cell.setBackground(Visuals.touch(Color.TRANSPARENT, 0, lineColor));
+    }
+    line.addView(cell, new LinearLayout.LayoutParams(0, -1, day ? 1.05f : 1.5f));
+    return cell;
+  }
+
   private void dayHeader(LinearLayout card, LocalDate day) {
     LinearLayout header = row();
     LinearLayout badge = column();
@@ -594,7 +768,7 @@ public final class MainActivity extends Activity {
             }),
         new LinearLayout.LayoutParams(0, dp(52), 1));
     nav.setBackground(Visuals.surface(cardColor, dp(18), lineColor));
-    nav.setPadding(dp(4), dp(4), dp(4), dp(4));
+    nav.setPadding(dp(2), dp(2), dp(2), dp(2));
     for (int i = 0; i < 3; i++) {
       Button control = (Button) nav.getChildAt(i);
       control.setBackground(Visuals.touch(Color.TRANSPARENT, dp(14), 0));
@@ -615,7 +789,7 @@ public final class MainActivity extends Activity {
       }
     }
     body.addView(nav);
-    weekHero();
+    scheduleTable(draft != null ? draft : saved());
     action("Çizelgede Gösterilecek Şubeler", () -> chooseVisiblePlaces(null));
     int shortcutStart = body.getChildCount() - 1;
 
@@ -710,75 +884,6 @@ public final class MainActivity extends Activity {
             renderKeepingPosition();
             toast("Gün/yer alanlarına dokunup düzenleyin; ardından değişiklikleri kaydedin.");
           });
-    LocalDate sat =
-        w.duties.stream()
-            .filter(d -> d.place.equals(WORK) && weekend(d.date))
-            .map(d -> d.date)
-            .min(Comparator.naturalOrder())
-            .orElse(selected.plusDays(5));
-    String weekendPerson = PdfExport.person(state, w, sat, WORK);
-
-    for (int i = 0; i < 7; i++) {
-      LocalDate day = selected.plusDays(i);
-      LinearLayout card = new LinearLayout(this);
-      card.setTag("roster-day-" + day);
-      card.setOrientation(LinearLayout.VERTICAL);
-      card.setPadding(dp(14), dp(13), dp(14), dp(13));
-      card.setBackground(Visuals.surface(cardColor, dp(20), lineColor));
-      LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
-      lp.setMargins(0, dp(7), 0, dp(3));
-      body.addView(card, lp);
-      dayHeader(card, day);
-      List<Holidays.Holiday> holidays = Holidays.on(state, day);
-      if (!holidays.isEmpty()) {
-        String names =
-            holidays.stream()
-                .map(h -> h.name)
-                .distinct()
-                .collect(java.util.stream.Collectors.joining(" • "));
-        TextView holidayLabel =
-            text(
-                names + (Holidays.units(state, day) == 1 ? " • Yarım Gün" : " • Resmî Tatil"),
-                11,
-                teal);
-        holidayLabel.setPadding(0, dp(6), 0, 0);
-        card.addView(holidayLabel);
-      }
-      for (Place location : displayPlaces(state, w)) {
-        String place = location.id;
-        if ((location.deleted || !location.on(day))
-            && w.duties.stream().noneMatch(d -> d.date.equals(day) && d.place.equals(place)))
-          continue;
-        String label = location.name + ": " + PdfExport.person(state, w, day, place);
-        if (location.deleted) card.addView(text(label + " (Silindi)", 14, ink));
-        else {
-          Button assignment = button(label, () -> edit(day, place));
-          assignment.setTextColor(ink);
-          assignment.setTextSize(13);
-          assignment.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
-          assignment.setBackground(Visuals.touch(darkMode ? 0xFF20324A : 0xFFF1F6FD, dp(12), 0));
-          assignment.setCompoundDrawablesWithIntrinsicBounds(
-              new Visuals.Icon(place.equals(WORK) ? "calendar" : "building", teal, dp(18)),
-              null,
-              new Visuals.Icon("edit", teal, dp(16)),
-              null);
-          assignment.setCompoundDrawablePadding(dp(9));
-          assignment.setContentDescription(label + ", Düzenle");
-          assignment.setTag("assignment-" + day + "-" + place);
-          LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2);
-          params.topMargin = dp(7);
-          card.addView(assignment, params);
-        }
-      }
-      if (!weekendPerson.equals("—")
-          && (day.getDayOfWeek().getValue() == 4 || day.getDayOfWeek().getValue() == 5)) {
-        TextView rest = text("Dinlenme: " + weekendPerson, 11, muted);
-        rest.setCompoundDrawablesWithIntrinsicBounds(
-            new Visuals.Icon("clock", muted, dp(13)), null, null, null);
-        rest.setCompoundDrawablePadding(dp(5));
-        card.addView(rest);
-      }
-    }
     for (String warning : w.warnings) body.addView(text("• " + warning, 14, warningColor));
     if (preview) {
       action(
@@ -823,6 +928,7 @@ public final class MainActivity extends Activity {
   }
 
   private void approveDraft() {
+    if (!mayEdit()) return;
     if (draft == null) return;
     List<String> errors = validate(state, draft);
     if (!errors.isEmpty()) {
@@ -935,11 +1041,12 @@ public final class MainActivity extends Activity {
       card.addView(row);
     }
     note(
-        "Veriler yalnız bu cihazda tutulur. Uygulamanın kaldırılması veya verilerinin silinmesi"
-            + " kayıtları siler.");
+        "Yerel liste cihazda tutulur. Ortak ekip etkinse kabul edilen değişiklikler bağlı sunucuyla"
+            + " paylaşılır. Uygulamayı kaldırmak cihazdaki kayıtları ve oturumları silebilir.");
   }
 
   private void personDialog(Person p) {
+    if (!mayEdit()) return;
     EditText input = new EditText(this);
     input.setSingleLine(true);
     input.setHint("Ad Soyad");
@@ -1160,6 +1267,7 @@ public final class MainActivity extends Activity {
 
   private AlertDialog leaveDialog(
       Leave existing, String place, LocalDate start, LocalDate end, String reason) {
+    if (!mayEdit()) return null;
     List<Person> list =
         state.people.stream()
             .filter(p -> p.active || existing != null && p.id.equals(existing.person))
@@ -1383,6 +1491,7 @@ public final class MainActivity extends Activity {
   }
 
   private void branchExcuse() {
+    if (!mayEdit()) return;
     List<Person> list =
         state.people.stream().filter(p -> p.active).collect(java.util.stream.Collectors.toList());
     new AlertDialog.Builder(this)
@@ -1418,6 +1527,7 @@ public final class MainActivity extends Activity {
   }
 
   private void skip(Week w) {
+    if (!mayEdit()) return;
     String id =
         w.duties.stream()
             .filter(d -> weekend(d.date) && d.place.equals(WORK))
@@ -1465,6 +1575,7 @@ public final class MainActivity extends Activity {
   }
 
   private AlertDialog edit(LocalDate day, String place) {
+    if (!mayEdit()) return null;
     Week original = draft != null ? draft : saved();
     if (original == null) return null;
     if (weekend(day) && place.equals(WORK)) {
@@ -1500,6 +1611,7 @@ public final class MainActivity extends Activity {
   }
 
   private AlertDialog applyManualChange(Week edited, List<Duty> added) {
+    if (!mayEdit()) return null;
     Set<String> messages = new LinkedHashSet<>();
     boolean simultaneous = false, repeated = false, leaveConflict = false;
     for (Duty duty : added) {
@@ -1580,6 +1692,7 @@ public final class MainActivity extends Activity {
   }
 
   private void replaceWeekend(Week original) {
+    if (!mayEdit()) return;
     String old =
         original.duties.stream()
             .filter(d -> weekend(d.date) && d.place.equals(WORK))
@@ -1703,6 +1816,7 @@ public final class MainActivity extends Activity {
   }
 
   private void chooseVisiblePlaces(Runnable after) {
+    if (!mayEdit()) return;
     List<Place> choices = statisticPlaces(state);
     if (choices.isEmpty()) {
       if (after != null) after.run();
@@ -1751,6 +1865,7 @@ public final class MainActivity extends Activity {
   }
 
   private void moveWeekendPerson(String id, int delta) {
+    if (!mayEdit()) return;
     List<String> ids = editableWeekendIds();
     int from = ids.indexOf(id), to = from + delta;
     if (from < 0 || to < 0 || to >= ids.size()) return;
@@ -1760,6 +1875,7 @@ public final class MainActivity extends Activity {
   }
 
   private void confirmWeekendOrder(List<String> ids) {
+    if (!mayEdit()) return;
     StringBuilder preview = new StringBuilder();
     for (int n = 0; n < ids.size(); n++)
       preview.append(n + 1).append(". Sıra • ").append(state.name(ids.get(n))).append("\n");
@@ -1974,6 +2090,7 @@ public final class MainActivity extends Activity {
   }
 
   private AlertDialog holidayDialog(Holidays.Holiday current, int year, Runnable refresh) {
+    if (!mayEdit()) return null;
     LinearLayout box = column();
     box.setPadding(dp(20), dp(8), dp(20), dp(8));
     EditText name = new EditText(this);
@@ -2052,6 +2169,7 @@ public final class MainActivity extends Activity {
   }
 
   private void settings() {
+    if (cloud != null) cloud.settings(body, darkMode);
     action("Resmî Tatil Takvimi", this::holidayCalendar);
     weekendSettings();
     heading("Ayarlar • Görev Yerleri");
@@ -2132,6 +2250,7 @@ public final class MainActivity extends Activity {
   }
 
   private void placeDialog(Place current) {
+    if (!mayEdit()) return;
     if (current == null && state.places.stream().filter(p -> !p.deleted).count() >= 20) {
       toast("En fazla 20 görev yeri eklenebilir.");
       return;

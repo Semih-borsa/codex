@@ -1,11 +1,25 @@
-# Doğrulama — Nöbet Çizelgesi 2.1 / 19 Ekim 2026
+# Doğrulama — Nöbet Çizelgesi 2.2 / 20 Ekim 2026
 
 - JDK 17.0.17, Android SDK 35, build-tools 35.0.0, Gradle 8.9, AGP 8.7.3.
-- `testDebugUnitTest`: **89 test, 0 başarısız, 0 atlanan**.
+- `testDebugUnitTest`: **96 test, 0 başarısız, 0 atlanan**.
 - `lintDebug`: **sorun bulunmadı**.
 - APK ve Android test APK derlemeleri başarılı.
-- Android 11 / API 30 x86_64 emülatöründe önceki sürüm üzerine `adb install -r` ile 2.1 güncellemesi başarılı.
-- Android test çalıştırıcısı: **37 kontrol geçti, 0 başarısız**.
+- Android 11 / API 30 x86_64 emülatöründe önceki sürüm üzerine `adb install -r` ile 2.2 güncellemesi başarılı.
+- Android test çalıştırıcısı: **43 kontrol geçti, 0 başarısız**.
+
+## 2.2 Tablo Ve Ortak Ekip Kontrolleri
+
+7 yeni JVM testi: beş hafta içi ve birleşik hafta sonu satırı tüm yedi tarihi kapsar; aynı hafta sonu görevlisi bir kez görünürken iki görev saklanır; farklı Cmt/Paz atamaları korunur; yalnız pazar açıkken o günün kişisi görünür; boş açık gün gizlenmez; boş alan ve yıl geçişi; geçersiz satır reddi. Önceki 89 test de geçti.
+
+6 yeni Android kontrolü: HTTPS/proje alan adı ve public anahtar doğrulaması; HTTP/yabancı adres/service_role/secret anahtar reddi; oturum yenileme ve anahtar döndürme; metadata rolünün yetki sayılmaması; e-posta kodu/yeniden gönderim isteği ve SMTP kurulum hatası; Android Keystore AES-GCM dosyasının düz metin içermemesi, her yazıda farklı şifreli çıktı ve bozulmuş dosya reddi; iki **benzetim istemcisiyle** kullanıcı yazma reddi, yönetici yayınlama/diğer istemcide okuma, rol güncellemesi, sürüm çakışmasında yerel kopya ve sunucu verisinin korunması, kabul yanıtı kaybolunca aynı kimlikle yeniden gönderim; kayıt yanıtının hemen sonrasında açılan yeni taslağı silmemesi. Son kontrol haftalık tablonun altıncı satırının 360×640 dp telefona sığmasını, Cmt/Paz'ın ayrı satır olmamasını, iki gerçek görevin korunmasını ve beş görev yerinde 280/320/360/600 dp genişlik sınırlarını doğrular. Önceki 37 Android kontrolü de geçti.
+
+`backend/tests/run.py`: **32 PostgreSQL kontrolü geçti, 0 başarısız**. Postgres 16 Alpine, ağsız geçici Docker konteyneri; iki ayrı DB bağlantısıyla aynı sürüme yazışmada tek kazanan. Anonim erişim, ilk yönetici UUID/e-posta/doğrulama kontrolü, metadata ile yönetici olamama, kullanıcı/ekip dışı okuma-yazma/rol/davet reddi, tablolara doğrudan yazma ve özel kurulum tablosunu okuma reddi, davet kabulü, yönetici devri, son yönetici koruması, kaldırılan üyenin erişimi, eski davetle geri dönememe, diğer ekip yöneticisinin erişememesi, boş/bozuk üst yapı reddi, eski sürüm yazışı, idempotent tekrar ve veri içermeyen sürüm sorgusu kontrol edildi.
+
+**Bu testler canlı Supabase Auth/JWT/SMTP/Data API bağlantısının veya iki fiziksel telefonun doğrulandığı anlamına gelmez.** Auth tablosu/UID işlevi PostgreSQL testinde taklit edildi; Android ağ taşıması sentetik yanıtlarla test edildi. Kullanıcı henüz proje oluşturmadığından gerçek sunucu bağlantısı yapılmadı. APK'da bağlantı ayarları ve sunucu SQL dosyaları teslim edildi; proje kurulduğunda uçtan uca doğrulanmalıdır. Dışarı gerçek kişiye e-posta/davet gönderilmedi.
+
+Önceki yazılım emülatörü System UI/system yanıt vermiyor pencereleri ilk odak kontrolünü engelledi; test başarı sayılmadı. Pencereler kapatılıp yeniden çalıştırıldı. Yeni tabloda hafta sonu satırının altta kaldığı ilk kontrol de başarısız sayıldı; satırların baseline hizalaması ve alanlar düzeltilip aynı kontrol yeniden geçti. Tüm mevcut kontrollerin son tam koşusu filtre kullanılmadan yapılır.
+
+Son tam işlevsel koşudan sonra yalnız kişisel/ortak veri saklama açıklaması düzeltildi. Yeniden derleme, lint ve son APK ile `Activity launches` hedefli kontrolü geçti (1 geçti / 42 atlandı); bu hedefli koşu ayrı raporlanır.
 
 ## 2.1 Resmî Tatil Kontrolleri
 
@@ -87,8 +101,8 @@ Gizleme testleri: şube görünümden çıkıyor; görev kayıtları, personel s
 
 ## APK Bütünlüğü
 
-2.1 APK SHA-256: `20babe9232aa3eb0921be6de77f17d58cf9e734f42ac782e899a57f2a6a65318`. Paket `com.semih.nobet`, sürüm kodu 14. Önceki APK ile aynı imza doğrulandı.
+2.2 APK SHA-256: `c15c6a5c622c724658c2c7c42273b4a62f720b89798f5083e7fd1382a46665e6`. Paket `com.semih.nobet`, sürüm kodu 15. Önceki APK ile aynı imza doğrulandı.
 
 ## Sınırlar
 
-Fiziksel telefon veya tüm Android sürümleri test edilmedi. WhatsApp'ta gerçek alıcıya gönderim yapılmadı; PDF üretimi ve Android paylaşım URI erişimi test edildi. APK debug imzalıdır. Dinî takvim 2020–2032 ile sınırlıdır; diğer yıllar manuel kontrol edilir. Sabit tatiller 2020 ve sonrasında üretilir. Takvim kaynağı/kapsamı RESMI-TATILLER.md içindedir. Canlı telefon eşitlemesi ve yönetici hesapları uygulanmadı; APK cihazda çalışır. Yetki/sunucu planı ORTAK-KULLANIM.md içindedir.
+Fiziksel telefon veya tüm Android sürümleri test edilmedi. WhatsApp'ta gerçek alıcıya gönderim yapılmadı; PDF üretimi ve Android paylaşım URI erişimi test edildi. APK debug imzalıdır. Dinî takvim 2020–2032 ile sınırlıdır; diğer yıllar manuel kontrol edilir. Sabit tatiller 2020 ve sonrasında üretilir. Takvim kaynağı/kapsamı RESMI-TATILLER.md içindedir. Hesap/yönetici/eşitleme kodu uygulanmıştır; canlı Supabase projesi bağlanmadı ve gerçek iki cihazla denenmedi. Kurulum ve doğrulama adımları ORTAK-KULLANIM.md içindedir.
