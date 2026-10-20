@@ -1,0 +1,11 @@
+import { readFile, writeFile, readdir } from "node:fs/promises";
+import { createHash } from "node:crypto";
+const html = await readFile("dist/index.html", "utf8");
+const revision = createHash("sha256").update(html).digest("hex").slice(0, 12);
+const assets = (await readdir("dist/assets")).map((file) => "./assets/" + file);
+let worker = await readFile("public/sw.js", "utf8");
+worker = worker.replace(/["']__IZIN360_CACHE__["']/, JSON.stringify("izin360-" + revision));
+worker = worker.replace(/["']__IZIN360_ASSETS__["']/, ["./", "./icon.svg", "./manifest.webmanifest", ...assets].map(s=>JSON.stringify(s)).join(", "));
+if(worker.includes("__IZIN360_"))throw Error("Offline cache template was not replaced.");
+await writeFile("dist/sw.js", worker);
+console.log("Offline assets precached with revision " + revision);
