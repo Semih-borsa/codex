@@ -1,0 +1,22 @@
+✔ UI-YENI01-light — Ödeme onayı temalı; iptal/Escape kayıtsız, onay tek ödeme (2589.04607ms)
+✔ UI-YENI01-dark — Ödeme onayı temalı; iptal/Escape kayıtsız, onay tek ödeme (2278.71537ms)
+✔ UI-YENI01-gray — Ödeme onayı temalı; iptal/Escape kayıtsız, onay tek ödeme (2263.143457ms)
+✔ UI-YENI02 — Bugün Harcanan: kart farkı ve nakit (607.390549ms)
+✔ UI-YENI02 — Bugün Harcanan: provizyonun kesinleşmesi (583.287346ms)
+✔ UI-YENI02 — Bugün Harcanan: ilk kart borcu harcama değildir (559.243888ms)
+✔ UI-YENI02 — Bugün Harcanan: ekstre ve diğer günler hariç (581.404724ms)
+✔ UI-YENI03 — Ödemeler ekranı onayı; ödenen fatura harcama toplamında yalnız bir kez (1838.809896ms)
+✔ UI-KALDIR-light — PDF analizi menüde yok; özet ve kayıtlar korunur (857.163859ms)
+✔ UI-KALDIR-dark — PDF analizi menüde yok; özet ve kayıtlar korunur (905.97748ms)
+✔ UI-KALDIR-gray — PDF analizi menüde yok; özet ve kayıtlar korunur (1041.555485ms)
+✔ UI-HAFTA-light — Haftanın Günleri özet trendinin altında, toplam ve kart farkı korunur (1020.434034ms)
+✔ UI-HAFTA-dark — Haftanın Günleri özet trendinin altında, toplam ve kart farkı korunur (1046.211928ms)
+✔ UI-HAFTA-gray — Haftanın Günleri özet trendinin altında, toplam ve kart farkı korunur (1018.757268ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 17582.377916
