@@ -7,6 +7,10 @@ import java.util.*;
 
 /** Shared six-row presentation; actual Saturday/Sunday duties remain separate in storage. */
 final class ScheduleTable {
+  static boolean isToday(Week week, int row, LocalDate today) {
+    return dates(week, row).contains(today);
+  }
+
   static List<LocalDate> dates(Week week, int row) {
     if (row < 0 || row > 5) throw new IllegalArgumentException("Geçersiz çizelge satırı");
     return row == 5

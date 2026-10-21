@@ -1,12 +1,16 @@
-# Nöbet Çizelgesi 2.3 — Android
+# Nöbet Çizelgesi 2.4 — Android
 
 **Yeni arayüz:** Bütçe Takip’ten ilham alan kurumsal mavi özet kartı, çizgi simgeler, yüzen alt menü, personel kartları ve açık/koyu tema. [Ekran görüntüleri](docs/TASARIM-2.0.md)
 
 Yerel listeyle veya yetkili ortak ekiple personel, görev yeri, mazeret ve haftalık nöbet planlama uygulaması.
 
-[APK 2.3 indir](../downloads/NobetCizelgesi-2.3.apk) · [Android Studio ZIP](../downloads/NobetCizelgesi-Android-Studio.zip) · [Test sonuçları](docs/TESTLER.md)
+[APK 2.4 indir](../downloads/NobetCizelgesi-2.4.apk) · [Android Studio ZIP](../downloads/NobetCizelgesi-Android-Studio.zip) · [Test sonuçları](docs/TESTLER.md)
 
-Android 8.0 ve üzeri. Önceki sürümlerden biri kuruluysa **uygulamayı kaldırmadan** 2.3 APK'sını açarak güncelleyin. Aynı paket adı ve imza kullanılır; eski kayıtlar okunur. Kaldırmak veya uygulama verilerini silmek kayıtları siler.
+Android 8.0 ve üzeri. Önceki sürümlerden biri kuruluysa **uygulamayı kaldırmadan** 2.4 APK'sını açarak güncelleyin. Aynı paket adı ve imza kullanılır; eski kayıtlar okunur. Kaldırmak veya uygulama verilerini silmek kayıtları siler.
+
+## 2.4 — Bugünün Satırını Vurgulama
+
+Çizelge sayfasında telefonun yerel tarihine göre bugünün satırı bal sarısıyla vurgulanır ve **Bugün** etiketi görünür. Cumartesi ve pazar, aynı **Hafta Sonu Nöbetçisi** satırını vurgular. Başka hafta görüntüleniyorsa vurgu olmaz; çok şubeli tabloda ilgili satır her grupta görünür. Açık/koyu tema uyumludur. Uygulama ön plana geldiğinde ve açıkken yerel gece yarısında tarih yeniden kontrol edilir. Kayıtlar ve atamalar değişmez. [Görünüm](docs/GUN-VURGUSU-2.4.md).
 
 ## 2.3 — Dengeli Dağıtım Ve Açılır Mazeretler
 

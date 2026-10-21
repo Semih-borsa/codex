@@ -17,6 +17,22 @@ import java.util.*;
 
 public final class MainActivity extends Activity implements CloudController.Host {
   private CloudController cloud;
+  private final Handler dayHandler = new Handler(Looper.getMainLooper());
+  private LocalDate displayedDate = LocalDate.now();
+  private final Runnable refreshDay =
+      () -> {
+        LocalDate now = LocalDate.now();
+        if (!now.equals(displayedDate)) {
+          displayedDate = now;
+          if (this.root != null && this.screen == 0) renderKeepingPosition();
+        }
+        long delay =
+            java.time.Duration.between(
+                    java.time.ZonedDateTime.now(),
+                    now.plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault()))
+                .toMillis();
+        dayHandler.postDelayed(this.refreshDay, Math.max(1000, delay + 1000));
+      };
   private State state;
   private Store store;
   private LinearLayout root, body, tabs;
@@ -158,10 +174,13 @@ public final class MainActivity extends Activity implements CloudController.Host
   public void onResume() {
     super.onResume();
     if (cloud != null) cloud.start();
+    dayHandler.removeCallbacks(refreshDay);
+    refreshDay.run();
   }
 
   @Override
   public void onPause() {
+    dayHandler.removeCallbacks(refreshDay);
     if (cloud != null) cloud.stop();
     super.onPause();
   }
@@ -586,6 +605,10 @@ public final class MainActivity extends Activity implements CloudController.Host
   }
 
   private void scheduleTable(Week savedWeek) {
+    scheduleTable(savedWeek, LocalDate.now());
+  }
+
+  private void scheduleTable(Week savedWeek, LocalDate today) {
     Week week = savedWeek == null ? new Week(selected) : savedWeek;
     List<Place> places = displayPlaces(state, week);
     TextView caption = bold("Haftalık Nöbet Planı", 16, ink);
@@ -610,13 +633,17 @@ public final class MainActivity extends Activity implements CloudController.Host
       body.addView(header, hp);
       for (int index = 0; index < 6; index++) {
         final int number = index;
+        boolean current = ScheduleTable.isToday(week, index, today);
+        int todayInk = darkMode ? 0xFFFFE7AD : 0xFF634616;
         LocalDate day = week.monday.plusDays(index);
         LinearLayout line = row();
         line.setBaselineAligned(false);
         line.setTag("roster-day-" + day + (part == 0 ? "" : "-part" + part));
         line.setBackground(
-            new Visuals.TableRow(
-                index % 2 == 0 ? cardColor : (darkMode ? 0xFF182B42 : 0xFFE7F1FD), dp(1)));
+            current
+                ? new Visuals.TodayRow(darkMode, dp(1), dp(4))
+                : new Visuals.TableRow(
+                    index % 2 == 0 ? cardColor : (darkMode ? 0xFF182B42 : 0xFFE7F1FD), dp(1)));
         String label =
             index == 5
                 ? "Hafta Sonu\nNöbetçisi"
@@ -630,6 +657,21 @@ public final class MainActivity extends Activity implements CloudController.Host
         if (!Holidays.on(state, day).isEmpty()
             || (index == 5 && !Holidays.on(state, day.plusDays(1)).isEmpty()))
           dayCell.setTextColor(teal);
+        if (current) {
+          android.text.SpannableString marked = new android.text.SpannableString(label + "\nBugün");
+          marked.setSpan(
+              new Visuals.TodayBadge(
+                  9 * getResources().getDisplayMetrics().scaledDensity, darkMode),
+              label.length() + 1,
+              marked.length(),
+              android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+          dayCell.setText(marked);
+          dayCell.setPadding(dp(5), dp(2), dp(5), dp(2));
+          dayCell.setLineSpacing(0, .95f);
+          dayCell.setTextColor(todayInk);
+          dayCell.setTypeface(null, Typeface.BOLD);
+          line.setContentDescription(label.replace('\n', ' ') + " • Bugün");
+        }
         for (Place place : group) {
           String value = ScheduleTable.person(state, week, index, place.id);
           Runnable editAction =
@@ -648,6 +690,10 @@ public final class MainActivity extends Activity implements CloudController.Host
                           .show();
                   };
           TextView cell = scheduleCell(line, value, false, false, editAction);
+          if (current) {
+            cell.setTextColor(todayInk);
+            cell.setTypeface(null, Typeface.BOLD);
+          }
           cell.setTag("assignment-" + day + "-" + place.id);
           cell.setContentDescription(
               label.replace('\n', ' ')
@@ -655,6 +701,7 @@ public final class MainActivity extends Activity implements CloudController.Host
                   + place.name
                   + ": "
                   + value
+                  + (current ? ", Bugün" : "")
                   + (editAction == null ? "" : ", Düzenle"));
         }
         body.addView(line, new LinearLayout.LayoutParams(-1, -2));

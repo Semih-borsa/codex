@@ -1,3 +1,18 @@
+# Doğrulama — Nöbet Çizelgesi 2.4 / 21 Ekim 2026
+
+- JVM: **108 test geçti, 0 başarısız, 0 atlanan**. Yeni iki test yedi günün doğru satırını, iki hafta sonu gününü, başka haftaları ve yıl geçişini doğrular.
+- `lintDebug`, APK ve Android test APK derlemeleri başarılı. Paket `com.semih.nobet`, sürüm kodu 17.
+- Android 11 / API 30 emülatöründe önceki uygulama üzerine güncelleme başarılı; aynı imza korunur.
+- Hedefli `Today` koşusu: **1 geçti / 0 başarısız / 45 atlandı**. Açık/koyu temada hafta içi, cumartesi, pazar, başka hafta; etiketin üç satırda kırpılmadan sığması; zemin/yazı renkleri ve tarih yenileme işlevi kontrol edildi. Sabit test tarihleri, cihaz saatini değiştirmeden çizim metoduna verildi.
+- Hedefli `Table` koşusu: **1 geçti / 0 başarısız / 45 atlandı**. 360×640 dp ekranda tüm altı satır, hafta sonunun iki gerçek kaydının korunması ve çok şubeli 280/320/360/600 dp genişlik sınırları doğrulandı.
+- Bu sürümde tüm 46 Android kontrolü birlikte yeniden çalıştırılmadı. Önceki 2.3 tam koşusu aşağıdadır. Fiziksel telefon testi yapılmadı.
+- İlk Android denemesinde gereksiz framework kaynak kimliğiyle `setTag` kullanımı açılışı durdurdu; bu satır kaldırıldı, APK yeniden derlenip yukarıdaki kontroller aynı son APK üzerinde geçti. Başarısız ilk deneme başarı sayılmadı. Boşluklu adb filtre çağrısı da test başlatmadı; sonraki `Table` koşusu gerçek sonuçtur.
+- Son APK SHA-256: `58232e0b38f1b1072b6930cb75c326126acd1b30c315e3d08161518e66296c32`.
+
+Vurgu yalnız ekran sunumudur; dağıtım/veri/PDF kodu değişmez. Telefonun yerel tarihi kullanılır. Gerçek gece yarısında saatlerce bekleme veya saat dilimini canlı değiştirme deneyi yapılmadı; tarih yenileme işlevi emülatörde önceki gün işaretiyle çağrılarak kontrol edildi.
+
+---
+
 # Doğrulama — Nöbet Çizelgesi 2.3 / 20 Ekim 2026
 
 - `testDebugUnitTest`: **106 test, 0 başarısız, 0 atlanan** (96 mevcut + 10 yeni dağıtım testi).

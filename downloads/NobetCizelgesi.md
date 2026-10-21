@@ -1,4 +1,7 @@
-# Nöbet Çizelgesi 2.3
+# Nöbet Çizelgesi 2.4
+
+**2.4:** çizelgede bugünün satırına bal sarısı vurgu ve Bugün etiketi. Cumartesi/pazar ortak hafta sonu satırında görünür. Açık/koyu tema, başka hafta ve gün değişimi desteklenir. [Ayrıntılar](../nobet-cizelgesi/docs/GUN-VURGUSU-2.4.md).
+
 
 **2.3:** dengeli haftalık dağıtım (uygun dört personel/beş gün: 1–1–1–2), kısıtlı günlerin öncelikli değerlendirilmesi, alfabetik personel ve mazeret türü başlıklarıyla açılır liste, ortalanmış ay/güneş tema simgesi ve çizelge/istatistik/PDF satırlarında siyah çizgiler. [Ayrıntılar](../nobet-cizelgesi/docs/DAGITIM-2.3.md). Önceden onaylı haftaları değiştirmek için yeni dağıtım önerip kaydedin.
 
@@ -7,7 +10,7 @@
 
 **Yeni arayüz:** Bütçe Takip’ten ilham alan kurumsal mavi özet kartı, çizgi simgeler, yüzen alt menü, personel kartları ve açık/koyu tema. [Ekran görüntüleri](../nobet-cizelgesi/docs/TASARIM-2.0.md)
 
-- [APK 2.3 indir](NobetCizelgesi-2.3.apk)
+- [APK 2.4 indir](NobetCizelgesi-2.4.apk)
 - [Güncel APK](NobetCizelgesi.apk)
 - [Android Studio kaynak ZIP](NobetCizelgesi-Android-Studio.zip)
 - [Kullanım](../nobet-cizelgesi/README.md) · [Testler](../nobet-cizelgesi/docs/TESTLER.md)

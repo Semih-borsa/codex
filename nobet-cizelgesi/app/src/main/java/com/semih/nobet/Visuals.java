@@ -54,6 +54,100 @@ final class Visuals {
     }
   }
 
+  static final class TodayRow extends Drawable {
+    final Paint paint = new Paint();
+    final boolean dark;
+    final int border, stripe;
+
+    TodayRow(boolean dark, int border, int stripe) {
+      this.dark = dark;
+      this.border = border;
+      this.stripe = stripe;
+    }
+
+    @Override
+    public void draw(Canvas canvas) {
+      Rect r = getBounds();
+      paint.setColor(dark ? 0xFF594725 : 0xFFF4DDA1);
+      canvas.drawRect(r, paint);
+      paint.setColor(dark ? 0xFFD5AD57 : 0xFFC79A38);
+      canvas.drawRect(r.left, r.top, r.left + stripe, r.bottom, paint);
+      canvas.drawRect(r.left, r.top, r.right, r.top + border, paint);
+      canvas.drawRect(r.right - border, r.top, r.right, r.bottom, paint);
+      canvas.drawRect(r.left, r.bottom - border, r.right, r.bottom, paint);
+    }
+
+    @Override
+    public void setAlpha(int alpha) {
+      paint.setAlpha(alpha);
+    }
+
+    @Override
+    public void setColorFilter(ColorFilter filter) {
+      paint.setColorFilter(filter);
+    }
+
+    @Override
+    public int getOpacity() {
+      return PixelFormat.OPAQUE;
+    }
+  }
+
+  static final class TodayBadge extends android.text.style.ReplacementSpan {
+    final float size;
+    final boolean dark;
+
+    TodayBadge(float size, boolean dark) {
+      this.size = size;
+      this.dark = dark;
+    }
+
+    @Override
+    public int getSize(
+        Paint paint, CharSequence text, int start, int end, Paint.FontMetricsInt fm) {
+      Paint p = new Paint(paint);
+      p.setTextSize(size);
+      p.setTypeface(Typeface.DEFAULT_BOLD);
+      if (fm != null) {
+        p.getFontMetricsInt(fm);
+        fm.ascent -= (int) (size * .18f);
+        fm.descent += (int) (size * .18f);
+        fm.top = fm.ascent;
+        fm.bottom = fm.descent;
+      }
+      return (int) Math.ceil(p.measureText(text, start, end) + size);
+    }
+
+    @Override
+    public void draw(
+        Canvas canvas,
+        CharSequence text,
+        int start,
+        int end,
+        float x,
+        int top,
+        int y,
+        int bottom,
+        Paint paint) {
+      Paint p = new Paint(paint);
+      p.setTextSize(size);
+      p.setTypeface(Typeface.DEFAULT_BOLD);
+      float width = p.measureText(text, start, end) + size;
+      Paint.FontMetrics metrics = p.getFontMetrics();
+      p.setColor(dark ? 0xFFE0B85D : 0xFF896214);
+      canvas.drawRoundRect(
+          x,
+          y + metrics.ascent - size * .18f,
+          x + width,
+          y + metrics.descent + size * .18f,
+          size * .7f,
+          size * .7f,
+          p);
+      p.setColor(dark ? 0xFF2E240F : Color.WHITE);
+      canvas.drawText(text, start, end, x + size * .5f, y, p);
+    }
+  }
+
   static final class Hero extends Drawable {
     final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
     final float radius;

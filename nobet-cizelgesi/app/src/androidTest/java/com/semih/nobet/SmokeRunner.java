@@ -146,6 +146,7 @@ public class SmokeRunner extends Instrumentation {
     approve(s, week);
     CloudChecks.run(this, context);
     DistributionUiChecks.run(this, context, isolated);
+    TodayChecks.run(this, target, isolated);
     check(
         "Holiday overrides persist and legacy data enables only automatic calendar",
         () -> {

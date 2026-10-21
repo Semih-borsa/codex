@@ -79,4 +79,23 @@ public class ScheduleTableTest {
   public void invalidRowRejected() {
     ScheduleTable.dates(week(), 6);
   }
+
+  @Test
+  public void currentDateHighlightsExactlyOneRowIncludingBothWeekendDays() {
+    Week w = week();
+    for (int day = 0; day < 7; day++)
+      for (int row = 0; row < 6; row++)
+        assertEquals(
+            row == Math.min(day, 5), ScheduleTable.isToday(w, row, w.monday.plusDays(day)));
+  }
+
+  @Test
+  public void otherWeeksAndYearBoundaryDoNotHighlightWrongRow() {
+    Week w = new Week(LocalDate.of(2026, 12, 28));
+    assertTrue(ScheduleTable.isToday(w, 5, LocalDate.of(2027, 1, 3)));
+    for (int row = 0; row < 6; row++) {
+      assertFalse(ScheduleTable.isToday(w, row, w.monday.minusDays(1)));
+      assertFalse(ScheduleTable.isToday(w, row, w.monday.plusWeeks(1)));
+    }
+  }
 }
