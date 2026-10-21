@@ -68,7 +68,7 @@ final class Visuals {
     @Override
     public void draw(Canvas canvas) {
       Rect r = getBounds();
-      paint.setColor(dark ? 0xFF594725 : 0xFFF4DDA1);
+      paint.setColor(dark ? 0xFF66552F : 0xFFFFF2CC);
       canvas.drawRect(r, paint);
       paint.setColor(dark ? 0xFFD5AD57 : 0xFFC79A38);
       canvas.drawRect(r.left, r.top, r.left + stripe, r.bottom, paint);

@@ -1,3 +1,13 @@
+# Doğrulama — Nöbet Çizelgesi 2.4.1 / 21 Ekim 2026
+
+Yalnız bugünün satırının zemin tonları değişti: açık temada #FFF2CC, koyu temada #66552F. `lintDebug`, uygulama ve test APK derlemeleri başarılı. Aynı imzayla yerinde güncelleme doğrulandı; sürüm kodu 18.
+
+API 30 emülatöründe hedefli `Today` koşusu: **1 geçti, 0 başarısız, 45 atlandı**. Açık/koyu zemin ve yazı renkleri, hafta içi/cumartesi/pazar/başka hafta, etiketin kırpılmaması ve tarih yenileme kontrolleri geçti. Motor kodu değişmedi; JVM ve tam Android grubu bu kozmetik düzeltme için yeniden çalıştırılmadı. Fiziksel telefon testi yapılmadı.
+
+Son APK SHA-256: `5a84ecabdd3904ac766deb02ef14fc5fb184d762dc4062f1c13a01d334b98fc4`.
+
+---
+
 # Doğrulama — Nöbet Çizelgesi 2.4 / 21 Ekim 2026
 
 - JVM: **108 test geçti, 0 başarısız, 0 atlanan**. Yeni iki test yedi günün doğru satırını, iki hafta sonu gününü, başka haftaları ve yıl geçişini doğrular.

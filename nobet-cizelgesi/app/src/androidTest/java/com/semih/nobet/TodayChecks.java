@@ -77,7 +77,7 @@ final class TodayChecks {
                             line.getBackground().draw(new Canvas(bitmap));
                             r.truth(
                                 bitmap.getPixel(line.getWidth() / 2, line.getHeight() / 2)
-                                    == (mode == 1 ? 0xFFF4DDA1 : 0xFF594725));
+                                    == (mode == 1 ? 0xFFFFF2CC : 0xFF66552F));
                             bitmap.recycle();
                             r.truth(
                                 ((TextView) line.getChildAt(1)).getCurrentTextColor()

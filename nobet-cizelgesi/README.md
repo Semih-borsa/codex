@@ -1,12 +1,16 @@
-# Nöbet Çizelgesi 2.4 — Android
+# Nöbet Çizelgesi 2.4.1 — Android
 
 **Yeni arayüz:** Bütçe Takip’ten ilham alan kurumsal mavi özet kartı, çizgi simgeler, yüzen alt menü, personel kartları ve açık/koyu tema. [Ekran görüntüleri](docs/TASARIM-2.0.md)
 
 Yerel listeyle veya yetkili ortak ekiple personel, görev yeri, mazeret ve haftalık nöbet planlama uygulaması.
 
-[APK 2.4 indir](../downloads/NobetCizelgesi-2.4.apk) · [Android Studio ZIP](../downloads/NobetCizelgesi-Android-Studio.zip) · [Test sonuçları](docs/TESTLER.md)
+[APK 2.4.1 indir](../downloads/NobetCizelgesi-2.4.1.apk) · [Android Studio ZIP](../downloads/NobetCizelgesi-Android-Studio.zip) · [Test sonuçları](docs/TESTLER.md)
 
-Android 8.0 ve üzeri. Önceki sürümlerden biri kuruluysa **uygulamayı kaldırmadan** 2.4 APK'sını açarak güncelleyin. Aynı paket adı ve imza kullanılır; eski kayıtlar okunur. Kaldırmak veya uygulama verilerini silmek kayıtları siler.
+Android 8.0 ve üzeri. Önceki sürümlerden biri kuruluysa **uygulamayı kaldırmadan** 2.4.1 APK'sını açarak güncelleyin. Aynı paket adı ve imza kullanılır; eski kayıtlar okunur. Kaldırmak veya uygulama verilerini silmek kayıtları siler.
+
+## 2.4.1 — Daha Açık Sarı
+
+Bugünün satırı açık temada daha yumuşak krem sarısına (#FFF2CC), koyu temada biraz daha açık amber tonuna alındı. Yazı, kenarlık, Bugün etiketi ve gün belirleme davranışı korunur. [Güncel ekran](docs/ekranlar/today-2.4.1-light-weekday.png).
 
 ## 2.4 — Bugünün Satırını Vurgulama
 
