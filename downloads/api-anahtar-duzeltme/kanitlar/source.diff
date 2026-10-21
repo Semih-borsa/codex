@@ -1,0 +1,46 @@
+--- App-1.5.0.jsx
+
++++ App-1.5.1.jsx
+
+@@ -2921,4 +2921,5 @@
+
+ const FinansAIContext=createContext(null);
+ const FinansGemini=registerPlugin('FinansGemini');
++const GEMINI_MODEL_SECENEKLERI=['gemini-3.5-flash-lite','gemini-3-flash-preview','gemini-2.5-flash','gemini-2.5-flash-lite','gemini-2.5-pro'];
+ let geminiWebAnahtari='';
+ function aiKategoriGrubu(ad) {
+@@ -2992,8 +2993,8 @@
+
+   useEffect(()=>{const errors=Object.fromEntries(Object.entries(durum).filter(([,d])=>d?.hata));try{if(Object.keys(errors).length||localStorage.getItem('finora_ai_durum_v1'))localStorage.setItem('finora_ai_durum_v1',JSON.stringify(errors));}catch{/* Finans kayıtlarına dokunulmaz. */}},[durum]);
+   useEffect(()=>{ayarRef.current=ayar;surum.current++;if(aktif.current){aktif.current.abort();aktif.current=null;if(aiNativeVar())FinansGemini.cancel().catch(()=>{});}return()=>{};},[ayar]);
+-  useEffect(()=>{if(aiNativeVar())FinansGemini.status().then(r=>{setHazir(r.configured===true);if(r.unreadable)setDurum(p=>({...p,ayar:'Şifreli anahtar okunamadı; yeniden gir. Finans kayıtları korunuyor.'}));}).catch(()=>setHazir(false));else setHazir(!!geminiWebAnahtari);
++  useEffect(()=>{if(aiNativeVar())(()=>{const epoch=surum.current;return FinansGemini.status().then(r=>{if(epoch!==surum.current)return;setHazir(r.configured===true);if(r.unreadable)setDurum(p=>({...p,ayar:'Şifreli anahtar okunamadı; yeniden gir. Finans kayıtları korunuyor.'}));}).catch(()=>{if(epoch===surum.current)setHazir(false);});})();else setHazir(!!geminiWebAnahtari);
+     const gorunur=()=>{if(document.visibilityState==='visible')setAcilis(n=>n+1);};document.addEventListener('visibilitychange',gorunur);return()=>{document.removeEventListener('visibilitychange',gorunur);surum.current++;aktif.current?.abort();if(aiNativeVar())FinansGemini.cancel().catch(()=>{});};},[]);
+   const ayarla=useCallback(parca=>{const a={...ayarRef.current,...parca};try{localStorage.setItem('finora_ai_ayar_v1',JSON.stringify(a));if(localStorage.getItem('finora_ai_ayar_v1')!==JSON.stringify(a))throw new Error();setAyar(a);}catch{toast('Yorum ayarı kaydedilemedi; mevcut seçim korunuyor.','hata');}},[]);
+-  const anahtarKaydet=async key=>{if(!/^[A-Za-z0-9_-]{20,256}$/.test(key))throw new Error('Geçerli API anahtarı gir.');if(Capacitor.isNativePlatform()){if(!aiNativeVar())throw new Error('Güvenli anahtar eklentisi yok; güncel APK kurulmalı.');await FinansGemini.saveKey({key});}else geminiWebAnahtari=key;setHazir(true);surum.current++;};
++  const anahtarKaydet=async key=>{if(!/^[A-Za-z0-9_-]{20,256}$/.test(key))throw new Error('Geçerli API anahtarı gir.');if(Capacitor.isNativePlatform()){if(!aiNativeVar())throw new Error('Güvenli anahtar eklentisi yok; güncel APK kurulmalı.');surum.current++;await FinansGemini.saveKey({key});const status=await FinansGemini.status();if(status.configured!==true)throw new Error('Anahtar kaydı doğrulanamadı. Güncel APK ile yeniden dene.');}else geminiWebAnahtari=key;setHazir(true);surum.current++;};
+   const anahtarSil=async()=>{surum.current++;aktif.current?.abort();if(aiNativeVar()){await FinansGemini.cancel();await FinansGemini.deleteKey();}geminiWebAnahtari='';setHazir(false);ayarla({kaynak:'yerel',onay:false});localStorage.removeItem('finora_ai_rapor_v1');setRaporlar({});setDurum({});localStorage.removeItem('finora_ai_durum_v1');};
+   const baglantiTest=async()=>{const c=new AbortController(),t=setTimeout(()=>c.abort(),45000);try{const r=await aiServis('models',null,null,c.signal);const list=(r.models||[]).filter(m=>m.supportedGenerationMethods?.includes('generateContent')&&/^models\/gemini-[a-z0-9.-]{1,80}$/.test(m.name)).map(m=>m.name.slice(7));if(!list.length)throw new Error('MODEL');
+@@ -3051,5 +3052,5 @@
+
+ }
+ function FinansAISettings() {
+-  const ai=useContext(FinansAIContext),[key,setKey]=useState(''),[goster,setGoster]=useState(false),[mesaj,setMesaj]=useState(''),[busy,setBusy]=useState(false),[modeller,setModeller]=useState([]);
++  const ai=useContext(FinansAIContext),[key,setKey]=useState(''),[goster,setGoster]=useState(false),[mesaj,setMesaj]=useState(''),[busy,setBusy]=useState(false),[modeller,setModeller]=useState(()=>{try{const m=JSON.parse(localStorage.getItem('finora_ai_modeller_v1')||'[]');return Array.isArray(m)?m.filter(v=>typeof v==='string'&&/^gemini-[a-z0-9.-]{1,80}$/.test(v)).slice(0,100):[];}catch{return [];}});
+   if(!ai)return null;
+   const calis=async fn=>{setBusy(true);setMesaj('İşlem sürüyor…');try{setMesaj(await fn());}catch(e){setMesaj(aiHataMesaji(e.message)==='Gemini isteği tamamlanamadı. Yerel yorumları kullanabilirsin.'?String(e.message).slice(0,180):aiHataMesaji(e.message));}finally{setBusy(false);}};
+@@ -3058,8 +3059,10 @@
+
+     <p className="tools-note">Yerel yorumlar anahtarsız ve internetsiz çalışır. Gemini gerçek tutarları hesaplamaz; yalnız kimlik bilgileri çıkarılmış hesap özetini ayrıntılı yorumlar.</p>
+     <Input label="Gemini API anahtarı" type={goster?'text':'password'} value={key} autoComplete="off" spellCheck={false} onChange={e=>setKey(e.target.value)} placeholder={ai.hazir?'Anahtar kayıtlı; değiştirmek için gir':'Anahtarını yalnız burada gir'}/>
+-    <div className="tools-row" style={{flexWrap:'wrap'}}><Btn onClick={()=>setGoster(v=>!v)}>{goster?'Gizle':'Göster'}</Btn><Btn disabled={busy||!key.trim()} onClick={()=>calis(async()=>{await ai.anahtarKaydet(key.trim());setKey('');return 'Anahtar kaydedildi. Bağlantıyı test edebilirsin.';})}>Anahtarı kaydet</Btn><Btn disabled={busy||!ai.hazir} onClick={()=>calis(async()=>{await ai.anahtarSil();setKey('');return 'Anahtar ve Gemini yorum önbelleği silindi. Yerel yorum seçildi.';})}>Anahtarı sil</Btn></div>
++    <p aria-live="polite" data-testid="ai-key-status" className="tools-note">{ai.hazir?'Anahtar kayıtlı. Güvenlik için anahtarın kendisi gösterilmez.':Capacitor.isNativePlatform()&&!aiNativeVar()?'Güvenli anahtar eklentisi bulunamadı. Yalnız App.jsx yeterli değildir; güncel APK gerekir.':'Henüz kayıtlı anahtar yok.'}</p>
++    <div className="tools-row" style={{flexWrap:'wrap'}}><Btn onClick={()=>setGoster(v=>!v)}>{goster?'Gizle':'Göster'}</Btn><Btn disabled={busy||!key.trim()} onClick={()=>calis(async()=>{await ai.anahtarKaydet(key.trim());setKey('');return 'Anahtar kaydedildi. Bağlantıyı test edebilirsin.';})}>Anahtarı kaydet</Btn><Btn disabled={busy||(!ai.hazir&&!key.trim())} onClick={()=>calis(async()=>{await ai.anahtarSil();setKey('');return 'Anahtar ve Gemini yorum önbelleği silindi. Yerel yorum seçildi.';})}>Anahtarı sil</Btn></div>
+     <p className="tools-note">{Capacitor.isNativePlatform()?'Anahtar Android Keystore ile şifreli saklanır; yedeğe dahil edilmez.':'Tarayıcıda anahtar yalnız bu oturumun belleğinde tutulur; yeniden açınca girmen gerekir.'}</p>
+-    <Btn disabled={busy||!ai.hazir} onClick={()=>calis(async()=>{const r=await ai.baglantiTest();setModeller(r.list);return r.test?`${r.list.length} model erişilebilir. Basit metin testi başarılı; finans verisi gönderilmedi.`:'Model listesi alındı. Seçili model erişilebilir değil; listeden model seçip bağlantıyı yeniden test et.';})}>Bağlantıyı test et</Btn>
+-    <Select label="Gemini modeli" value={ai.ayar.model} onChange={e=>ai.ayarla({model:e.target.value})}>{[...new Set([ai.ayar.model,...modeller])].map(m=><option key={m}>{m}</option>)}</Select>
++    <Btn disabled={busy||(!ai.hazir&&!key.trim())} onClick={()=>calis(async()=>{if(key.trim()){await ai.anahtarKaydet(key.trim());setKey('');}const r=await ai.baglantiTest();setModeller(r.list);try{localStorage.setItem('finora_ai_modeller_v1',JSON.stringify(r.list));}catch{/* Model listesi bu oturumda kullanılabilir. */}return r.test?`${r.list.length} model erişilebilir. Basit metin testi başarılı; finans verisi gönderilmedi.`:'Model listesi alındı. Seçili model erişilebilir değil; listeden model seçip bağlantıyı yeniden test et.';})}>Bağlantıyı test et</Btn>
++    <Select label="Gemini modeli" value={ai.ayar.model} onChange={e=>ai.ayarla({model:e.target.value})}>{[...new Set([ai.ayar.model,...GEMINI_MODEL_SECENEKLERI,...modeller])].map(m=><option key={m}>{m}</option>)}</Select>
++    <p className="tools-note">Listede farklı model seçenekleri bulunur; hesabında erişim veya ücretsiz kota garantisi yoktur. Bağlantı testi hesabının erişebildiği modelleri de ekler ve listeyi hatırlar.</p>
+     <label style={{display:'block',color:'var(--text2)',fontSize:13,lineHeight:1.6,margin:'12px 0'}}><input type="checkbox" checked={ai.ayar.onay} onChange={e=>ai.ayarla({onay:e.target.checked})}/> Gruplanmış kategori tutarlarının, borç ve bakiye özetinin Google'a gönderilmesini onaylıyorum. PDF ekstreleri ve onlardan çıkarılan analiz özetleri gönderilmez. İşlem açıklamaları, kişisel isimler ve kart numaraları da gönderilmez.</label>
+     <label style={{display:'block',color:'var(--text2)',fontSize:13,margin:'12px 0'}}><input type="checkbox" checked={ai.ayar.otomatik} onChange={e=>ai.ayarla({otomatik:e.target.checked})}/> Veriler değişmişse açılışta otomatik yorumla</label>

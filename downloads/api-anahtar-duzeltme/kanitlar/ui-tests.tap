@@ -1,0 +1,26 @@
+✔ KEY01 — yapıştırınca test/sil etkin; test önce anahtarı kaydeder (2446.810839ms)
+✔ KEY02 — sayfa geçişi ve yeniden açılışta kayıtlı anahtar durumu korunur (3895.386272ms)
+✔ KEY03 — ek modeller ilk açılışta seçilebilir ve seçim hatırlanır (2426.268093ms)
+✔ KEY04 — yalnız yapıştırılmış anahtar silinebilir, gerçek kayıt değişmez (3474.055082ms)
+✔ UI-ST01 — Gerçek PDF worker, elle kategori düzeltme ve kalıcı arşiv; finanslar değişmez (4083.907035ms)
+✔ UI-ST02 — Sonradan düzenle, özel kategori ekle ve iptal finansı değiştirmez (5387.018568ms)
+✔ UI-ST03 — Aynı PDF ikinci kez eklenmez (2636.602956ms)
+✔ UI-ST04 — Farklı toplam kullanıcı onayı olmadan kesin analiz olmaz (2106.007271ms)
+✔ UI-ST05-light — Dört kart, ilk 5+Diğer, tüm kategoriler, genel toplam ve mobil taşma (1505.673398ms)
+✔ UI-ST05-dark — Dört kart, ilk 5+Diğer, tüm kategoriler, genel toplam ve mobil taşma (1439.079591ms)
+✔ UI-ST05-gray — Dört kart, ilk 5+Diğer, tüm kategoriler, genel toplam ve mobil taşma (2283.477949ms)
+✔ UI-ST06 — Bozuk arşiv üzerine yazılmaz ve yükleme durur (2664.138785ms)
+✔ UI-AI01 — Yerel varsayılan, anahtar sızmaz, bağlantı testi finans göndermez (3914.328377ms)
+✔ UI-AI02 — Onaydan önce gönderim yok; ayrıntılı 7 bölüm, sonra yerel seçim (5123.316427ms)
+✔ UI-AI03 — Kota hatası son başarılı yorum ve tarihi açıkça gösterir (5358.356773ms)
+✔ UI-AI04 — Kesilmiş/bozuk model yanıtı başarılı kaydedilmez (4389.675571ms)
+✔ UI-AI05 — Anahtar silme yerel yoruma döner ve önbelleği siler (3255.044618ms)
+✔ UI-AI06 — Gemini seçiliyken bile ekstre ekranı yereldir ve API isteği üretmez (4328.761659ms)
+ℹ tests 18
+ℹ suites 0
+ℹ pass 18
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 49002.142655
