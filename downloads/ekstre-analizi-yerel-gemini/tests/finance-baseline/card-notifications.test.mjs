@@ -1,0 +1,20 @@
+import test from 'node:test';import assert from 'node:assert/strict';import vm from 'node:vm';
+import {createHarness,source} from './source-harness.mjs';
+function engine(){const c=createHarness().context;vm.runInContext(source.slice(source.indexOf('const tarihAnahtari ='),source.indexOf('function bildirimKimligi(')),c);return c;}
+const now=new Date('2026-10-20T08:00:00+03:00');
+const statement=(more={})=>({id:'e',tutar:5000,hesapKesimTarihi:'2026-10-10',sonOdemeTarihi:'2026-10-20',...more});
+const card=(more={})=>({id:'c',isim:'Yeni Kart',ekstre:5000,sonOdemeTarihi:'2026-10-20',ekstreler:[statement()],...more});
+const payment=(more={})=>({id:'p',kartId:'c',ekstreId:'e',tutar:5000,tarih:'2026-10-19',...more});
+const alarms=(k,p=[])=>engine().kartHatirlatmalariniOlustur([k],p,now);
+for(const val of [0,'0',undefined])test(`BILDIRIM-01 — Eski biçim ${String(val)} ekstre için alarm yok`,()=>assert.equal(alarms(card({ekstre:val,ekstreler:[]})).length,0));
+test('BILDIRIM-02 — Ödenmemiş kimlikli ekstrenin doğru tutarı ve vadesi',()=>{const a=alarms(card());assert.equal(a.length,1);assert.equal(a[0].tutar,5000);assert.equal(a[0].tarih,'2026-10-20');});
+test('BILDIRIM-03 — Tam ödenen ekstrenin alarmı kaldırılır',()=>assert.equal(alarms(card(),[payment()]).length,0));
+test('BILDIRIM-04 — Kısmi ödemeden sonra yalnız kalan tutar',()=>assert.equal(alarms(card(),[payment({tutar:2000})])[0].tutar,3000));
+test('BILDIRIM-05 — Ödeme geri alınınca kalan borç tekrar hatırlatılır',()=>{assert.equal(alarms(card(),[payment()]).length,0);assert.equal(alarms(card(),[])[0].tutar,5000);});
+test('BILDIRIM-06 — Başka kart/ekstre ödemesi bu borcu kapatmaz',()=>{assert.equal(alarms(card(),[payment({kartId:'other'})])[0].tutar,5000);assert.equal(alarms(card(),[payment({ekstreId:'other'})])[0].tutar,5000);});
+test('BILDIRIM-07 — Eski ödenmemiş ekstre kendi vadesinde korunur; sıfır yeni ekstre alarm üretmez',()=>{const k=card({sonOdemeTarihi:'2026-11-20',ekstre:0,ekstreler:[statement(),statement({id:'new',tutar:0,sonOdemeTarihi:'2026-11-20'})]});const a=alarms(k);assert.equal(a.length,1);assert.equal(a[0].tarih,'2026-10-20');});
+test('BILDIRIM-08 — Gelecekteki ödeme bugünkü borcu kapatmaz',()=>assert.equal(alarms(card(),[payment({tarih:'2026-10-21'})])[0].tutar,5000));
+test('BILDIRIM-09 — Kesilmemiş veya geçersiz vadeli ekstre için alarm yok',()=>{assert.equal(alarms(card({ekstreler:[statement({hesapKesimTarihi:'2026-10-21'})]})).length,0);assert.equal(alarms(card({ekstreler:[statement({sonOdemeTarihi:'bozuk'})]})).length,0);});
+test('BILDIRIM-10 — Kayıtlı eski biçim pozitif ekstre ve gün bazlı eski kart uyumu',()=>{assert.equal(alarms(card({ekstreler:[]}))[0].tutar,5000);assert.equal(alarms(card({ekstreler:[],sonOdemeTarihi:null,sonOdemeGunu:20}))[0].tarih,'2026-10-20');});
+test('BILDIRIM-11 — Seçilen 10:00 ve 18:00 saatleri ve gün seçimi korunur',()=>{const c=engine(),a=c.kartHatirlatmalariniOlustur([card()],[],now),p=c.bildirimPlanlariniOlustur(a,{gunler:[0],saatler:['10:00','18:00']},now);assert.equal(p.length,2);assert.deepEqual(Array.from(p,v=>v.at.getHours()),[10,18]);assert.deepEqual(Array.from(p,v=>v.at.getDate()),[20,20]);});
+test('BILDIRIM-12 — Sıfır borç plan üretmez; giriş kayıtları değişmez',()=>{const c=engine(),cards=[card({ekstreler:[statement({tutar:0})]})],before=JSON.stringify(cards);const a=c.kartHatirlatmalariniOlustur(cards,[],now);assert.equal(c.bildirimPlanlariniOlustur(a,{gunler:[0],saatler:['10:00']},now).length,0);assert.equal(JSON.stringify(cards),before);});

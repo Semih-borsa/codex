@@ -1,0 +1,25 @@
+{
+  "unchangedFunctions": [
+    "gunlukFinansHareketleri",
+    "donemBakiyeHesapla",
+    "kartKaydiniGuncelle",
+    "kartAnalizHareketleri",
+    "kartBorcDurumu",
+    "kartSonDurum",
+    "kartTaksitPlaniOlustur",
+    "kartTaksitYukumlulukleri",
+    "donemSonuGiderTahmini",
+    "nakitAkisiHesapla",
+    "yerelYedekPaketi",
+    "yedegiGuvenleYaz",
+    "kartHatirlatmalariniOlustur",
+    "HaftaninGunleri"
+  ],
+  "newFeatures": [
+    "localStatementArchive",
+    "manualCategories",
+    "optionalGeminiForFinancialRecordsOnly"
+  ],
+  "statementDataSentToGemini": false,
+  "financialRecordsModified": false
+}

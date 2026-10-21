@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.butcetakip.app.GeminiSafetyTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-21T12:31:47.212Z" hostname="0cf5ef5fe074" time="0.062">
+  <properties/>
+  <testcase name="fixedGoogleHost" classname="com.butcetakip.app.GeminiSafetyTest" time="0.016"/>
+  <testcase name="keyValidation" classname="com.butcetakip.app.GeminiSafetyTest" time="0.001"/>
+  <testcase name="randomIvPerSave" classname="com.butcetakip.app.GeminiSafetyTest" time="0.039"/>
+  <testcase name="encryptRoundTrip" classname="com.butcetakip.app.GeminiSafetyTest" time="0.003"/>
+  <testcase name="responseBounded" classname="com.butcetakip.app.GeminiSafetyTest" time="0.001"/>
+  <testcase name="tamperingRejected" classname="com.butcetakip.app.GeminiSafetyTest" time="0.001"/>
+  <testcase name="invalidActionRejected" classname="com.butcetakip.app.GeminiSafetyTest" time="0.0"/>
+  <testcase name="wrongKeyRejected" classname="com.butcetakip.app.GeminiSafetyTest" time="0.0"/>
+  <testcase name="invalidModelCannotInjectUrl" classname="com.butcetakip.app.GeminiSafetyTest" time="0.001"/>
+  <testcase name="shortCipherRejected" classname="com.butcetakip.app.GeminiSafetyTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
