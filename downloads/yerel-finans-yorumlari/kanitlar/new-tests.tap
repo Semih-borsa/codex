@@ -1,0 +1,21 @@
+✔ LOCAL-UI-light — Yerel yorum, eski Gemini tercihi etkisiz, veri ve tema korunur (2065.525627ms)
+✔ LOCAL-UI-dark — Yerel yorum, eski Gemini tercihi etkisiz, veri ve tema korunur (1885.717395ms)
+✔ LOCAL-UI-gray — Yerel yorum, eski Gemini tercihi etkisiz, veri ve tema korunur (1944.893862ms)
+✔ LOCAL-UI-gecmis — Geçmiş yorumda bugünkü ödeme gücü gösterilmez (1544.978249ms)
+✔ LOCAL-UI-bos — Veri yokken Güvende yerine veri eksikliği (1500.618693ms)
+✔ LOCAL01 — Veri yokken olumlu finans kararı üretilmez (5.935138ms)
+✔ LOCAL02 — Açıkta ödeme önceliği, pozitif nete rağmen borç riski (17.846508ms)
+✔ LOCAL03 — Borç yokken sıfır bakiyeye güvende denmez (1.530432ms)
+✔ LOCAL04 — Önceki veri yokken yüzde kıyas uydurulmaz (1.886781ms)
+✔ LOCAL05 — Aynı uzunluktaki kıyas ve kategori değerleri doğru (1.094774ms)
+✔ LOCAL06 — Yedi günde yalnız kesin gider, varsayımsal gelir veya uzak ödeme yok (1.520478ms)
+✔ LOCAL07 — Güncel bakiye verilmezse geçmişe bugünkü borç taşınmaz (1.011729ms)
+✔ LOCAL08 — Uygulamada API kayıt/istek/otomatik çağrı bağlantısı yok (1.092581ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 9475.694052

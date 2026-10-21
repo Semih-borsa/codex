@@ -1,0 +1,234 @@
+--- App-1.5.1.jsx
+
++++ App-1.5.2.jsx
+
+@@ -2917,11 +2917,7 @@
+
+   </div>;
+ }
+ 
+-// Gemini anahtarı ft_* deposuna veya yedeklere yazılmaz. Android: Keystore; web: yalnız bellek.
+-const FinansAIContext=createContext(null);
+-const FinansGemini=registerPlugin('FinansGemini');
+-const GEMINI_MODEL_SECENEKLERI=['gemini-3.5-flash-lite','gemini-3-flash-preview','gemini-2.5-flash','gemini-2.5-flash-lite','gemini-2.5-pro'];
+-let geminiWebAnahtari='';
++// Önceki sürümün saf özet/doğrulama yardımcıları eski test ve yedek uyumluluğu için korunur; ağ bağlantısı yoktur.
+ function aiKategoriGrubu(ad) {
+   const s=String(ad||'').toLocaleLowerCase('tr-TR');
+   if(/market|gıda|gida|migros/.test(s))return 'Market';
+@@ -2967,108 +2963,37 @@
+
+   const talimat='Türkçe ayrıntılı kişisel finans yorumu yaz. Yalnız aşağıdaki hesaplanmış veriyi kullan. Veride olmayan rakam, gelir, faiz veya geçmiş kıyas üretme. null bilinmeyendir, sıfır değildir. Alışveriş, nakit çıkışı, ekstre ödemesi ve bekleyen borç aynı harcama değildir; iki kez toplama. Ekstre analizi maaş döneminden ayrıdır; finans bakiyesini değiştirmez. Önceki dönem yoksa karşılaştırma yapma. Her bölümde veriye dayanan açıklama ve uygulanabilir öneri ver. Sadece JSON döndür: {"surum":1,"bolumler":[{"id":"genel","paragraflar":["..."]},...]}. Tam 7 bölüm id: genel,odemeler,borclar,harcamalar,tasarruf,adimlar,eksikler. Metni HTML/Markdown yapma. Kategoriler anonim gruplardır. Eksik veya kısmi veriyi açıkla. Yatırım ürünü tavsiyesi verme.';
+   return {contents:[{role:'user',parts:[{text:talimat+'\nHesaplanmış özet:\n'+JSON.stringify(veri)}]}],generationConfig:{temperature:0.2,maxOutputTokens:8192,responseMimeType:'application/json'}};
+ }
+-function aiNativeVar(){return Capacitor.isNativePlatform()&&Capacitor.isPluginAvailable('FinansGemini');}
+-async function aiServis(action,model,body,signal) {
+-  let r;
+-  if(Capacitor.isNativePlatform()){
+-    if(!aiNativeVar())throw new Error('KEY');
+-    let onAbort;try{
+-      if(signal?.aborted)throw Object.assign(new Error('TIMEOUT'),{code:'TIMEOUT'});
+-      const stop=new Promise((_,reject)=>{onAbort=()=>{FinansGemini.cancel().catch(()=>{});reject(Object.assign(new Error('TIMEOUT'),{code:'TIMEOUT'}));};signal?.addEventListener('abort',onAbort,{once:true});});
+-      r=await Promise.race([FinansGemini.request({action,model,body:body?JSON.stringify(body):null}),stop]);
+-    }catch(e){throw new Error(e.code==='TIMEOUT'?'TIMEOUT':e.code==='KEY_MISSING'?'KEY':e.code==='BUSY'?'BUSY':'NETWORK');}finally{if(onAbort)signal?.removeEventListener('abort',onAbort);} 
+-  }else{
+-    if(!geminiWebAnahtari)throw new Error('KEY');
+-    const url=action==='models'?'https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000':`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+-    let response;try{response=await fetch(url,{method:action==='models'?'GET':'POST',headers:{'x-goog-api-key':geminiWebAnahtari,'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{}),signal});}catch{throw new Error(signal?.aborted?'TIMEOUT':'NETWORK');}
+-    const text=await response.text();if(text.length>262144)throw new Error('INVALID');r={status:response.status,body:text};
++const YerelFinansContext=createContext(null);
++function yerelFinansYorumlari({ozet,onceki,kategoriler=[],gorunum='harcama',bakiye=null,nakit=null,bugun}) {
++  const kartlar=[];const ekle=(baslik,tip,metin)=>kartlar.push({baslik,tip,metin});
++  if(!ozet?.kayitlar?.length){ekle('Finans özeti','bilgi','Bu tarih aralığında henüz işlem yok. Gelir ve giderlerini eklediğinde finans özetin burada görünecek.');return kartlar;}
++  const gelir=ozet.gelir,gider=ozet.gider,net=paraTopla(gelir,-gider);
++  ekle('Dönemin görünümü',net<0?'uyari':gelir>0?'iyi':'bilgi',`${fmtTL(gelir)} gelirine karşılık ${fmtTL(gider)} ${gorunum==='nakit'?'nakit çıkışın':'harcaman'} var. ${net<0?`${fmtTL(-net)} açık oluştu. Yeni isteğe bağlı harcamaları azaltıp ödeme önceliklerini belirle.`:gelir>0?`Gelirinden ${fmtTL(net)} kaldı. Bu tutarın tamamını yeni harcamaya ayırmadan bekleyen ödemelerini kontrol et.`:'Gelir kaydı olmadan bütçenin gücünü değerlendirmek için yeterli bilgi yok.'}`);
++  if(bakiye){
++    if(bakiye.tarihselEksik)ekle('Kontrol gereken kayıtlar','bilgi','Bazı kart veya taksit bilgilerinde eksik kayıt var. Yeni harcama kararı vermeden bu borçları kontrol et.');
++    const kalan=bakiye.odemelerSonrasi;
++    ekle('Ödeme gücün',kalan<0?'uyari':bakiye.gercekBakiye>0?'iyi':'bilgi',`Bakiyen ${fmtTL(bakiye.gercekBakiye)}; bekleyen yükümlülükler sonrası ${fmtTL(kalan)} ${kalan<0?'açık':'kalıyor'}. ${kalan<0?`Ödemeler için ${fmtTL(-kalan)} ek kaynağa ihtiyacın var. Vadesi en yakın ve gecikme maliyeti yüksek borçlara öncelik ver.`:kalan===0?'Yeni harcama için boşluk görünmüyor; zorunlu giderlere odaklan.':'Bu payın bir bölümünü beklenmedik giderler için koru.'}`);
++    if(bakiye.ekstreBekleyen>0||bakiye.krediBekleyen>0)ekle('Borç önceliğin','notr',`${bakiye.ekstreBekleyen>0?`Bekleyen ekstrelerin ${fmtTL(bakiye.ekstreBekleyen)}.`:''} ${bakiye.krediBekleyen>0?`Bekleyen kredi taksitlerin ${fmtTL(bakiye.krediBekleyen)}.`:''} Son ödeme tarihlerini kontrol et; mümkünse ekstreyi tam öde ve gecikme oluşmadan ödeme planını netleştir.`.trim());
+   }
+-  if(r.status<200||r.status>=300)throw new Error(aiHttpHatasi(r.status,r.body));
+-  try{return JSON.parse(r.body);}catch{throw new Error('INVALID');}
+-}
+-function useFinansAI(finansGirdisi) {
+-  const [ayar,setAyar]=useState(()=>{try{const a=JSON.parse(localStorage.getItem('finora_ai_ayar_v1')||'null');return a&&['yerel','gemini'].includes(a.kaynak)&&/^gemini-[a-z0-9.-]{1,80}$/.test(a.model)?{kaynak:a.kaynak,model:a.model,onay:a.onay===true,otomatik:a.otomatik!==false}:{kaynak:'yerel',model:'gemini-3.5-flash-lite',onay:false,otomatik:true};}catch{return {kaynak:'yerel',model:'gemini-3.5-flash-lite',onay:false,otomatik:true};}});
+-  const [hazir,setHazir]=useState(false),[durum,setDurum]=useState(()=>{try{const d=JSON.parse(localStorage.getItem('finora_ai_durum_v1')||'{}');return Object.fromEntries(Object.entries(d).filter(([k,v])=>k.length<100&&v&&typeof v.hata==='string'&&v.hata.length<400));}catch{return {};}}),[raporlar,setRaporlar]=useState(()=>{try{const r=JSON.parse(localStorage.getItem('finora_ai_rapor_v1')||'{}');return Object.fromEntries(Object.entries(r).filter(([k,v])=>{try{return k.length<100&&!!v.tarih&&/^\w{64}$/.test(v.imza)&&!!aiYanitiDogrula(v.rapor);}catch{return false;}}));}catch{return {};}});
+-  const aktif=useRef(null),surum=useRef(0),ayarRef=useRef(ayar),[acilis,setAcilis]=useState(0);
+-  useEffect(()=>{const errors=Object.fromEntries(Object.entries(durum).filter(([,d])=>d?.hata));try{if(Object.keys(errors).length||localStorage.getItem('finora_ai_durum_v1'))localStorage.setItem('finora_ai_durum_v1',JSON.stringify(errors));}catch{/* Finans kayıtlarına dokunulmaz. */}},[durum]);
+-  useEffect(()=>{ayarRef.current=ayar;surum.current++;if(aktif.current){aktif.current.abort();aktif.current=null;if(aiNativeVar())FinansGemini.cancel().catch(()=>{});}return()=>{};},[ayar]);
+-  useEffect(()=>{if(aiNativeVar())(()=>{const epoch=surum.current;return FinansGemini.status().then(r=>{if(epoch!==surum.current)return;setHazir(r.configured===true);if(r.unreadable)setDurum(p=>({...p,ayar:'Şifreli anahtar okunamadı; yeniden gir. Finans kayıtları korunuyor.'}));}).catch(()=>{if(epoch===surum.current)setHazir(false);});})();else setHazir(!!geminiWebAnahtari);
+-    const gorunur=()=>{if(document.visibilityState==='visible')setAcilis(n=>n+1);};document.addEventListener('visibilitychange',gorunur);return()=>{document.removeEventListener('visibilitychange',gorunur);surum.current++;aktif.current?.abort();if(aiNativeVar())FinansGemini.cancel().catch(()=>{});};},[]);
+-  const ayarla=useCallback(parca=>{const a={...ayarRef.current,...parca};try{localStorage.setItem('finora_ai_ayar_v1',JSON.stringify(a));if(localStorage.getItem('finora_ai_ayar_v1')!==JSON.stringify(a))throw new Error();setAyar(a);}catch{toast('Yorum ayarı kaydedilemedi; mevcut seçim korunuyor.','hata');}},[]);
+-  const anahtarKaydet=async key=>{if(!/^[A-Za-z0-9_-]{20,256}$/.test(key))throw new Error('Geçerli API anahtarı gir.');if(Capacitor.isNativePlatform()){if(!aiNativeVar())throw new Error('Güvenli anahtar eklentisi yok; güncel APK kurulmalı.');surum.current++;await FinansGemini.saveKey({key});const status=await FinansGemini.status();if(status.configured!==true)throw new Error('Anahtar kaydı doğrulanamadı. Güncel APK ile yeniden dene.');}else geminiWebAnahtari=key;setHazir(true);surum.current++;};
+-  const anahtarSil=async()=>{surum.current++;aktif.current?.abort();if(aiNativeVar()){await FinansGemini.cancel();await FinansGemini.deleteKey();}geminiWebAnahtari='';setHazir(false);ayarla({kaynak:'yerel',onay:false});localStorage.removeItem('finora_ai_rapor_v1');setRaporlar({});setDurum({});localStorage.removeItem('finora_ai_durum_v1');};
+-  const baglantiTest=async()=>{const c=new AbortController(),t=setTimeout(()=>c.abort(),45000);try{const r=await aiServis('models',null,null,c.signal);const list=(r.models||[]).filter(m=>m.supportedGenerationMethods?.includes('generateContent')&&/^models\/gemini-[a-z0-9.-]{1,80}$/.test(m.name)).map(m=>m.name.slice(7));if(!list.length)throw new Error('MODEL');
+-    if(!list.includes(ayarRef.current.model))return {list,test:false};
+-    const check=await aiServis('generate',ayarRef.current.model,{contents:[{role:'user',parts:[{text:'Bu bir bağlantı testidir. Yalnız Türkçe TAMAM yaz.'}]}],generationConfig:{maxOutputTokens:256}},c.signal);
+-    const ok=check.candidates?.[0]?.content?.parts?.some(p=>typeof p.text==='string'&&p.text.trim());if(!ok)throw new Error('INVALID');return {list,test:true};}finally{clearTimeout(t);}};
+-  const yorumla=useCallback(async(scope,veri,zorla=false)=>{
+-    if(scope!=='finans'||veri?.kapsam!=='Mevcut maaş dönemi')return; // PDF analiz arşivi bu hatta bağlanamaz.
+-    const a=ayarRef.current;if(a.kaynak!=='gemini'||!a.onay||!hazir){setDurum(p=>({...p,[scope]:{hata:aiHataMesaji('CONSENT')}}));return;}
+-    if(aktif.current)return;
+-    const imza=await aiImza(veri,a.model);const once=raporlar[scope];if(!zorla&&once?.imza===imza)return;
+-    let sayac;try{sayac=JSON.parse(localStorage.getItem('finora_ai_sayac_v1')||'{}');}catch{sayac={};}
+-    const gun=yerelTarihAnahtari(),simdi=Date.now();if(sayac.gun!==gun)sayac={gun,adet:0,son:{}};
+-    const fark=simdi-(sayac.son?.[scope]||0),bekle=zorla?60000:3600000;
+-    if(sayac.adet>=10||fark<bekle){setDurum(p=>({...p,[scope]:{hata:p[scope]?.hata||aiHataMesaji(sayac.adet>=10?'LIMIT':'WAIT')}}));return;}
+-    const controller=new AbortController();aktif.current=controller;const epoch=surum.current;
+-    setDurum(p=>({...p,[scope]:{bekliyor:true}}));
+-    const timer=setTimeout(()=>controller.abort(),45000);
+-    try{
+-      sayac={gun,adet:(sayac.adet||0)+1,son:{...sayac.son,[scope]:simdi}};localStorage.setItem('finora_ai_sayac_v1',JSON.stringify(sayac));
+-      const response=await aiServis('generate',a.model,aiIstekGovdesi(veri),controller.signal);
+-      if(controller.signal.aborted)throw new Error('TIMEOUT');if(epoch!==surum.current||ayarRef.current.kaynak!=='gemini')return;
+-      const candidate=response.candidates?.[0];if(candidate?.finishReason&&candidate.finishReason!=='STOP')throw new Error('INVALID');
+-      const text=(candidate?.content?.parts||[]).filter(p=>!p.thought).map(p=>p.text||'').join('');let obj;try{obj=JSON.parse(text.replace(/^```(?:json)?\s*|\s*```$/g,''));}catch{throw new Error('INVALID');}
+-      const rapor=aiYanitiDogrula(obj),kayit={rapor,imza,tarih:new Date().toISOString(),model:a.model};
+-      setRaporlar(p=>{const next={...p,[scope]:kayit};const bounded=Object.fromEntries(Object.entries(next).sort((a,b)=>b[1].tarih.localeCompare(a[1].tarih)).slice(0,8));try{localStorage.setItem('finora_ai_rapor_v1',JSON.stringify(bounded));}catch{toast('Yorum bu oturumda hazır; cihazda saklanamadı.','uyari');}return bounded;});setDurum(p=>({...p,[scope]:{}}));
+-    }catch(e){if(epoch===surum.current)setDurum(p=>({...p,[scope]:{hata:aiHataMesaji(e.message)}}));}
+-    finally{clearTimeout(timer);if(aktif.current===controller)aktif.current=null;setDurum(p=>p[scope]?.bekliyor?{...p,[scope]:{}}:p);}
+-  },[hazir,raporlar]);
+-  const finans=useMemo(()=>{try{return aiFinansOzeti(finansGirdisi);}catch{return null;}},[finansGirdisi.islemler,finansGirdisi.odemeler,finansGirdisi.kartlar,finansGirdisi.kartOdemeleri,finansGirdisi.krediler,finansGirdisi.taksitler,finansGirdisi.donemGun,finansGirdisi.bakiyeHesapModu,finansGirdisi.kartBorcOzetleri,acilis]);
+-  useEffect(()=>{if(ayar.kaynak==='gemini'&&ayar.onay&&ayar.otomatik&&hazir&&finans)yorumla('finans',finans,false);},[ayar.kaynak,ayar.onay,ayar.otomatik,ayar.model,hazir,finans,acilis,yorumla]);
+-  return {ayar,ayarla,hazir,anahtarKaydet,anahtarSil,baglantiTest,yorumla,raporlar,durum,finans,mesgul:Object.values(durum).some(d=>d?.bekliyor)};
+-}
+-function FinansAIKart() {
+-  const scope='finans';
+-  const ai=useContext(FinansAIContext);const summary=ai?.finans;
+-  const [imza,setImza]=useState('');const key=JSON.stringify(summary);
+-  useEffect(()=>{let alive=true;if(summary&&ai?.ayar.model)aiImza(summary,ai.ayar.model).then(v=>{if(alive)setImza(v);});return()=>{alive=false;};},[key,ai?.ayar.model]);
+-  if(!ai||ai.ayar.kaynak!=='gemini')return null;
+-  const last=ai.raporlar[scope],state=ai.durum[scope]||{},eski=last&&last.imza!==imza;
+-  const titles={genel:'Genel durum',odemeler:'Ödeme gücü',borclar:'Kartlar ve krediler',harcamalar:'Harcama analizi',tasarruf:'Tasarruf ve tahmin',adimlar:'Öncelikli adımlar',eksikler:'Eksik bilgiler'};
+-  return <section className="tools-card ai-report" data-testid="ai-report"><h3><Icon name="chart" size={18}/>Gemini finans analizi</h3><p className="tools-note">{summary?.kapsam}{summary?.donem?` · ${summary.donem}`:summary?.aralik?` · ${summary.aralik.ilk} – ${summary.aralik.son}`:""}</p>
+-    {state.bekliyor&&<p role="status">Ayrıntılı yorum hazırlanıyor…</p>}
+-    {state.hata&&<div role="alert" className="form-alert"><strong>Yorum güncellenemedi.</strong> {state.hata} {last?'Aşağıda son başarılı yorum gösteriliyor.':'Son başarılı Gemini yorumu yok; yerel değerlendirmeyi kullanabilirsin.'}</div>}
+-    {last&&<><p className="tools-note">Son başarılı yorum: {new Date(last.tarih).toLocaleString('tr-TR')} · {last.model}</p>{eski&&<p role="status" className="form-alert">Bu yorum mevcut verilerle aynı değil. Sonraki işlem ve düzeltmeler dahil olmayabilir.</p>}{last.rapor.bolumler.map(b=><div key={b.id}><h4 style={{color:'var(--text)',marginBottom:6}}>{titles[b.id]}</h4>{b.paragraflar.map((p,i)=><p key={i} style={{color:'var(--text2)',fontSize:13,lineHeight:1.7,overflowWrap:'anywhere'}}>{p}</p>)}</div>)}</>}
+-    {!last&&!state.bekliyor&&!state.hata&&<p className="tools-note">Yorum için anahtar, paylaşım onayı ve bağlantı gerekir. Yorum bakiye veya ödeme kaydı değiştirmez.</p>}
+-    <div className="tools-row" style={{flexWrap:'wrap'}}><Btn disabled={state.bekliyor||!summary} onClick={()=>ai.yorumla(scope,summary,true)}>Yeniden yorumla</Btn><Btn onClick={()=>ai.ayarla({kaynak:'yerel'})}>Yerel yorumları göster</Btn></div>
+-    <details><summary>Google'a gönderilen özet</summary><pre style={{whiteSpace:'pre-wrap',wordBreak:'break-word',color:'var(--text2)',fontSize:11}}>{JSON.stringify(summary,null,2)}</pre></details>
+-  </section>;
+-}
+-function FinansAIYorumSecimi({children,aralik}) {
+-  const ai=useContext(FinansAIContext);
+-  if(ai?.ayar.kaynak==='gemini'&&aralik&&ai.finans?.aralik&&(aralik.ilk!==ai.finans.aralik.ilk||aralik.son!==ai.finans.aralik.son))return <><p className="tools-note">Gemini otomatik yorumu güncel maaş dönemini kapsar. Seçtiğin farklı aralık için mevcut yerel yorumlar gösteriliyor.</p>{children}</>;
+-  return ai?.ayar.kaynak==='gemini'?<><FinansAIKart/>{ai.durum.finans?.hata&&<><p className="tools-note">Güncel yerel değerlendirme</p>{children}</>}</>:children;
+-}
+-function FinansAISettings() {
+-  const ai=useContext(FinansAIContext),[key,setKey]=useState(''),[goster,setGoster]=useState(false),[mesaj,setMesaj]=useState(''),[busy,setBusy]=useState(false),[modeller,setModeller]=useState(()=>{try{const m=JSON.parse(localStorage.getItem('finora_ai_modeller_v1')||'[]');return Array.isArray(m)?m.filter(v=>typeof v==='string'&&/^gemini-[a-z0-9.-]{1,80}$/.test(v)).slice(0,100):[];}catch{return [];}});
+-  if(!ai)return null;
+-  const calis=async fn=>{setBusy(true);setMesaj('İşlem sürüyor…');try{setMesaj(await fn());}catch(e){setMesaj(aiHataMesaji(e.message)==='Gemini isteği tamamlanamadı. Yerel yorumları kullanabilirsin.'?String(e.message).slice(0,180):aiHataMesaji(e.message));}finally{setBusy(false);}};
+-  return <section className="tools-card" data-testid="ai-settings"><h3><Icon name="chart" size={18}/>Yorum kaynağı</h3>
+-    <Select label="Yorum kaynağı" value={ai.ayar.kaynak} onChange={e=>ai.ayarla({kaynak:e.target.value})}><option value="yerel">Yerel · internetsiz</option><option value="gemini">Gemini API · isteğe bağlı</option></Select>
+-    <p className="tools-note">Yerel yorumlar anahtarsız ve internetsiz çalışır. Gemini gerçek tutarları hesaplamaz; yalnız kimlik bilgileri çıkarılmış hesap özetini ayrıntılı yorumlar.</p>
+-    <Input label="Gemini API anahtarı" type={goster?'text':'password'} value={key} autoComplete="off" spellCheck={false} onChange={e=>setKey(e.target.value)} placeholder={ai.hazir?'Anahtar kayıtlı; değiştirmek için gir':'Anahtarını yalnız burada gir'}/>
+-    <p aria-live="polite" data-testid="ai-key-status" className="tools-note">{ai.hazir?'Anahtar kayıtlı. Güvenlik için anahtarın kendisi gösterilmez.':Capacitor.isNativePlatform()&&!aiNativeVar()?'Güvenli anahtar eklentisi bulunamadı. Yalnız App.jsx yeterli değildir; güncel APK gerekir.':'Henüz kayıtlı anahtar yok.'}</p>
+-    <div className="tools-row" style={{flexWrap:'wrap'}}><Btn onClick={()=>setGoster(v=>!v)}>{goster?'Gizle':'Göster'}</Btn><Btn disabled={busy||!key.trim()} onClick={()=>calis(async()=>{await ai.anahtarKaydet(key.trim());setKey('');return 'Anahtar kaydedildi. Bağlantıyı test edebilirsin.';})}>Anahtarı kaydet</Btn><Btn disabled={busy||(!ai.hazir&&!key.trim())} onClick={()=>calis(async()=>{await ai.anahtarSil();setKey('');return 'Anahtar ve Gemini yorum önbelleği silindi. Yerel yorum seçildi.';})}>Anahtarı sil</Btn></div>
+-    <p className="tools-note">{Capacitor.isNativePlatform()?'Anahtar Android Keystore ile şifreli saklanır; yedeğe dahil edilmez.':'Tarayıcıda anahtar yalnız bu oturumun belleğinde tutulur; yeniden açınca girmen gerekir.'}</p>
+-    <Btn disabled={busy||(!ai.hazir&&!key.trim())} onClick={()=>calis(async()=>{if(key.trim()){await ai.anahtarKaydet(key.trim());setKey('');}const r=await ai.baglantiTest();setModeller(r.list);try{localStorage.setItem('finora_ai_modeller_v1',JSON.stringify(r.list));}catch{/* Model listesi bu oturumda kullanılabilir. */}return r.test?`${r.list.length} model erişilebilir. Basit metin testi başarılı; finans verisi gönderilmedi.`:'Model listesi alındı. Seçili model erişilebilir değil; listeden model seçip bağlantıyı yeniden test et.';})}>Bağlantıyı test et</Btn>
+-    <Select label="Gemini modeli" value={ai.ayar.model} onChange={e=>ai.ayarla({model:e.target.value})}>{[...new Set([ai.ayar.model,...GEMINI_MODEL_SECENEKLERI,...modeller])].map(m=><option key={m}>{m}</option>)}</Select>
+-    <p className="tools-note">Listede farklı model seçenekleri bulunur; hesabında erişim veya ücretsiz kota garantisi yoktur. Bağlantı testi hesabının erişebildiği modelleri de ekler ve listeyi hatırlar.</p>
+-    <label style={{display:'block',color:'var(--text2)',fontSize:13,lineHeight:1.6,margin:'12px 0'}}><input type="checkbox" checked={ai.ayar.onay} onChange={e=>ai.ayarla({onay:e.target.checked})}/> Gruplanmış kategori tutarlarının, borç ve bakiye özetinin Google'a gönderilmesini onaylıyorum. PDF ekstreleri ve onlardan çıkarılan analiz özetleri gönderilmez. İşlem açıklamaları, kişisel isimler ve kart numaraları da gönderilmez.</label>
+-    <label style={{display:'block',color:'var(--text2)',fontSize:13,margin:'12px 0'}}><input type="checkbox" checked={ai.ayar.otomatik} onChange={e=>ai.ayarla({otomatik:e.target.checked})}/> Veriler değişmişse açılışta otomatik yorumla</label>
+-    <p className="tools-note">Ücretsiz kota model ve hesabına bağlıdır; garanti değildir. Ücretli hesabında ücret oluşabilir. Uygulama günlük en fazla 10 yorum ister; aynı kapsam için otomatik yenileme aralığı 1 saattir. <a href="https://ai.google.dev/gemini-api/terms" target="_blank" rel="noreferrer">Google kullanım koşulları</a> · <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer">Anahtar oluştur</a></p>
+-    {mesaj&&<p role="status" className="tools-note">{mesaj}</p>}
+-  </section>;
++  const ilk=kategoriler.find(([,v])=>v>0);
++  if(ilk&&gider>0){const oran=Math.min(100,ilk[1]/gider*100);ekle('Harcama odağın','notr',`${ilk[0]}, ${fmtTL(ilk[1])} ile giderlerinin %${oran.toFixed(1).replace('.',',')}'ini oluşturuyor. ${kategoriler.length>1?`Diğer büyük kalemlerin ${kategoriler.slice(1,3).map(([k,v])=>`${k} (${fmtTL(v)})`).join(' ve ')}.`:''} Bu kalemde esnek harcama varsa küçük bir sınır koy; zorunlu ödemeleri kısmak yerine isteğe bağlı alışverişlerden başla.`);}
++  if(onceki?.kayitlar?.length&&onceki.gider>0){const degisim=paraTopla(gider,-onceki.gider);const yuzde=Math.abs(degisim)/onceki.gider*100;ekle('Gider eğilimin',degisim>0?'notr':'iyi',`Önceki aynı uzunluktaki aralığa göre giderlerin ${fmtTL(Math.abs(degisim))}${degisim!==0?` (%${yuzde.toFixed(1).replace('.',',')}) ${degisim>0?'arttı':'azaldı'}`:' ile aynı düzeyde'}. ${degisim>0?'Artış tek seferlik bir ödeme değilse, kalan dönem için esnek harcamalarına sınır koy.':degisim<0?'Azalan giderin açtığı alanı yeni borçla doldurmak yerine nakit tamponunu güçlendirmek için kullan.':'Mevcut dengeyi koruyup yaklaşan büyük ödemelere hazırlık yap.'}`);}
++  if(nakit){
++    const yakin=nakit.hareketler.filter(h=>h.tip==='gider'&&h.kesin&&h.tarih<=yerelTarihAnahtari(takvimGunuEkle(bugun,7))&&h.tarih>=bugun).sort((a,b)=>a.tarih.localeCompare(b.tarih));
++    if(yakin.length)ekle('Önümüzdeki 7 gün','notr',`${yakin.length} kayıtlı ödeme için ${fmtTL(yakin.reduce((s,h)=>paraTopla(s,h.tutar),0))} gerekiyor. En yakın ödeme ${yakin[0].tarih.split('-').reverse().join('.')} tarihinde ${fmtTL(yakin[0].tutar)}. Bu tutarı günlük harcama payından ayrı tut.`);
++    if(nakit.ilkAcik)ekle('Nakit akışı uyarısı','uyari',`${nakit.ilkAcik.split('-').reverse().join('.')} tarihinde nakit açığı riski görünüyor. Önümüzdeki 30 günde en düşük bakiye ${fmtTL(nakit.enDusuk)}. Henüz kaydetmediğin gelir varsa planlamaya ekle; o tarihe kadar isteğe bağlı harcamaları ertele.`);
++  }
++  if(gelir>0&&net>0)ekle('Bu dönem için hedefin','iyi',`Önce ödemelerini güvenceye al. ${bakiye&&bakiye.odemelerSonrasi<=0?'Ödemeler sonrası yeni birikime ayrılabilecek pay görünmüyor; nakit açığını kapatmaya odaklan.':'Kalan paydan düzenli bir tutarı acil durum birikimine ayır; tutarı bir sonraki zorunlu ödemeyi aksatmayacak seviyede tut.'}`);
++  return kartlar;
++}
++function YerelFinansYorumlari({ozet,onceki,kategoriler,aralik,gorunum}) {
++  const girdi=useContext(YerelFinansContext),bugun=yerelTarihAnahtari();
++  const sonuc=useMemo(()=>{
++    let bakiye=null,nakit=null;
++    if(girdi&&aralik){const d=maasDonemiBul(bugun,girdi.donemGun);if(aralik.ilk===yerelTarihAnahtari(d.baslangic)&&aralik.son===yerelTarihAnahtari(d.bitis)){bakiye=donemBakiyeHesapla({...girdi,ilk:aralik.ilk,son:aralik.son,bugun});nakit=nakitAkisiHesapla({...girdi,bugun,gunSayisi:30});}}
++    return yerelFinansYorumlari({ozet,onceki,kategoriler,gorunum,bakiye,nakit,bugun});
++  },[girdi,aralik?.ilk,aralik?.son,ozet,onceki,kategoriler,gorunum,bugun]);
++  return <div data-testid="yerel-finans-yorumlari">{sonuc.map((y,i)=><section key={i} className="tools-card" style={{borderLeft:`3px solid ${y.tip==='uyari'?'var(--expense-text)':y.tip==='iyi'?'var(--income-text)':'var(--accent)'}`}}><h3><Icon name={y.tip==='uyari'?'warning':y.tip==='iyi'?'shield':'target'} size={18}/>{y.baslik}</h3><p style={{color:'var(--text2)',fontSize:13,lineHeight:1.75,marginBottom:0}}>{y.metin}</p></section>)}</div>;
+ }
+ 
+ function ekstreMetinAnahtari(v) {
+@@ -3339,7 +3264,7 @@
+
+   return <div className="statement-v2" data-testid="ekstre-v2"><style>{`
+ .statement-v2{min-width:0}.statement-v2 h4{color:var(--text2);font-size:13px;margin:15px 0 8px}.ekstre-card-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.ekstre-card-head h3{margin:4px 0}.ekstre-card-head>div:first-child{min-width:0;overflow-wrap:anywhere}.ekstre-total{text-align:right;color:var(--text);flex-shrink:0}.ekstre-total small{display:block;color:var(--text3);font-size:10px}.ekstre-total strong{font-size:20px;font-variant-numeric:tabular-nums}.ekstre-pie-grid{display:grid;grid-template-columns:minmax(110px,45%) minmax(0,55%);align-items:center;gap:8px}.ekstre-legend{display:grid;grid-template-columns:9px minmax(0,1fr);gap:5px;align-items:center;font-size:11px;color:var(--text2);margin:7px 0}.ekstre-legend>span:first-child{width:9px;height:9px;border-radius:50%}.ekstre-legend strong{grid-column:2;font-size:10px;font-weight:500}.ekstre-legend small{color:var(--text3);margin-left:5px}.ekstre-bar-row{display:grid;grid-template-columns:25px minmax(60px,1fr) minmax(35px,1fr) auto 36px;align-items:center;gap:6px;margin:10px 0;color:var(--text2);font-size:11px}.ekstre-bar-row>span{overflow-wrap:anywhere}.ekstre-bar-row strong{font-size:10px;white-space:nowrap}.ekstre-bar-row small{text-align:right;font-size:10px}.ekstre-bar-track{height:9px;background:var(--border);border-radius:9px;overflow:hidden}.ekstre-bar-track i{display:block;height:100%;border-radius:9px}.ekstre-metrics{display:flex;flex-wrap:wrap;gap:8px 15px;margin-top:16px;color:var(--text3);font-size:11px}.ekstre-preview-row{background:var(--card2);border:1px solid var(--border);border-radius:12px;margin:12px 0;padding:12px;overflow-wrap:anywhere}.ekstre-preview-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.ekstre-preview-grid input,.ekstre-preview-grid select{min-width:0}.statement-v2 .tools-row{flex-wrap:wrap}.ekstre-actions{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}.statement-v2 label{color:var(--text2);font-size:12px;line-height:1.6}.statement-v2 .tools-card{margin-bottom:14px}@media(max-width:360px){.ekstre-bar-row{grid-template-columns:20px minmax(50px,1fr) minmax(25px,.6fr) auto 30px;gap:4px;font-size:10px}.ekstre-total strong{font-size:17px}.ekstre-pie-grid{grid-template-columns:minmax(100px,43%) minmax(0,57%)}}
+ `}</style>
+-    <section className="tools-card"><h3>Ekstre Analizi</h3><p className="tools-note">PDF cihazda okunur ve yalnız yerel analiz edilir. Ekstre dosyaları ve bunlardan çıkarılan özetler Gemini’ye gönderilmez. Gerçek işlemler, borçlar ve bakiyeler değişmez. Satırlar JSON yedeğine dahildir; ham PDF saklanmaz.</p><label>Hesap özeti PDF dosyası<input style={{display:'block',maxWidth:'100%',marginTop:8}} type="file" accept="application/pdf,.pdf" disabled={!!taslak||calisiyor||!!arsivHata} onChange={yukle}/></label>{calisiyor&&<Btn onClick={()=>aktif.current?.abort()}>PDF okumayı iptal et</Btn>}{durum&&<p role="status" className="tools-note">{durum}</p>}{(hata||arsivHata)&&<p role="alert" className="form-alert">{arsivHata||hata}</p>}</section>
++    <section className="tools-card"><h3>Ekstre Analizi</h3><p className="tools-note">PDF cihazda okunur ve yalnız yerel analiz edilir. Ekstre dosyaları ve analiz özetleri dışarı gönderilmez. Gerçek işlemler, borçlar ve bakiyeler değişmez. Satırlar JSON yedeğine dahildir; ham PDF saklanmaz.</p><label>Hesap özeti PDF dosyası<input style={{display:'block',maxWidth:'100%',marginTop:8}} type="file" accept="application/pdf,.pdf" disabled={!!taslak||calisiyor||!!arsivHata} onChange={yukle}/></label>{calisiyor&&<Btn onClick={()=>aktif.current?.abort()}>PDF okumayı iptal et</Btn>}{durum&&<p role="status" className="tools-note">{durum}</p>}{(hata||arsivHata)&&<p role="alert" className="form-alert">{arsivHata||hata}</p>}</section>
+     {taslak&&<section className="tools-card" aria-label="Ekstre önizlemesi"><h3>Önizle ve kategorileri düzelt</h3><Input label="Kart etiketi" list="ekstre-card-list" value={taslak.kart} onChange={e=>alan('kart',e.target.value)}/><datalist id="ekstre-card-list">{kartlar.map(k=><option key={k.id} value={k.isim}/>)}</datalist><Input label="Ekstre ayı" type="month" value={taslak.donem} onChange={e=>alan('donem',e.target.value)}/><div className="ekstre-preview-grid"><Input label="Hesap kesim tarihi" type="date" value={taslak.kesim} onChange={e=>alan('kesim',e.target.value)}/><Input label="Son ödeme tarihi" type="date" value={taslak.vade} onChange={e=>alan('vade',e.target.value)}/><Input label="Ekstre borcu" type="number" value={taslak.borc??''} onChange={e=>alan('borc',e.target.value===''?null:paraOku(e.target.value))}/><Input label="Önceki ekstre bakiyesi" type="number" value={taslak.devreden??''} onChange={e=>alan('devreden',e.target.value===''?null:paraOku(e.target.value))}/></div>
+       {taslak.uyarilar?.map((u,i)=><p className="form-alert" key={i}>{u}</p>)}<p className="tools-note">{taslak.satirlar.length} satır. Aynı tarih/tutarlı işlemler otomatik silinmez. Taksit tutarı bu ekstreye ait aylık tutar olmalı.</p>
+       <div className="ekstre-actions"><Input label="Yeni kategori adı" value={kategoriAdi} onChange={e=>setKategoriAdi(e.target.value)}/><Btn onClick={()=>{const ad=kategoriAdi.trim().slice(0,100);if(!ad)return;setEkKatlar(p=>[...new Set([...p,ad])]);setKategoriAdi('');}}>Kategoriyi seçeneklere ekle</Btn><Btn onClick={()=>setTaslak(t=>({...t,satirlar:[...t.satirlar,{id:`manuel:${Date.now()}`,tarih:t.kesim||yerelTarihAnahtari(),aciklama:'Elle eklenen düzeltme',tutar:0,tur:'harcama',kategori:'Kategorisiz',dahil:false,taksit:false,hatirla:false}]}))}>Eksik işlem ekle</Btn></div>
+@@ -3525,7 +3450,7 @@
+
+   const dagilim=(liste,toplam,tip)=><section className="tools-card"><h3><Icon name={tip==='gelir'?'arrowUp':'arrowDown'} size={17}/>{tip==='gelir'?'Gelir kaynakları':'Gider kategorileri'}</h3>{liste.length?liste.map(([k,v])=><div className="category-distribution" key={k}><div className="tools-row"><span className="category-label"><KategoriSimge kategori={k} tip={tip}/>{k}</span><strong>{fmtTL(v)} <small>%{toplam>0?(v/toplam*100).toFixed(1):0}</small></strong></div><div className="distribution-track"><span style={{width:`${toplam>0?v/toplam*100:0}%`,background:kategoriGorunumu(k,tip,kategoriGorunumleri).renk}}/></div></div>):<p className="tools-note">Bu aralıkta {tip} kaydı yok.</p>}</section>;
+   const gunSayisi=aralik&&bitis>=aralik.ilk?takvimGunFarki(bitis,aralik.ilk)+1:0;
+   return <div className="reports-page">
+-    <section className="tools-card"><Select label="Hesaplama görünümü" value={raporTuru} onChange={e=>setRaporTuru(e.target.value)}><option value="harcama">Harcama · alışveriş ve günlük kart artışları</option><option value="nakit">Nakit hareketleri · ödenen ekstre ve para çıkışları</option></Select><p className="tools-note">{raporTuru==='harcama'?'Ekstre ödemesi yeniden gider sayılmaz. İlk girilen birikmiş kart borcu, tarihi bilinmediği için harcama sayılmaz.':'Kart alışverişleri hariçtir; ekstre ödemeleri ödendiği tarihte, birikime ayrılan para nakit çıkışı olarak görünür.'}</p></section>
++    <section className="tools-card"><Select label="Hesaplama görünümü" value={raporTuru} onChange={e=>setRaporTuru(e.target.value)}><option value="harcama">Harcama · alışveriş ve günlük kart artışları</option><option value="nakit">Nakit hareketleri · ödenen ekstre ve para çıkışları</option></Select>{sekme!=='yorum'&&<p className="tools-note">{raporTuru==='harcama'?'Ekstre ödemesi yeniden gider sayılmaz. İlk girilen birikmiş kart borcu, tarihi bilinmediği için harcama sayılmaz.':'Kart alışverişleri hariçtir; ekstre ödemeleri ödendiği tarihte, birikime ayrılan para nakit çıkışı olarak görünür.'}</p>}</section>
+     <section className="tools-card report-period"><h3><Icon name="calendar" size={17}/>Dönem raporu</h3>
+       <Select label="Rapor aralığı" value={mod} onChange={e=>setMod(e.target.value)}>
+         <option value="donem">Maaş dönemi</option><option value="uc">Son 3 maaş dönemi</option><option value="yil">12 maaş dönemi · seçili yıl</option><option value="ozel">Özel tarih aralığı</option>
+@@ -3562,14 +3487,8 @@
+
+         <YillikKategoriKiyas islemler={trendIslemleri} yil={kategoriYili} tip="gelir"/>
+       </>}
+       {sekme==='harita'&&<HarcamaHaritasi gorunum={raporTuru} islemler={islemler} odemeler={odemeler} kartOdemeleri={kartOdemeleri} ilk={aralik.ilk} son={aralik.son}/>}
+-      {sekme==='yorum'&&<FinansAIYorumSecimi aralik={aralik}><section className="tools-card"><h3><Icon name="target" size={17}/>Seçili aralığın yorumu</h3>
+-        {!ozet.kayitlar.length?<p className="tools-note">Yorum için henüz veri yok.</p>:<>
+-          <div className="insight-row"><Icon name={ozet.net>=0?'shield':'warning'} size={18}/><p>Bu aralıkta {fmtTL(Math.abs(ozet.net))} {ozet.net>=0?'gelir fazlası':'gider fazlası'} kaydedildi.{ozet.oran!==null?` Tasarruf oranı %${ozet.oran.toFixed(1).replace('.',',')}.`:' Gelir olmadığı için tasarruf oranı hesaplanmaz.'}</p></div>
+-          {giderKategorileri.length>0&&<div className="insight-row"><Icon name="tag" size={18}/><p>En yüksek gider {giderKategorileri[0][0]}: {fmtTL(giderKategorileri[0][1])}. Bu kategoride %10 azaltma {fmtTL(Math.round(paraKurus(giderKategorileri[0][1])*.1)/100)} pay bırakır.</p></div>}
+-          {gunSayisi>0&&<div className="insight-row"><Icon name="calendar" size={18}/><p>Günlük kayıtlı gider ortalaması {fmtTL(ozet.gider/gunSayisi)}. Hesap, aralıktaki tüm {gunSayisi} günü içerir.</p></div>}
+-        </>}
+-        <details className="calculation-help"><summary>Yorumların dayanağı</summary><p className="tools-note">Yorumlar kayıtlara dayanır; eksik kayıtlar sonucu değiştirir. Bekleyen ödemeler gerçek harcamaya ve nakit çıkışına dahil değildir. %10 azaltma bir senaryodur.</p></details>
+-      </section>{gelismisYorum&&<details className="legacy-insights"><summary>Gelişmiş dönem ve alışkanlık yorumları</summary><p className="tools-note">Bu yorumlar harcama esasını kullanır; dönem seçimi ayrıdır. Ekstre ödemeleri ikinci gider olarak sayılmaz.</p>{gelismisYorum()}</details>}{birikimRaporu&&<details className="legacy-insights"><summary>Yıllık birikim raporu</summary>{birikimRaporu()}</details>}</FinansAIYorumSecimi>}
++      {sekme==='yorum'&&<><YerelFinansYorumlari ozet={ozet} onceki={onceki} kategoriler={giderKategorileri} aralik={aralik} gorunum={raporTuru}/>{birikimRaporu&&<details className="legacy-insights"><summary>Yıllık birikim raporu</summary>{birikimRaporu()}</details>}</>}
++
+       <div className="report-export"><button className="tools-button" disabled={!ozet.kayitlar.length} onClick={()=>csvAktar(ozet.kayitlar,odemeler)}><Icon name="download" size={16}/>Rapor işlemlerini CSV aktar</button></div>
+     </>}
+     </div>
+@@ -4441,7 +4360,6 @@
+
+       </div>
+ 
+       <section className="tools-card"><h3><Icon name="chart" size={17}/>Bütçe grafiği</h3><p className="tools-note">Genel Bakış ekranında halka veya ibre göstergesini kullan. Seçimin sonraki açılışlarda korunur.</p><div className="gauge-options">{[{id:'halka',label:'Halka',note:'Kompakt dairesel gösterge'},{id:'ibre',label:'İbre',note:'Renkli ölçek ve hareketli ibre'}].map(t=><button type="button" key={t.id} aria-pressed={grafikTipi===t.id} onClick={()=>setGrafikTipi(t.id)}><strong>{t.label}</strong><span>{t.note}</span></button>)}</div></section>
+-      <FinansAISettings/>
+       <KategoriGorunumAyarlari kategoriler={kategoriler}/>
+       <section className="tools-card"><h3>Önceki aydan devir</h3><p className="tools-note">Yalnız önceki dönemin artı gerçek kapanış bakiyesi devredilir. Bekleyen borçlar ve kart alışverişleri nakit çıkışı sayılmaz. Devir gelir raporuna eklenmez. Eski devirler kendiliğinden değiştirilmez.</p><div className="tools-row"><span>Bu dönemde kayıtlı devir</span><strong>{fmtTL(mevcutDevir)}</strong></div><div className="tools-row"><span>Önceki dönem gerçek kapanış</span><strong>{fmtTL(devirHesabi.kapanisBakiyesi)}</strong></div><p className="tools-note">Yeni devir önerisi: {fmtTL(devirHesabi.tutar)}. Geçmiş verileri düzelttiğinde buradan kontrol ederek güncelle.</p><Btn onClick={devirYenile}>Devri yeniden hesapla</Btn></section>
+       <section className="tools-card"><h3>Kayıt geçmişi</h3><p className="tools-note">Eski, ödeme bağlantısı olmayan geçmiş gider kayıtları gerçekleşmiş kabul edilir. Yeni sabit giderler Ödemeler listesine bekleyen olarak gelir; ödendiğini işaretlemeden gerçek bakiye azalmaz.</p><KayitGecmisi/></section>
+@@ -6007,7 +5925,7 @@
+
+   const [bildirimAyarlari, setBildirimAyarlari] = useLocalStorage("ft_bildirim_ayarlari", { gunler: [0, 1], saat: "18:00" });
+   const [bildirimYenileme, setBildirimYenileme] = useState(0);
+   const [sonBildirimPlanlama, setSonBildirimPlanlama] = useLocalStorage("ft_son_bildirim_planlama", null);
+-  const finansAI=useFinansAI({islemler,odemeler,kartlar,kartOdemeleri,krediler,taksitler,tekrarlayan,kartBorcOzetleri,donemGun:parseInt(donemGun)||15,bakiyeHesapModu});
++  const yerelFinansGirdisi={islemler,odemeler,kartlar,kartOdemeleri,krediler,taksitler,tekrarlayan,kartBorcOzetleri,donemGun:parseInt(donemGun)||15,bakiyeHesapModu};
+   useEffect(()=>{
+     try{
+       if(!localStorage.getItem('ft_auto_backup_finance_v170'))localStorage.setItem('ft_auto_backup_finance_v170',JSON.stringify(yerelYedekPaketi()));
+@@ -6277,7 +6195,7 @@
+
+   const aktifSekmeBilgi = tumSekmeler.find(t => t.id === aktifTab) || tumSekmeler[0];
+ 
+   return (
+-    <FinansAIContext.Provider value={finansAI}>
++    <YerelFinansContext.Provider value={yerelFinansGirdisi}>
+     <KategoriGorunumContext.Provider value={{ gorunumler:kategoriGorunumleri, setGorunumler:setKategoriGorunumleri }}>
+     <>
+       <style>{`
+@@ -6913,6 +6831,6 @@
+
+       <ToastKutusu />
+     </>
+     </KategoriGorunumContext.Provider>
+-    </FinansAIContext.Provider>
++    </YerelFinansContext.Provider>
+   );
+ }
