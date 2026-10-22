@@ -1,0 +1,6 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+ <queries><package android:name="com.whatsapp"/><package android:name="com.whatsapp.w4b"/><intent><action android:name="android.intent.action.VIEW"/><data android:scheme="https"/></intent></queries>
+ <application android:theme="@style/AppTheme" android:label="Sicil360 Pro" android:icon="@drawable/ic_sicil" android:allowBackup="false" android:usesCleartextTraffic="false" android:fullBackupContent="@xml/backup_rules" android:dataExtractionRules="@xml/data_extraction_rules" android:supportsRtl="true">
+  <activity android:name=".MainActivity" android:exported="true" android:configChanges="orientation|screenSize|keyboardHidden"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity>
+ </application>
+</manifest>

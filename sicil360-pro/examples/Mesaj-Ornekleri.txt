@@ -1,0 +1,15 @@
+Sicil360 Pro — Düz Metin Şablon Örnekleri
+Bu metinleri uygulamadaki Şablonlar bölümüne kendinize göre kaydedebilirsiniz.
+Hiçbir metne sicil, ad veya soyad otomatik eklenmez. Süslü parantezler de düz metindir.
+
+BİLGİLENDİRME
+Merhaba, işlemle ilgili güncel bilgilendirmeyi sizinle paylaşmak istiyoruz. Uygun olduğunuzda dönüş yapabilir misiniz?
+
+EVRAK HATIRLATMA
+Merhaba, uygun olduğunuzda evraklarınızı teslim edebilir misiniz? Teşekkürler.
+
+TOPLANTI
+Merhaba, yarın yapılacak toplantıya katılım durumunuzu bildirebilir misiniz?
+
+ÖZEL MESAJ
+Buraya kendi metninizi yazabilirsiniz.
