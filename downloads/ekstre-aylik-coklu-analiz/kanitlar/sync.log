@@ -1,0 +1,13 @@
+✔ Copying web assets from dist to android/app/src/main/assets/public in 40.96ms
+✔ Creating capacitor.config.json in android/app/src/main/assets in 1.03ms
+✔ copy android in 69.84ms
+✔ Updating Android plugins in 1.99ms
+[info] Found 1 Capacitor plugin for android:
+       @capacitor/local-notifications@8.2.1
+✔ update android in 37.85ms
+[info] Sync finished in 0.146s
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice

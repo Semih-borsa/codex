@@ -1,0 +1,20 @@
+✔ RANGE-UI-light — Kart ve genel aylık/3/6/yıllık, eksik ay, kayıtlar korunur (1745.015428ms)
+✔ RANGE-UI-dark — Kart ve genel aylık/3/6/yıllık, eksik ay, kayıtlar korunur (2432.586278ms)
+✔ RANGE-UI-gray — Kart ve genel aylık/3/6/yıllık, eksik ay, kayıtlar korunur (2640.777291ms)
+✔ RANGE-UI-rapor — 6 maaş dönemi seçimi ve önceki dönem gezinmesi (1486.472348ms)
+✔ RANGE01 — 1/3/6 ay ve yıl sınırında doğru ay listesi (6.534325ms)
+✔ RANGE02 — Yıllık Ocak–Aralık, eksik aylar uydurulmaz (2.203764ms)
+✔ RANGE03 — Kartlar aylarda gruplanır; genel tutar iki kez sayılmaz (2.471793ms)
+✔ RANGE04 — Tek kart filtresi ve ay sınırı (1.207108ms)
+✔ RANGE05 — Eksik dönem sıfır harcama gibi üretilmez (1.03382ms)
+✔ RANGE06 — İade, ödeme, faiz alışverişe eklenmez (1.324253ms)
+✔ RANGE07 — 4 kartın 12 aylık arşivi ve eski biçim korunur (5.716477ms)
+✔ RANGE08 — Altı maaş dönemi seçimi yıl geçişini doğru kapsar (2.07416ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 8709.356713

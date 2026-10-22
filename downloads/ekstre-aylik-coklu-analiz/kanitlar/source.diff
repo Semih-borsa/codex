@@ -1,0 +1,95 @@
+--- App-1.5.2.jsx
+
++++ App-1.5.3.jsx
+
+@@ -2327,7 +2327,7 @@
+
+   const bas = new Date(aktif.yil, aktif.ay + offset, aktif.gun);
+   if(mod === 'ozel') return yerelTarihOku(ilk) && yerelTarihOku(son) && ilk <= son ? {ilk,son} : null;
+   if(mod === 'yil') return {ilk:yerelTarihAnahtari(new Date(yil,0,aktif.gun)),son:yerelTarihAnahtari(new Date(Number(yil)+1,0,aktif.gun-1))};
+-  return {ilk:yerelTarihAnahtari(new Date(bas.getFullYear(),bas.getMonth()-(mod==='uc'?2:0),aktif.gun)),son:yerelTarihAnahtari(new Date(bas.getFullYear(),bas.getMonth()+1,aktif.gun-1))};
++  return {ilk:yerelTarihAnahtari(new Date(bas.getFullYear(),bas.getMonth()-(mod==='uc'?2:mod==='alti'?5:0),aktif.gun)),son:yerelTarihAnahtari(new Date(bas.getFullYear(),bas.getMonth()+1,aktif.gun-1))};
+ }
+ function aralikOzeti(islemler, ilk, son, bugun = yerelTarihAnahtari()) {
+   const kayitlar = analizIslemleri(islemler).filter(i => i.tarih >= ilk && i.tarih <= son && i.tarih <= bugun);
+@@ -3218,7 +3218,7 @@
+
+ }
+ function ekstreArsivDogrula(v) {
+   const fail=()=>{throw new Error('Ekstre analiz arşivi bozuk veya desteklenmeyen sürümde; mevcut kayıtlar korunuyor.');};
+-  if(!v||v.surum!==1||!Array.isArray(v.belgeler)||v.belgeler.length>12||!Array.isArray(v.kurallar)||v.kurallar.length>200||JSON.stringify(v).length>1000000)fail();
++  if(!v||v.surum!==1||!Array.isArray(v.belgeler)||v.belgeler.length>120||!Array.isArray(v.kurallar)||v.kurallar.length>200||JSON.stringify(v).length>2000000)fail();
+   const ids=new Set(),keys=new Set();
+   for(const b of v.belgeler){if(!b||typeof b.id!=='string'||!b.id||ids.has(b.id)||typeof b.kart!=='string'||!b.kart.trim()||b.kart.length>80||!/^\d{4}-(?:0[1-9]|1[0-2])$/.test(b.donem)||!Array.isArray(b.satirlar)||b.satirlar.length>2000||typeof b.kismi!=='boolean')fail();ids.add(b.id);const key=ekstreMetinAnahtari(b.kart)+'|'+b.donem;if(keys.has(key))fail();keys.add(key);
+     for(const field of ['borc','devreden'])if(b[field]!=null&&!tutarGecerli(b[field],true))fail();
+@@ -3240,9 +3240,23 @@
+
+     <p className="tools-note">Grafikler brüt alışveriş ve bu ekstredeki taksitleri gösterir. Ödemeler, nakit avans, faiz ve puan kullanımı pasta grafiğe eklenmez.</p>
+   </section></KategoriGorunumContext.Provider>;
+ }
++function ekstreAnalizAraligi(mod,ay) {
++  if(!/^\d{4}-(?:0[1-9]|1[0-2])$/.test(ay)||!['ay','uc','alti','yil'].includes(mod))return null;
++  const [y,m]=ay.split('-').map(Number),bitis=y*12+m-1,bas=mod==='yil'?y*12:bitis-({ay:1,uc:3,alti:6}[mod]-1),son=mod==='yil'?y*12+11:bitis;
++  const aylar=Array.from({length:son-bas+1},(_,i)=>{const n=bas+i;return `${Math.floor(n/12)}-${String(n%12+1).padStart(2,'0')}`;});
++  return {ilk:aylar[0],son:aylar.at(-1),aylar,label:mod==='ay'?ay:`${aylar[0]} – ${aylar.at(-1)}`};
++}
++function ekstreAralikOzeti(belgeler,mod,ay,kart='') {
++  const aralik=ekstreAnalizAraligi(mod,ay);if(!aralik)return {aralik:null,belgeler:[],kartlar:[],genel:null};
++  const secili=belgeler.filter(b=>aralik.aylar.includes(b.donem)&&(!kart||ekstreMetinAnahtari(b.kart)===kart));const map=new Map();
++  for(const b of secili){const id=ekstreMetinAnahtari(b.kart);if(!map.has(id))map.set(id,{id,kart:b.kart,belgeler:[],satirlar:[]});const k=map.get(id);k.belgeler.push(b);k.satirlar.push(...b.satirlar);}
++  const kartlar=[...map.values()].map(k=>({...k,eksikAylar:aralik.aylar.filter(ay=>!k.belgeler.some(b=>b.donem===ay)),ozet:ekstreOzetV2(k.satirlar)}));
++  return {aralik,belgeler:secili,kartlar,genel:secili.length?ekstreOzetV2(secili.flatMap(b=>b.satirlar)):null};
++}
++
+ function EkstreAnaliziTab({kategoriler,kartlar}) {
+   const [arsiv,setArsiv]=useLocalStorage('ft_ekstre_analiz_v1',{surum:1,belgeler:[],kurallar:[]});let veri,arsivHata='';try{veri=ekstreArsivDogrula(arsiv);}catch(e){veri={surum:1,belgeler:[],kurallar:[]};arsivHata=e.message;}
+-  const [taslak,setTaslak]=useState(null),[hata,setHata]=useState(''),[durum,setDurum]=useState(''),[calisiyor,setCalisiyor]=useState(false),[donem,setDonem]=useState(''),[kategoriAdi,setKategoriAdi]=useState(''),[ekKatlar,setEkKatlar]=useState([]);
++  const [taslak,setTaslak]=useState(null),[hata,setHata]=useState(''),[durum,setDurum]=useState(''),[calisiyor,setCalisiyor]=useState(false),[donem,setDonem]=useState(''),[analizModu,setAnalizModu]=useState('ay'),[kartFiltresi,setKartFiltresi]=useState(''),[kategoriAdi,setKategoriAdi]=useState(''),[ekKatlar,setEkKatlar]=useState([]);
+   const aktif=useRef(null),alive=useRef(true);useEffect(()=>{alive.current=true;return()=>{alive.current=false;aktif.current?.abort();};},[]);
+   const katlar=[...new Set([...EKSTRE_KATEGORILERI,...ekKatlar,...(kategoriler?.gider||[]),...veri.kurallar.map(k=>k.kategori),...(taslak?.satirlar||[]).map(s=>s.kategori)])];
+   const alan=(field,value)=>setTaslak(t=>({...t,[field]:value,onay:false,farkOnayi:false}));
+@@ -3260,7 +3274,7 @@
+
+     let kurallar=[...veri.kurallar];for(const s of taslak.satirlar.filter(s=>s.hatirla&&s.kategori!=='Kategorisiz')){const anahtar=ekstreMetinAnahtari(s.aciklama).replace(/\d+/g,'').replace(/\s+/g,' ').trim().slice(0,100);if(anahtar)kurallar=[...kurallar.filter(k=>k.anahtar!==anahtar),{anahtar,kategori:s.kategori}];}
+     const next={surum:1,belgeler:[...veri.belgeler.filter(x=>x.id!==b.id),b],kurallar};ekstreArsivDogrula(next);if(setArsiv(next)===false)throw new Error('Arşiv yazılamadı; mevcut kayıtlar korunuyor.');setDonem(b.donem);setTaslak(null);setHata('');setDurum('Analiz kaydedildi. Gerçek işlem ve bakiyeler değişmedi.');
+   }catch(e){setHata(e.message);}};
+-  const secilen=donem||veri.belgeler.map(b=>b.donem).sort().reverse()[0]||'',belgeler=veri.belgeler.filter(b=>b.donem===secilen),genel=belgeler.length?ekstreOzetV2(belgeler.flatMap(b=>b.satirlar)):null;
++  const secilen=donem||veri.belgeler.map(b=>b.donem).sort().reverse()[0]||'',analiz=ekstreAralikOzeti(veri.belgeler,analizModu,secilen,kartFiltresi),{belgeler,genel}=analiz;const kartOzetleri=analiz.kartlar;
+   return <div className="statement-v2" data-testid="ekstre-v2"><style>{`
+ .statement-v2{min-width:0}.statement-v2 h4{color:var(--text2);font-size:13px;margin:15px 0 8px}.ekstre-card-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.ekstre-card-head h3{margin:4px 0}.ekstre-card-head>div:first-child{min-width:0;overflow-wrap:anywhere}.ekstre-total{text-align:right;color:var(--text);flex-shrink:0}.ekstre-total small{display:block;color:var(--text3);font-size:10px}.ekstre-total strong{font-size:20px;font-variant-numeric:tabular-nums}.ekstre-pie-grid{display:grid;grid-template-columns:minmax(110px,45%) minmax(0,55%);align-items:center;gap:8px}.ekstre-legend{display:grid;grid-template-columns:9px minmax(0,1fr);gap:5px;align-items:center;font-size:11px;color:var(--text2);margin:7px 0}.ekstre-legend>span:first-child{width:9px;height:9px;border-radius:50%}.ekstre-legend strong{grid-column:2;font-size:10px;font-weight:500}.ekstre-legend small{color:var(--text3);margin-left:5px}.ekstre-bar-row{display:grid;grid-template-columns:25px minmax(60px,1fr) minmax(35px,1fr) auto 36px;align-items:center;gap:6px;margin:10px 0;color:var(--text2);font-size:11px}.ekstre-bar-row>span{overflow-wrap:anywhere}.ekstre-bar-row strong{font-size:10px;white-space:nowrap}.ekstre-bar-row small{text-align:right;font-size:10px}.ekstre-bar-track{height:9px;background:var(--border);border-radius:9px;overflow:hidden}.ekstre-bar-track i{display:block;height:100%;border-radius:9px}.ekstre-metrics{display:flex;flex-wrap:wrap;gap:8px 15px;margin-top:16px;color:var(--text3);font-size:11px}.ekstre-preview-row{background:var(--card2);border:1px solid var(--border);border-radius:12px;margin:12px 0;padding:12px;overflow-wrap:anywhere}.ekstre-preview-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.ekstre-preview-grid input,.ekstre-preview-grid select{min-width:0}.statement-v2 .tools-row{flex-wrap:wrap}.ekstre-actions{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}.statement-v2 label{color:var(--text2);font-size:12px;line-height:1.6}.statement-v2 .tools-card{margin-bottom:14px}@media(max-width:360px){.ekstre-bar-row{grid-template-columns:20px minmax(50px,1fr) minmax(25px,.6fr) auto 30px;gap:4px;font-size:10px}.ekstre-total strong{font-size:17px}.ekstre-pie-grid{grid-template-columns:minmax(100px,43%) minmax(0,57%)}}
+ `}</style>
+@@ -3273,10 +3287,16 @@
+
+       <p className={fark===0?'tools-note':'form-alert'}>{fark===null?'Ekstre toplamı tam doğrulanamadı.':`Banka ekstresiyle fark: ${fmtTL(fark)}${fark===0?' · Toplam uyumlu.':''}`}</p>
+       <label style={{display:'block',margin:'12px 0'}}><input type="checkbox" checked={taslak.farkOnayi||false} onChange={e=>setTaslak(t=>({...t,farkOnayi:e.target.checked}))}/> Toplam farkını/eksik satırları inceledim; gerekirse kısmi analiz olarak kaydet.</label><label style={{display:'block',margin:'12px 0'}}><input type="checkbox" checked={taslak.onay||false} onChange={e=>setTaslak(t=>({...t,onay:e.target.checked}))}/> Kategorileri, işlem türlerini ve tutarları kontrol ettim.</label>
+       <div className="ekstre-actions"><Btn disabled={!!hesapHata||!taslak.onay} onClick={kaydet}>Analizi kaydet</Btn><Btn onClick={()=>{setTaslak(null);setHata('');}}>Vazgeç</Btn></div></section>}
+-    {veri.belgeler.length>0&&<Select label="Ekstre analiz dönemi" value={secilen} onChange={e=>setDonem(e.target.value)}>{[...new Set(veri.belgeler.map(b=>b.donem))].sort().reverse().map(m=><option key={m}>{m}</option>)}</Select>}
+-    {belgeler.map(b=><div key={b.id}><EkstreKategoriGrafikleri satirlar={b.satirlar} baslik={b.kart} altBaslik={`${b.donem}${b.kismi?' · Kısmi analiz':''}`}/><div className="ekstre-actions"><Btn disabled={!!taslak} onClick={()=>{setTaslak({...b,duzenleme:true,onay:false,farkOnayi:false,satirlar:b.satirlar.map(s=>({...s,hatirla:false}))});setHata('');window.scrollTo({top:0,behavior:'smooth'});}}>İşlemleri ve kategorileri düzenle</Btn><Btn onClick={()=>{if(window.confirm(`${b.kart} ${b.donem} analizini kaldırmak istiyor musun? Gerçek finans kayıtları değişmez.`))setArsiv({...veri,belgeler:veri.belgeler.filter(x=>x.id!==b.id)});}}>Analizi kaldır</Btn></div></div>)}
+-    {genel&&<><EkstreKategoriGrafikleri genel satirlar={belgeler.flatMap(b=>b.satirlar)} baslik="TÜM KARTLARIN GENEL TOPLAMI" altBaslik={`${belgeler.length} kart · ${secilen} · Yüklenen ekstrelerin birleşik analizi`}/><section className="tools-card"><h3>Kartlara Göre Pay</h3>{belgeler.map(b=>{const a=ekstreOzetV2(b.satirlar);return <div className="tools-row" key={b.id}><span>{b.kart}</span><strong>{fmtTL(a.brut)} · %{genel.brut?(a.brut/genel.brut*100).toLocaleString('tr-TR',{maximumFractionDigits:1}):0}</strong></div>;})}</section>
+-      <section className="tools-card" data-testid="ekstre-local-insight"><h3>Yerel ekstre analizi</h3><p className="tools-note">{belgeler.length} kartta brüt alışveriş {fmtTL(genel.brut)}, iadeler {fmtTL(genel.iade)}, net {fmtTL(genel.net)}. Ekstre ödemeleri bu harcamaya yeniden eklenmedi.</p>{genel.kategoriler[0]&&<p className="tools-note">En yüksek kategori {genel.kategoriler[0].kategori}: {fmtTL(genel.kategoriler[0].tutar)} · %{genel.kategoriler[0].oran.toLocaleString('tr-TR',{maximumFractionDigits:1})}.</p>}<p className="tools-note">Faiz/ücret {fmtTL(genel.ucret)}, nakit avans anaparası {fmtTL(genel.nakit)}, puan kullanımı {fmtTL(genel.puan)} ayrı tutulur. Bunlar pasta grafiğin alışveriş toplamına karıştırılmaz.</p>{belgeler.some(b=>b.kismi)&&<p className="form-alert">Bazı ekstreler kısmi; genel toplam tüm harcamalarını temsil etmeyebilir.</p>}<p className="tools-note">Bir ayın ekstresi önceki ayla kıyas için yeterli değildir. Son ödeme tarihindeki güncel borç/ödeme durumu bu PDF'den varsayılmaz.</p></section>
++    {veri.belgeler.length>0&&<section className="tools-card"><Select label="Ekstre analiz aralığı" value={analizModu} onChange={e=>setAnalizModu(e.target.value)}><option value="ay">Aylık</option><option value="uc">3 aylık</option><option value="alti">6 aylık</option><option value="yil">Yıllık · Ocak–Aralık</option></Select>
++      {analizModu==='yil'?<Select label="Ekstre analiz yılı" value={secilen.slice(0,4)} onChange={e=>setDonem(`${e.target.value}-12`)}>{[...new Set(veri.belgeler.map(b=>b.donem.slice(0,4)))].sort().reverse().map(y=><option key={y}>{y}</option>)}</Select>:<Input label={analizModu==='ay'?'Ekstre analiz dönemi':'Ekstre analiz bitiş ayı'} type="month" value={secilen} onChange={e=>setDonem(e.target.value)}/>}
++      <Select label="Ekstre kart filtresi" value={kartFiltresi} onChange={e=>setKartFiltresi(e.target.value)}><option value="">Tüm kartlar</option>{[...new Map(veri.belgeler.map(b=>[ekstreMetinAnahtari(b.kart),b.kart]))].map(([id,isim])=><option key={id} value={id}>{isim}</option>)}</Select>
++      {analiz.aralik&&<p className="tools-note" data-testid="ekstre-aralik">{analiz.aralik.label} · {kartOzetleri.length} kart · {belgeler.length} ekstre</p>}
++      {!belgeler.length&&<p className="tools-note">Bu aralıkta seçili karta ait ekstre yok.</p>}
++    </section>}
++    {kartOzetleri.map(k=><div key={k.id}><EkstreKategoriGrafikleri satirlar={k.satirlar} baslik={k.kart} altBaslik={`${analiz.aralik.label} · ${k.belgeler.length} ekstre${k.belgeler.some(b=>b.kismi)?' · Kısmi analiz':''}`}/>{k.eksikAylar.length>0&&<p className="form-alert">{k.kart} için eksik ekstre ayları: {k.eksikAylar.join(', ')}. Toplam yalnız yüklenen ekstreleri içerir.</p>}
++      <details open={analizModu==='ay'} className="tools-card"><summary>{k.kart} · Ekstreleri yönet ({k.belgeler.length})</summary>{k.belgeler.sort((a,b)=>b.donem.localeCompare(a.donem)).map(b=><div className="ekstre-actions" key={b.id}><span className="tools-note">{b.donem}</span><Btn disabled={!!taslak} onClick={()=>{setTaslak({...b,duzenleme:true,onay:false,farkOnayi:false,satirlar:b.satirlar.map(s=>({...s,hatirla:false}))});setHata('');window.scrollTo({top:0,behavior:'smooth'});}}>İşlemleri ve kategorileri düzenle</Btn><Btn onClick={()=>{if(window.confirm(`${b.kart} ${b.donem} analizini kaldırmak istiyor musun? Gerçek finans kayıtları değişmez.`))setArsiv({...veri,belgeler:veri.belgeler.filter(x=>x.id!==b.id)});}}>Analizi kaldır</Btn></div>)}</details></div>)}
++    {genel&&<><EkstreKategoriGrafikleri genel satirlar={belgeler.flatMap(b=>b.satirlar)} baslik={kartFiltresi?'SEÇİLİ KARTIN GENEL TOPLAMI':'TÜM KARTLARIN GENEL TOPLAMI'} altBaslik={`${kartOzetleri.length} kart · ${analiz.aralik.label} · ${belgeler.length} ekstre`}/><section className="tools-card"><h3>Kartlara Göre Pay</h3>{kartOzetleri.map(k=><div className="tools-row" key={k.id}><span>{k.kart}</span><strong>{fmtTL(k.ozet.brut)} · %{genel.brut?(k.ozet.brut/genel.brut*100).toLocaleString('tr-TR',{maximumFractionDigits:1}):0}</strong></div>)}</section>
++      <section className="tools-card" data-testid="ekstre-local-insight"><h3>Yerel ekstre analizi</h3><p className="tools-note">{kartOzetleri.length} kartta brüt alışveriş {fmtTL(genel.brut)}, iadeler {fmtTL(genel.iade)}, net {fmtTL(genel.net)}.</p>{genel.kategoriler[0]&&<p className="tools-note">En yüksek kategori {genel.kategoriler[0].kategori}: {fmtTL(genel.kategoriler[0].tutar)} · %{genel.kategoriler[0].oran.toLocaleString('tr-TR',{maximumFractionDigits:1})}.</p>}<p className="tools-note">Faiz/ücret {fmtTL(genel.ucret)}, nakit avans {fmtTL(genel.nakit)}.</p>{(belgeler.some(b=>b.kismi)||kartOzetleri.some(k=>k.eksikAylar.length))&&<p className="form-alert">Eksik veya kısmi ekstreler var; toplam tüm harcamalarını temsil etmeyebilir.</p>}</section>
+     </>}
+     {!veri.belgeler.length&&!taslak&&<section className="tools-card"><p className="tools-note">Henüz ekstre yok. PDF eklediğinde her kartın ilk 5 kategorisi, tüm kategoriler ve en altta genel toplam burada görünecek.</p></section>}
+   </div>;
+@@ -3453,9 +3473,9 @@
+
+     <section className="tools-card"><Select label="Hesaplama görünümü" value={raporTuru} onChange={e=>setRaporTuru(e.target.value)}><option value="harcama">Harcama · alışveriş ve günlük kart artışları</option><option value="nakit">Nakit hareketleri · ödenen ekstre ve para çıkışları</option></Select>{sekme!=='yorum'&&<p className="tools-note">{raporTuru==='harcama'?'Ekstre ödemesi yeniden gider sayılmaz. İlk girilen birikmiş kart borcu, tarihi bilinmediği için harcama sayılmaz.':'Kart alışverişleri hariçtir; ekstre ödemeleri ödendiği tarihte, birikime ayrılan para nakit çıkışı olarak görünür.'}</p>}</section>
+     <section className="tools-card report-period"><h3><Icon name="calendar" size={17}/>Dönem raporu</h3>
+       <Select label="Rapor aralığı" value={mod} onChange={e=>setMod(e.target.value)}>
+-        <option value="donem">Maaş dönemi</option><option value="uc">Son 3 maaş dönemi</option><option value="yil">12 maaş dönemi · seçili yıl</option><option value="ozel">Özel tarih aralığı</option>
++        <option value="donem">Maaş dönemi</option><option value="uc">Son 3 maaş dönemi</option><option value="alti">Son 6 maaş dönemi</option><option value="yil">12 maaş dönemi · seçili yıl</option><option value="ozel">Özel tarih aralığı</option>
+       </Select>
+-      {(mod==='donem'||mod==='uc')&&<div className="tools-row report-period-nav"><button className="tools-button" aria-label="Raporda önceki dönem" onClick={()=>setOffset(o=>o-1)}>‹ Önceki</button><button className="tools-button" aria-label="Raporda sonraki dönem" disabled={offset>=0} onClick={()=>setOffset(o=>Math.min(0,o+1))}>Sonraki ›</button></div>}
++      {(mod==='donem'||mod==='uc'||mod==='alti')&&<div className="tools-row report-period-nav"><button className="tools-button" aria-label="Raporda önceki dönem" onClick={()=>setOffset(o=>o-1)}>‹ Önceki</button><button className="tools-button" aria-label="Raporda sonraki dönem" disabled={offset>=0} onClick={()=>setOffset(o=>Math.min(0,o+1))}>Sonraki ›</button></div>}
+       {mod==='yil'&&<Input label="Rapor yılı" type="number" min="2000" max="2100" value={yil} onChange={e=>{if(tamSayiGecerli(e.target.value,2000,2100))setYil(Number(e.target.value));}}/>}
+       {mod==='ozel'&&<div className="tools-grid"><Input label="Rapor başlangıcı" type="date" value={ilk} onChange={e=>setIlk(e.target.value)}/><Input label="Rapor bitişi" type="date" value={son} onChange={e=>setSon(e.target.value)}/></div>}
+       {!aralik?<p role="alert" className="form-alert">Geçerli bir tarih aralığı seç; başlangıç bitişten sonra olamaz.</p>:<p className="tools-note report-range">{aralik.ilk.split('-').reverse().join('.')} – {aralik.son.split('-').reverse().join('.')}</p>}
