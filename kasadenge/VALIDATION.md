@@ -8,3 +8,5 @@
 - Fiziksel kullanıcı telefonu ve gerçek banka tahsilatıyla doğrulama yapılmadı. OCR test metinleri basılı örnektir; el yazısı/gerçek fiş başarısı garanti edilmez, kullanıcı kontrolü gerekir.
 - Örnek fiş: kredi 43.127,63 TL + yurt içi debit 16.912,45 TL = 60.040,08 TL; genel toplam ikinci satış satırı olarak sayılmaz.
 - Son arayüz düzenlemesi: POS özet kartları, açılır rapor formu, açık/koyu temalar; tarih alanları cihazın İngilizce tarih sırasından bağımsız GG.AA.YYYY gösterilir. Tarayıcı tarih görünümü kontrolü geçti.
+
+1.0.1 görsel güncelleme: ad İşletmem Kasa; Türkçe Manrope yazı tipi APK'ya gömülü (SIL OFL). Firma Ödeme paletinden mavi/lacivert açık/koyu tema, CepBütçem referanslı özet kartları, yeni mutabakat odak kartı. Paket ve imza korunur; 1.0.0 üzerine güncelleme mümkündür. İş kuralları bu görsel güncellemede değişmedi.

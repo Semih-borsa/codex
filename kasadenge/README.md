@@ -1,4 +1,4 @@
-# KasaDenge 1.0.0
+# İşletmem Kasa 1.0.1
 
 Android 8+ için çevrimdışı kasa sayımı, mutabakat, POS raporu ve tahsilat takvimi. Paket: `tr.kasadenge.app`. Diğer uygulamalardan ayrı veritabanı kullanır.
 
@@ -34,6 +34,8 @@ JDK17, Android SDK35/Build Tools35.0.0, Gradle wrapper8.9, AGP8.7.3. `local.prop
 
 `node --test tests/core.test.mjs tests/pos.test.mjs` bağımsız kuruş aritmetiği/tarih/OCR metni testleri. Tarayıcı işlev testi için Playwright+Chromium kurulu olmalı: `python3 -m http.server 8769 --directory app/src/main/assets` ardından `node tests/browser.cjs`. Tarayıcı köprüsü yalnız testte taklittir. Gerçek SQLite/OCR için emülatörde `CashInstrumentation`; `tests/emulator.py` localhost5555 ve Python adb-shell istemcisi kullanır, debug APK'yı test emülatörüne yükler.
 
-İmzalı yayın için `KASADENGE_SIGNING_PROPERTIES` özel dosya yoludur; `storeFile/storePassword/keyAlias/keyPassword` içerir. Özel anahtarlar kaynakta bulunmaz. Aynı uygulamayı veri silmeden güncellemek aynı imza ve daha yüksek versionCode gerektirir. Bu 1.0.0 ilk yayındır.
+İmzalı yayın için `KASADENGE_SIGNING_PROPERTIES` özel dosya yoludur; `storeFile/storePassword/keyAlias/keyPassword` içerir. Özel anahtarlar kaynakta bulunmaz. Aynı uygulamayı veri silmeden güncellemek aynı imza ve daha yüksek versionCode gerektirir. 1.0.1, önceki KasaDenge 1.0.0 üzerine aynı imzayla güncellenir; paket/veritabanı kimliği veri koruması için değişmez.
 
-Arayüz: açık kurumsal/koyu modern temalar, yeşil/mint vurgu ve tutarlı açık/fazla renkleri. POS ana ekranında bugün/7 günlük tahsilat özeti; uzun rapor formu açılır bölümde tutulur. Tarihler ekran ve CSV/PDF raporlarında **GG.AA.YYYY** görünür; yedek/veritabanındaki ISO tarih biçimi hesaplamalar için korunur. Tarih seçicinin sistem penceresi telefonun dilini kullanabilir.
+Arayüz: açık kurumsal/koyu modern temalar, Firma Ödeme referanslı mavi/lacivert vurgu, çevrimdışı Manrope yazı tipi ve tutarlı açık/fazla renkleri. POS ana ekranında bugün/7 günlük tahsilat özeti; uzun rapor formu açılır bölümde tutulur. Tarihler ekran ve CSV/PDF raporlarında **GG.AA.YYYY** görünür; yedek/veritabanındaki ISO tarih biçimi hesaplamalar için korunur. Tarih seçicinin sistem penceresi telefonun dilini kullanabilir.
+
+Manrope variable font: Google Fonts resmi deposu, SIL Open Font License 1.1. Lisans uygulama varlıklarında `Manrope-OFL.txt`. Arayüz referansları: Firma Ödeme Sistemi kurumsal paleti ve CepBütçem özet kartı hiyerarşisi.
