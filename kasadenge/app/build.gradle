@@ -1,0 +1,15 @@
+plugins { id 'com.android.application' }
+def signingFile = System.getenv('KASADENGE_SIGNING_PROPERTIES')
+def signingProps = new Properties()
+if (signingFile) { file(signingFile).withInputStream { signingProps.load(it) } }
+android {
+ namespace 'tr.kasadenge.app'
+ compileSdk 35
+ buildToolsVersion "35.0.0"
+ defaultConfig { applicationId 'tr.kasadenge.app'; minSdk 26; targetSdk 35; versionCode 5; versionName '1.0.4'; testInstrumentationRunner 'tr.kasadenge.app.CashInstrumentation' }
+ compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+ signingConfigs { if(signingFile) { release { storeFile file(signingProps['storeFile']); storePassword signingProps['storePassword']; keyAlias signingProps['keyAlias']; keyPassword signingProps['keyPassword'] } } }
+ buildTypes { release { minifyEnabled false; if(signingFile) signingConfig signingConfigs.release } }
+}
+
+dependencies { implementation 'com.google.mlkit:text-recognition:16.0.1' }

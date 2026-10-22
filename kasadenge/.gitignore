@@ -1,0 +1,10 @@
+.gradle/
+**/build/
+local.properties
+*.jks
+*.keystore
+signing.properties
+tests/*.png
+.artifacts/
+
+app/src/androidTest/assets/receipt-private.jpg
