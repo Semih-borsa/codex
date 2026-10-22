@@ -1,4 +1,4 @@
-# İşletmem Kasa 1.0.2
+# İşletmem Kasa 1.0.3
 
 Android 8+ için çevrimdışı kasa sayımı, mutabakat, POS raporu ve tahsilat takvimi. Paket: `tr.kasadenge.app`. Diğer uygulamalardan ayrı veritabanı kullanır.
 
@@ -52,3 +52,11 @@ Analizde Günlük / Haftalık / Aylık ve Tüm Kasalar / Tek Kasa filtreleri, ka
 Tutar alanları `1528.34` veya `1.528,34` kabul eder; odak ayrıldığında `1.528,34` olur. Binlik nokta ve ondalık virgül içeren eski veriler desteklenir. `1.234` üçlü gruplama olarak 1234 TL'dir; kuruş için bir veya iki ondalık hane girilir. Para adetleri tam sayıdır. `5 TL (Madeni)` banknotlarla aynı renktedir. Başlık, düğme ve alan etiketleri Türkçe baş harfleri büyük biçimde gösterilir; kullanıcı notları otomatik değiştirilmez.
 
 Ek kontroller: `node --test tests/core.test.mjs tests/pos.test.mjs tests/reports.test.mjs` ve `node tests/regression-102.cjs` (aynı localhost sunucusu gerekir).
+
+## 1.0.3 · Fiş OCR Düzeltmesi
+
+POS fişlerinde OCR bloklarının metin sırası soldaki etiketlerle sağdaki fiyatları ayırabiliyordu. `ReceiptOcr` gerçek satır konumlarına göre metni soldan sağa birleştirir; kasa defteri okuma akışı bu değişiklikten etkilenmez. Ayrıştırıcı harf aralıklı başlıkları, silik tutar etiketi yazılarını ve TL son ekindeki OCR harf hatalarını tolere eder; tutarın içindeki hatalı rakam/harfleri tahmin ederek değiştirmez. Sayı parçası yanlışlıkla daha küçük tutar olarak alınmaz.
+
+Kontrol ekranı okunan/eksik kategori sayısını ve genel toplamla uyumu gösterir. Fotoğrafta görülen kart bölümlerinin tutarı boşsa veya genel toplam yoksa kayıt onayına geçilmez. Kullanıcı düzelttiği alanlarla toplamı yeniden kontrol eder; son kayıt onayı her zaman gerekir. Otomatik kredi/debit vadesi ve nakit hesaplamaları değişmedi.
+
+Testler: `node --test tests/core.test.mjs tests/pos.test.mjs tests/reports.test.mjs tests/receipt-ocr.test.mjs`; `node tests/receipt-ui.cjs` aynı yerel test sunucusunu kullanır. Gerçek fotoğrafla Android OCR testi bu ortamda yapıldı: dört kategori ve 60.040,08 TL tam eşleşti. Özel fotoğraf kaynakta, yayın APK'sında veya ZIP'te bulunmaz. Tekrar test için kullanıcı kendi resmini geçici androidTest asset olarak ekleyebilir ve `am instrument -w -e receiptFixture <dosya-adı> tr.kasadenge.app.test/tr.kasadenge.app.CashInstrumentation` çalıştırabilir; bu opt-in yol çıktı olarak ham/sıralanmış metin ve koordinatları verir. Test görüntüsünü yayımlamayın.

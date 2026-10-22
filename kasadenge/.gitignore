@@ -6,3 +6,5 @@ local.properties
 signing.properties
 tests/*.png
 .artifacts/
+
+app/src/androidTest/assets/receipt-private.jpg

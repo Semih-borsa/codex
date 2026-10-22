@@ -13,3 +13,7 @@
 
 
 1.0.2: 22 birim testi geçti; noktalı ondalık giriş / Türkçe biçimlendirme, onaylanan avans örneği, Türkçe baş harfler, eski/yeni madeni etiketleri, kasa bazlı eşleştirme, tüm kasa günlük toplamları ve POS satış/vade ayrımı doğrulandı. Tarayıcıda 11 mevcut akış + 4 yeni regresyon grubu geçti: kasa adı değişikliğinin tarihî ad görüntüsünü silmeden geçmişte görünmesi; bugün tüm kasaların kredi/debit tutarları; tek/tüm kasa günlük/aylık raporları; 320px yatay taşma kontrolü. Geniş tablolar kendi içinde yatay kaydırılır.
+
+1.0.3: Gerçek yüklenen POS fotoğrafı, Android11/API30 emülatöründe APK içindeki ML Kit motoruyla okundu. Eski blok sırasının etiket ve tutarları ayırdığı doğrulandı. Yeni `ReceiptOcr.orderedText` çıktısı gerçek Android'de alınıp ayrıştırıcıya verildi: 31.328,59 / 11.799,04 / 15.344,81 / 1.567,64 TL, 4/4 doğru kategori ve 60.040,08 TL genel toplam tam eşleşti. Fotoğraf yayımlanan kaynak/ZIP/APK'da bulunmaz.
+
+28 birim testi geçti. Üç ek tarayıcı fiş akışı geçti: gerçek OCR yazım hatalarıyla alan doldurma ve onay öncesi kaydetmeme; bozuk rakamın tutarı boş bırakması ve elle düzeltme sonrası toplam uzlaşması; genel toplam okunmadığında fotoğraf kaydını engelleme. Önceki nakit/POS ekran testleri de geçti. Başka fotoğraflarda ışık, kesiklik ve netlik sonucu etkileyebilir; onay akışı korunur.

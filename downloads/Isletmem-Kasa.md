@@ -1,6 +1,6 @@
-# İşletmem Kasa 1.0.2
+# İşletmem Kasa 1.0.3
 
-[Android APK İndir](https://raw.githubusercontent.com/Semih-borsa/codex/main/downloads/Isletmem-Kasa-1.0.2.apk) · [Kaynak ZIP](Isletmem-Kasa-1.0.2-Kaynak.zip)
+[Android APK İndir](https://raw.githubusercontent.com/Semih-borsa/codex/main/downloads/Isletmem-Kasa-1.0.3.apk) · [Kaynak ZIP](Isletmem-Kasa-1.0.3-Kaynak.zip)
 
 Eski uygulamayı silmeden güncelleyin. Aynı paket ve imza, daha yüksek sürüm kodu kullanılır. Güncellemeden önce uygulamadaki yedek seçeneği kullanılabilir.
 
@@ -12,3 +12,6 @@ Eski uygulamayı silmeden güncelleyin. Aynı paket ve imza, daha yüksek sürü
 - Başlık, alan etiketi ve düğmelerin baş harfleri büyük.
 
 [POS Görünümü · Örnek Veriler](Isletmem-Kasa-1.0.2-POS.png) · [Analiz Görünümü · Örnek Veriler](Isletmem-Kasa-1.0.2-Analiz.png) · [Doğrulama](Isletmem-Kasa-Dogrulama.md)
+
+
+1.0.3 Fiş Okuma: OCR sütunları fiziksel satır konumuna göre birleştirilir, silik başlık ve TL son eki hataları daha esnek eşleştirilir. Gerçek örnek fişte 4/4 tutar ve 60.040,08 TL toplam doğrulandı. Okunamayan alanlar belirtilir; fotoğraf kaydında genel toplam zorunludur. Onaysız kayıt yapılmaz. Yüklenen özel fotoğraf yayına eklenmez. Önceki sürümden aynı paket ve imzayla güncellenir.
