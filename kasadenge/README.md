@@ -1,4 +1,4 @@
-# İşletmem Kasa 1.0.1
+# İşletmem Kasa 1.0.2
 
 Android 8+ için çevrimdışı kasa sayımı, mutabakat, POS raporu ve tahsilat takvimi. Paket: `tr.kasadenge.app`. Diğer uygulamalardan ayrı veritabanı kullanır.
 
@@ -39,3 +39,16 @@ JDK17, Android SDK35/Build Tools35.0.0, Gradle wrapper8.9, AGP8.7.3. `local.prop
 Arayüz: açık kurumsal/koyu modern temalar, Firma Ödeme referanslı mavi/lacivert vurgu, çevrimdışı Manrope yazı tipi ve tutarlı açık/fazla renkleri. POS ana ekranında bugün/7 günlük tahsilat özeti; uzun rapor formu açılır bölümde tutulur. Tarihler ekran ve CSV/PDF raporlarında **GG.AA.YYYY** görünür; yedek/veritabanındaki ISO tarih biçimi hesaplamalar için korunur. Tarih seçicinin sistem penceresi telefonun dilini kullanabilir.
 
 Manrope variable font: Google Fonts resmi deposu, SIL Open Font License 1.1. Lisans uygulama varlıklarında `Manrope-OFL.txt`. Arayüz referansları: Firma Ödeme Sistemi kurumsal paleti ve CepBütçem özet kartı hiyerarşisi.
+
+
+## 1.0.2 Güncellemesi
+
+Onaylanan formül açıkça gösterilir: kasa farkı = banknot + adetli madeni + diğer bozuk − avans − beklenen (avans hariç). Gereken diğer bozuk = beklenen + avans − banknot − adetli madeni. Sonuç negatifse bozuk ihtiyaç sıfır gösterilir ve hedefin aşıldığı belirtilir. Bu, önceki sürümün aynı matematiksel sonucudur; geçmiş kapanışlar yeniden yazılmaz.
+
+Kasa adları ekran/CSV'de güncel ayarlardan çözülür; tarihî kayıtların ad anlık görüntüsü ve tüm tutarlar yedekte korunur. Bugün yatacak kartı tüm kasaları ve her kasanın kredi/debit ayrımını gösterir. World kredi grubunda, yurt dışı debit debit grubundadır; vadesi +21 olarak kalır.
+
+Analizde Günlük / Haftalık / Aylık ve Tüm Kasalar / Tek Kasa filtreleri, kasa bazlı ve günlük toplam tabloları vardır. POS satışları işlem tarihine, tahsilatlar vade tarihine göre ayrı analiz edilir. Nakit karşılaştırması aynı kasa ve eşleşmiş kayıtlı günlerle yapılır. Tüm kasalarda gün durumu günlük net farka göre; eksik/fazla tutarlar ise kasalar arasında mahsuplaştırılmadan gösterilir.
+
+Tutar alanları `1528.34` veya `1.528,34` kabul eder; odak ayrıldığında `1.528,34` olur. Binlik nokta ve ondalık virgül içeren eski veriler desteklenir. `1.234` üçlü gruplama olarak 1234 TL'dir; kuruş için bir veya iki ondalık hane girilir. Para adetleri tam sayıdır. `5 TL (Madeni)` banknotlarla aynı renktedir. Başlık, düğme ve alan etiketleri Türkçe baş harfleri büyük biçimde gösterilir; kullanıcı notları otomatik değiştirilmez.
+
+Ek kontroller: `node --test tests/core.test.mjs tests/pos.test.mjs tests/reports.test.mjs` ve `node tests/regression-102.cjs` (aynı localhost sunucusu gerekir).
