@@ -1,0 +1,14 @@
+✔ LOCAL-UI-light — Yerel yorum, eski Gemini tercihi etkisiz, veri ve tema korunur (6605.685093ms)
+✔ LOCAL-UI-dark — Yerel yorum, eski Gemini tercihi etkisiz, veri ve tema korunur (4348.259655ms)
+✔ LOCAL-UI-gray — Yerel yorum, eski Gemini tercihi etkisiz, veri ve tema korunur (4648.308679ms)
+✔ LOCAL-UI-gecmis — Geçmiş yorumda bugünkü ödeme gücü gösterilmez (3647.721534ms)
+✔ LOCAL-UI-bos — Veri yokken Güvende yerine veri eksikliği (1558.778116ms)
+✔ RANGE-UI-rapor — 6 maaş dönemi seçimi ve önceki dönem gezinmesi (4165.007959ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 22339.550686
