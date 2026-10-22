@@ -1,4 +1,4 @@
-# İşletmem Kasa 1.0.3
+# İşletmem Kasa 1.0.4
 
 Android 8+ için çevrimdışı kasa sayımı, mutabakat, POS raporu ve tahsilat takvimi. Paket: `tr.kasadenge.app`. Diğer uygulamalardan ayrı veritabanı kullanır.
 
@@ -60,3 +60,24 @@ POS fişlerinde OCR bloklarının metin sırası soldaki etiketlerle sağdaki fi
 Kontrol ekranı okunan/eksik kategori sayısını ve genel toplamla uyumu gösterir. Fotoğrafta görülen kart bölümlerinin tutarı boşsa veya genel toplam yoksa kayıt onayına geçilmez. Kullanıcı düzelttiği alanlarla toplamı yeniden kontrol eder; son kayıt onayı her zaman gerekir. Otomatik kredi/debit vadesi ve nakit hesaplamaları değişmedi.
 
 Testler: `node --test tests/core.test.mjs tests/pos.test.mjs tests/reports.test.mjs tests/receipt-ocr.test.mjs`; `node tests/receipt-ui.cjs` aynı yerel test sunucusunu kullanır. Gerçek fotoğrafla Android OCR testi bu ortamda yapıldı: dört kategori ve 60.040,08 TL tam eşleşti. Özel fotoğraf kaynakta, yayın APK'sında veya ZIP'te bulunmaz. Tekrar test için kullanıcı kendi resmini geçici androidTest asset olarak ekleyebilir ve `am instrument -w -e receiptFixture <dosya-adı> tr.kasadenge.app.test/tr.kasadenge.app.CashInstrumentation` çalıştırabilir; bu opt-in yol çıktı olarak ham/sıralanmış metin ve koordinatları verir. Test görüntüsünü yayımlamayın.
+
+## Gün Bazlı Sayım Geçmişi Ve Onaylı Silme
+
+Günlük Mutabakat kartı kasa seçiminden bağımsızdır: seçili tarihteki her kasanın güncel farkı bir kez toplanır. Kaydedilmiş sayımlar ve geçerli, veri girilmiş taslaklar listelenir; taslaklar ayrıca etiketlenir, geçmiş/analizlere ancak kaydedildikten sonra girer. +1 TL ve −2 TL, genel toplamda −1 TL olur. Boş kasa formu eklenmez; geçersiz veya eski revizyona ait taslak toplama katılmaz, varsa son kayıtlı tutar korunur.
+
+Geçmiş tüm kasaları günlere göre gösterir; tek sayım veya günün sayımları açık onayla silinebilir. Silme onayında kasa/tarih/tutar, kalıcılık ve taslak/eski düzeltme temizliği gösterilir. Native SQLite işlemi onay bayrağını, kayıt revizyonunu ve kayıt zamanını doğrular; toplu işlem atomiktir. POS kayıtları, kasa ayarları ve diğer günler silinmez. Eski dış yedekler değişmez; kullanıcı eski yedekten tekrar içe aktarırsa silinen kayıt geri eklenebilir.
+
+Yeni testler: `node --test tests/daily.test.mjs`, `TEST_BASE_URL=http://127.0.0.1:8774 node tests/history-104.cjs`. Tarayıcı testleri isteğe bağlı TEST_BASE_URL alır; varsayılan 8769'dur.
+
+
+## Tek Toplam POS Ve Yatan Debit · 1.0.4
+
+Ayarlar → Kasa Düzenle → POS Giriş Türü: Ayrıntılı (önceki yedi alan, varsayılan) veya Tek Toplam. Her kasa kendi modunu seçer; eski kaydın türü ve tutarları değiştirilmez.
+
+Tek Toplam modunda işlem tarihi (varsayılan dün) ve bir toplam tutar girilir. Debit gelene kadar “Dağılım Bekleniyor” yazılır; 15/21 günlere tutar uydurulmaz. Sonra aynı kasada gerçek debit yatış tarihi ve tutarı girilir. Uygulama bankaya yatıştan 15 takvim günü önceki toplam POS kaydını arar, bulduğu işlem gününü ve kalan kredi tutarını onay ekranında gösterir. Aynı kasa ve gün bulunamazsa başka bir kayıt otomatik seçilmez.
+
+Örnek: 1 Ekim işlemi 15.000 TL; 16 Ekim yatan debit 5.000 TL → 22 Ekim beklenen kredi 10.000 TL. Kredi yattığında ikinci tutar girişi istenmez. Bu, banka bağlantısıyla teyit edilmiş ödeme değil; geçmişte saklanan beklenen kredi tutarıdır. İşlem gününden +15/+21 takvim günü, komisyonsuz kuralları korunur.
+
+Toplam veya debit yanlış girilirse güncel kaydı gerekçeyle düzeltmek gerekir; eski hali arşivlenir. Debit toplam POS'u aşamaz. Aynı kasa/güne ayrıntılı ve tek toplam kayıtları birlikte girilip çift sayılmaz. Satış analizleri toplam 15.000 TL'yi bir kez sayar; dağılım bilinmeyen satış ayrı belirtilir, tahsilat takvimi yalnız bilinen dağılımı kullanır. Veritabanı 2'den 3'e yeni tablolar ekleyerek yükselir; sayımlar/ayrıntılı POS silinmez. Eski yedekler kabul edilir; yeni yedekler toplam ve debit kayıtlarını da içerir. İçe aktarma mevcut kayıtları değiştirmez.
+
+Ek testler: `node --test tests/settlements.test.mjs`; `TEST_BASE_URL=... node tests/settlement-ui.cjs`.

@@ -21,7 +21,10 @@ public final class MainActivity extends Activity {
  @JavascriptInterface public String state(){return reply(()->db.state().put("systemDark",(getResources().getConfiguration().uiMode&48)==32));}
  @JavascriptInterface public String settings(String raw){return reply(()->{db.saveConfig(raw);runOnUiThread(()->colors());return true;});}
  @JavascriptInterface public String draft(String raw){return reply(()->{db.draft(raw);return true;});}
+ @JavascriptInterface public String savePosTotal(String raw){return reply(()->db.savePosTotal(raw));}
+ @JavascriptInterface public String receivePos(String raw){return reply(()->db.receivePos(raw));}
  @JavascriptInterface public String savePos(String raw){return reply(()->db.savePos(raw));}
+ @JavascriptInterface public String deleteCounts(String raw){return reply(()->db.deleteCounts(raw));}
  @JavascriptInterface public String closeCount(String raw){return reply(()->db.closeCount(raw));}
  @JavascriptInterface public void speak(String text){runOnUiThread(()->{if(!voiceReady||tts==null){message("Çevrimdışı Türkçe ses bulunamadı. Telefonun metin okuma ayarlarından Türkçe ses yükleyin.");return;}tts.speak(text.substring(0,Math.min(500,text.length())),TextToSpeech.QUEUE_FLUSH,null,"cash-result");});}
  @JavascriptInterface public void photo(String token){if(token==null||!token.matches("[a-zA-Z0-9_-]{1,80}"))return;photoToken=token;runOnUiThread(()->choose(PHOTO,"image/*",null));}
