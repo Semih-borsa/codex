@@ -1,0 +1,473 @@
+--- App-1.5.4.jsx
+
++++ App-1.6.0.jsx
+
+@@ -265,6 +265,7 @@
+
+ }
+ 
+ function bildirimPlanlariniOlustur(odemeler, ayarlar, simdi = new Date()) {
++  if(ayarlar?.etkin===false)return [];
+   const gunler = [...new Set((ayarlar?.gunler || [0]).map(Number).filter(g => Number.isInteger(g) && g >= 0 && g <= 365))];
+   const saatler = bildirimSaatleriniAl(ayarlar);
+   const gruplar = {};
+@@ -295,7 +296,7 @@
+
+ 
+ function krediBildirimleri(krediler = []) {
+   return krediler.flatMap(k => (k.taksitler || []).filter(t => !t.odendi && t.tarih).map(t => ({
+-    id: `kredi-${k.id}-${t.no}`, kaynak: "kredi",
++    id: `kredi-${k.id}-${t.no}`, kaynak: "kredi", krediId:k.id,taksitNo:t.no,
+     aciklama: `${k.ad || k.isim || "Kredi"} · ${t.no}. taksit`,
+     tarih: t.tarih, tutar: t.tutar, odendi: false,
+   })));
+@@ -792,8 +793,55 @@
+
+ }
+ function toast(mesaj, tip = "ok", geriAl = null) {
+   if (_buIslemKayitHatali && tip !== "hata") return;
+-  if (_toastYayin) _toastYayin(mesaj, tip, geriAl);
+-}
++  const guvenliGeriAl=typeof geriAl==='function'?geriAlKaydiOlustur(mesaj,geriAl):null;
++  if (_toastYayin) _toastYayin(mesaj, tip, guvenliGeriAl);
++}
++function bildirimOdemeReferansi(o) {
++  if(o.kaynak==='kredi_karti')return {tip:'kart',id:String(o.kartId),ekstreId:o.ekstreId==null?null:String(o.ekstreId),tarih:o.tarih};
++  if(o.kaynak==='kredi')return {tip:'kredi',id:String(o.krediId),no:Number(o.taksitNo)};
++  return {tip:'odeme',id:String(o.id)};
++}
++function bildirimHedefleriniCoz(extra,{odemeler=[],krediler=[],kartlar=[],kartOdemeleri=[]},bugun=yerelTarihAnahtari()) {
++  const kayip=ref=>({ref,bulundu:false,ad:'Ödeme kaydı bulunamadı',odendi:false,kalan:null});
++  const coz=ref=>{
++    if(!ref||!['odeme','kredi','kart'].includes(ref.tip)||typeof ref.id!=='string')return kayip(null);
++    if(ref.tip==='odeme'){const o=odemeler.filter(o=>String(o.id)===ref.id);return o.length===1?{ref,bulundu:true,ad:o[0].aciklama||o[0].kategori||'Ödeme',tarih:o[0].tarih,tutar:o[0].tutar,kalan:o[0].odendi?0:o[0].tutar,odendi:!!o[0].odendi}:kayip(ref);}
++    if(ref.tip==='kredi'){const k=krediler.filter(k=>String(k.id)===ref.id),t=k.length===1?(k[0].taksitler||[]).filter(t=>Number(t.no)===Number(ref.no)):[];return t.length===1?{ref,bulundu:true,ad:`${k[0].ad||k[0].isim||'Kredi'} · ${t[0].no}. taksit`,tarih:t[0].tarih,tutar:t[0].tutar,kalan:t[0].odendi?0:t[0].tutar,odendi:!!t[0].odendi}:kayip(ref);}
++    const ks=kartlar.filter(k=>String(k.id)===ref.id);if(ks.length!==1)return kayip(ref);
++    const es=kartEkstreBakiyeleri(ks[0],kartOdemeleri,bugun).filter(e=>ref.ekstreId!=null?String(e.id)===String(ref.ekstreId):e.id==null&&e.sonOdemeTarihi===ref.tarih);
++    if(es.length!==1)return kayip(ref);const e=es[0];return {ref,bulundu:true,ad:`${ks[0].isim} · Ekstre`,tarih:e.sonOdemeTarihi,tutar:e.tutar,kalan:e.kalan,odendi:e.kalan===0};
++  };
++  if(Array.isArray(extra?.odemeHedefleri))return extra.odemeHedefleri.slice(0,500).map(coz);
++  // Eski birleşik bildirimlerde adla veya tutarla eşleştirme yapılmaz.
++  const adaylar=[...odemeler.map(o=>({eski:`${o.tarih}:${o.id}`,ref:{tip:'odeme',id:String(o.id)}})),...krediler.flatMap(k=>(k.taksitler||[]).map(t=>({eski:`${t.tarih}:kredi-${k.id}-${t.no}`,ref:{tip:'kredi',id:String(k.id),no:t.no}}))),...kartlar.flatMap(k=>kartEkstreBakiyeleri(k,kartOdemeleri,bugun).map(e=>({eski:`${e.sonOdemeTarihi}:kart-${k.id}-${e.id??e.sonOdemeTarihi}`,ref:{tip:'kart',id:String(k.id),ekstreId:e.id==null?null:String(e.id),tarih:e.sonOdemeTarihi}})))];
++  return (Array.isArray(extra?.odemeAnahtarlari)?extra.odemeAnahtarlari:[]).slice(0,500).map(id=>{const es=adaylar.filter(a=>a.eski===id);return es.length===1?coz(es[0].ref):kayip(null);});
++}
++function silinenKayitlariGeriHazirla(gruplar,storage=window.localStorage) {
++  const sonuc={};for(const [alan,silinen]of Object.entries(gruplar)){
++    const mevcut=JSON.parse(storage.getItem(alan)||'[]');if(!Array.isArray(mevcut))throw new Error('Mevcut kayıtlar okunamıyor; geri alma yapılmadı.');
++    for(const eski of silinen){const bulunan=mevcut.filter(x=>String(x.id)===String(eski.id));if(bulunan.length>1||bulunan.length===1&&JSON.stringify(bulunan[0])!==JSON.stringify(eski))throw new Error('Aynı kimlikte farklı kayıt var; üzerine yazılmadı.');}
++    sonuc[alan]=[...mevcut,...silinen.filter(x=>!mevcut.some(o=>String(o.id)===String(x.id)))];
++  }return sonuc;
++}
++let _silinenler=[],_geriAlSira=0;
++function geriAlKaydiOlustur(mesaj,fn) {
++  const id=++_geriAlSira,son=Date.now()+60000;const kayit={id,mesaj,son,calisiyor:false};
++  const yayin=()=>window.dispatchEvent(new CustomEvent('finora-geri-al'));
++  kayit.uygula=()=>{if(kayit.calisiyor||Date.now()>=son||!_silinenler.includes(kayit))return false;kayit.calisiyor=true;try{if(fn()===false||_buIslemKayitHatali)return false;_silinenler=_silinenler.filter(x=>x.id!==id);yayin();return true;}catch(e){toast(e.message||'İşlem geri alınamadı; kayıtlar korunuyor.','hata');return false;}finally{kayit.calisiyor=false;}};
++  _silinenler=[..._silinenler.filter(x=>x.son>Date.now()),kayit].slice(-10);yayin();setTimeout(()=>{_silinenler=_silinenler.filter(x=>x.id!==id);yayin();},60000);return kayit.uygula;
++}
++function SilinenIslemler() {
++  const [,yenile]=useState(0);useEffect(()=>{const f=()=>yenile(n=>n+1);window.addEventListener('finora-geri-al',f);return()=>window.removeEventListener('finora-geri-al',f);},[]);
++  const kayitlar=_silinenler.filter(x=>x.son>Date.now());if(!kayitlar.length)return null;
++  return <details className="tools-card" data-testid="silinen-islemler"><summary>Son silinenler ({kayitlar.length})</summary><p className="tools-note">Bu oturumda silme işleminden sonra 1 dakika içinde geri alabilirsin.</p>{kayitlar.slice().reverse().map(k=><div className="tools-row" key={k.id}><span style={{color:'var(--text2)',fontSize:12}}>{k.mesaj}</span><Btn onClick={k.uygula}>Geri al</Btn></div>)}</details>;
++}
++function BildirimOdemePenceresi({extra,veriler,onClose,onGit}) {
++  const [secim,setSecim]=useState(null);const hedefler=bildirimHedefleriniCoz(extra,veriler);const h=secim==null?(hedefler.length===1?hedefler[0]:null):hedefler[secim];
++  return <Modal title={h?'Ödeme ayrıntısı':'Bildirimdeki ödemeler'} onClose={onClose}>
++    {!hedefler.length?<p>Bu bildirim bir ödeme bağlantısı içermiyor.</p>:h?<>{!h.bulundu?<><p>Bu ödeme artık bulunmuyor veya bağlantısı doğrulanamıyor. Mevcut kayıtlar değiştirilmedi.</p><Btn onClick={()=>onGit({tip:'odeme',id:''})}>Ödemeler listesine git</Btn></>:<><h3 style={{color:'var(--text)'}}>{h.ad}</h3><p className="tools-note">Son ödeme: {h.tarih||'Tarih kaydı yok'}</p><p style={{color:h.odendi?'var(--income-text)':'var(--expense-text)',fontWeight:700}}>{h.odendi?'Bu ödeme tamamlandı.':`Bekleyen tutar: ${fmtTL(h.kalan)}`}</p><p className="tools-note">{h.ref.tip==='kart'?`Ekstre tutarı: ${fmtTL(h.tutar)}`:`Tutar: ${fmtTL(h.tutar)}`}</p><Btn onClick={()=>onGit(h.ref)}>{h.ref.tip==='kart'?'Kredi kartını görüntüle':'Ödeme kaydını aç'}</Btn></>}{hedefler.length>1&&<Btn variant="secondary" onClick={()=>setSecim(null)}>Ödeme listesine dön</Btn>}</>:hedefler.map((x,i)=><button className="tools-button" key={i} onClick={()=>setSecim(i)} style={{width:'100%',textAlign:'left',marginBottom:8}}>{x.ad}{x.bulundu?` · ${x.odendi?'Ödendi':fmtTL(x.kalan)}`:''}</button>)}
++  </Modal>;
++}
++
+ function KayitDurumu() {
+   const [hata, setHata] = useState(_kayitHatasi);
+   useEffect(() => {
+@@ -804,13 +852,14 @@
+
+   return hata ? <div role="alert" className="kayit-hatasi"><strong>Veri kaydedilemedi</strong><p>{hata}</p><p>Son değişikliğin kalıcı olduğunu varsayma. Mevcut verilerini Ayarlar → Yedek Al ile dışa aktar.</p></div> : null;
+ }
+ 
++let _toastSira=0;
+ function ToastKutusu() {
+   const [veri, setVeri] = useState(null);
+   useEffect(() => {
+     _toastYayin = (mesaj, tip, geriAl) => {
+-      const id = Date.now();
++      const id = ++_toastSira;
+       setVeri({ mesaj, tip, geriAl, id });
+-      setTimeout(() => setVeri(mevcut => mevcut?.id === id ? null : mevcut), geriAl ? 5200 : 2800);
++      setTimeout(() => setVeri(mevcut => mevcut?.id === id ? null : mevcut), geriAl ? 12000 : 2800);
+     };
+     return () => { _toastYayin = null; };
+   }, []);
+@@ -821,7 +870,7 @@
+
+     <div key={veri.id} style={{ position: "fixed", top: "calc(14px + env(safe-area-inset-top))", left: "50%", transform: "translateX(-50%)", zIndex: 300, background: renk, color: "#fff", borderRadius: 16, padding: "10px 12px", fontSize: 12, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600, display: "flex", alignItems: "center", gap: 9, boxShadow: "0 12px 32px rgba(0,0,0,0.3)", animation: "toastIn 0.28s ease", width: "min(92%, 430px)" }}>
+       <span style={{ width: 20, height: 20, borderRadius: 99, background: "rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, flexShrink: 0 }}><Icon name={ikon} size={17}/></span>
+       <span style={{ flex: 1 }}>{veri.mesaj}</span>
+-      {veri.geriAl && <button onClick={() => { veri.geriAl(); setVeri(null); }} style={{ border: "1px solid rgba(255,255,255,.45)", background: "rgba(255,255,255,.18)", color: "#fff", borderRadius: 9, padding: "5px 9px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Geri Al</button>}
++      {veri.geriAl && <button onClick={() => { const ok=veri.geriAl();if(ok!==false)setVeri(mevcut=>mevcut?.id===veri.id?null:mevcut); }} style={{ border: "1px solid rgba(255,255,255,.45)", background: "rgba(255,255,255,.18)", color: "#fff", borderRadius: 9, padding: "5px 9px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Geri Al</button>}
+     </div>
+   );
+ }
+@@ -1112,6 +1161,7 @@
+
+     }
+     if (key === "ft_donem_devir_log" && (!nesneMi(value) || Object.values(value).some(v => !nesneMi(v) || !tutarGecerli(v.tutar,true) || !yerelTarihOku(v.tarih)))) throw new Error("Dönem devri kaydı geçersiz.");
+     if (key === "ft_son_bildirim_planlama" && value !== null && !nesneMi(value)) throw new Error("Bildirim kaydı geçersiz.");
++    if(key==='ft_bildirim_ayarlari'&&value.etkin!=null&&typeof value.etkin!=='boolean')throw new Error('Hatırlatma tercihi geçersiz.');
+     if (key === "ft_bildirim_ayarlari" && value.saatler != null && (!Array.isArray(value.saatler) || value.saatler.length < 1 || value.saatler.length > 3 || value.saatler.some(s => typeof s !== "string" || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(s)))) throw new Error("Bildirim saatleri geçersiz.");
+     if (key === "ft_bildirim_ayarlari" && (!Array.isArray(value.gunler) || value.gunler.some(g => !tamSayiGecerli(g, 0, 365)) || typeof value.saat !== "string" || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value.saat))) throw new Error("Bildirim ayarları geçersiz.");
+     if(key==='ft_nakit_planlama_v1')planlamaVerisiniDogrula(value);
+@@ -2096,7 +2146,7 @@
+
+               const oncekiBorc=kartBorcOzetleri[oncekiDonem.key]?.[String(k.id)];
+               const toplamBorc=kartToplamBorcHesapla(k,islemler,kartOdemeleri,aktifDonem,donemGun,kartBorcOzetleri,kartlar,k.durum);
+               return (
+-                <article className="home-credit-card credit-tile" key={k.id}>
++                <article className="home-credit-card credit-tile" id={'kart-kaydi:'+encodeURIComponent(String(k.id))} tabIndex={-1} key={k.id}>
+                   <div className="credit-tile-heading"><div><KartMarkaRozeti isim={k.isim}/><h3>{k.isim}</h3></div><span className="credit-type">KREDİ KARTI</span></div>
+                   <div className="credit-total"><span>{k.durum.stokBiliniyor&&k.durum.ekstreBiliniyor?'Toplam kart borcu · provizyon dahil':'Bilinen kart borcu · eksik geçmiş olabilir'}</span><div className="credit-total-row">{k.durum.biliniyor?<Money value={toplamBorc} size={27}/>:<span>Geçmiş veri yok / belirsiz kayıt</span>}<KartBorcDegisimi toplam={k.durum.karsilastirilabilir?toplamBorc:null} onceki={oncekiBorc}/></div></div>
+                   <div className="credit-buckets">
+@@ -3545,18 +3595,20 @@
+
+       if (!kayit || !window.confirm(`${kayit.kartAdi || 'Kredi kartı'} ekstre ödemesi (${fmtTL(kayit.tutar)}) silinsin mi? Kalan ekstre borcu ve bakiye yeniden hesaplanacak.`)) return;
+       if (setKartOdemeleri(p => p.filter(o => String(o.id) !== String(kayit.id))) === false) return;
+       toast("Ekstre ödemesi silindi","uyari",()=>{
+-        if (setKartOdemeleri(p => p.some(o => String(o.id) === String(kayit.id)) ? p : [...p,kayit]) === false) return;
++        const veri=silinenKayitlariGeriHazirla({ft_kart_odemeleri:[kayit]});
++        if (setKartOdemeleri(veri.ft_kart_odemeleri) === false) return false;
+         toast("Ekstre ödemesi geri yüklendi");
+       });return;
+     }
+-    const bagli=odemeler.find(o=>String(o.islemId)===String(hedef.id)||String(o.id)===String(hedef.odemeId));
+-    if(bagli && !window.confirm('Bu işleme bağlı ödeme kaydı da silinecek. Devam edilsin mi?'))return;
+-    if(bagli && setOdemeler(p=>p.filter(o=>String(o.id)!==String(bagli.id)))===false)return;
+-    if(setIslemler(p => p.filter(x => x.id !== hedef.id))===false)return;
++    const baglilar=odemeler.filter(o=>String(o.islemId)===String(hedef.id)||String(o.id)===String(hedef.odemeId));
++    if(baglilar.length && !window.confirm('Bu işleme bağlı ödeme kayıtları da silinecek. Devam edilsin mi?'))return;
++    if(baglilar.length && setOdemeler(p=>p.filter(o=>!baglilar.some(b=>String(b.id)===String(o.id))))===false)return;
++    if(setIslemler(p => p.filter(x => String(x.id) !== String(hedef.id)))===false)return;
+     toast("İşlem silindi", "uyari", () => {
+-      if(bagli && setOdemeler(p=>p.some(o=>String(o.id)===String(bagli.id))?p:[...p,bagli])===false)return;
+-      if(setIslemler(p => p.some(x => x.id === hedef.id) ? p : [...p, hedef])===false)return;
+-      toast("İşlem geri yüklendi");
++      const veri=silinenKayitlariGeriHazirla({ft_islemler:[hedef],...(baglilar.length?{ft_odemeler:baglilar}:{})});
++      if(baglilar.length && setOdemeler(veri.ft_odemeler)===false)return false;
++      if(setIslemler(veri.ft_islemler)===false)return false;
++      toast("İşlem geri yüklendi");return true;
+     });
+   };
+   return (
+@@ -3780,11 +3832,12 @@
+
+ }
+ 
+ // ── ÖDEMELER ──────────────────────────────────────────────────────────────────
+-function OdemelerTab({ odemeler, setOdemeler, islemler, setIslemler, kategoriler, donemGun }) {
++function OdemelerTab({ bildirimHedefi, odemeler, setOdemeler, islemler, setIslemler, kategoriler, donemGun }) {
+   const { gorunumler: kategoriGorunumleri } = useContext(KategoriGorunumContext);
+   const [modal, setModal] = useState(false);
+   const [acikDonemler, setAcikDonemler] = useState({});
+   const [odemeFiltre, setOdemeFiltre] = useState("bekleyen");
++  useEffect(()=>{if(bildirimHedefi?.tip!=='odeme')return;const o=odemeler.find(o=>String(o.id)===bildirimHedefi.id);if(!o)return;setOdemeFiltre('hepsi');setAcikDonemler(p=>({...p,bekleyen:true,odendi:true}));const t=setTimeout(()=>{const el=document.getElementById('odeme-kaydi:'+encodeURIComponent(String(o.id)));el?.scrollIntoView({block:'center'});el?.focus({preventScroll:true});},80);return()=>clearTimeout(t);},[bildirimHedefi?.anahtar]);
+   const bos = { aciklama: "", tutar: "", tarih: yerelTarihAnahtari(), kategori: "Fatura" };
+   const [form, setForm] = useState(bos);
+   const [duzenleId, setDuzenleId] = useState(null);
+@@ -3887,20 +3940,15 @@
+
+   };
+ 
+   const sil = (odeme) => {
+-    const bagliIslem = (islemler || []).find(x =>
+-      (odeme.islemId != null && String(x.id) === String(odeme.islemId)) ||
+-      (x.odemeId != null && String(x.odemeId) === String(odeme.id))
+-    );
+-    setOdemeler(p => p.filter(x => x.id !== odeme.id));
+-    // İşlemlerdeki ilgili kaydı da sil
+-    setIslemler(p => p.filter(x =>
+-      !((odeme.islemId != null && String(x.id) === String(odeme.islemId)) ||
+-        (x.odemeId != null && String(x.odemeId) === String(odeme.id)))
+-    ));
++    const bagliIslemler=(islemler||[]).filter(x=>(odeme.islemId!=null&&String(x.id)===String(odeme.islemId))||(x.odemeId!=null&&String(x.odemeId)===String(odeme.id)));
++    if(!window.confirm('Ödeme ve bağlı işlem kayıtları silinsin mi? Bir dakika içinde geri alabilirsin.'))return;
++    if(setOdemeler(p=>p.filter(x=>String(x.id)!==String(odeme.id)))===false)return;
++    if(setIslemler(p=>p.filter(x=>!bagliIslemler.some(b=>String(b.id)===String(x.id))))===false)return;
+     toast("Ödeme silindi", "uyari", () => {
+-      setOdemeler(p => p.some(x => x.id === odeme.id) ? p : [...p, odeme]);
+-      if (bagliIslem) setIslemler(p => p.some(x => x.id === bagliIslem.id) ? p : [...p, bagliIslem]);
+-      toast("Ödeme geri yüklendi");
++      const veri=silinenKayitlariGeriHazirla({ft_odemeler:[odeme],ft_islemler:bagliIslemler});
++      if(setOdemeler(veri.ft_odemeler)===false)return false;
++      if(setIslemler(veri.ft_islemler)===false)return false;
++      toast("Ödeme geri yüklendi");return true;
+     });
+   };
+ 
+@@ -3967,7 +4015,7 @@
+
+                   {grup.odemeler.sort((a, b) => yerelTarihOku(a.tarih) - yerelTarihOku(b.tarih)).map((o, idx) => {
+                     const katRenk = kategoriGorunumu(o.kategori,"gider",kategoriGorunumleri).renk;
+                     return (
+-                      <div className="payment-row" key={o.id} style={{ background: o.odendi ? "var(--header)" : "var(--card)", borderTop: idx > 0 ? "1px solid var(--divider)" : "none", padding: "12px 14px", display: "flex", alignItems: "center", gap: 10, opacity: o.odendi ? 0.5 : 1, transition: "opacity 0.2s" }}>
++                      <div className="payment-row" id={'odeme-kaydi:'+encodeURIComponent(String(o.id))} tabIndex={-1} key={o.id} style={{ background: o.odendi ? "var(--header)" : "var(--card)", borderTop: idx > 0 ? "1px solid var(--divider)" : "none", padding: "12px 14px", display: "flex", alignItems: "center", gap: 10, opacity: o.odendi ? 0.5 : 1, transition: "opacity 0.2s" }}>
+                         {/* Checkbox */}
+                         <button className="payment-check" aria-label={`${o.odendi ? "Ödemeyi geri al" : "Ödendi olarak işaretle"}: ${o.aciklama || o.kategori}`} onClick={() => toggleOdendi(o)} style={{ width: 22, height: 22, borderRadius: 6, border: `2px solid ${o.odendi ? "#10b981" : "var(--border2)"}`, background: o.odendi ? "#10b981" : "transparent", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "var(--bg)", transition: "all 0.2s" }}>
+                           <Icon name={o.odendi ? "check" : "receipt"} size={17}/>
+@@ -4049,6 +4097,7 @@
+
+   const [otomatikler,setOtomatikler]=useState(()=>{try{return JSON.parse(localStorage.getItem('ft_auto_backup_daily_v2')||'[]');}catch{return [];}});
+   const [kurtarma,setKurtarma]=useState(()=>{try{return JSON.parse(localStorage.getItem('ft_auto_backup_restore_before_v2')||'null');}catch{return null;}});
+   const [bildirimDurum, setBildirimDurum] = useState("");
++  const [sonDosyaYedegi,setSonDosyaYedegi]=useState(()=>{try{const d=localStorage.getItem('finora_son_dosya_yedegi_v1');return d&&Number.isFinite(Date.parse(d))?d:null;}catch{return null;}});
+   const devirHesabi=donemDevriHesapla(islemler,kartlar,kartOdemeleri,Number(donemGun)||15,bakiyeHesapModu,yerelTarihAnahtari(),odemeler);
+   const devirKayitlari=islemler.filter(i=>devirIslemiMi(i)&&maasDonemKey(i.tarih,Number(donemGun)||15).key===devirHesabi.donemKey);
+   const mevcutDevir=devirKayitlari.reduce((n,i)=>paraTopla(n,i.tutar),0);
+@@ -4222,6 +4271,7 @@
+
+       try{window.localStorage.setItem('ft_manual_backup_latest',JSON.stringify(paket));}catch{yerelKopyaKaydedildi=false;}
+       const sonuc=await yedekDosyasiniAktar(json,`finora-yedek-${yerelTarihAnahtari()}.json`);
+       const metin=sonuc.metin+(sonuc.durum==='kaydedildi'&&!yerelKopyaKaydedildi?' Uygulama içi ek kopya yazılamadı; kaydettiğin dosyayı güvenli sakla.':'');
++      if(sonuc.durum==='kaydedildi'){const tarih=new Date().toISOString();setSonDosyaYedegi(tarih);try{localStorage.setItem('finora_son_dosya_yedegi_v1',tarih);}catch{/* Dosyanın doğrulanmış başarısı değişmez. */}}
+       setYedekDurumu({...sonuc,metin});
+       toast(metin,sonuc.durum==='kaydedildi'?'ok':'uyari');
+     }catch(e){
+@@ -4268,11 +4318,7 @@
+
+   };
+ 
+   return (
+-    <div>
+-      <div style={{ color: "var(--text3)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 16 }}>Ayarlar</div>
+-
+-      {/* Tema seçici */}
+-      <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "18px 16px", marginBottom: 14 }}>
++    <div className="settings-page"><style>{`.settings-group{margin-bottom:14px}.settings-group>summary{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:15px 14px;color:var(--text);font-size:13px;font-weight:650;cursor:pointer;min-height:46px;box-sizing:border-box}.settings-group>summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px}.settings-group[open]>summary{color:var(--accent)}`}</style><details className="settings-group" data-testid="ayar-gorunum" open><summary>Görünüm · {tema==='dark'?'Koyu':tema==='gray'?'Gri':'Açık'}</summary><div style={{paddingTop:10}}><div style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "18px 16px", marginBottom: 14 }}>
+         <div style={{ color: "var(--text)", fontSize: 13, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600, marginBottom: 12 }}><span className="inline-icon"><Icon name="sun" size={16}/></span>Görünüm</div>
+         <div style={{ display: "flex", gap: 8 }}>
+           {[{id:"dark",label:"Koyu",bg:"#16161f",fg:"#f1f0ee"},{id:"light",label:"Açık",bg:"#ffffff",fg:"#16243f"},{id:"gray",label:"Gri",bg:"#cdd2d8",fg:"#14202e"}].map(t => (
+@@ -4281,45 +4327,35 @@
+
+             </button>
+           ))}
+         </div>
+-      </div>
+-
+-      <section className="tools-card"><h3><Icon name="chart" size={17}/>Bütçe grafiği</h3><p className="tools-note">Genel Bakış ekranında halka veya ibre göstergesini kullan. Seçimin sonraki açılışlarda korunur.</p><div className="gauge-options">{[{id:'halka',label:'Halka',note:'Kompakt dairesel gösterge'},{id:'ibre',label:'İbre',note:'Renkli ölçek ve hareketli ibre'}].map(t=><button type="button" key={t.id} aria-pressed={grafikTipi===t.id} onClick={()=>setGrafikTipi(t.id)}><strong>{t.label}</strong><span>{t.note}</span></button>)}</div></section>
+-      <KategoriGorunumAyarlari kategoriler={kategoriler}/>
+-      <section className="tools-card"><h3>Önceki aydan devir</h3><p className="tools-note">Yalnız önceki dönemin artı gerçek kapanış bakiyesi devredilir. Bekleyen borçlar ve kart alışverişleri nakit çıkışı sayılmaz. Devir gelir raporuna eklenmez. Eski devirler kendiliğinden değiştirilmez.</p><div className="tools-row"><span>Bu dönemde kayıtlı devir</span><strong>{fmtTL(mevcutDevir)}</strong></div><div className="tools-row"><span>Önceki dönem gerçek kapanış</span><strong>{fmtTL(devirHesabi.kapanisBakiyesi)}</strong></div><p className="tools-note">Yeni devir önerisi: {fmtTL(devirHesabi.tutar)}. Geçmiş verileri düzelttiğinde buradan kontrol ederek güncelle.</p><Btn onClick={devirYenile}>Devri yeniden hesapla</Btn></section>
+-      <section className="tools-card"><h3>Kayıt geçmişi</h3><p className="tools-note">Eski, ödeme bağlantısı olmayan geçmiş gider kayıtları gerçekleşmiş kabul edilir. Yeni sabit giderler Ödemeler listesine bekleyen olarak gelir; ödendiğini işaretlemeden gerçek bakiye azalmaz.</p><KayitGecmisi/></section>
+-      <TasarrufHedefi hedef={tasarrufHedefi} setHedef={setTasarrufHedefi}/>
+-      <section className="tools-card"><h3>Excel / CSV aktarımı</h3><p className="tools-note">Tüm işlemlerini Türkçe sütunlar ve kuruş hassasiyetiyle aktar. İşlemler ekranında filtrelenmiş kayıtları da aktarabilirsin. CSV tam yedeğin yerine geçmez.</p><Btn onClick={()=>csvAktar(islemler,odemeler)} disabled={!islemler.length}>Tüm işlemleri CSV aktar</Btn></section>
+-      {/* Veri yedekleme */}
+-      <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "18px 16px", marginBottom: 14 }}>
+-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 7 }}>
+-          <span style={{ width: 36, height: 36, borderRadius: 11, display: "grid", placeItems: "center", background: "var(--accent-soft)", color: "var(--accent)" }}><Icon name="wallet" size={18} /></span>
++      </div><section className="tools-card"><h3><Icon name="chart" size={17}/>Bütçe grafiği</h3><p className="tools-note">Genel Bakış ekranında halka veya ibre göstergesini kullan. Seçimin sonraki açılışlarda korunur.</p><div className="gauge-options">{[{id:'halka',label:'Halka',note:'Kompakt dairesel gösterge'},{id:'ibre',label:'İbre',note:'Renkli ölçek ve hareketli ibre'}].map(t=><button type="button" key={t.id} aria-pressed={grafikTipi===t.id} onClick={()=>setGrafikTipi(t.id)}><strong>{t.label}</strong><span>{t.note}</span></button>)}</div></section></div></details><details className="settings-group" data-testid="ayar-maas"><summary>Maaş ve dönem</summary><div style={{paddingTop:10}}><div style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "18px 16px", marginBottom: 14 }}>
++        <div style={{ color: "var(--text)", fontSize: 13, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600, marginBottom: 6 }}><span className="inline-icon"><Icon name="calendar" size={16}/></span>Maaş Dönemi Başlangıcı</div>
++        <div style={{ color: "var(--text4)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", marginBottom: 14 }}>
++          Dönem her ayın kaçında başlasın? Bitiş bir önceki gün olur.
++        </div>
++        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
++          <input
++            type="number"
++            min="1"
++            max="28"
++            value={donemGun}
++            onChange={e => gunKaydet(e.target.value)}
++            style={{ width: 70, background: "var(--card2)", border: "1px solid #f59e0b44", borderRadius: 10, padding: "10px 12px", color: "#f59e0b", fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontSize: 18, fontWeight: 600, outline: "none", textAlign: "center" }}
++          />
+           <div>
+-            <div style={{ color: "var(--text)", fontSize: 13, fontWeight: 700 }}>Veri Yedekleme</div>
+-            <div style={{ color: "var(--text4)", fontSize: 11, marginTop: 2 }}>Telefon değiştirirken verilerinizi koruyun</div>
++            <div style={{ color: "var(--text2)", fontSize: 12, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}>
++              Her ayın <span style={{ color: "#f59e0b", fontWeight: 600 }}>{donemGun}. günü</span> başlar
++            </div>
++            <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", marginTop: 3 }}>
++              Bitiş: ayın {(parseInt(donemGun) || 15) - 1}. günü
++            </div>
+           </div>
+         </div>
+-        <div style={{ color: "var(--text4)", fontSize: 11, lineHeight: 1.55, marginBottom: 13 }}>
+-          Tüm işlemler, kartlar, bütçeler ve ayarlar tek bir dosyada saklanır. Yedek önce uygulama içinde güvenli kopya olarak tutulur; cihaz destekliyorsa ayrıca dosya olarak kaydetme/paylaşma ekranı açılır.
+-        </div>
+-        <div style={{ display: "flex", alignItems: "center", gap: 7, background: "#10b98114", border: "1px solid #10b98135", color: "var(--income-text)", borderRadius: 10, padding: "8px 10px", fontSize: 11, fontWeight: 600, marginBottom: 11 }}><span>✓</span><span>Veri uyumluluğu ve otomatik güvenlik kopyası etkin</span></div>
+-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+-          <button onClick={yedekIndir} disabled={yedekDurumu.durum==='calisiyor'} aria-busy={yedekDurumu.durum==='calisiyor'} style={{ border: "none", borderRadius: 12, padding: "11px 10px", background: "linear-gradient(135deg,var(--accent),var(--accent-strong))", color: "#fff", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>{yedekDurumu.durum==='calisiyor'?'Kaydetme bekleniyor…':'Yedek Al'}</button>
+-          <label style={{ borderRadius: 12, padding: "10px", background: "var(--card2)", border: "1px solid var(--border)", color: "var(--text2)", fontWeight: 700, fontSize: 12, cursor: "pointer", textAlign: "center" }}>
+-            Yedeği Yükle
+-            <input type="file" accept="application/json,.json" onChange={yedekYukle} style={{ display: "none" }} />
+-          </label>
+-        </div>
+-      </div>
+-
+-      {yedekDurumu.metin&&<p className="tools-note" role={yedekDurumu.durum==='hata'?'alert':'status'} aria-live="polite">{yedekDurumu.metin}</p>}
+-      <section className="tools-card"><h3>Otomatik güvenlik kopyaları</h3><p className="tools-note">Son 3 kayıt gününün kopyası yalnız bu cihazda tutulur. Uygulamayı silmek veya cihazı kaybetmek bunları da silebilir; dosya yedeğini ayrıca sakla.</p><Btn onClick={()=>{try{setOtomatikler(otomatikYedekle());toast('Güvenlik kopyası güncellendi');}catch{toast('Güvenlik kopyası yazılamadı; dosya yedeği al.','hata');}}}>Şimdi güvenlik kopyası al</Btn>{otomatikler.slice().reverse().map(p=><div className="tools-row" key={p.gun}><span>{p.gun} · {p.data.ft_islemler?.length||0} işlem</span><Btn onClick={()=>{try{setBekleyenYedek({...p,data:yedekVerisiniDogrula(p),mevcutVeri:yerelYedekPaketi().data});}catch(e){toast(e.message,'hata');}}}>Önizle</Btn></div>)}{kurtarma&&<Btn onClick={()=>{try{setBekleyenYedek({...kurtarma,data:yedekVerisiniDogrula(kurtarma),mevcutVeri:yerelYedekPaketi().data});}catch(e){toast(e.message,'hata');}}}>Son yüklemeden önceki verileri önizle</Btn>}</section>
+-      {bekleyenYedek&&<YedekOnizleme paket={bekleyenYedek} onVazgec={()=>setBekleyenYedek(null)} onYukle={yedekUygula}/>}
+-      {/* Bildirim testi */}
+-      <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "18px 16px", marginBottom: 14 }}>
++      </div><button className="tools-button" onClick={()=>window.dispatchEvent(new CustomEvent('finora-maas-ayarlari'))}>Maaş tutarını düzenle</button></div></details><details className="settings-group" data-testid="ayar-hatirlatmalar"><summary>Hatırlatmalar · {bildirimAyarlari?.etkin===false?'Kapalı':'Açık'} · {bildirimSaatleriniAl(bildirimAyarlari).join(' / ')}<small style={{display:'block',fontSize:11,fontWeight:400,marginTop:5,color:'var(--text3)'}}>{(bildirimAyarlari?.gunler||[0]).map(g=>Number(g)===0?'Ödeme günü':`${g} gün önce`).join(' · ')}</small></summary><div style={{paddingTop:10}}><div style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "18px 16px", marginBottom: 14 }}>
+         <div style={{ color: "var(--text)", fontSize: 13, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600, marginBottom: 6 }}><span className="inline-icon"><Icon name="bell" size={16}/></span>Bildirimler</div>
+         <div style={{ color: "var(--text4)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", marginBottom: 12 }}>
+           Aynı zamana denk gelen faturalar, kredi kartları ve taksitler tek bildirimde birleşir. Hatırlatma zamanlarını seçebilirsin.
+         </div>
++        <label style={{display:'flex',gap:10,alignItems:'center',color:'var(--text)',marginBottom:14}}><input type="checkbox" checked={bildirimAyarlari?.etkin!==false} onChange={e=>setBildirimAyarlari(a=>({...a,etkin:e.target.checked}))}/>Ödeme hatırlatmaları açık</label>
+         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 7, marginBottom: 10 }}>
+           {[{ gun: 3, label: "3 gün önce" }, { gun: 1, label: "1 gün önce" }, { gun: 0, label: "Aynı gün" }].map(secenek => {
+             const aktif = (bildirimAyarlari?.gunler || [0]).includes(secenek.gun);
+@@ -4365,36 +4401,26 @@
+
+             {sonBildirimPlanlama.uyari && <div style={{ color: "#f59e0b" }}><span className="inline-icon"><Icon name="warning" size={16}/></span>{sonBildirimPlanlama.uyari}</div>}
+           </div>
+         )}
+-      </div>
+-
+-      {/* Dönem başlangıç günü */}
+-      <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "18px 16px", marginBottom: 14 }}>
+-        <div style={{ color: "var(--text)", fontSize: 13, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600, marginBottom: 6 }}><span className="inline-icon"><Icon name="calendar" size={16}/></span>Maaş Dönemi Başlangıcı</div>
+-        <div style={{ color: "var(--text4)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", marginBottom: 14 }}>
+-          Dönem her ayın kaçında başlasın? Bitiş bir önceki gün olur.
+-        </div>
+-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+-          <input
+-            type="number"
+-            min="1"
+-            max="28"
+-            value={donemGun}
+-            onChange={e => gunKaydet(e.target.value)}
+-            style={{ width: 70, background: "var(--card2)", border: "1px solid #f59e0b44", borderRadius: 10, padding: "10px 12px", color: "#f59e0b", fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontSize: 18, fontWeight: 600, outline: "none", textAlign: "center" }}
+-          />
++      </div></div></details><div style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "18px 16px", marginBottom: 14 }}>
++        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 7 }}>
++          <span style={{ width: 36, height: 36, borderRadius: 11, display: "grid", placeItems: "center", background: "var(--accent-soft)", color: "var(--accent)" }}><Icon name="wallet" size={18} /></span>
+           <div>
+-            <div style={{ color: "var(--text2)", fontSize: 12, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}>
+-              Her ayın <span style={{ color: "#f59e0b", fontWeight: 600 }}>{donemGun}. günü</span> başlar
+-            </div>
+-            <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", marginTop: 3 }}>
+-              Bitiş: ayın {(parseInt(donemGun) || 15) - 1}. günü
+-            </div>
++            <div style={{ color: "var(--text)", fontSize: 13, fontWeight: 700 }}>Veri Yedekleme</div>
++            <div style={{ color: "var(--text4)", fontSize: 11, marginTop: 2 }}>Telefon değiştirirken verilerinizi koruyun</div>
+           </div>
+         </div>
+-      </div>
+-
+-      {/* Kredi Kartları */}
+-      <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "18px 16px", marginBottom: 14 }}>
++        <div style={{ color: "var(--text4)", fontSize: 11, lineHeight: 1.55, marginBottom: 13 }}>
++          Tüm işlemler, kartlar, bütçeler ve ayarlar tek bir dosyada saklanır. Yedek önce uygulama içinde güvenli kopya olarak tutulur; cihaz destekliyorsa ayrıca dosya olarak kaydetme/paylaşma ekranı açılır.
++        </div>
++        <div style={{ display: "flex", alignItems: "center", gap: 7, background: "#10b98114", border: "1px solid #10b98135", color: "var(--income-text)", borderRadius: 10, padding: "8px 10px", fontSize: 11, fontWeight: 600, marginBottom: 11 }}><span>✓</span><span>Veri uyumluluğu ve otomatik güvenlik kopyası etkin</span></div>
++        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
++          <button onClick={yedekIndir} disabled={yedekDurumu.durum==='calisiyor'} aria-busy={yedekDurumu.durum==='calisiyor'} style={{ border: "none", borderRadius: 12, padding: "11px 10px", background: "linear-gradient(135deg,var(--accent),var(--accent-strong))", color: "#fff", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>{yedekDurumu.durum==='calisiyor'?'Kaydetme bekleniyor…':'Yedek Al'}</button>
++          <label style={{ borderRadius: 12, padding: "10px", background: "var(--card2)", border: "1px solid var(--border)", color: "var(--text2)", fontWeight: 700, fontSize: 12, cursor: "pointer", textAlign: "center" }}>
++            Yedeği Yükle
++            <input type="file" accept="application/json,.json" onChange={yedekYukle} style={{ display: "none" }} />
++          </label>
++        </div>
++      </div><p className="tools-note" data-testid="son-dosya-yedegi">{sonDosyaYedegi?'Son doğrulanmış dosya yedeği: '+new Date(sonDosyaYedegi).toLocaleString('tr-TR'):'Henüz doğrulanmış bir dosya yedeği kaydı yok.'}</p>{yedekDurumu.metin&&<p className="tools-note" role={yedekDurumu.durum==='hata'?'alert':'status'} aria-live="polite">{yedekDurumu.metin}</p>}<details className="settings-group" data-testid="ayar-kayitlar"><summary>Kartlar ve kategoriler</summary><div style={{paddingTop:10}}><div style={{ background: "var(--card)", border: "1px solid var(--border)", borderTop: "1px solid var(--border-light)", borderRadius: 20, boxShadow: "var(--card-shadow)", padding: "18px 16px", marginBottom: 14 }}>
+         <div style={{ color: "var(--text)", fontSize: 13, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600, marginBottom: 6 }}><span className="inline-icon"><Icon name="card" size={16}/></span>Kredi Kartları</div>
+         <div style={{ color: "var(--text4)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", marginBottom: 14 }}>
+           Hesap kesim ve son ödeme tarihini takvimden gün–ay–yıl olarak seç. Tarihler ait oldukları maaş döneminde saklanır ve bildirim son ödeme tarihine göre gönderilir.
+@@ -4453,12 +4479,7 @@
+
+         </div>
+         <div style={{ color: "var(--text5)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", marginTop: 4, marginBottom: 10 }}>Kart adı · Hesap kesim tarihi · Son ödeme tarihi</div>
+         <button onClick={kartEkle} style={{ width: "100%", background: "var(--accent-strong)", border: "none", borderRadius: 10, padding: "10px", color: "#fff", fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>+ Kart Ekle</button>
+-      </div>
+-
+-      <div style={{ textAlign: "center", color: "var(--border)", fontSize: 11, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", marginTop: 24 }}>
+-        Bütçe Takip v1.6.9
+-      </div>
+-    </div>
++      </div><KategoriGorunumAyarlari kategoriler={kategoriler}/></div></details><details className="settings-group" data-testid="ayar-gelismis"><summary>Gelişmiş ayarlar</summary><div style={{paddingTop:10}}><TasarrufHedefi hedef={tasarrufHedefi} setHedef={setTasarrufHedefi}/><section className="tools-card"><h3>Önceki aydan devir</h3><p className="tools-note">Yalnız önceki dönemin artı gerçek kapanış bakiyesi devredilir. Bekleyen borçlar ve kart alışverişleri nakit çıkışı sayılmaz. Devir gelir raporuna eklenmez. Eski devirler kendiliğinden değiştirilmez.</p><div className="tools-row"><span>Bu dönemde kayıtlı devir</span><strong>{fmtTL(mevcutDevir)}</strong></div><div className="tools-row"><span>Önceki dönem gerçek kapanış</span><strong>{fmtTL(devirHesabi.kapanisBakiyesi)}</strong></div><p className="tools-note">Yeni devir önerisi: {fmtTL(devirHesabi.tutar)}. Geçmiş verileri düzelttiğinde buradan kontrol ederek güncelle.</p><Btn onClick={devirYenile}>Devri yeniden hesapla</Btn></section><section className="tools-card"><h3>Kayıt geçmişi</h3><p className="tools-note">Eski, ödeme bağlantısı olmayan geçmiş gider kayıtları gerçekleşmiş kabul edilir. Yeni sabit giderler Ödemeler listesine bekleyen olarak gelir; ödendiğini işaretlemeden gerçek bakiye azalmaz.</p><KayitGecmisi/></section><section className="tools-card"><h3>Excel / CSV aktarımı</h3><p className="tools-note">Tüm işlemlerini Türkçe sütunlar ve kuruş hassasiyetiyle aktar. İşlemler ekranında filtrelenmiş kayıtları da aktarabilirsin. CSV tam yedeğin yerine geçmez.</p><Btn onClick={()=>csvAktar(islemler,odemeler)} disabled={!islemler.length}>Tüm işlemleri CSV aktar</Btn></section><section className="tools-card"><h3>Otomatik güvenlik kopyaları</h3><p className="tools-note">Son 3 kayıt gününün kopyası yalnız bu cihazda tutulur. Uygulamayı silmek veya cihazı kaybetmek bunları da silebilir; dosya yedeğini ayrıca sakla.</p><Btn onClick={()=>{try{setOtomatikler(otomatikYedekle());toast('Güvenlik kopyası güncellendi');}catch{toast('Güvenlik kopyası yazılamadı; dosya yedeği al.','hata');}}}>Şimdi güvenlik kopyası al</Btn>{otomatikler.slice().reverse().map(p=><div className="tools-row" key={p.gun}><span>{p.gun} · {p.data.ft_islemler?.length||0} işlem</span><Btn onClick={()=>{try{setBekleyenYedek({...p,data:yedekVerisiniDogrula(p),mevcutVeri:yerelYedekPaketi().data});}catch(e){toast(e.message,'hata');}}}>Önizle</Btn></div>)}{kurtarma&&<Btn onClick={()=>{try{setBekleyenYedek({...kurtarma,data:yedekVerisiniDogrula(kurtarma),mevcutVeri:yerelYedekPaketi().data});}catch(e){toast(e.message,'hata');}}}>Son yüklemeden önceki verileri önizle</Btn>}</section></div></details>{bekleyenYedek&&<YedekOnizleme paket={bekleyenYedek} onVazgec={()=>setBekleyenYedek(null)} onYukle={yedekUygula}/>}<p className="tools-note" style={{textAlign:'center'}}>Bütçe Takip · 1.6.0</p></div>
+   );
+ }
+ 
+@@ -5388,9 +5409,10 @@
+
+ 
+ 
+ // ── KREDİ / BORÇ TAKİBİ ───────────────────────────────────────────────────────
+-function KredilerTab({ krediler, setKrediler, islemler = [], setIslemler }) {
++function KredilerTab({ bildirimHedefi, krediler, setKrediler, islemler = [], setIslemler }) {
+   const [modal, setModal] = useState(false);
+   const [acikKredi, setAcikKredi] = useState({});
++  useEffect(()=>{if(bildirimHedefi?.tip!=='kredi')return;setAcikKredi(p=>({...p,[bildirimHedefi.id]:true}));const t=setTimeout(()=>{const el=document.getElementById(`kredi-taksit:${encodeURIComponent(bildirimHedefi.id)}:${bildirimHedefi.no}`);el?.scrollIntoView({block:'center'});el?.focus({preventScroll:true});},80);return()=>clearTimeout(t);},[bildirimHedefi?.anahtar]);
+   const bos = { ad: "", toplamTutar: "", vade: "", baslangic: yerelTarihAnahtari(), aylikTaksit: "", ilkFarkli: false, ilkTaksit: "", sonFarkli: false, sonTaksit: "" };
+   const [form, setForm] = useState(bos);
+   const fmt = n => n.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+@@ -5539,7 +5561,7 @@
+
+             {acik && (
+               <div style={{ marginTop: 10 }}>
+                 {sirali.map(t => (
+-                  <div key={t.no} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 10px", background: t.odendi ? "transparent" : "var(--card2)", borderRadius: 10, marginBottom: 6, opacity: t.odendi ? 0.5 : 1, border: t.odendi ? "1px solid var(--divider)" : "1px solid var(--border)" }}>
++                  <div id={`kredi-taksit:${encodeURIComponent(String(k.id))}:${t.no}`} tabIndex={-1} key={t.no} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 10px", background: t.odendi ? "transparent" : "var(--card2)", borderRadius: 10, marginBottom: 6, opacity: t.odendi ? 0.5 : 1, border: t.odendi ? "1px solid var(--divider)" : "1px solid var(--border)" }}>
+                     <button onClick={() => taksitToggle(k.id, t.no)} style={{ width: 20, height: 20, borderRadius: 6, border: `2px solid ${t.odendi ? "#10b981" : "var(--border2)"}`, background: t.odendi ? "#10b981" : "transparent", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "#fff", padding: 0 }}>{t.odendi ? "✓" : ""}</button>
+                     <div style={{ flex: 1, minWidth: 0 }}>
+                       <div style={{ color: "var(--text)", fontSize: 12, fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", textDecoration: t.odendi ? "line-through" : "none" }}>{t.no}. Taksit</div>
+@@ -5814,6 +5836,10 @@
+
+     return ()=>{observer?.disconnect();window.removeEventListener('resize',measure);};
+   },[]);
+   const [aktifTab, setAktifTab] = useState("ozet");
++  const [bildirimSecimi,setBildirimSecimi]=useState(null),[bildirimHedefi,setBildirimHedefi]=useState(null);const bildirimOlaySayaci=useRef(0);
++  useEffect(()=>{const LN=bildirimEklentisi();if(!LN)return;let alive=true,handle;Promise.resolve(LN.addListener('localNotificationActionPerformed',event=>{if(!alive||event?.notification?.extra?.finoraTip!=='odeme_hatirlatma')return;setMenuAcik(false);setBildirimSecimi({extra:event.notification.extra,id:++bildirimOlaySayaci.current});})).then(h=>{if(alive)handle=h;else h.remove().catch(()=>{});}).catch(()=>toast('Bildirim bağlantısı başlatılamadı. Ödemeler ekranını kullan.','hata'));return()=>{alive=false;if(handle)handle.remove().catch(()=>{});};},[]);
++  useEffect(()=>{const git=()=>setAktifTab('maas');window.addEventListener('finora-maas-ayarlari',git);return()=>window.removeEventListener('finora-maas-ayarlari',git);},[]);
++  const bildirimKaydinaGit=ref=>{setBildirimHedefi({...ref,anahtar:++bildirimOlaySayaci.current});setBildirimSecimi(null);setAktifTab(ref.tip==='kredi'?'krediler':ref.tip==='kart'?'ozet':'odemeler');if(ref.tip==='kart')setTimeout(()=>{const el=document.getElementById('kart-kaydi:'+encodeURIComponent(ref.id));el?.scrollIntoView({block:'center'});el?.focus({preventScroll:true});},80);};
+ 
+   // 💾 TÜM VERİLER LOCALSTORAGE'DA KAYDEDILIYOR
+   const [islemler, setIslemler] = useLocalStorage("ft_islemler", INITIAL_ISLEMLER);
+@@ -5935,6 +5961,8 @@
+
+         const tumu = [...odemeler, ...kartHatirlatmalari, ...krediBildirimleri(krediler)];
+         const bekleyen = (await LN.getPending()).notifications || [];
+         const sahipli = bekleyen.filter(n => n.extra?.finoraTip === "odeme_hatirlatma");
++            if(typeof LN.getDeliveredNotifications==='function'){try{const d=(await LN.getDeliveredNotifications()).notifications||[];const eski=d.filter(n=>n.extra?.finoraTip==='odeme_hatirlatma'&&bildirimHedefleriniCoz(n.extra,{odemeler,krediler,kartlar,kartOdemeleri},yerelTarihAnahtari(simdi)).some(h=>!h.bulundu||h.odendi));if(eski.length)await LN.removeDeliveredNotifications({notifications:eski.map(n=>({id:n.id}))});}catch{/* Bildirim ayrıntısı her durumda güncel kaydı okur. */}}
++        if(bildirimAyarlari?.etkin===false){if(sahipli.length)await LN.cancel({notifications:sahipli.map(n=>({id:n.id}))});if(!iptal)setSonBildirimPlanlama({zaman:simdi.toISOString(),sayi:0,kapali:true});return;}
+         const izin = await LN.checkPermissions();
+         if (izin.display !== "granted") {
+           // Ödenen/silinen kayıtların eski alarmlarını izin kapalıyken de kaldır.
+@@ -5961,7 +5989,7 @@
+
+           body: plan.odemeler.map(o => `${o.aciklama || o.kategori || "Ödeme"}: ${o.onceGun === 0 ? "bugün" : o.onceGun === 1 ? "yarın" : `${o.onceGun} gün sonra`} son ödeme günü`).join(" · "),
+           schedule: { at: plan.at, allowWhileIdle: true },
+           ...(kanalId ? { channelId: kanalId } : {}),
+-          extra: { finoraTip: "odeme_hatirlatma", planAnahtari: plan.anahtar, odemeAnahtarlari: plan.odemeler.map(o => `${o.tarih}:${o.id}`) },
++          extra: { finoraTip: "odeme_hatirlatma", planAnahtari: plan.anahtar, odemeAnahtarlari: plan.odemeler.map(o => `${o.tarih}:${o.id}`),odemeHedefleri:plan.odemeler.map(bildirimOdemeReferansi) },
+         }));
+         // Önce yeni alarmları kaydet; başarısız olursa mevcut planı kaybetme.
+         if (bildirimler.length) await LN.schedule({ notifications: bildirimler });
+@@ -6703,7 +6731,7 @@
+
+         )}
+         {/* CONTENT */}
+         <KayitDurumu />
+-        <main className="app-content">
++        <main className="app-content"><SilinenIslemler/>
+           {/* Hızlı işlem penceresi Ozet içinde portala taşındığı için bileşeni
+               sekmeler arasında bağlı tutuyoruz. Görsel içerik gizlenir; modal
+               document.body üzerinde açılarak mevcut sekmeyi değiştirmez. */}
+@@ -6712,10 +6740,10 @@
+
+           </div>
+           {aktifTab === "nakit-akisi" && <NakitAkisiTab islemler={islemler} odemeler={odemeler} kartlar={kartlar} kartOdemeleri={kartOdemeleri} krediler={krediler} taksitler={taksitler} tekrarlayan={tekrarlayan} kartBorcOzetleri={kartBorcOzetleri} donemGun={parseInt(donemGun)||15} bakiyeHesapModu={bakiyeHesapModu} maasAyarlar={maasAyarlar} />}
+           {aktifTab === "islemler" && <IslemlerTab taksitler={taksitler} setOdemeler={setOdemeler} islemler={islemler} setIslemler={setIslemler} odemeler={odemeler} butceler={butceler} setButceler={setButceler} kategoriler={kategoriler} setKategoriler={setKategoriler} kartlar={kartlar} kartOdemeleri={kartOdemeleri} setKartOdemeleri={setKartOdemeleri} donemGun={parseInt(donemGun)||15} />}
+-          {aktifTab === "odemeler" && <OdemelerTab odemeler={odemeler} setOdemeler={setOdemeler} islemler={islemler} setIslemler={setIslemler} kategoriler={kategoriler} donemGun={parseInt(donemGun)||15} />}
++          {aktifTab === "odemeler" && <OdemelerTab bildirimHedefi={bildirimHedefi} odemeler={odemeler} setOdemeler={setOdemeler} islemler={islemler} setIslemler={setIslemler} kategoriler={kategoriler} donemGun={parseInt(donemGun)||15} />}
+           {aktifTab === "tekrarlayan" && <TekrarlayanTab tekrarlayan={tekrarlayan} setTekrarlayan={setTekrarlayan} kategoriler={kategoriler} setKategoriler={setKategoriler} />}
+           {aktifTab === "analiz" && <AnalizTab taksitler={taksitler} bakiyeHesapModu={bakiyeHesapModu} islemler={islemler} kategoriler={kategoriler} donemGun={parseInt(donemGun)||15} kartlar={kartlar} odemeler={odemeler} kartOdemeleri={kartOdemeleri} />}
+-          {aktifTab === "krediler" && <KredilerTab islemler={islemler} setIslemler={setIslemler} krediler={krediler} setKrediler={setKrediler} />}
++          {aktifTab === "krediler" && <KredilerTab bildirimHedefi={bildirimHedefi} islemler={islemler} setIslemler={setIslemler} krediler={krediler} setKrediler={setKrediler} />}
+           {aktifTab === "taksitler" && <TaksitlerTab taksitler={taksitler} setTaksitler={setTaksitler} kartlar={kartlar} setKartlar={setKartlar} kartOdemeleri={kartOdemeleri} />}
+           {aktifTab === "maas" && <MaasTab zamlar={zamlar} setZamlar={setZamlar} maasAyarlar={maasAyarlar} setMaasAyarlar={setMaasAyarlar} enflasyon={enflasyon} setEnflasyon={setEnflasyon} />}
+           {aktifTab === "ayarlar" && <AyarlarTab taksitler={taksitler} setIslemler={setIslemler} kartOdemeleri={kartOdemeleri} devirLog={devirLog} setDevirLog={setDevirLog} donemGun={donemGun} setDonemGun={setDonemGun} kartlar={kartlar} setKartlar={setKartlar} kategoriler={kategoriler} setKategoriler={setKategoriler} tema={tema} setTema={setTema} sonBildirimPlanlama={sonBildirimPlanlama} islemler={islemler} odemeler={odemeler} tasarrufHedefi={tasarrufHedefi} setTasarrufHedefi={setTasarrufHedefi} grafikTipi={grafikTipi} setGrafikTipi={setGrafikTipi} bildirimAyarlari={bildirimAyarlari} setBildirimAyarlari={setBildirimAyarlari} bakiyeHesapModu={bakiyeHesapModu} setBakiyeHesapModu={setBakiyeHesapModu} />}
+@@ -6750,6 +6778,7 @@
+
+       </div>
+       </div>
+       <OdemeOnayPenceresi />
++      {bildirimSecimi&&<BildirimOdemePenceresi key={bildirimSecimi.id} extra={bildirimSecimi.extra} veriler={{odemeler,krediler,kartlar,kartOdemeleri}} onClose={()=>setBildirimSecimi(null)} onGit={bildirimKaydinaGit}/>}
+       <ToastKutusu />
+     </>
+     </KategoriGorunumContext.Provider>

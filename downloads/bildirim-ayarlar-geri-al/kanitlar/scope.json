@@ -1,0 +1,16 @@
+{
+  "gunlukFinansHareketleri": true,
+  "donemBakiyeHesapla": true,
+  "kartKaydiniGuncelle": true,
+  "kartAnalizHareketleri": true,
+  "kartBorcDurumu": true,
+  "kartSonDurum": true,
+  "kartTaksitPlaniOlustur": true,
+  "kartTaksitYukumlulukleri": true,
+  "donemSonuGiderTahmini": true,
+  "nakitAkisiHesapla": true,
+  "yerelYedekPaketi": true,
+  "yedegiGuvenleYaz": true,
+  "kartHatirlatmalariniOlustur": true,
+  "HaftaninGunleri": true
+}
