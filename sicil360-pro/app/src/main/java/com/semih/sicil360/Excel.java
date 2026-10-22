@@ -276,6 +276,8 @@ public final class Excel {
               if (l.equals("row")) {
                 String n = a.getValue("r");
                 row = n == null ? row + 1 : Integer.parseInt(n);
+                if (row < 1 || row > 1048576 || table.rows.containsKey(row))
+                  throw new SAXException("Excel Satır Numarası Geçersiz Veya Tekrarlanmış.");
                 column = -1;
                 if (table.rows.size() >= MAX_ROWS)
                   throw new SAXException("En Fazla 50.000 Veri Satırı Desteklenir.");
@@ -320,9 +322,14 @@ public final class Excel {
                 } else if (type == null || type.equals("n")) {
                   try {
                     BigDecimal n = new BigDecimal(raw);
-                    cell.value = n.stripTrailingZeros().toPlainString();
-                    String digits = cell.value.replaceAll("[^0-9]", "");
-                    cell.unsafe = digits.length() > 15;
+                    if (n.precision() > 64 || Math.abs((long) n.scale()) > 64) {
+                      cell.value = raw;
+                      cell.unsafe = true;
+                    } else {
+                      cell.value = n.stripTrailingZeros().toPlainString();
+                      String digits = cell.value.replaceAll("[^0-9]", "");
+                      cell.unsafe = digits.length() > 15;
+                    }
                     String mask = style < styles.size() ? styles.get(style) : "";
                     String part = mask.split(";", -1)[0];
                     if (part.matches("[0 ()+\\-]+")) {
@@ -334,7 +341,8 @@ public final class Excel {
                     cell.value = raw;
                   }
                 } else cell.value = raw;
-                table.rows.computeIfAbsent(row, k -> new TreeMap<>()).put(column, cell);
+                if (table.rows.computeIfAbsent(row, k -> new TreeMap<>()).put(column, cell) != null)
+                  throw new SAXException("Excel Hücresi Tekrarlanmış.");
                 cell = null;
                 value = null;
               }

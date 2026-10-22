@@ -269,8 +269,11 @@ public final class MainActivity extends Activity {
   }
 
   EditText input(LinearLayout parent, String label, String initial, boolean multiline) {
-    parent.addView(text(label, 12, muted));
+    TextView caption = text(label, 12, muted);
+    parent.addView(caption);
     EditText e = new EditText(this);
+    e.setId(View.generateViewId());
+    caption.setLabelFor(e.getId());
     e.setText(initial);
     e.setTextSize(15);
     e.setTextColor(ink);
@@ -290,8 +293,11 @@ public final class MainActivity extends Activity {
   }
 
   Spinner spinner(LinearLayout parent, String label, String[] options) {
-    parent.addView(text(label, 12, muted));
+    TextView caption = text(label, 12, muted);
+    parent.addView(caption);
     Spinner s = new Spinner(this);
+    s.setId(View.generateViewId());
+    caption.setLabelFor(s.getId());
     ArrayAdapter<String> adapter =
         new ArrayAdapter<>(
             new ContextThemeWrapper(this, dark ? R.style.AppThemeDark : R.style.AppTheme),
@@ -1118,12 +1124,11 @@ public final class MainActivity extends Activity {
                 "Rehber, şablonlar ve geçmiş kaldırılacak. Kaydettiğiniz dış yedekler silinmez."
                     + " Uygulama içindeki geri alma kopyası da silinir.",
                 () -> {
-                  State empty = new State();
-                  save(
-                      empty,
-                      false,
-                      () -> {
-                        new android.util.AtomicFile(vault.undo).delete();
+                  long revision = state.revision;
+                  task(
+                      () -> vault.erase(revision),
+                      cleared -> {
+                        state = cleared;
                         selected = "";
                         message = "";
                         queue.clear();

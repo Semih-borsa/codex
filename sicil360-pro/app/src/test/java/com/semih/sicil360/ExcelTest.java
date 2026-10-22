@@ -192,4 +192,34 @@ public class ExcelTest {
     System.out.println(
         "20000 XLSX rows write/read/map: " + ((System.nanoTime() - started) / 1000000) + " ms");
   }
+
+  @Test
+  public void pathologicalNumericExponentDoesNotAllocateExpandedNumber() throws Exception {
+    File f =
+        file(
+            book(
+                "<worksheet><sheetData><row r=\"1\"><c"
+                    + " r=\"A1\"><v>1E2147483647</v></c></row></sheetData></worksheet>",
+                null,
+                null));
+    Excel.Table t = Excel.load(f, Excel.sheets(f).get(0));
+    assertTrue(t.rows.get(1).get(0).unsafe);
+    assertEquals("1E2147483647", t.value(1, 0));
+  }
+
+  @Test
+  public void repeatedXmlRowsCannotSilentlyDropRecords() throws Exception {
+    File f =
+        file(
+            book(
+                "<worksheet><sheetData><row r=\"1\"><c r=\"A1\"><v>1</v></c></row><row r=\"1\"><c"
+                    + " r=\"A1\"><v>2</v></c></row></sheetData></worksheet>",
+                null,
+                null));
+    try {
+      Excel.load(f, Excel.sheets(f).get(0));
+      fail();
+    } catch (org.xml.sax.SAXException expected) {
+    }
+  }
 }

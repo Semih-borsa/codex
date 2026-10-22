@@ -192,6 +192,11 @@ public final class SmokeRunner extends Instrumentation {
             corrupt = true;
           }
           truth(corrupt);
+          State beforeErase = v.load();
+          State savedAgain = v.commit(beforeErase, beforeErase.revision, true);
+          truth(v.undo.exists());
+          State erased = v.erase(savedAgain.revision);
+          truth(erased.people.isEmpty() && erased.history.isEmpty() && !v.undo.exists());
         });
     check(
         "Android XLSX parser export import first row zeros Turkish and DTD rejection",
@@ -349,6 +354,60 @@ public final class SmokeRunner extends Instrumentation {
             runOnMainSync(() -> a.lastDialog.getButton(-2).performClick());
             await(() -> !a.busy && a.state.history.get(0).status == Status.CANCELLED);
             truth(opened.size() == before);
+            // Explicit browser approval opens only after the second confirmation.
+            runOnMainSync(a::prepareMessage);
+            await(() -> !a.busy && a.lastDialog.isShowing());
+            runOnMainSync(() -> a.lastDialog.getButton(-1).performClick());
+            await(() -> a.lastDialog.getButton(-1).getText().toString().equals("Tarayıcıda Aç"));
+            runOnMainSync(() -> a.lastDialog.getButton(-1).performClick());
+            await(() -> !a.busy && opened.size() == before + 1);
+            truth(opened.get(opened.size() - 1).getPackage() == null);
+            truth(a.state.history.get(0).status == Status.ATTEMPT);
+            runOnMainSync(() -> a.pendingEvent = "");
+            int beforeBoth = opened.size();
+            runOnMainSync(
+                () -> {
+                  a.gateway =
+                      new MainActivity.Gateway() {
+                        public List<String> packages() {
+                          return Arrays.asList("com.whatsapp", "com.whatsapp.w4b");
+                        }
+
+                        public void open(Intent i) {
+                          opened.add(i);
+                        }
+                      };
+                  a.prepareMessage();
+                });
+            await(() -> !a.busy && a.lastDialog.isShowing());
+            runOnMainSync(() -> a.lastDialog.getButton(-1).performClick());
+            await(() -> a.lastDialog.getListView() != null);
+            truth(opened.size() == beforeBoth);
+            runOnMainSync(
+                () -> {
+                  ListView list = a.lastDialog.getListView();
+                  list.performItemClick(list.getAdapter().getView(1, null, list), 1, 1);
+                });
+            await(() -> !a.busy && opened.size() == beforeBoth + 1);
+            truth(opened.get(opened.size() - 1).getPackage().equals("com.whatsapp.w4b"));
+            runOnMainSync(
+                () -> {
+                  a.pendingEvent = "";
+                  a.gateway =
+                      new MainActivity.Gateway() {
+                        public List<String> packages() {
+                          return Arrays.asList("com.whatsapp");
+                        }
+
+                        public void open(Intent i) {
+                          throw new android.content.ActivityNotFoundException();
+                        }
+                      };
+                  a.prepareMessage();
+                });
+            await(() -> !a.busy && a.lastDialog.isShowing());
+            runOnMainSync(() -> a.lastDialog.getButton(-1).performClick());
+            await(() -> !a.busy && a.state.history.get(0).status == Status.ERROR);
             truth(
                 target.checkSelfPermission("android.permission.INTERNET")
                     != android.content.pm.PackageManager.PERMISSION_GRANTED);
@@ -452,14 +511,10 @@ public final class SmokeRunner extends Instrumentation {
             truth(a.state.history.isEmpty() && opened.isEmpty());
             runOnMainSync(a::nextQueue);
             runOnMainSync(() -> a.lastDialog.getButton(-1).performClick());
-            truth(a.selected.equals("002") && opened.isEmpty());
-            runOnMainSync(
-                () -> {
-                  a.queue.clear();
-                  a.selectedPeople.clear();
-                  a.render();
-                });
-            truth(a.queue.isEmpty());
+            await(() -> a.selected.equals("002") && opened.isEmpty());
+            runOnMainSync(() -> find(a.root, "Sıralı İşlemi İptal Et").performClick());
+            runOnMainSync(() -> a.lastDialog.getButton(-1).performClick());
+            await(() -> a.queue.isEmpty());
           } finally {
             close(a);
           }

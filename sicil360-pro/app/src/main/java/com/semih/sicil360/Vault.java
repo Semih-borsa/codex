@@ -111,4 +111,12 @@ final class Vault {
       return result;
     }
   }
+
+  State erase(long expected) throws Exception {
+    synchronized (MUTEX) {
+      State cleared = commit(new State(), expected, false);
+      new AtomicFile(undo).delete();
+      return cleared;
+    }
+  }
 }
