@@ -19,7 +19,7 @@ public final class Excel {
 
   public static final class Cell {
     public String value = "";
-    public boolean formula, unsafe;
+    public boolean formula, unsafe, numeric;
   }
 
   public static final class Sheet {
@@ -320,6 +320,7 @@ public final class Excel {
                   if (i < 0 || i >= shared.size()) throw new SAXException("Hatalı Metin Dizini.");
                   cell.value = shared.get(i);
                 } else if (type == null || type.equals("n")) {
+                  cell.numeric = true;
                   try {
                     BigDecimal n = new BigDecimal(raw);
                     if (n.precision() > 64 || Math.abs((long) n.scale()) > 64) {

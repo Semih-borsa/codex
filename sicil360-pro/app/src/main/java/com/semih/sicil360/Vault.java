@@ -103,6 +103,8 @@ final class Vault {
       try (InputStream in = new FileInputStream(undo)) {
         before = decrypt(Excel.read(in, Codec.MAX_BYTES + 64));
       }
+      before.debts.clear();
+      before.debts.addAll(current.debts);
       before.history.clear();
       before.history.addAll(current.history);
       before.recent.removeIf(id -> !before.people.containsKey(id));

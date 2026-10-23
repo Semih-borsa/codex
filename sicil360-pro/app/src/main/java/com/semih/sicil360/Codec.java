@@ -33,7 +33,7 @@ public final class Codec {
   public static byte[] encode(State s) throws IOException {
     ByteArrayOutputStream b = new ByteArrayOutputStream();
     DataOutputStream o = new DataOutputStream(b);
-    o.writeInt(0x53333632);
+    o.writeInt(0x53333634);
     o.writeLong(s.revision);
     o.writeInt(s.people.size());
     for (Person p : s.people.values()) {
@@ -67,6 +67,30 @@ public final class Codec {
     }
     o.writeInt(s.recent.size());
     for (String id : s.recent) text(o, id);
+    o.writeInt(s.debts.size());
+    for (Payments.Ledger l : s.debts) {
+      text(o, l.id);
+      text(o, l.name);
+      text(o, l.fingerprint);
+      text(o, l.period);
+      o.writeLong(l.created);
+      o.writeInt(l.accounts.size());
+      for (Payments.Account a : l.accounts.values()) {
+        text(o, a.code);
+        text(o, a.title);
+        text(o, a.first);
+        text(o, a.last);
+        o.writeLong(a.original);
+        o.writeInt(a.payments.size());
+        for (Payments.Entry e : a.payments) {
+          text(o, e.id);
+          text(o, e.note);
+          o.writeLong(e.amount);
+          o.writeLong(e.time);
+          o.writeBoolean(e.cancelled);
+        }
+      }
+    }
     o.flush();
     if (b.size() > MAX_BYTES) throw new IOException("Veri Boyutu 32 MB Sınırını Aştı.");
     return b.toByteArray();
@@ -76,8 +100,10 @@ public final class Codec {
     if (bytes.length > MAX_BYTES) throw new IOException("Veri Dosyası Çok Büyük.");
     DataInputStream in = new DataInputStream(new ByteArrayInputStream(bytes));
     int version = in.readInt();
-    if (version != 0x53333631 && version != 0x53333632)
-      throw new IOException("Desteklenmeyen Yedek Sürümü.");
+    if (version != 0x53333631
+        && version != 0x53333632
+        && version != 0x53333633
+        && version != 0x53333634) throw new IOException("Desteklenmeyen Yedek Sürümü.");
     State s = new State();
     s.revision = in.readLong();
     int n = count(in, MAX_PEOPLE);
@@ -92,7 +118,7 @@ public final class Codec {
       p.email = text(in);
       p.not = text(in);
       p.durum = text(in);
-      if (version == 0x53333632) {
+      if (version >= 0x53333632) {
         int follow = in.readInt();
         if (follow < 0 || follow >= FollowUp.values().length)
           throw new IOException("Geçersiz Takip Durumu.");
@@ -137,6 +163,65 @@ public final class Codec {
     }
     n = count(in, 20);
     for (int i = 0; i < n; i++) s.recent.add(text(in));
+    if (version >= 0x53333633) {
+      int ledgers = count(in, 100);
+      java.util.HashSet<String> ledgerIds = new java.util.HashSet<>();
+      for (int j = 0; j < ledgers; j++) {
+        Payments.Ledger l = new Payments.Ledger();
+        l.id = text(in);
+        l.name = text(in);
+        l.fingerprint = text(in);
+        if (version >= 0x53333634) l.period = text(in);
+        l.created = in.readLong();
+        if (version == 0x53333633)
+          l.period =
+              java.time.Instant.ofEpochMilli(l.created)
+                  .atZone(java.time.ZoneId.systemDefault())
+                  .toLocalDate()
+                  .toString()
+                  .substring(0, 7);
+        try {
+          java.time.YearMonth.parse(l.period);
+        } catch (Exception invalid) {
+          throw new IOException("Geçersiz Borç Dönemi.");
+        }
+        if (l.id.isEmpty() || !ledgerIds.add(l.id) || l.name.length() > 100 || l.created < 0)
+          throw new IOException("Geçersiz Borç Listesi.");
+        int accounts = count(in, MAX_PEOPLE);
+        for (int k = 0; k < accounts; k++) {
+          Payments.Account a = new Payments.Account();
+          a.code = text(in);
+          a.title = text(in);
+          a.first = text(in);
+          a.last = text(in);
+          a.original = in.readLong();
+          if (!a.code.matches("[\\p{L}\\p{N}._/-]{1,64}")
+              || a.name().isEmpty()
+              || a.original < 0
+              || a.original > Payments.MAX
+              || l.accounts.put(a.code, a) != null) throw new IOException("Geçersiz Borç Kaydı.");
+          int payments = count(in, 10000);
+          java.util.HashSet<String> paymentIds = new java.util.HashSet<>();
+          for (int m = 0; m < payments; m++) {
+            Payments.Entry e = new Payments.Entry();
+            e.id = text(in);
+            e.note = text(in);
+            e.amount = in.readLong();
+            e.time = in.readLong();
+            e.cancelled = in.readBoolean();
+            if (e.id.isEmpty()
+                || !paymentIds.add(e.id)
+                || e.note.length() > 500
+                || e.amount <= 0
+                || e.amount > Payments.MAX
+                || e.time < 0) throw new IOException("Geçersiz Ödeme Kaydı.");
+            a.payments.add(e);
+          }
+          if (a.paid() > Payments.MAX) throw new IOException("Ödeme Tutar Sınırı Aşıldı.");
+        }
+        s.debts.add(l);
+      }
+    }
     if (in.read() != -1) throw new IOException("Dosya Sonunda Beklenmeyen Veri.");
     return s;
   }

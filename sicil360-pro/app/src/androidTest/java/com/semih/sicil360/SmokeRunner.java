@@ -603,6 +603,118 @@ public final class SmokeRunner extends Instrumentation {
           }
         });
     check(
+        "Debt XLSX import partial full excess cancellation fixed original total and responsive same"
+            + " order",
+        () -> {
+          MainActivity a = open();
+          try {
+            setup(a, new State());
+            File workbook = new File(output, "debt-sample.xlsx");
+            try (InputStream in = getContext().getAssets().open("debt-sample.xlsx");
+                OutputStream out = new FileOutputStream(workbook)) {
+              byte[] buffer = new byte[8192];
+              int count;
+              while ((count = in.read(buffer)) != -1) out.write(buffer, 0, count);
+            }
+            Excel.Table table = Excel.load(workbook, Excel.sheets(workbook).get(0));
+            truth(Payments.looksLike(table));
+            runOnMainSync(() -> a.previewDebtImport(table));
+            await(() -> !a.busy && a.lastDialog != null && a.lastDialog.isShowing());
+            runOnMainSync(
+                () ->
+                    find(a.lastDialog.getWindow().getDecorView(), "Onayla Ve Borç Listesini Ekle")
+                        .performClick());
+            await(() -> !a.busy && a.state.debts.size() == 1);
+            String ledger = a.state.debts.get(0).id;
+            truth(Payments.totals(a.state.debts.get(0)).original == 200000);
+            runOnMainSync(() -> a.paymentDialog(ledger, "0001"));
+            runOnMainSync(
+                () -> {
+                  ((EditText)
+                          a.lastDialog.getWindow().getDecorView().findViewWithTag("payment-amount"))
+                      .setText("250,00");
+                  find(a.lastDialog.getWindow().getDecorView(), "Girilen Ödemeyi Kaydet")
+                      .performClick();
+                });
+            runOnMainSync(() -> a.lastDialog.getButton(-1).performClick());
+            await(() -> !a.busy && a.state.debts.get(0).accounts.get("0001").paid() == 25000);
+            truth(Payments.totals(a.state.debts.get(0)).remaining == 175000);
+            runOnMainSync(() -> a.paymentDialog(ledger, "0001"));
+            runOnMainSync(
+                () ->
+                    find(a.lastDialog.getWindow().getDecorView(), "Tamamı Ödendi").performClick());
+            runOnMainSync(() -> a.lastDialog.getButton(-1).performClick());
+            await(() -> !a.busy && a.state.debts.get(0).accounts.get("0001").remaining() == 0);
+            truth(
+                new ArrayList<>(a.state.debts.get(0).accounts.keySet())
+                    .equals(Arrays.asList("0001", "0002")));
+            runOnMainSync(
+                () -> {
+                  ViewGroup card = a.root.findViewWithTag("debt-account-0001");
+                  truth(card != null && card.getChildAt(0).getAlpha() < 1f);
+                });
+            runOnMainSync(() -> a.paymentDialog(ledger, "0002"));
+            runOnMainSync(
+                () -> {
+                  ((EditText)
+                          a.lastDialog.getWindow().getDecorView().findViewWithTag("payment-amount"))
+                      .setText("1200,00");
+                  find(a.lastDialog.getWindow().getDecorView(), "Girilen Ödemeyi Kaydet")
+                      .performClick();
+                });
+            runOnMainSync(() -> a.lastDialog.getButton(-1).performClick());
+            await(() -> !a.busy && a.state.debts.get(0).accounts.get("0002").paid() == 120000);
+            Payments.Totals t = Payments.totals(a.vault.load().debts.get(0));
+            truth(
+                t.original == 200000 && t.paid == 220000 && t.remaining == 0 && t.excess == 20000);
+            runOnMainSync(() -> a.paymentDialog(ledger, "0002"));
+            runOnMainSync(
+                () ->
+                    find(a.lastDialog.getWindow().getDecorView(), "Bu Ödemeyi İptal Et")
+                        .performClick());
+            runOnMainSync(() -> a.lastDialog.getButton(-1).performClick());
+            await(() -> !a.busy && a.state.debts.get(0).accounts.get("0002").remaining() == 100000);
+            runOnMainSync(
+                () -> {
+                  a.lastDialog.dismiss();
+                  a.openPayments();
+                });
+            waitForIdleSync();
+            Thread.sleep(250);
+            snapshot(a, "payments-light.png");
+            runOnMainSync(
+                () -> {
+                  truth(a.body.getWidth() <= a.root.getWidth());
+                  for (int i = 0; i < a.body.getChildCount(); i++) {
+                    View child = a.body.getChildAt(i);
+                    truth(child.getRight() <= a.body.getWidth());
+                  }
+                  View summary = a.root.findViewWithTag("payment-summary");
+                  truth(summary != null && summary.getWidth() > 0);
+                });
+            runOnMainSync(() -> a.previewDebtImport(table));
+            await(() -> !a.busy);
+            runOnMainSync(
+                () ->
+                    find(a.lastDialog.getWindow().getDecorView(), "Onayla Ve Borç Listesini Ekle")
+                        .performClick());
+            truth(
+                a.state.debts.size() == 1
+                    && a.state.debts.get(0).accounts.get("0001").paid() == 100000);
+            State base = a.vault.load();
+            State contactChange = Codec.copy(base);
+            contactChange.people.put("000123", sample("000123"));
+            State edited = a.vault.commit(contactChange, base.revision, true);
+            State paymentChange = Codec.copy(edited);
+            Payments.add(paymentChange.debts.get(0).accounts.get("0002"), 1000, "");
+            State paid = a.vault.commit(paymentChange, edited.revision, false);
+            State undone = a.vault.restoreUndo(paid.revision);
+            truth(undone.debts.get(0).accounts.get("0002").paid() == 1000);
+          } finally {
+            close(a);
+          }
+        });
+    check(
         "Light dark five screens secure lock and small screen geometry synthetic previews",
         () -> {
           android.content.SharedPreferences prefs = target.getSharedPreferences("settings", 0);

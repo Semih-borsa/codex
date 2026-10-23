@@ -110,6 +110,7 @@ public final class Model {
     public final List<Template> templates = new ArrayList<>();
     public final List<Event> history = new ArrayList<>();
     public final List<String> recent = new ArrayList<>();
+    public final List<Payments.Ledger> debts = new ArrayList<>();
   }
 
   public static String fold(String s) {

@@ -33,6 +33,10 @@ public final class MainActivity extends Activity {
   TextView status;
   EditText search, preview;
   RadioGroup templateChoices;
+  static final int DEBT_IMPORT = 32;
+  String debtLedger = "", debtQuery = "";
+  int debtPage;
+  boolean debtImport;
   LinearLayout results;
   TextView characters;
   boolean busy, failed, dark, locked, authenticating, externalPending, destroyed;
@@ -108,6 +112,8 @@ public final class MainActivity extends Activity {
     vault = new Vault(this);
     if (saved != null) {
       screen = saved.getInt("screen");
+      debtLedger = saved.getString("debtLedger", "");
+      debtQuery = saved.getString("debtQuery", "");
       crmMode = saved.getInt("crmMode");
       followFilter = saved.getInt("followFilter");
       historyPerson = saved.getString("historyPerson", "");
@@ -144,6 +150,8 @@ public final class MainActivity extends Activity {
     super.onSaveInstanceState(out);
     capture();
     out.putInt("screen", screen);
+    out.putString("debtLedger", debtLedger);
+    out.putString("debtQuery", debtQuery);
     out.putInt("crmMode", crmMode);
     out.putInt("followFilter", followFilter);
     out.putString("historyPerson", historyPerson);
@@ -587,6 +595,7 @@ public final class MainActivity extends Activity {
   }
 
   void home() {
+    if (!state.debts.isEmpty()) action(body, "Borç Ve Ödemeler", this::openPayments);
     if (selected.isEmpty() || !state.people.containsKey(selected)) {
       LinearLayout hero = card(body);
       hero.setBackground(new Visuals.Hero(dp(20)));
@@ -762,7 +771,7 @@ public final class MainActivity extends Activity {
                       results.removeAllViews();
                       if (q.trim().isEmpty() || q.trim().equals(selected)) return;
                       Person exact = state.people.get(q.trim());
-                      if (exact != null && !busy) {
+                      if (exact != null && !busy && queue.isEmpty()) {
                         select(exact.sicil);
                         return;
                       }
@@ -792,6 +801,7 @@ public final class MainActivity extends Activity {
     body.addView(bold("Kayıt Yönetimi", 24));
     LinearLayout tools = card(body);
     action(tools, "Excel İçe Aktar", () -> chooseOpen(IMPORT));
+    action(tools, "Borç Ve Ödemeler", this::openPayments);
     action(
         tools,
         "Excel Dışa Aktar",
@@ -1048,8 +1058,8 @@ public final class MainActivity extends Activity {
   void history() {
     body.addView(bold("İletişim Ve Takip", 24));
     LinearLayout sections = row();
-    String[] names = {"Geçmiş", "Takip", "Raporlar"};
-    for (int i = 0; i < 3; i++) {
+    String[] names = {"Geçmiş", "Takip", "Raporlar", "Ödemeler"};
+    for (int i = 0; i < names.length; i++) {
       final int mode = i;
       Button button =
           button(
@@ -1067,6 +1077,10 @@ public final class MainActivity extends Activity {
     }
     body.addView(sections);
     gap(body, 8);
+    if (crmMode == 3) {
+      paymentsPage();
+      return;
+    }
     if (crmMode == 1) {
       followList();
       return;
@@ -1141,6 +1155,364 @@ public final class MainActivity extends Activity {
             historyPage++;
             render();
           });
+  }
+
+  void openPayments() {
+    capture();
+    screen = 3;
+    crmMode = 3;
+    debtPage = 0;
+    render();
+  }
+
+  Payments.Ledger activeDebt() {
+    if (state.debts.isEmpty()) return null;
+    for (Payments.Ledger l : state.debts) if (l.id.equals(debtLedger)) return l;
+    Payments.Ledger l = state.debts.get(state.debts.size() - 1);
+    debtLedger = l.id;
+    return l;
+  }
+
+  void amountLine(LinearLayout parent, String label, long amount) {
+    TextView caption = text(label, 12, muted);
+    parent.addView(caption);
+    TextView value = bold(Payments.format(amount), 22);
+    value.setAutoSizeTextTypeUniformWithConfiguration(
+        12, 22, 1, android.util.TypedValue.COMPLEX_UNIT_SP);
+    value.setMaxLines(1);
+    parent.addView(value, new LinearLayout.LayoutParams(-1, dp(36)));
+  }
+
+  void paymentsPage() {
+    action(body, "Borç Excel Listesi Yükle", () -> chooseOpen(DEBT_IMPORT));
+    Payments.Ledger ledger = activeDebt();
+    if (ledger == null) {
+      body.addView(
+          text(
+              "İlk Satır Başlık: A Sıra No · B Cari Kodu · C Ticari Unvanı · D Adı · E Soyadı · F"
+                  + " Bakiye. Telefon Gerekmez.",
+              14,
+              ink));
+      return;
+    }
+    action(
+        body,
+        "Liste Seç · " + ledger.period + " · " + ledger.name,
+        () ->
+            show(
+                new AlertDialog.Builder(this)
+                    .setTitle("Borç Listesi Seçin")
+                    .setItems(
+                        state.debts.stream()
+                            .map(l -> l.period + " · " + l.name)
+                            .toArray(String[]::new),
+                        (d, i) -> {
+                          debtLedger = state.debts.get(i).id;
+                          debtPage = 0;
+                          debtQuery = "";
+                          render();
+                        })
+                    .setNegativeButton("Vazgeç", null)));
+    Payments.Totals totals = Payments.totals(ledger);
+    LinearLayout summary = card(body);
+    summary.setTag("payment-summary");
+    amountLine(summary, "İlk Listenin Genel Toplamı", totals.original);
+    amountLine(summary, "Ödenen Tutar", totals.paid);
+    amountLine(summary, "Kalan Borç", totals.remaining);
+    if (totals.excess > 0) amountLine(summary, "Fazla Ödeme", totals.excess);
+    summary.addView(
+        text(ledger.accounts.size() + " Kişi · " + totals.closed + " Tamamı Ödendi", 12, muted));
+    LinearLayout filters = card(body);
+    EditText query = input(filters, "Cari Kodu Veya Ad Soyad Ara", debtQuery, false);
+    action(
+        filters,
+        "Ara",
+        () -> {
+          debtQuery = query.getText().toString();
+          debtPage = 0;
+          render();
+        });
+    List<Payments.Account> accounts = new ArrayList<>();
+    String q = Model.fold(debtQuery);
+    for (Payments.Account a : ledger.accounts.values())
+      if (q.isEmpty() || Model.fold(a.code + " " + a.name() + " " + a.title).contains(q))
+        accounts.add(a);
+    for (int i = debtPage * 30; i < Math.min((debtPage + 1) * 30, accounts.size()); i++) {
+      Payments.Account a = accounts.get(i);
+      LinearLayout item = card(body);
+      item.setTag("debt-account-" + a.code);
+      LinearLayout info = column();
+      info.addView(bold(a.name(), 18));
+      info.addView(text("Cari Kodu: " + a.code, 13, muted));
+      if (!a.title.isEmpty()) info.addView(text(a.title, 13, muted));
+      info.addView(
+          text(
+              a.remaining() == 0
+                  ? (a.excess() > 0 ? "Tamamı Ödendi · Fazla Ödeme Var" : "Tamamı Ödendi")
+                  : a.paid() > 0 ? "Kısmi Ödeme" : "Ödeme Bekliyor",
+              14,
+              blue));
+      amountLine(info, "İlk Borç", a.original);
+      amountLine(info, "Ödenen", a.paid());
+      amountLine(info, "Kalan", a.remaining());
+      if (a.excess() > 0) amountLine(info, "Fazla Ödeme", a.excess());
+      Payments.Trend trend =
+          Payments.trend(state, a.code, java.time.YearMonth.parse(ledger.period));
+      info.addView(text("Son 3 Ayda " + trend.appearances + " Farklı Ayda Listede", 12, muted));
+      info.addView(
+          text("Yüklenen Dönemlerde Borcun %" + trend.percent + " Kadarı Ödenmiş", 12, muted));
+      if (trend.unpaidStreak >= 3)
+        info.addView(
+            text(trend.unpaidStreak + " Ardışık Dönemde Ödeme Kaydı Girilmemiş", 13, 0xFFB04E40));
+      if (a.remaining() == 0) info.setAlpha(.55f);
+      item.addView(info);
+      action(
+          item,
+          a.remaining() > 0 ? "Ödeme Gir" : "Ödeme Detayı",
+          () -> paymentDialog(ledger.id, a.code));
+    }
+    if (accounts.isEmpty()) body.addView(text("Kayıt Bulunamadı.", 14, muted));
+    if (debtPage > 0)
+      action(
+          body,
+          "Önceki 30 Kişi",
+          () -> {
+            debtPage--;
+            render();
+          });
+    if ((debtPage + 1) * 30 < accounts.size())
+      action(
+          body,
+          "Sonraki 30 Kişi",
+          () -> {
+            debtPage++;
+            render();
+          });
+  }
+
+  void paymentDialog(String ledgerId, String code) {
+    Payments.Account a = Payments.find(state, ledgerId).accounts.get(code);
+    if (a == null) {
+      toast("Cari Kaydı Bulunamadı.");
+      return;
+    }
+    LinearLayout box = column();
+    box.addView(bold(a.name() + " · " + a.code, 18));
+    Payments.Trend history =
+        Payments.trend(
+            state, a.code, java.time.YearMonth.parse(Payments.find(state, ledgerId).period));
+    box.addView(
+        text(
+            "Son 3 Ayda "
+                + history.appearances
+                + " Ay Listede · Borcun %"
+                + history.percent
+                + " Kadarı Ödenmiş",
+            13,
+            muted));
+    if (history.unpaidStreak >= 3)
+      box.addView(
+          text(history.unpaidStreak + " Ardışık Dönemde Ödeme Kaydı Girilmemiş", 14, 0xFFB04E40));
+    amountLine(box, "İlk Borç", a.original);
+    amountLine(box, "Ödenen", a.paid());
+    amountLine(box, "Kalan", a.remaining());
+    EditText amount = input(box, "Ödeme Tutarı (TL)", "", false);
+    amount.setTag("payment-amount");
+    amount.setInputType(
+        android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
+    EditText note = input(box, "Ödeme Notu (İsteğe Bağlı)", "", false);
+    note.setFilters(new InputFilter[] {new InputFilter.LengthFilter(500)});
+    AlertDialog window = dialog("Ödeme Gir", box);
+    action(
+        box,
+        "Girilen Ödemeyi Kaydet",
+        () -> {
+          try {
+            long cents = Payments.money(amount.getText().toString(), false);
+            if (cents <= 0) throw new IllegalArgumentException("Ödeme Sıfırdan Büyük Olmalı.");
+            confirmPayment(ledgerId, code, cents, note.getText().toString(), window);
+          } catch (Exception error) {
+            error(error);
+          }
+        });
+    if (a.remaining() > 0)
+      action(
+          box,
+          "Tamamı Ödendi",
+          () -> confirmPayment(ledgerId, code, a.remaining(), note.getText().toString(), window));
+    box.addView(bold("Ödeme Geçmişi", 16));
+    int shown = 0;
+    for (int i = a.payments.size() - 1; i >= 0 && shown < 100; i--, shown++) {
+      Payments.Entry entry = a.payments.get(i);
+      box.addView(
+          text(
+              format(entry.time)
+                  + " · "
+                  + Payments.format(entry.amount)
+                  + (entry.cancelled ? " · İptal Edildi" : ""),
+              13,
+              entry.cancelled ? muted : ink));
+      if (!entry.note.isEmpty()) box.addView(text(entry.note, 12, muted));
+      if (!entry.cancelled)
+        action(
+            box,
+            "Bu Ödemeyi İptal Et",
+            () ->
+                confirm(
+                    "Ödemeyi İptal Et",
+                    Payments.format(entry.amount)
+                        + " Ödeme Hesaptan Çıkarılacak. İlk Borç Değişmeyecek.",
+                    () ->
+                        mutate(
+                            copy -> {
+                              Payments.Account target =
+                                  Payments.find(copy, ledgerId).accounts.get(code);
+                              for (Payments.Entry e : target.payments)
+                                if (e.id.equals(entry.id)) e.cancelled = true;
+                            },
+                            false,
+                            () -> {
+                              window.dismiss();
+                              render();
+                              paymentDialog(ledgerId, code);
+                            })));
+    }
+    if (a.payments.size() > 100)
+      box.addView(text("Son 100 Ödeme Gösteriliyor; Tümü Şifreli Yedekte Korunur.", 12, muted));
+  }
+
+  void confirmPayment(String ledgerId, String code, long cents, String note, AlertDialog window) {
+    Payments.Account a = Payments.find(state, ledgerId).accounts.get(code);
+    String detail = a.name() + "\nÖdeme: " + Payments.format(cents);
+    if (cents > a.remaining())
+      detail += "\nBu Ödemenin Borcu Aşan Kısmı: " + Payments.format(cents - a.remaining());
+    confirm(
+        "Ödemeyi Onayla",
+        detail,
+        () ->
+            mutate(
+                copy -> Payments.add(Payments.find(copy, ledgerId).accounts.get(code), cents, note),
+                false,
+                () -> {
+                  window.dismiss();
+                  render();
+                  toast("Ödeme Kaydedildi.");
+                }));
+  }
+
+  void previewDebtImport(Excel.Table table) {
+    task(
+        () -> Payments.read(table),
+        ledger -> {
+          if (state.debts.size() >= 100) {
+            toast("En Fazla 100 Borç Listesi Saklanabilir.");
+            return;
+          }
+          LinearLayout box = column();
+          EditText name =
+              input(
+                  box,
+                  "Liste Adı / Dönem",
+                  "Kesinti Listesi "
+                      + LocalDate.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy")),
+                  false);
+          name.setFilters(new InputFilter[] {new InputFilter.LengthFilter(100)});
+          String[] monthNames = {
+            "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül",
+            "Ekim", "Kasım", "Aralık"
+          };
+          Spinner month = spinner(box, "Listenin Ait Olduğu Ay", monthNames);
+          month.setSelection(LocalDate.now().getMonthValue() - 1);
+          EditText year = input(box, "Yıl", String.valueOf(LocalDate.now().getYear()), false);
+          year.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+          box.addView(
+              text(
+                  "Geçmiş karşılaştırması için dosyanın ait olduğu gerçek ayı seçin. Listeye girmek"
+                      + " ve ödeme girmemiş olmak ayrı değerlendirilir.",
+                  12,
+                  muted));
+          box.addView(
+              text(ledger.accounts.size() + " Kişi · Cari Koduna Göre Ayrı Kayıt", 14, ink));
+          amountLine(box, "İlk Listenin Genel Toplamı", Payments.totals(ledger).original);
+          box.addView(
+              text(
+                  "Bu toplam ödeme girildiğinde değişmez. Mevcut rehber ve önceki borç listeleri"
+                      + " korunur. Telefon numarası gerekmez.",
+                  13,
+                  muted));
+          AlertDialog preview = dialog("Borç Listesi Önizlemesi", box);
+          action(
+              box,
+              "Onayla Ve Borç Listesini Ekle",
+              () -> {
+                String title = name.getText().toString().trim();
+                if (title.isEmpty()) {
+                  toast("Liste Adı Girin.");
+                  return;
+                }
+                try {
+                  int y = Integer.parseInt(year.getText().toString().trim());
+                  if (y < 1900 || y > 9999) throw new IllegalArgumentException();
+                  ledger.period =
+                      java.time.YearMonth.of(y, month.getSelectedItemPosition() + 1).toString();
+                } catch (Exception invalid) {
+                  toast("Geçerli Bir Yıl Girin.");
+                  return;
+                }
+                for (Payments.Ledger old : state.debts)
+                  if (old.period.equals(ledger.period)) {
+                    if (old.fingerprint.equals(ledger.fingerprint)) {
+                      preview.dismiss();
+                      debtLedger = old.id;
+                      openPayments();
+                      toast("Bu Dönemin Listesi Zaten Kayıtlı. Ödemeler Korundu.");
+                      return;
+                    }
+                    for (String code : ledger.accounts.keySet())
+                      if (old.accounts.containsKey(code)) {
+                        toast(
+                            "Bu Dönemde Aynı Cari Kod Zaten Kayıtlı. Mükerrer Borç Eklenmedi. Yeni"
+                                + " Ay İse Ay/Yıl Seçimini Düzeltin.");
+                        return;
+                      }
+                  }
+                ledger.name = title;
+                mutate(
+                    copy -> {
+                      if (copy.debts.size() >= 100)
+                        throw new IllegalArgumentException("Borç Listesi Sınırı.");
+                      copy.debts.add(ledger);
+                    },
+                    false,
+                    () -> {
+                      preview.dismiss();
+                      if (importing != null) {
+                        importing.delete();
+                        importing = null;
+                      }
+                      debtLedger = ledger.id;
+                      openPayments();
+                      int warnings = 0;
+                      for (Payments.Account account : ledger.accounts.values())
+                        if (Payments.trend(
+                                    state, account.code, java.time.YearMonth.parse(ledger.period))
+                                .unpaidStreak
+                            >= 3) warnings++;
+                      if (warnings > 0)
+                        show(
+                            new AlertDialog.Builder(this)
+                                .setTitle("Geçmiş Dönem Uyarısı")
+                                .setMessage(
+                                    warnings
+                                        + " Kişinin En Az 3 Ardışık Döneminde Ödeme Kaydı"
+                                        + " Girilmemiş. Kişi Kartlarında Ayrıntıları"
+                                        + " Görebilirsiniz. Bu Bilgi Yalnız Uygulamaya Yüklenen"
+                                        + " Liste Ve Ödemelere Dayanır.")
+                                .setPositiveButton("Tamam", null));
+                      else toast("Borç Listesi Eklendi.");
+                    });
+              });
+        });
   }
 
   void crmDialog(String id) {
@@ -1616,10 +1988,10 @@ public final class MainActivity extends Activity {
         new Intent(Intent.ACTION_OPEN_DOCUMENT)
             .addCategory(Intent.CATEGORY_OPENABLE)
             .setType(
-                kind == IMPORT
+                (kind == IMPORT || kind == DEBT_IMPORT)
                     ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                     : "*/*");
-    if (kind == IMPORT)
+    if (kind == IMPORT || kind == DEBT_IMPORT)
       i.putExtra(
           Intent.EXTRA_MIME_TYPES,
           new String[] {
@@ -1689,8 +2061,10 @@ public final class MainActivity extends Activity {
       return;
     }
     Uri uri = data.getData();
-    if (request == IMPORT) loadImport(uri);
-    else if (request == RESTORE) passwordDialog(true, uri);
+    if (request == IMPORT || request == DEBT_IMPORT) {
+      debtImport = request == DEBT_IMPORT;
+      loadImport(uri);
+    } else if (request == RESTORE) passwordDialog(true, uri);
     else if (request == BACKUP) {
       char[] password = backupPassword;
       backupPassword = null;
@@ -1784,8 +2158,9 @@ public final class MainActivity extends Activity {
                             + " Kişi · "
                             + restored.templates.size()
                             + " Şablon\n"
-                            + "Mevcut rehber, şablon ve geçmiş yedekle değiştirilecek. İşlem öncesi"
-                            + " şifreli geri alma kopyası oluşturulur.",
+                            + "Mevcut rehber, şablon, geçmiş ve ödeme listeleri yedekle"
+                            + " değiştirilecek. İşlem öncesi şifreli geri alma kopyası"
+                            + " oluşturulur.",
                         () -> {
                           save(
                               restored,
@@ -1840,7 +2215,9 @@ public final class MainActivity extends Activity {
                                       importTable = table;
                                       importHeader =
                                           table.rows.isEmpty() ? 1 : table.rows.firstKey();
-                                      mappingDialog();
+                                      if (debtImport || Payments.looksLike(table))
+                                        previewDebtImport(table);
+                                      else mappingDialog();
                                     }))
                         .setNegativeButton("İptal", null));
               });

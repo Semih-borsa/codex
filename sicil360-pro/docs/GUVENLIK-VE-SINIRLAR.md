@@ -30,3 +30,7 @@ Cihaz anahtarı kaybolursa yerel dosya çözülemez. Anahtar geri alma/uzak paro
 Fiziksel telefon, WhatsApp/Business hesabı ve gerçek sohbet/gönderim doğrulanmadı. Emülatör testleri onay, Intent ve metin/numara yönlendirmesini taklit alıcıyla kontrol eder. WhatsApp sürümü/hesap durumu/bağlantı varsayılanlarına göre sohbet açılışı farklı olabilir. Gönderim doğrulanamıyorsa sistem gönderildi kaydı oluşturmaz; kullanıcı kendi beyanını ayrıca işaretleyebilir.
 
 CRM takip alanları V2 veri biçiminde şifreli kayıtta/yedekte tutulur. V1 okunur, V2 eski uygulamada okunamaz. Takip durumu gönderim kanıtı değildir. Raporlar kalıcı sınırsız muhasebe kaydı değil; mevcut rehber ve son 1000 iletişim kaydından hesaplanan özetlerdir. Kişi silme ve REPLACE içe aktarım kişi takibini de kaldırır.
+
+Ödeme defteri ve dönemler V4 şifreli veri biçiminde saklanır; V1/V2/V3 okunabilir. Eski uygulamalar V4 yedeği açamaz. Ödeme girişleri kullanıcı beyanıdır. İptal geçmişte saklanır; tüm yedeği geri yüklemek finansal kayıtları da değiştirir. Rehber geri alma güncel ödemeleri korur. Finansal Excel geçici kopyaları da mevcut özel önbellek temizleme politikasına tabidir. Para birimi TL, tam sayı kuruş hesabıdır; kişi başına toplam etkin ödeme ve ilk borç en fazla 999.999.999.999,99 TL olabilir.
+
+Geçmiş analizleri yalnız cari kodla, seçili ay ve önceki yüklenmiş dönemlerden türetilir. Ödeme girmemiş olmak, ödeme yapılmadığına dair banka doğrulaması değildir. Aylık bakiyeler devir içeriyorsa geçmiş oranı dönemlere göre ağırlıklı istatistiktir; gerçek toplam alacağın hesabı değildir.
