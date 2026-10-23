@@ -9,7 +9,7 @@ Android yalnız ilk platformdur. Kotlin/Jetpack Compose değerlendirildi; bu sü
 - Çalışma zamanında üçüncü taraf paket yok; birim testlerinde JUnit 4.13.2.
 - XLSX: `ZipFile` + Android/JVM SAX. Harici Excel programı gerekmez. Formül çalıştırılmaz, DTD/harici entity reddedilir. Ortak basit sıfır sayı maskeleri desteklenir; Excel'in tüm görüntüleme biçimlerinin kopyası değildir.
 - Kalıcılık: Android Keystore AES-GCM + `AtomicFile`. Sürüm karşılaştırması eski veriyle yeni dosyanın üzerine yazmayı önler; kayıtlar toplu ve atomik değiştirilir. Veritabanı/arama bellekte yüklenir; dosya yükleme, arama ve ağır kodlama/şifreleme işleri tek arka plan yürütücüsündedir. Room yerine bu sürümde sınırlı, sürümlü şifreli dosya seçildi.
-- UI: kurumsal mavi kartlar, dar ekrana göre ağırlıklı alt menü, açık/koyu/sistem teması. Özgün Canvas simgeleri; dış görsel veya CDN yok.
+- UI: Petrol & Mint açık tema / Grafit & Zümrüt koyu tema kartları, dar ekrana göre ağırlıklı alt menü, açık/koyu/sistem teması. Özgün Canvas simgeleri; dış görsel veya CDN yok.
 
 ## Android Studio
 
@@ -29,6 +29,6 @@ adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
 adb shell am instrument -w com.semih.sicil360.test/com.semih.sicil360.SmokeRunner
 ```
 
-Testler `cache/validation/isolated` içinde kendi şifreli veri dosyasını kullanır. Tema/kilit tercihlerini geçici değiştirip geri yükler; kişisel rehber dosyasına kayıt yapmaz. Test önizlemeleri `FLAG_SECURE` nedeniyle sistem ekran görüntüsü yerine yalnız sentetik View çizimiyle üretilir.
+Testler `cache/validation/isolated` içinde kendi şifreli veri dosyasını kullanır. Tema/kilit tercihlerini geçici değiştirip geri yükler; kişisel rehber dosyasına kayıt yapmaz. Test önizlemeleri `FLAG_SECURE` nedeniyle sistem ekran görüntüsü yerine yalnız sentetik View çizimiyle üretilir. Bu sentetik önizlemeler test çalıştırıldığında `Android/data/com.semih.sicil360/files/synthetic-previews` klasörüne de yazılır.
 
 Dağıtılan APK debugger erişimi kapalı release varyantıdır; bu kişisel dağıtımda geliştirme sertifikasıyla imzalanır (`release.signingConfig = signingConfigs.debug`). Play Store yayını yapılmadı. Üretim dağıtımında sahibi tarafından güvenle saklanan özel release anahtarı ve uygun imzalama süreci gerekir. Keystore dosyası/parolası bu depoda bulunmaz.

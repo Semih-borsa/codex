@@ -1,8 +1,8 @@
-# Sicil360 Pro 1.0 — Android
+# Sicil360 Pro 1.1 — Android
 
 Excel rehberinden sicille kişi bulma ve **kendi düz metin şablonunuzu** onayla WhatsApp sohbetine hazırlama. Mesaja sicil, ad, soyad veya başka veri kendiliğinden eklenmez. `{AD}` gibi ifadeler de aynen yazı olarak kalır.
 
-[APK indir](../downloads/Sicil360Pro-1.0.apk) · [Android Studio kaynak paketi](../downloads/Sicil360Pro-Android-Studio.zip) · [Excel şablonu](examples/Kisi-Sablonu.xlsx) · [Mesaj örnekleri](examples/Mesaj-Ornekleri.txt)
+[APK indir](../downloads/Sicil360Pro-1.1.apk) · [Android Studio kaynak paketi](../downloads/Sicil360Pro-Android-Studio.zip) · [Excel şablonu](examples/Kisi-Sablonu.xlsx) · [Mesaj örnekleri](examples/Mesaj-Ornekleri.txt)
 
 Android 8.0 ve üzeri, paket `com.semih.sicil360`, sürüm kodu 1. Telefonun kendi ekran kilidiyle isteğe bağlı uygulama kilidi; açık/koyu/sistem teması. APK kişisel yükleme için geliştirme sertifikasıyla imzalanmış release derlemedir; debugger erişimi kapalıdır. Mevcut diğer uygulamalarınızdan ayrı bir uygulamadır.
 
@@ -46,3 +46,7 @@ Veri saklama, geçici Excel dosyaları, uygulama kilidi, dış entegrasyon ve de
 [Derleme ve mimari](docs/DERLEME.md) · [Test sonuçları](docs/TESTLER.md) · [Açık ekran](docs/screenshots/light-0.png) · [Koyu ekran](docs/screenshots/dark-0.png).
 
 **Gerçek WhatsApp/Business istemcisi, hesap kaydı ve fiziksel telefon uçtan uca gönderimi henüz doğrulanmadı.** Android'de onay sırası, numara/metin ve normal/Business/tarayıcı intent yönlendirmesi gönderim yapmayan test arayüzüyle doğrulanır. WhatsApp sürümü, numaranın kayıtlı olup olmaması ve cihazın bağlantı eşleştirmesi ekran davranışını etkileyebilir. İlk gerçek kullanımda kendi kontrolünüzde tek bir kişiyle doğrulayın.
+
+## 1.1 Tasarım Güncellemesi
+
+Açık temada Petrol & Mint, koyu temada Grafit & Zümrüt renkleri kullanılır. WhatsApp simgeli yeşil geçişli açma düğmesi alt menünün üstünde sabit kalır. Şablon metinleri ve kişi doğrulama/onay akışı korunur. Güncelleme aynı paket ve sertifikayla mevcut kurulumun üzerine yüklenebilir; uygulamayı kaldırmayın.

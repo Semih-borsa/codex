@@ -191,12 +191,12 @@ public final class MainActivity extends Activity {
   }
 
   void colors() {
-    bg = dark ? 0xFF0E1829 : 0xFFEDF5FD;
-    card = dark ? 0xFF1A2A3E : Color.WHITE;
-    ink = dark ? 0xFFE5EDF8 : 0xFF13263C;
-    muted = dark ? 0xFFA5B9D2 : 0xFF55697C;
-    blue = dark ? 0xFF89BBEB : 0xFF2A6FB1;
-    border = dark ? 0xFF293D56 : 0xFFDCE7F4;
+    bg = dark ? 0xFF151C20 : 0xFFF2F9F7;
+    card = dark ? 0xFF232D32 : Color.WHITE;
+    ink = dark ? 0xFFF0F6F4 : 0xFF123B42;
+    muted = dark ? 0xFFAFBFBD : 0xFF58716F;
+    blue = dark ? 0xFF38D9AD : 0xFF006A70;
+    border = dark ? 0xFF354441 : 0xFFDCECE6;
   }
 
   int dp(float n) {
@@ -237,10 +237,10 @@ public final class MainActivity extends Activity {
 
   LinearLayout card(LinearLayout parent) {
     LinearLayout c = column();
-    c.setPadding(dp(16), dp(12), dp(16), dp(12));
+    c.setPadding(dp(14), dp(9), dp(14), dp(9));
     c.setBackground(Visuals.surface(card, dp(20), border));
     LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(-1, -2);
-    p.bottomMargin = dp(12);
+    p.bottomMargin = dp(9);
     parent.addView(c, p);
     return c;
   }
@@ -253,7 +253,7 @@ public final class MainActivity extends Activity {
     b.setTextSize(14);
     b.setMinHeight(dp(48));
     b.setPadding(dp(12), dp(7), dp(12), dp(7));
-    b.setBackground(Visuals.touch(0xFF2A6FB1, dp(13), 0));
+    b.setBackground(Visuals.touch(dark ? 0xFF087C62 : 0xFF006A70, dp(13), 0));
     b.setOnClickListener(
         v -> {
           if (!busy && !failed && !locked) action.run();
@@ -268,6 +268,43 @@ public final class MainActivity extends Activity {
     parent.addView(b, p);
   }
 
+  void whatsappAction(LinearLayout parent) {
+    LinearLayout cta = row();
+    cta.setTag("whatsapp-open");
+    cta.setGravity(Gravity.CENTER);
+    cta.setMinimumHeight(dp(54));
+    cta.setPadding(dp(12), dp(10), dp(12), dp(10));
+    cta.setBackground(Visuals.whatsappButton(dp(15), dark));
+    cta.setContentDescription("WhatsApp'ta Aç");
+    cta.setFocusable(true);
+    cta.setClickable(true);
+    cta.setAccessibilityDelegate(
+        new View.AccessibilityDelegate() {
+          @Override
+          public void onInitializeAccessibilityNodeInfo(
+              View host, android.view.accessibility.AccessibilityNodeInfo info) {
+            super.onInitializeAccessibilityNodeInfo(host, info);
+            info.setClassName(Button.class.getName());
+          }
+        });
+    android.widget.ImageView icon = new android.widget.ImageView(this);
+    icon.setImageDrawable(new Visuals.Icon("whatsapp", Color.WHITE, dp(27)));
+    icon.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+    cta.addView(icon, new LinearLayout.LayoutParams(dp(27), dp(27)));
+    TextView label = text("WhatsApp'ta Aç", 17, Color.WHITE);
+    label.setTypeface(null, Typeface.BOLD);
+    label.setPadding(dp(10), 0, 0, 0);
+    label.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+    cta.addView(label);
+    cta.setOnClickListener(
+        v -> {
+          if (!busy && !failed && !locked) prepareMessage();
+        });
+    LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2);
+    params.setMargins(0, dp(5), 0, dp(3));
+    parent.addView(cta, params);
+  }
+
   EditText input(LinearLayout parent, String label, String initial, boolean multiline) {
     TextView caption = text(label, 12, muted);
     parent.addView(caption);
@@ -280,7 +317,7 @@ public final class MainActivity extends Activity {
     e.setHintTextColor(muted);
     e.setSingleLine(!multiline);
     e.setPadding(dp(10), dp(9), dp(10), dp(9));
-    e.setBackground(Visuals.surface(dark ? 0xFF122239 : 0xFFF2F7FD, dp(10), border));
+    e.setBackground(Visuals.surface(dark ? 0xFF1A2428 : 0xFFF0F8F5, dp(10), border));
     e.setInputType(
         android.text.InputType.TYPE_CLASS_TEXT
             | (multiline ? android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE : 0));
@@ -505,6 +542,12 @@ public final class MainActivity extends Activity {
           settings();
       }
     }
+    if (screen == 0
+        && state != null
+        && !locked
+        && !failed
+        && !selected.isEmpty()
+        && state.people.containsKey(selected)) whatsappAction(root);
     nav = row();
     nav.setBackground(Visuals.surface(card, dp(20), border));
     String[] titles = {"Ara", "Rehber", "Şablonlar", "Geçmiş", "Ayarlar"};
@@ -524,7 +567,9 @@ public final class MainActivity extends Activity {
       b.setMinimumWidth(0);
       b.setPadding(dp(2), dp(6), dp(2), dp(4));
       b.setTextColor(screen == i ? Color.WHITE : muted);
-      b.setBackground(Visuals.touch(screen == i ? 0xFF2A6FB1 : Color.TRANSPARENT, dp(16), 0));
+      b.setBackground(
+          Visuals.touch(
+              screen == i ? (dark ? 0xFF087C62 : 0xFF006A70) : Color.TRANSPARENT, dp(16), 0));
       b.setCompoundDrawablesWithIntrinsicBounds(
           null, new Visuals.Icon(icons[i], screen == i ? Color.WHITE : muted, dp(22)), null, null);
       nav.addView(b, new LinearLayout.LayoutParams(0, dp(58), 1));
@@ -544,7 +589,7 @@ public final class MainActivity extends Activity {
           text(
               state.people.size() + " Kayıt  ·  " + state.templates.size() + " Şablon",
               13,
-              0xFFD8E8FA));
+              0xFFD6F4E8));
     }
     LinearLayout finder = card(body);
     search = input(finder, "Sicil Numarasıyla Hızlı Ara", query, false);
@@ -640,9 +685,8 @@ public final class MainActivity extends Activity {
             }
           }
         });
-    action(composer, "WhatsApp'ta Aç", this::prepareMessage);
-    composer.addView(
-        text("Metin aynen kullanılır. WhatsApp'ta Gönder düğmesine siz basarsınız.", 12, muted));
+    composer.addView(text("Mesajı WhatsApp üzerinden siz gönderirsiniz.", 11, muted));
+
     if (!queue.isEmpty()) {
       body.addView(bold("Sıralı İşlem · " + (queueIndex + 1) + " / " + queue.size(), 16));
       action(body, "Sonraki Kişi / Bu Kişiyi Atla", this::nextQueue);

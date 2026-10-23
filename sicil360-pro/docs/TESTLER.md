@@ -1,4 +1,4 @@
-# Doğrulama — Sicil360 Pro 1.0 / 22 Ekim 2026
+# Doğrulama — Sicil360 Pro 1.1 / 23 Ekim 2026
 
 ## Sonuç
 
@@ -8,7 +8,7 @@
 - `assembleRelease` ve `assembleDebugAndroidTest` başarılı.
 - Android 11 / API 30 x86_64 emülatöründe **son teslim release APK'sı üzerinde 7 kontrol grubu geçti, 0 başarısız**. Testler taklit alıcıya yönelir; gerçek kişiye mesaj göndermez.
 - Release paketinde `DEBUGGABLE` bayrağı yok; INTERNET izni yok; `FLAG_SECURE` açık. İmza doğrulandı. Sertifika geliştirme sertifikasıdır; APK Play Store yayını değildir.
-- Son APK SHA-256: `c6dc7b2a09ad356203e9b637d712f25e8f1555a7fdc1ce38bf9a2dcee1109024`.
+- Son APK SHA-256: `90263a5cbe1b0418c3106fe71edb6997ad3ab50fa7c0c92b1fe7aa9a236d4765`.
 - Sertifika SHA-256: `a1acf948b51380a975bf87c15fd7eddc3afa4ab021df4cd65495dadebf44b94c`.
 
 ## Test Kapsamı
@@ -41,3 +41,7 @@ Derleme makinesinde son ölçüm: **100.000 sentetik kayıtta 5000 tam sicil ara
 Fiziksel telefon, gerçek WhatsApp/Business kurulumu, oturum açılmış hesap, gerçek sohbet ve gerçek gönderim test edilmedi. Yönlendirme testleri üretimdeki Intent sınırında sahte alıcı kullanır; WhatsApp'ın kendi arayüzünü veya sunucu gönderimini doğrulamaz. PIN/desen/parola doğrulama ekranında gerçek kullanıcıyla başarılı cihaz kilidi girişi denenmedi; kilit ve güvenli başarısızlık görünümü kontrol edildi. TalkBack, büyük font ölçeği, tablet ve tüm Android sürümleri tam olarak test edilmedi. Test görüntüleri sentetiktir; ilk debug koşusunda aynı UI kaynaklarıyla View çizimi üzerinden alındı.
 
 Günlükler: geliştirme ortamında `sicil-release-build.log`, `sicil-release-delivery.txt`; tekrar çalıştırma komutları [DERLEME.md](DERLEME.md) içinde. [Dosya ve güvenlik sınırları](GUVENLIK-VE-SINIRLAR.md).
+
+## 1.1 Görsel Güncelleme
+
+Petrol & Mint açık tema, Grafit & Zümrüt koyu tema; WhatsApp simgeli, yeşil geçişli ve ortalanmış açma düğmesi. Düğme alt menünün üstüne sabitlendi. Küçük ekran kontrolü düğmenin en az 48 dp yüksekliğini, genişliğini, odaklanabilirliğini ve alt menü üzerinde görünmesini denetler. İlk denemede düğme kaydırılan içerikte kaldığından yeni görünürlük kontrolü assertion ile durdu; sabit yerleşim düzeltmesinden sonra son APK yeniden denetlendi. Önizleme ekranları sentetik test verileridir.

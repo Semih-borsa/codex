@@ -107,6 +107,13 @@ public final class SmokeRunner extends Instrumentation {
           view.draw(new Canvas(bitmap));
           try (FileOutputStream out = new FileOutputStream(new File(output, file))) {
             bitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
+            File previews = getTargetContext().getExternalFilesDir("synthetic-previews");
+            if (previews != null) {
+              previews.mkdirs();
+              try (FileOutputStream copy = new FileOutputStream(new File(previews, file))) {
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, copy);
+              }
+            }
           } catch (Exception e) {
             throw new AssertionError(e);
           } finally {
@@ -557,6 +564,17 @@ public final class SmokeRunner extends Instrumentation {
                   snapshot(a, "screen-" + mode + "-" + screen + ".png");
                   runOnMainSync(
                       () -> {
+                        if (page == 0) {
+                          View cta = a.root.findViewWithTag("whatsapp-open");
+                          truth(cta != null && cta.isClickable() && cta.isFocusable());
+                          truth(cta.getWidth() >= a.dp(270) && cta.getHeight() >= a.dp(48));
+                          truth(a.bg == (mode == 2 ? 0xFF151C20 : 0xFFF2F9F7));
+                          int[] location = new int[2];
+                          int[] navigation = new int[2];
+                          cta.getLocationOnScreen(location);
+                          a.nav.getLocationOnScreen(navigation);
+                          truth(location[1] + cta.getHeight() <= navigation[1]);
+                        }
                         truth(a.nav.getChildCount() == 5);
                         for (int i = 0; i < 5; i++) {
                           View v = a.nav.getChildAt(i);

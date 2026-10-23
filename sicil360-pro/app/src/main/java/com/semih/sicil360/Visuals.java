@@ -16,7 +16,16 @@ final class Visuals {
 
   static Drawable touch(int color, float radius, int border) {
     return new RippleDrawable(
-        ColorStateList.valueOf(0x243D91DE), surface(color, radius, border), null);
+        ColorStateList.valueOf(0x244ACFA8), surface(color, radius, border), null);
+  }
+
+  static Drawable whatsappButton(float radius, boolean dark) {
+    GradientDrawable fill =
+        new GradientDrawable(
+            GradientDrawable.Orientation.TL_BR,
+            dark ? new int[] {0xFF00AD85, 0xFF008B68} : new int[] {0xFF08AC82, 0xFF009B74});
+    fill.setCornerRadius(radius);
+    return new RippleDrawable(ColorStateList.valueOf(0x33FFFFFF), fill, null);
   }
 
   /** Full-width black separator remains legible in light and dark table rows. */
@@ -71,7 +80,7 @@ final class Visuals {
               area.top,
               area.right,
               area.bottom,
-              new int[] {0xFF183F72, 0xFF2A6FB1, 0xFF2A6FB1},
+              new int[] {0xFF123E44, 0xFF006A70, 0xFF138B78},
               null,
               Shader.TileMode.CLAMP));
       p.setStyle(Paint.Style.FILL);
@@ -145,6 +154,25 @@ final class Visuals {
         case "search":
           c.drawCircle(10, 10, 6, p);
           line(c, 15, 15, 21, 21);
+          break;
+        case "whatsapp":
+          Path bubble = new Path();
+          bubble.moveTo(5, 18);
+          bubble.cubicTo(-1, 10, 5, 1, 13, 2);
+          bubble.cubicTo(23, 2, 26, 15, 18, 20);
+          bubble.cubicTo(14, 23, 9, 22, 7, 20);
+          bubble.lineTo(2, 22);
+          bubble.close();
+          c.drawPath(bubble, p);
+          Path handset = new Path();
+          handset.moveTo(8, 7);
+          handset.cubicTo(5, 8, 8, 15, 14, 17);
+          handset.cubicTo(17, 18, 19, 15, 16, 14);
+          handset.lineTo(14, 15);
+          handset.cubicTo(11, 14, 10, 12, 9, 10);
+          handset.lineTo(10, 9);
+          handset.close();
+          c.drawPath(handset, p);
           break;
         case "chat":
           c.drawRoundRect(3, 4, 21, 18, 3, 3, p);
