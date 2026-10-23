@@ -1,8 +1,8 @@
-# Sicil360 Pro 1.1 — Android
+# Sicil360 Pro 1.2 — Android
 
 Excel rehberinden sicille kişi bulma ve **kendi düz metin şablonunuzu** onayla WhatsApp sohbetine hazırlama. Mesaja sicil, ad, soyad veya başka veri kendiliğinden eklenmez. `{AD}` gibi ifadeler de aynen yazı olarak kalır.
 
-[APK indir](../downloads/Sicil360Pro-1.1.apk) · [Android Studio kaynak paketi](../downloads/Sicil360Pro-Android-Studio.zip) · [Excel şablonu](examples/Kisi-Sablonu.xlsx) · [Mesaj örnekleri](examples/Mesaj-Ornekleri.txt)
+[APK indir](../downloads/Sicil360Pro-1.2.apk) · [Android Studio kaynak paketi](../downloads/Sicil360Pro-Android-Studio.zip) · [Excel şablonu](examples/Kisi-Sablonu.xlsx) · [Mesaj örnekleri](examples/Mesaj-Ornekleri.txt)
 
 Android 8.0 ve üzeri, paket `com.semih.sicil360`, sürüm kodu 1. Telefonun kendi ekran kilidiyle isteğe bağlı uygulama kilidi; açık/koyu/sistem teması. APK kişisel yükleme için geliştirme sertifikasıyla imzalanmış release derlemedir; debugger erişimi kapalıdır. Mevcut diğer uygulamalarınızdan ayrı bir uygulamadır.
 
@@ -50,3 +50,7 @@ Veri saklama, geçici Excel dosyaları, uygulama kilidi, dış entegrasyon ve de
 ## 1.1 Tasarım Güncellemesi
 
 Açık temada Petrol & Mint, koyu temada Grafit & Zümrüt renkleri kullanılır. WhatsApp simgeli yeşil geçişli açma düğmesi alt menünün üstünde sabit kalır. Şablon metinleri ve kişi doğrulama/onay akışı korunur. Güncelleme aynı paket ve sertifikayla mevcut kurulumun üzerine yüklenebilir; uygulamayı kaldırmayın.
+
+## 1.2 Şablon Seçimi
+
+Mesaj hazırlama ekranında şablonlar açılır liste yerine alt alta gösterilir. Sağdaki seçim düğmesi veya satıra dokunarak tek şablon seçilir; metni düzenlenebilir önizlemeye gelir. Seçili şablona tekrar dokunmak düzenlenen metni sıfırlamaz. Özel Mesaj seçeneği mevcut metni korur.

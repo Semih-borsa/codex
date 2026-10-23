@@ -32,7 +32,7 @@ public final class MainActivity extends Activity {
   ScrollView scroll;
   TextView status;
   EditText search, preview;
-  Spinner templateSelect;
+  RadioGroup templateChoices;
   LinearLayout results;
   TextView characters;
   boolean busy, failed, dark, locked, authenticating, externalPending, destroyed;
@@ -65,7 +65,6 @@ public final class MainActivity extends Activity {
       query = "",
       pendingEvent = "",
       notice = "";
-  boolean templateLoading;
   final LinkedHashSet<String> selectedPeople = new LinkedHashSet<>();
   final ArrayList<String> queue = new ArrayList<>();
   int queueIndex;
@@ -646,17 +645,13 @@ public final class MainActivity extends Activity {
     }
 
     LinearLayout composer = card(body);
-    String[] options = new String[state.templates.size() + 1];
-    options[0] = "Özel Mesaj · Şablon Kullanma";
-    int selectedIndex = 0;
-    for (int i = 0; i < state.templates.size(); i++) {
-      Template t = state.templates.get(i);
-      options[i + 1] = t.category + " · " + t.name;
-      if (t.id.equals(selectedTemplate)) selectedIndex = i + 1;
-    }
-    templateSelect = spinner(composer, "Mesaj Şablonu", options);
-    templateLoading = true;
-    templateSelect.setSelection(selectedIndex);
+    composer.addView(text("Mesaj Şablonu", 12, muted));
+    templateChoices = new RadioGroup(this);
+    templateChoices.setOrientation(RadioGroup.VERTICAL);
+    templateChoices.setTag("template-choices");
+    addTemplateChoice("", "Özel Mesaj · Şablon Kullanma");
+    for (Template t : state.templates) addTemplateChoice(t.id, t.name + " · " + t.category);
+    composer.addView(templateChoices, new LinearLayout.LayoutParams(-1, -2));
     preview = input(composer, "Mesaj Önizleme · Düzenleyebilirsiniz", message, true);
     preview.setTag("message-preview");
     preview.setMinLines(3);
@@ -669,19 +664,17 @@ public final class MainActivity extends Activity {
               message = preview.getText().toString();
               characters.setText(message.length() + " Karakter");
             }));
-    templateSelect.setOnItemSelectedListener(
-        new android.widget.AdapterView.OnItemSelectedListener() {
-
-          public void onNothingSelected(android.widget.AdapterView<?> parent) {}
-
-          public void onItemSelected(
-              android.widget.AdapterView<?> parent, View v, int position, long id) {
-            String choice = position == 0 ? "" : state.templates.get(position - 1).id;
-            if (choice.equals(selectedTemplate)) return;
-            selectedTemplate = choice;
-            if (position > 0) {
-              message = state.templates.get(position - 1).text;
-              preview.setText(message);
+    templateChoices.setOnCheckedChangeListener(
+        (group, checkedId) -> {
+          RadioButton chosen = group.findViewById(checkedId);
+          if (chosen == null) return;
+          String choice = (String) chosen.getTag();
+          if (choice.equals(selectedTemplate)) return;
+          selectedTemplate = choice;
+          for (Template t : state.templates) {
+            if (t.id.equals(choice)) {
+              preview.setText(t.text);
+              break;
             }
           }
         });
@@ -715,6 +708,26 @@ public final class MainActivity extends Activity {
         run.run();
       }
     };
+  }
+
+  void addTemplateChoice(String id, String title) {
+    RadioButton option = new RadioButton(this);
+    option.setId(View.generateViewId());
+    option.setTag(id);
+    option.setText(title);
+    option.setTextSize(14);
+    option.setTextColor(ink);
+    option.setMinHeight(dp(48));
+    option.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+    option.setTextDirection(View.TEXT_DIRECTION_FIRST_STRONG_LTR);
+    option.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
+    option.setPadding(dp(10), dp(5), dp(6), dp(5));
+    option.setButtonTintList(android.content.res.ColorStateList.valueOf(blue));
+    option.setBackground(Visuals.touch(dark ? 0xFF1A2428 : 0xFFF0F8F5, dp(10), border));
+    LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2);
+    params.bottomMargin = dp(5);
+    templateChoices.addView(option, params);
+    option.setChecked(id.equals(selectedTemplate));
   }
 
   void searchResults() {

@@ -284,9 +284,21 @@ public final class SmokeRunner extends Instrumentation {
             truth(a.selected.isEmpty());
             runOnMainSync(() -> a.select("000123"));
             await(() -> !a.busy && a.selected.equals("000123"));
-            runOnMainSync(() -> a.templateSelect.setSelection(1));
+            runOnMainSync(() -> a.templateChoices.getChildAt(1).performClick());
             await(() -> a.message.equals(t.text));
             truth(a.message.equals(t.text));
+            runOnMainSync(
+                () -> {
+                  a.preview.setText("Kendi Düzenlediğim Metin");
+                  a.templateChoices.getChildAt(1).performClick();
+                });
+            truth(a.message.equals("Kendi Düzenlediğim Metin"));
+            runOnMainSync(() -> a.templateChoices.getChildAt(0).performClick());
+            truth(a.selectedTemplate.isEmpty());
+            truth(a.message.equals("Kendi Düzenlediğim Metin"));
+            runOnMainSync(() -> a.templateChoices.getChildAt(1).performClick());
+            truth(a.message.equals(t.text) && a.selectedTemplate.equals(t.id));
+            truth(a.templateChoices.getOrientation() == LinearLayout.VERTICAL);
             List<Intent> opened = new ArrayList<>();
             runOnMainSync(
                 () -> {

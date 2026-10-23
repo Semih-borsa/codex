@@ -1,4 +1,4 @@
-# Doğrulama — Sicil360 Pro 1.1 / 23 Ekim 2026
+# Doğrulama — Sicil360 Pro 1.2 / 23 Ekim 2026
 
 ## Sonuç
 
@@ -8,7 +8,7 @@
 - `assembleRelease` ve `assembleDebugAndroidTest` başarılı.
 - Android 11 / API 30 x86_64 emülatöründe **son teslim release APK'sı üzerinde 7 kontrol grubu geçti, 0 başarısız**. Testler taklit alıcıya yönelir; gerçek kişiye mesaj göndermez.
 - Release paketinde `DEBUGGABLE` bayrağı yok; INTERNET izni yok; `FLAG_SECURE` açık. İmza doğrulandı. Sertifika geliştirme sertifikasıdır; APK Play Store yayını değildir.
-- Son APK SHA-256: `90263a5cbe1b0418c3106fe71edb6997ad3ab50fa7c0c92b1fe7aa9a236d4765`.
+- Son APK SHA-256: `c20d810154ceded8bde34b2657f354b481efb191180bd35ed0541e7e70d05b86`.
 - Sertifika SHA-256: `a1acf948b51380a975bf87c15fd7eddc3afa4ab021df4cd65495dadebf44b94c`.
 
 ## Test Kapsamı
@@ -45,3 +45,7 @@ Günlükler: geliştirme ortamında `sicil-release-build.log`, `sicil-release-de
 ## 1.1 Görsel Güncelleme
 
 Petrol & Mint açık tema, Grafit & Zümrüt koyu tema; WhatsApp simgeli, yeşil geçişli ve ortalanmış açma düğmesi. Düğme alt menünün üstüne sabitlendi. Küçük ekran kontrolü düğmenin en az 48 dp yüksekliğini, genişliğini, odaklanabilirliğini ve alt menü üzerinde görünmesini denetler. İlk denemede düğme kaydırılan içerikte kaldığından yeni görünürlük kontrolü assertion ile durdu; sabit yerleşim düzeltmesinden sonra son APK yeniden denetlendi. Önizleme ekranları sentetik test verileridir.
+
+## 1.2 Şablon Listesi
+
+Dikey, tek seçimli şablon satırları gerçek Android RadioGroup/RadioButton bileşenleriyle doğrulanır. Şablona dokununca düz metnin gelmesi, seçili satıra tekrar dokununca elle düzenlenen metnin korunması, Özel Mesaj geçişinin metni silmemesi ve tekrar şablon seçiminin önizlemeyi doldurması kontrol edilir. Mevcut WhatsApp son onay ve yönlendirme kontrolleri aynı akış üzerinden çalışır.
