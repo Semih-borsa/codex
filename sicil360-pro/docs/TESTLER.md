@@ -1,14 +1,14 @@
-# Doğrulama — Sicil360 Pro 1.2 / 23 Ekim 2026
+# Doğrulama — Sicil360 Pro 1.3 / 23 Ekim 2026
 
 ## Sonuç
 
 - JDK 17.0.17, Gradle 8.9, AGP 8.7.3, Android SDK/build-tools 35.
-- JVM: **28 test, 0 başarısız, 0 atlanan** (`ModelTest`: 17, `ExcelTest`: 11).
+- JVM: **33 test, 0 başarısız, 0 atlanan** (`ModelTest`: 17, `ExcelTest`: 11, `CrmTest`: 5).
 - `lintDebug` ve release için `lintVitalRelease` başarılı.
 - `assembleRelease` ve `assembleDebugAndroidTest` başarılı.
-- Android 11 / API 30 x86_64 emülatöründe **son teslim release APK'sı üzerinde 7 kontrol grubu geçti, 0 başarısız**. Testler taklit alıcıya yönelir; gerçek kişiye mesaj göndermez.
+- Android 11 / API 30 x86_64 emülatöründe **son teslim release APK'sı üzerinde 8 kontrol grubu geçti, 0 başarısız**. Testler taklit alıcıya yönelir; gerçek kişiye mesaj göndermez.
 - Release paketinde `DEBUGGABLE` bayrağı yok; INTERNET izni yok; `FLAG_SECURE` açık. İmza doğrulandı. Sertifika geliştirme sertifikasıdır; APK Play Store yayını değildir.
-- Son APK SHA-256: `c20d810154ceded8bde34b2657f354b481efb191180bd35ed0541e7e70d05b86`.
+- Son APK SHA-256: `f0b0e518c4f9134264e81971c0f4f8e01f05b17867e738530ffc4b1434fb48ea`.
 - Sertifika SHA-256: `a1acf948b51380a975bf87c15fd7eddc3afa4ab021df4cd65495dadebf44b94c`.
 
 ## Test Kapsamı
@@ -49,3 +49,7 @@ Petrol & Mint açık tema, Grafit & Zümrüt koyu tema; WhatsApp simgeli, yeşil
 ## 1.2 Şablon Listesi
 
 Dikey, tek seçimli şablon satırları gerçek Android RadioGroup/RadioButton bileşenleriyle doğrulanır. Şablona dokununca düz metnin gelmesi, seçili satıra tekrar dokununca elle düzenlenen metnin korunması, Özel Mesaj geçişinin metni silmemesi ve tekrar şablon seçiminin önizlemeyi doldurması kontrol edilir. Mevcut WhatsApp son onay ve yönlendirme kontrolleri aynı akış üzerinden çalışır.
+
+## 1.3 CRM Kontrolleri
+
+JVM: V1 kişi/yedek içeriğini okuma; V2 takip/not/tarih ve kopyalama turu; İstanbul gece yarısı sınırı; hazırlanma/gönderim beyanı ayrımı; tamamlandı durumunun güncel sayımı; Türkçe kişi/sicil filtresi; Excel UPDATE sırasında CRM alanlarının korunması. Android: tam sicille otomatik seçim, takip/not kaydı ve şifreli depodan yeniden okuma, tekrar iletişim filtresi, tamamlandı değişikliği, güncel rapor ve kişi geçmişine geçiş. Sentetik veri kullanılır; test gerçek WhatsApp mesajı göndermez.

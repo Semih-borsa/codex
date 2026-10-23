@@ -58,7 +58,8 @@ public final class MainActivity extends Activity {
       };
   Runnable deferredResult, deferredCompletion;
   AlertDialog mappingWindow;
-  int historyPage, directoryToken;
+  int historyPage, directoryToken, crmMode, followFilter, followPage;
+  String historyPerson = "", followQuery = "";
   String selected = "",
       selectedTemplate = "",
       message = "",
@@ -107,6 +108,10 @@ public final class MainActivity extends Activity {
     vault = new Vault(this);
     if (saved != null) {
       screen = saved.getInt("screen");
+      crmMode = saved.getInt("crmMode");
+      followFilter = saved.getInt("followFilter");
+      historyPerson = saved.getString("historyPerson", "");
+      followQuery = saved.getString("followQuery", "");
       selected = saved.getString("selected", "");
       selectedTemplate = saved.getString("template", "");
       message = saved.getString("message", "");
@@ -139,6 +144,10 @@ public final class MainActivity extends Activity {
     super.onSaveInstanceState(out);
     capture();
     out.putInt("screen", screen);
+    out.putInt("crmMode", crmMode);
+    out.putInt("followFilter", followFilter);
+    out.putString("historyPerson", historyPerson);
+    out.putString("followQuery", followQuery);
     out.putString("selected", selected);
     out.putString("template", selectedTemplate);
     out.putString("message", message);
@@ -549,7 +558,7 @@ public final class MainActivity extends Activity {
         && state.people.containsKey(selected)) whatsappAction(root);
     nav = row();
     nav.setBackground(Visuals.surface(card, dp(20), border));
-    String[] titles = {"Ara", "Rehber", "Şablonlar", "Geçmiş", "Ayarlar"};
+    String[] titles = {"Ara", "Rehber", "Şablonlar", "Takip", "Ayarlar"};
     String[] icons = {"search", "people", "chat", "chart", "settings"};
     for (int i = 0; i < 5; i++) {
       final int tab = i;
@@ -644,6 +653,8 @@ public final class MainActivity extends Activity {
       detail.addView(text("Telefon Eksik Veya Geçersiz", 15, 0xFFB04E40));
     }
 
+    detail.addView(text("Takip: " + p.followUp.label, 13, blue));
+    action(detail, "Takip Ve Notlar", () -> crmDialog(p.sicil));
     LinearLayout composer = card(body);
     composer.addView(text("Mesaj Şablonu", 12, muted));
     templateChoices = new RadioGroup(this);
@@ -749,7 +760,12 @@ public final class MainActivity extends Activity {
                           || results == null
                           || screen != 0) return;
                       results.removeAllViews();
-                      if (q.trim().isEmpty() || q.equals(selected)) return;
+                      if (q.trim().isEmpty() || q.trim().equals(selected)) return;
+                      Person exact = state.people.get(q.trim());
+                      if (exact != null && !busy) {
+                        select(exact.sicil);
+                        return;
+                      }
                       if (found.isEmpty()) {
                         results.addView(text("Sicil / Kişi Bulunamadı.", 14, muted));
                         return;
@@ -1030,13 +1046,57 @@ public final class MainActivity extends Activity {
   }
 
   void history() {
-    body.addView(bold("İşlem Geçmişi", 24));
+    body.addView(bold("İletişim Ve Takip", 24));
+    LinearLayout sections = row();
+    String[] names = {"Geçmiş", "Takip", "Raporlar"};
+    for (int i = 0; i < 3; i++) {
+      final int mode = i;
+      Button button =
+          button(
+              names[i],
+              () -> {
+                crmMode = mode;
+                historyPage = 0;
+                followPage = 0;
+                render();
+              });
+      button.setTextSize(12);
+      button.setMinWidth(0);
+      button.setMinimumWidth(0);
+      sections.addView(button, new LinearLayout.LayoutParams(0, dp(48), 1));
+    }
+    body.addView(sections);
+    gap(body, 8);
+    if (crmMode == 1) {
+      followList();
+      return;
+    }
+    if (crmMode == 2) {
+      crmReport();
+      return;
+    }
     body.addView(
         text(
-            "Son 1000 işlem. Mesaj metni ve telefon numarası burada saklanmaz. WhatsApp gönderimi"
-                + " uygulama tarafından doğrulanamaz.",
-            13,
+            "Son 1000 kayıt · Mesaj içeriği değil, şablon adı saklanır. Gönderim yalnız kullanıcı"
+                + " beyanıdır.",
+            12,
             muted));
+    if (!historyPerson.isEmpty()) {
+      Person person = state.people.get(historyPerson);
+      body.addView(
+          bold(person == null ? historyPerson : person.name() + " · " + historyPerson, 16));
+      action(
+          body,
+          "Tüm Kişilerin Geçmişi",
+          () -> {
+            historyPerson = "";
+            historyPage = 0;
+            render();
+          });
+    }
+    List<Event> visible = new ArrayList<>();
+    for (Event event : state.history)
+      if (historyPerson.isEmpty() || historyPerson.equals(event.sicil)) visible.add(event);
     action(
         body,
         "Geçmişi Temizle",
@@ -1052,12 +1112,14 @@ public final class MainActivity extends Activity {
                           historyPage = 0;
                           render();
                         })));
-    for (int i = historyPage * 100;
-        i < Math.min((historyPage + 1) * 100, state.history.size());
-        i++) {
-      Event e = state.history.get(i);
+    for (int i = historyPage * 100; i < Math.min((historyPage + 1) * 100, visible.size()); i++) {
+      Event e = visible.get(i);
       LinearLayout c = card(body);
-      c.addView(bold(e.sicil + " · " + e.template, 15));
+      Person person = state.people.get(e.sicil);
+      c.addView(
+          bold(
+              (person == null ? e.sicil : person.name() + " · " + e.sicil) + " · " + e.template,
+              15));
       c.addView(text(e.status.label, 14, blue));
       c.addView(text(format(e.time), 12, muted));
       if (e.status != Status.CANCELLED)
@@ -1071,7 +1133,7 @@ public final class MainActivity extends Activity {
             historyPage--;
             render();
           });
-    if ((historyPage + 1) * 100 < state.history.size())
+    if ((historyPage + 1) * 100 < visible.size())
       action(
           body,
           "Sonraki 100 İşlem",
@@ -1079,6 +1141,150 @@ public final class MainActivity extends Activity {
             historyPage++;
             render();
           });
+  }
+
+  void crmDialog(String id) {
+    Person person = state.people.get(id);
+    if (person == null) {
+      toast("Kişi Kaydı Bulunamadı.");
+      return;
+    }
+    LinearLayout box = column();
+    box.addView(bold(person.name() + " · " + person.sicil, 17));
+    Spinner follow =
+        spinner(
+            box, "Takip Durumu", new String[] {"İşlem Bekliyor", "Tekrar İletişim", "Tamamlandı"});
+    follow.setTag("crm-follow");
+    follow.setSelection(person.followUp.ordinal());
+    EditText notes = input(box, "Kişi Notları", person.not, true);
+    notes.setTag("crm-notes");
+    notes.setFilters(new InputFilter[] {new InputFilter.LengthFilter(10000)});
+    action(
+        box,
+        "Kişinin İletişim Geçmişi",
+        () -> {
+          lastDialog.dismiss();
+          capture();
+          historyPerson = id;
+          crmMode = 0;
+          historyPage = 0;
+          screen = 3;
+          render();
+        });
+    AlertDialog dialog = dialog("Takip Ve Notlar", box);
+    dialog.setButton(
+        AlertDialog.BUTTON_POSITIVE,
+        "Kaydet",
+        (android.content.DialogInterface.OnClickListener) null);
+    dialog
+        .getButton(AlertDialog.BUTTON_POSITIVE)
+        .setOnClickListener(
+            v -> {
+              if (busy || locked || failed) return;
+              FollowUp choice = FollowUp.values()[follow.getSelectedItemPosition()];
+              String note = notes.getText().toString();
+              capture();
+              mutate(
+                  copy -> {
+                    Person target = copy.people.get(id);
+                    if (target == null)
+                      throw new IllegalArgumentException("Kişi Kaydı Bulunamadı.");
+                    if (target.followUp != choice)
+                      target.followUpChanged = System.currentTimeMillis();
+                    target.followUp = choice;
+                    target.not = note;
+                  },
+                  true,
+                  () -> {
+                    dialog.dismiss();
+                    render();
+                    toast("Takip Ve Notlar Kaydedildi.");
+                  });
+            });
+  }
+
+  void followList() {
+    LinearLayout filters = card(body);
+    Spinner filter =
+        spinner(
+            filters,
+            "Takip Durumu",
+            new String[] {"Tümü", "İşlem Bekliyor", "Tekrar İletişim", "Tamamlandı"});
+    filter.setSelection(followFilter);
+    EditText query = input(filters, "Sicil Veya Ad Soyad", followQuery, false);
+    action(
+        filters,
+        "Listele",
+        () -> {
+          followFilter = filter.getSelectedItemPosition();
+          followQuery = query.getText().toString();
+          followPage = 0;
+          render();
+        });
+    List<Person> people =
+        Crm.people(
+            state, followFilter == 0 ? null : FollowUp.values()[followFilter - 1], followQuery);
+    body.addView(text(people.size() + " Kayıt", 13, muted));
+    for (int i = followPage * 50; i < Math.min((followPage + 1) * 50, people.size()); i++) {
+      Person p = people.get(i);
+      LinearLayout item = card(body);
+      item.addView(bold(p.name() + " · " + p.sicil, 16));
+      item.addView(text(p.followUp.label, 14, blue));
+      if (!p.not.isEmpty()) {
+        TextView note = text(p.not, 13, muted);
+        note.setMaxLines(3);
+        item.addView(note);
+      }
+      action(item, "Takip Ve Notlar", () -> crmDialog(p.sicil));
+      action(item, "Mesaj Hazırla", () -> select(p.sicil));
+    }
+    if (followPage > 0)
+      action(
+          body,
+          "Önceki 50 Kişi",
+          () -> {
+            followPage--;
+            render();
+          });
+    if ((followPage + 1) * 50 < people.size())
+      action(
+          body,
+          "Sonraki 50 Kişi",
+          () -> {
+            followPage++;
+            render();
+          });
+  }
+
+  void crmReport() {
+    Crm.Report r = Crm.report(state, LocalDate.now(), ZoneId.systemDefault());
+    body.addView(
+        bold("Bugün · " + LocalDate.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy")), 18));
+    reportLine("Hazırlanan Mesajlar", r.preparedToday);
+    reportLine("Gönderildi Olarak İşaretlenen", r.sentMarkedToday);
+    reportLine("Bugün Tamamlanan Kişi İşlemleri", r.completedToday);
+    body.addView(bold("Güncel Takip Durumu", 18));
+    reportLine("Toplam Kişi", r.total);
+    reportLine("İşlem Bekliyor", r.pending);
+    reportLine("Tekrar İletişim", r.again);
+    reportLine("Tamamlandı", r.complete);
+    body.addView(
+        text(
+            "Mesaj sayıları saklanan son 1000 geçmiş kaydına dayanır. Gönderim sayısı, bugün"
+                + " hazırlanan mesajlardan kullanıcı tarafından gönderildi işaretlenenlerdir."
+                + " Tamamlanan kişi sayısı güncel takip durumuna göre hesaplanır; gönderim beyanı"
+                + " takip durumunu otomatik değiştirmez.",
+            12,
+            muted));
+    action(body, "Raporu Yenile", this::render);
+  }
+
+  void reportLine(String label, int value) {
+    LinearLayout item = card(body);
+    LinearLayout line = row();
+    line.addView(text(label, 14, ink), new LinearLayout.LayoutParams(0, -2, 1));
+    line.addView(bold(String.valueOf(value), 22));
+    item.addView(line);
   }
 
   String format(long time) {

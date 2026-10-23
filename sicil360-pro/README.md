@@ -1,8 +1,8 @@
-# Sicil360 Pro 1.2 — Android
+# Sicil360 Pro 1.3 — Android
 
 Excel rehberinden sicille kişi bulma ve **kendi düz metin şablonunuzu** onayla WhatsApp sohbetine hazırlama. Mesaja sicil, ad, soyad veya başka veri kendiliğinden eklenmez. `{AD}` gibi ifadeler de aynen yazı olarak kalır.
 
-[APK indir](../downloads/Sicil360Pro-1.2.apk) · [Android Studio kaynak paketi](../downloads/Sicil360Pro-Android-Studio.zip) · [Excel şablonu](examples/Kisi-Sablonu.xlsx) · [Mesaj örnekleri](examples/Mesaj-Ornekleri.txt)
+[APK indir](../downloads/Sicil360Pro-1.3.apk) · [Android Studio kaynak paketi](../downloads/Sicil360Pro-Android-Studio.zip) · [Excel şablonu](examples/Kisi-Sablonu.xlsx) · [Mesaj örnekleri](examples/Mesaj-Ornekleri.txt)
 
 Android 8.0 ve üzeri, paket `com.semih.sicil360`, sürüm kodu 1. Telefonun kendi ekran kilidiyle isteğe bağlı uygulama kilidi; açık/koyu/sistem teması. APK kişisel yükleme için geliştirme sertifikasıyla imzalanmış release derlemedir; debugger erişimi kapalıdır. Mevcut diğer uygulamalarınızdan ayrı bir uygulamadır.
 
@@ -54,3 +54,15 @@ Açık temada Petrol & Mint, koyu temada Grafit & Zümrüt renkleri kullanılır
 ## 1.2 Şablon Seçimi
 
 Mesaj hazırlama ekranında şablonlar açılır liste yerine alt alta gösterilir. Sağdaki seçim düğmesi veya satıra dokunarak tek şablon seçilir; metni düzenlenebilir önizlemeye gelir. Seçili şablona tekrar dokunmak düzenlenen metni sıfırlamaz. Özel Mesaj seçeneği mevcut metni korur.
+
+## 1.3 Kişi Takibi Ve Raporlar
+
+- Tam sicil girildiğinde kişi kartı otomatik açılır; isim veya kısmi telefon eşleşmesi otomatik kişi seçmez.
+- Kişi kartındaki **Takip Ve Notlar** bölümünde İşlem Bekliyor / Tekrar İletişim / Tamamlandı durumunu ve kişi notunu kaydedin.
+- Alt menü **Takip → Takip**: Duruma ve sicil/ad soyada göre filtrelenen, isim sıralı kişi listesi. Notları düzenleyin veya kişiye mesaj hazırlayın.
+- **Takip → Geçmiş**: Sicil, mevcut kişi adı, hazırlanırken kaydedilmiş şablon adı, hazırlama zamanı ve kullanıcı tarafından işaretlenen durum. Kişi kartından yalnız o kişinin geçmişine geçilebilir. Mesajın tam içeriği geçmişe kaydedilmez.
+- **Takip → Raporlar**: Bugün hazırlanan mesajlar, bunlardan gönderildi işaretlenenler, bugün tamamlandı durumuna alınmış ve halen tamamlanmış kişiler; toplam, bekleyen, tekrar iletişim ve tamamlanan kişi sayıları.
+
+Takip durumu, Excel'deki Durum alanından ayrıdır. Yeni/eski kişiler ilk geçişte İşlem Bekliyor olarak başlar. Gönderimi işaretlemek kişi takibini otomatik tamamlamaz; kişi işlemini ayrıca tamamlayın. Kişi takibi ve notlar şifreli yerel kayıtta ve `.s360` yedekte saklanır. Excel güncelleme modu takip durumunu korur; kontrollü yeniden içe aktarma (REPLACE) rehberi değiştirdiği için takip durumları sıfırlanır. Excel dışa aktarımı mevcut rehber alanlarını ve notları içerir; CRM takibini bütünüyle taşımak için şifreli yedek kullanın.
+
+Günlük mesaj sayıları son 1000 geçmiş kaydıyla sınırlıdır; geçmişi temizlemek raporu etkiler. Kişi sayıları güncel rehber ve güncel takip durumlarından hesaplanır. Önceki sürüm yedekleri açılabilir; yeni yedeği eski uygulama sürümleri açamaz. Güncellemeyi kaldırmadan üzerine kurun.

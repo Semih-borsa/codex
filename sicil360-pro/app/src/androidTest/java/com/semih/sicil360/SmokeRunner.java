@@ -539,6 +539,70 @@ public final class SmokeRunner extends Instrumentation {
           }
         });
     check(
+        "CRM exact sicil automatic selection notes persistence tracking filters and reports",
+        () -> {
+          MainActivity a = open();
+          try {
+            State s = new State();
+            s.people.put("000123", sample("000123"));
+            setup(a, s);
+            runOnMainSync(() -> a.search.setText("000123"));
+            await(() -> !a.busy && a.selected.equals("000123"));
+            runOnMainSync(() -> a.crmDialog("000123"));
+            runOnMainSync(
+                () -> {
+                  View decor = a.lastDialog.getWindow().getDecorView();
+                  ((Spinner) decor.findViewWithTag("crm-follow")).setSelection(1);
+                  ((EditText) decor.findViewWithTag("crm-notes")).setText("Sentetik takip notu");
+                  a.lastDialog.getButton(-1).performClick();
+                });
+            await(() -> !a.busy && a.state.people.get("000123").followUp == FollowUp.AGAIN);
+            truth(a.state.people.get("000123").not.equals("Sentetik takip notu"));
+            State loaded = a.vault.load();
+            truth(loaded.people.get("000123").followUp == FollowUp.AGAIN);
+            truth(loaded.people.get("000123").followUpChanged > 0);
+            truth(Crm.people(loaded, FollowUp.AGAIN, "ipek").size() == 1);
+            runOnMainSync(
+                () -> {
+                  a.screen = 3;
+                  a.crmMode = 1;
+                  a.render();
+                });
+            truth(find(a.root, "Tekrar İletişim") != null);
+            runOnMainSync(() -> a.crmDialog("000123"));
+            runOnMainSync(
+                () -> {
+                  ((Spinner) a.lastDialog.getWindow().getDecorView().findViewWithTag("crm-follow"))
+                      .setSelection(2);
+                  a.lastDialog.getButton(-1).performClick();
+                });
+            await(() -> !a.busy && a.state.people.get("000123").followUp == FollowUp.COMPLETE);
+            Crm.Report report =
+                Crm.report(
+                    a.vault.load(), java.time.LocalDate.now(), java.time.ZoneId.systemDefault());
+            truth(
+                report.complete == 1
+                    && report.completedToday == 1
+                    && report.pending == 0
+                    && report.sentMarkedToday == 0);
+            runOnMainSync(
+                () -> {
+                  a.screen = 3;
+                  a.crmMode = 2;
+                  a.render();
+                });
+            truth(find(a.root, "Bugün Tamamlanan Kişi İşlemleri") != null);
+            runOnMainSync(() -> a.crmDialog("000123"));
+            runOnMainSync(
+                () ->
+                    find(a.lastDialog.getWindow().getDecorView(), "Kişinin İletişim Geçmişi")
+                        .performClick());
+            truth(a.screen == 3 && a.crmMode == 0 && a.historyPerson.equals("000123"));
+          } finally {
+            close(a);
+          }
+        });
+    check(
         "Light dark five screens secure lock and small screen geometry synthetic previews",
         () -> {
           android.content.SharedPreferences prefs = target.getSharedPreferences("settings", 0);

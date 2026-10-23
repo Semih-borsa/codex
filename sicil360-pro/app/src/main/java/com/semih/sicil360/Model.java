@@ -18,6 +18,8 @@ public final class Model {
         email = "",
         not = "",
         durum = "";
+    public FollowUp followUp = FollowUp.PENDING;
+    public long followUpChanged;
     public final LinkedHashMap<String, String> extra = new LinkedHashMap<>();
     private String cachedSource = "", cachedName = "";
 
@@ -45,8 +47,21 @@ public final class Model {
       p.email = email;
       p.not = not;
       p.durum = durum;
+      p.followUp = followUp;
+      p.followUpChanged = followUpChanged;
       p.extra.putAll(extra);
       return p;
+    }
+  }
+
+  public enum FollowUp {
+    PENDING("İşlem Bekliyor"),
+    AGAIN("Tekrar İletişim"),
+    COMPLETE("Tamamlandı");
+    public final String label;
+
+    FollowUp(String label) {
+      this.label = label;
     }
   }
 
@@ -295,6 +310,11 @@ public final class Model {
         continue;
       }
       Person imported = chosen.person.copy();
+      if (exists && mode == ImportMode.UPDATE) {
+        Person old = plan.result.people.get(group.getKey());
+        imported.followUp = old.followUp;
+        imported.followUpChanged = old.followUpChanged;
+      }
       if (exists && mode == ImportMode.UPDATE && chosen.fields != null) {
         Person old = plan.result.people.get(group.getKey()).copy();
         for (int i = 0; i < 9; i++) if (!chosen.fields[i]) setField(imported, i, field(old, i));

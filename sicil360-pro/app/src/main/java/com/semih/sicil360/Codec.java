@@ -33,7 +33,7 @@ public final class Codec {
   public static byte[] encode(State s) throws IOException {
     ByteArrayOutputStream b = new ByteArrayOutputStream();
     DataOutputStream o = new DataOutputStream(b);
-    o.writeInt(0x53333631);
+    o.writeInt(0x53333632);
     o.writeLong(s.revision);
     o.writeInt(s.people.size());
     for (Person p : s.people.values()) {
@@ -41,6 +41,8 @@ public final class Codec {
           new String[] {
             p.sicil, p.ad, p.soyad, p.telefon, p.birim, p.unvan, p.email, p.not, p.durum
           }) text(o, v);
+      o.writeInt(p.followUp.ordinal());
+      o.writeLong(p.followUpChanged);
       o.writeInt(p.extra.size());
       for (java.util.Map.Entry<String, String> e : p.extra.entrySet()) {
         text(o, e.getKey());
@@ -73,7 +75,9 @@ public final class Codec {
   public static State decode(byte[] bytes) throws IOException {
     if (bytes.length > MAX_BYTES) throw new IOException("Veri Dosyası Çok Büyük.");
     DataInputStream in = new DataInputStream(new ByteArrayInputStream(bytes));
-    if (in.readInt() != 0x53333631) throw new IOException("Desteklenmeyen Yedek Sürümü.");
+    int version = in.readInt();
+    if (version != 0x53333631 && version != 0x53333632)
+      throw new IOException("Desteklenmeyen Yedek Sürümü.");
     State s = new State();
     s.revision = in.readLong();
     int n = count(in, MAX_PEOPLE);
@@ -88,6 +92,14 @@ public final class Codec {
       p.email = text(in);
       p.not = text(in);
       p.durum = text(in);
+      if (version == 0x53333632) {
+        int follow = in.readInt();
+        if (follow < 0 || follow >= FollowUp.values().length)
+          throw new IOException("Geçersiz Takip Durumu.");
+        p.followUp = FollowUp.values()[follow];
+        p.followUpChanged = in.readLong();
+        if (p.followUpChanged < 0) throw new IOException("Geçersiz Takip Tarihi.");
+      }
       int e = count(in, 20);
       for (int k = 0; k < e; k++) p.extra.put(text(in), text(in));
       try {

@@ -23,8 +23,10 @@ Android dosya seçicisi yalnız seçilen dosyaya erişim verir. XLSX, çalışma
 
 ## Kullanım Sorumluluğu Ve Kurtarma
 
-Excel dışa aktarımı şifresizdir; güvenli saklayın. Parolalı `.s360` yedeklerini ve parolayı ayrı güvenli yerlerde tutun. Uygulama içi tek seviyeli geri alma yalnız rehber ve şablonları geri getirir; geçmişi geri sarmaz. İptal/geri alma dış WhatsApp ekranındaki bir mesajı geri çekemez.
+Excel dışa aktarımı şifresizdir; güvenli saklayın. Parolalı `.s360` yedeklerini ve parolayı ayrı güvenli yerlerde tutun. Uygulama içi tek seviyeli geri alma rehber, kişi takibi/notları ve şablonları geri getirir; geçmişi geri sarmaz. İptal/geri alma dış WhatsApp ekranındaki bir mesajı geri çekemez.
 
 Cihaz anahtarı kaybolursa yerel dosya çözülemez. Anahtar geri alma/uzak parola sıfırlama hizmeti yoktur. Taşınabilir yedek kendi şifresiyle başka kurulumda açılabilir. Kişisel verilerin işlenme amacı, yetkiler, saklama süreleri, kişilere ulaşma izni ve KVKK yükümlülükleri kurum tarafından belirlenmelidir; bu uygulama hukuki uygunluk belgesi değildir.
 
 Fiziksel telefon, WhatsApp/Business hesabı ve gerçek sohbet/gönderim doğrulanmadı. Emülatör testleri onay, Intent ve metin/numara yönlendirmesini taklit alıcıyla kontrol eder. WhatsApp sürümü/hesap durumu/bağlantı varsayılanlarına göre sohbet açılışı farklı olabilir. Gönderim doğrulanamıyorsa sistem gönderildi kaydı oluşturmaz; kullanıcı kendi beyanını ayrıca işaretleyebilir.
+
+CRM takip alanları V2 veri biçiminde şifreli kayıtta/yedekte tutulur. V1 okunur, V2 eski uygulamada okunamaz. Takip durumu gönderim kanıtı değildir. Raporlar kalıcı sınırsız muhasebe kaydı değil; mevcut rehber ve son 1000 iletişim kaydından hesaplanan özetlerdir. Kişi silme ve REPLACE içe aktarım kişi takibini de kaldırır.
