@@ -715,6 +715,87 @@ public final class SmokeRunner extends Instrumentation {
           }
         });
     check(
+        "Debt edit delete confirmation persisted totals payment history and other list isolation",
+        () -> {
+          MainActivity a = open();
+          try {
+            State s = new State();
+            Payments.Ledger l = new Payments.Ledger();
+            l.name = "Deneme Listesi";
+            for (String code : Arrays.asList("0001", "0002")) {
+              Payments.Account account = new Payments.Account();
+              account.code = code;
+              account.first = "Örnek";
+              account.last = "Personel";
+              account.original = 100000;
+              l.accounts.put(code, account);
+            }
+            Payments.add(l.accounts.get("0001"), 25000, "Önceki Ödeme");
+            Payments.refreshFingerprint(l);
+            s.debts.add(l);
+            Payments.Ledger other = new Payments.Ledger();
+            other.name = "Diğer Ay";
+            other.period = java.time.YearMonth.parse(l.period).minusMonths(1).toString();
+            s.debts.add(other);
+            setup(a, s);
+            runOnMainSync(
+                () -> {
+                  a.debtLedger = l.id;
+                  a.openPayments();
+                  a.debtAccountDialog(l.id, "0001");
+                });
+            runOnMainSync(
+                () -> {
+                  View decor = a.lastDialog.getWindow().getDecorView();
+                  ((EditText) decor.findViewWithTag("debt-edit-code")).setText("0003");
+                  ((EditText) decor.findViewWithTag("debt-edit-first")).setText("Düzeltilmiş");
+                  ((EditText) decor.findViewWithTag("debt-edit-original")).setText("1500,00");
+                  find(decor, "Kayıt Değişikliklerini Kaydet").performClick();
+                });
+            runOnMainSync(() -> a.lastDialog.getButton(-1).performClick());
+            await(() -> !a.busy && Payments.find(a.state, l.id).accounts.containsKey("0003"));
+            Payments.Account changed = Payments.find(a.vault.load(), l.id).accounts.get("0003");
+            truth(
+                changed.original == 150000
+                    && changed.paid() == 25000
+                    && changed.remaining() == 125000
+                    && changed.first.equals("Düzeltilmiş"));
+            truth(
+                new ArrayList<>(Payments.find(a.state, l.id).accounts.keySet())
+                    .equals(Arrays.asList("0003", "0002")));
+            runOnMainSync(() -> a.debtAccountDialog(l.id, "0003"));
+            android.app.AlertDialog editor = a.lastDialog;
+            runOnMainSync(
+                () -> find(editor.getWindow().getDecorView(), "Bu Kaydı Sil").performClick());
+            runOnMainSync(() -> a.lastDialog.getButton(-2).performClick());
+            truth(Payments.find(a.state, l.id).accounts.containsKey("0003"));
+            runOnMainSync(
+                () -> find(editor.getWindow().getDecorView(), "Bu Kaydı Sil").performClick());
+            runOnMainSync(() -> a.lastDialog.getButton(-1).performClick());
+            await(() -> !a.busy && !Payments.find(a.state, l.id).accounts.containsKey("0003"));
+            truth(Payments.totals(Payments.find(a.vault.load(), l.id)).original == 100000);
+            runOnMainSync(() -> a.debtListDialog(l.id));
+            runOnMainSync(
+                () -> {
+                  View decor = a.lastDialog.getWindow().getDecorView();
+                  ((EditText) decor.findViewWithTag("debt-edit-name")).setText("Düzeltilmiş Liste");
+                  find(decor, "Liste Değişikliklerini Kaydet").performClick();
+                });
+            runOnMainSync(() -> a.lastDialog.getButton(-1).performClick());
+            await(() -> !a.busy && Payments.find(a.state, l.id).name.equals("Düzeltilmiş Liste"));
+            runOnMainSync(() -> a.debtListDialog(l.id));
+            runOnMainSync(
+                () ->
+                    find(a.lastDialog.getWindow().getDecorView(), "Bu Listenin Tamamını Sil")
+                        .performClick());
+            runOnMainSync(() -> a.lastDialog.getButton(-1).performClick());
+            await(() -> !a.busy && a.state.debts.size() == 1);
+            truth(a.vault.load().debts.get(0).id.equals(other.id));
+          } finally {
+            close(a);
+          }
+        });
+    check(
         "Light dark five screens secure lock and small screen geometry synthetic previews",
         () -> {
           android.content.SharedPreferences prefs = target.getSharedPreferences("settings", 0);

@@ -229,6 +229,11 @@ public final class Payments {
     if (suppliedTotal != null && suppliedTotal != t.original)
       throw new IllegalArgumentException(
           "Excel Genel Toplamı İle Satırların Toplamı Farklı. Dosyayı Kontrol Edin.");
+    refreshFingerprint(ledger);
+    return ledger;
+  }
+
+  static void refreshFingerprint(Ledger ledger) {
     StringBuilder canonical = new StringBuilder();
     for (String code : new TreeSet<>(ledger.accounts.keySet())) {
       Account a = ledger.accounts.get(code);
@@ -240,7 +245,86 @@ public final class Payments {
           .append(a.original)
           .append(';');
     }
-    ledger.fingerprint = hash(canonical.toString());
-    return ledger;
+    try {
+      ledger.fingerprint = hash(canonical.toString());
+    } catch (Exception e) {
+      throw new IllegalArgumentException("Liste Kimliği Güncellenemedi.", e);
+    }
+  }
+
+  public static void edit(
+      Model.State state,
+      String ledgerId,
+      String oldCode,
+      String code,
+      String first,
+      String last,
+      String title,
+      long original) {
+    Ledger l = find(state, ledgerId);
+    Account a = l.accounts.get(oldCode);
+    if (a == null) throw new IllegalArgumentException("Cari Kaydı Bulunamadı.");
+    code = code.trim();
+    first = first.trim();
+    last = last.trim();
+    title = title.trim();
+    if (!code.matches("[\\p{L}\\p{N}._/-]{1,64}"))
+      throw new IllegalArgumentException("Cari Kodu Geçersiz.");
+    if ((first + last).isEmpty()
+        || first.length() > 200
+        || last.length() > 200
+        || title.length() > 1000)
+      throw new IllegalArgumentException("Ad Soyad Eksik Veya Alanlar Çok Uzun.");
+    if (original < 0 || original > MAX) throw new IllegalArgumentException("Borç Tutarı Geçersiz.");
+    if (!oldCode.equals(code)) {
+      for (Ledger other : state.debts)
+        if (other.period.equals(l.period) && other.accounts.containsKey(code))
+          throw new IllegalArgumentException("Bu Dönemde Bu Cari Kodu Zaten Kayıtlı.");
+    }
+    LinkedHashMap<String, Account> reordered = new LinkedHashMap<>();
+    for (java.util.Map.Entry<String, Account> entry : l.accounts.entrySet())
+      reordered.put(entry.getKey().equals(oldCode) ? code : entry.getKey(), entry.getValue());
+    a.code = code;
+    a.first = first;
+    a.last = last;
+    a.title = title;
+    a.original = original;
+    l.accounts.clear();
+    l.accounts.putAll(reordered);
+    refreshFingerprint(l);
+  }
+
+  public static void removeAccount(Model.State state, String ledgerId, String code) {
+    Ledger l = find(state, ledgerId);
+    if (l.accounts.remove(code) == null)
+      throw new IllegalArgumentException("Cari Kaydı Bulunamadı.");
+    refreshFingerprint(l);
+  }
+
+  public static void editLedger(Model.State state, String ledgerId, String name, String period) {
+    Ledger l = find(state, ledgerId);
+    name = name.trim();
+    if (name.isEmpty() || name.length() > 100)
+      throw new IllegalArgumentException("Liste Adı 1–100 Karakter Olmalı.");
+    java.time.YearMonth month;
+    try {
+      month = java.time.YearMonth.parse(period);
+    } catch (Exception invalid) {
+      throw new IllegalArgumentException("Dönemi YYYY-AA Biçiminde Girin.");
+    }
+    if (month.getYear() < 1900 || month.getYear() > 9999)
+      throw new IllegalArgumentException("Yıl 1900–9999 Arasında Olmalı.");
+    for (Ledger other : state.debts)
+      if (!other.id.equals(ledgerId) && other.period.equals(period))
+        for (String code : l.accounts.keySet())
+          if (other.accounts.containsKey(code))
+            throw new IllegalArgumentException("Seçilen Dönemde Aynı Cari Kodu Zaten Var.");
+    l.name = name;
+    l.period = month.toString();
+  }
+
+  public static void removeLedger(Model.State state, String id) {
+    Ledger l = find(state, id);
+    state.debts.remove(l);
   }
 }

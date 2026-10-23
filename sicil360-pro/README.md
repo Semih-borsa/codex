@@ -1,8 +1,8 @@
-# Sicil360 Pro 1.4 — Android
+# Sicil360 Pro 1.5 — Android
 
 Excel rehberinden sicille kişi bulma ve **kendi düz metin şablonunuzu** onayla WhatsApp sohbetine hazırlama. Mesaja sicil, ad, soyad veya başka veri kendiliğinden eklenmez. `{AD}` gibi ifadeler de aynen yazı olarak kalır.
 
-[APK indir](../downloads/Sicil360Pro-1.4.apk) · [Android Studio kaynak paketi](../downloads/Sicil360Pro-Android-Studio.zip) · [Excel şablonu](examples/Kisi-Sablonu.xlsx) · [Mesaj örnekleri](examples/Mesaj-Ornekleri.txt)
+[APK indir](../downloads/Sicil360Pro-1.5.apk) · [Android Studio kaynak paketi](../downloads/Sicil360Pro-Android-Studio.zip) · [Excel şablonu](examples/Kisi-Sablonu.xlsx) · [Mesaj örnekleri](examples/Mesaj-Ornekleri.txt)
 
 Android 8.0 ve üzeri, paket `com.semih.sicil360`, sürüm kodu 1. Telefonun kendi ekran kilidiyle isteğe bağlı uygulama kilidi; açık/koyu/sistem teması. APK kişisel yükleme için geliştirme sertifikasıyla imzalanmış release derlemedir; debugger erişimi kapalıdır. Mevcut diğer uygulamalarınızdan ayrı bir uygulamadır.
 
@@ -93,3 +93,12 @@ Kişi kartları ve ödeme detayları cari koduyla geçmişi karşılaştırır:
 - **Yüklenen Dönemlerde Borcun %X Kadarı Ödenmiş:** Seçili ay dahil geçmiş dönemlerin bakiye toplamına göre ağırlıklı oran. Her dönem için ödenen miktar, o dönemin ilk borcuyla sınırlandırılır; fazla ödeme oranı şişirmez. Kısmi ödeme, hiç ödeme yapılmamasından ayrılır.
 
 Bu hesaplar yalnız yüklenen aylara ve uygulamaya girilen ödemelere dayanır. Gelecek tarihli listeler geçmişe dahil edilmez. Aylık bakiye görüntüleri otomatik olarak yeni borç veya devir borcu diye birleştirilmez; ekrandaki toplamlar seçili listeye aittir. Eski borcun başka aya taşındığı dosyalarda geçmiş oranını dönem görüntülerine göre yorumlayın; toplam gerçek alacak olarak kullanmayın. Cari kod değişirse uygulama aynı kişi olduğunu isimden tahmin etmez.
+
+## 1.5 Borç Kaydı Ve Liste Düzenleme / Silme
+
+- **Takip → Ödemeler → Listeyi Düzenle / Sil:** Liste adı/dönemi değiştirilebilir. **Bu Listenin Tamamını Sil** seçilirse yalnız o liste, kişileri ve o listeye ait ödeme geçmişi son onayla silinir. Diğer dönemler ve ana rehber korunur. Deneme için yüklenen listenin tamamını buradan kaldırabilirsiniz.
+- Her borç kartındaki **Düzenle / Sil:** Cari kod, ad, soyad, ticari unvan ve ilk borç düzeltilebilir. Ödeme geçmişi korunur, kişi aynı sırada kalır. İlk borcun elle düzeltilmesi liste genel toplamını değiştirir; bu normal ödeme girişinden farklıdır. Normal ödeme girişi ilk toplamı yine değiştirmez.
+- **Bu Kaydı Sil:** Seçili kişi ve bu listedeki ödeme geçmişi son onayla silinir. Diğer aylardaki aynı cari kod ve rehber etkilenmez. Kalan kişiler yer değiştirmez.
+- Silme/düzeltme sonrası toplamlar ve geçmiş analizleri mevcut kayıtlardan yeniden hesaplanır. Cari kod değiştirildiğinde geçmiş aylardaki eski kod otomatik değiştirilmez. Aynı dönemde mükerrer cari oluşturulamaz; dönem değişikliği de çakışma açısından denetlenir.
+
+Silinen kişi/listenin ödemeleri de kaldırılır; silme işlemi uygulama içi geri alma ile geri getirilemez. Gerçek kayıtları değiştirmeden önce Ayarlar'dan şifreli yedek alın. Yanlış ödeme girişi için kişi silmek yerine ödeme geçmişindeki iptal işlevini kullanın. Özgün Excel dosyası değiştirilmez.

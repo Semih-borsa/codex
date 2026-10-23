@@ -1213,6 +1213,7 @@ public final class MainActivity extends Activity {
                           render();
                         })
                     .setNegativeButton("Vazgeç", null)));
+    action(body, "Listeyi Düzenle / Sil", () -> debtListDialog(ledger.id));
     Payments.Totals totals = Payments.totals(ledger);
     LinearLayout summary = card(body);
     summary.setTag("payment-summary");
@@ -1270,6 +1271,7 @@ public final class MainActivity extends Activity {
           item,
           a.remaining() > 0 ? "Ödeme Gir" : "Ödeme Detayı",
           () -> paymentDialog(ledger.id, a.code));
+      action(item, "Düzenle / Sil", () -> debtAccountDialog(ledger.id, a.code));
     }
     if (accounts.isEmpty()) body.addView(text("Kayıt Bulunamadı.", 14, muted));
     if (debtPage > 0)
@@ -1288,6 +1290,156 @@ public final class MainActivity extends Activity {
             debtPage++;
             render();
           });
+  }
+
+  void debtListDialog(String id) {
+    Payments.Ledger ledger = Payments.find(state, id);
+    LinearLayout box = column();
+    EditText name = input(box, "Liste Adı", ledger.name, false);
+    name.setTag("debt-edit-name");
+    name.setFilters(new InputFilter[] {new InputFilter.LengthFilter(100)});
+    EditText period = input(box, "Dönem (YYYY-AA, Örnek: 2026-10)", ledger.period, false);
+    period.setTag("debt-edit-period");
+    box.addView(
+        text(
+            "Dönem değişince geçmiş analizleri yeniden hesaplanır. Aynı dönemde cari kod"
+                + " çakışmasına izin verilmez.",
+            12,
+            muted));
+    AlertDialog window = dialog("Listeyi Düzenle / Sil", box);
+    action(
+        box,
+        "Liste Değişikliklerini Kaydet",
+        () -> {
+          String title = name.getText().toString(), month = period.getText().toString().trim();
+          confirm(
+              "Listeyi Güncelle",
+              "Liste Adı Ve Dönemi Güncellenecek. Kişiler Ve Ödeme Kayıtları Korunacak.",
+              () ->
+                  mutate(
+                      copy -> Payments.editLedger(copy, id, title, month),
+                      false,
+                      () -> {
+                        window.dismiss();
+                        debtPage = 0;
+                        render();
+                        toast("Liste Güncellendi.");
+                      }));
+        });
+    action(
+        box,
+        "Bu Listenin Tamamını Sil",
+        () ->
+            confirm(
+                "Borç Listesini Sil",
+                ledger.name
+                    + " · "
+                    + ledger.period
+                    + "\n"
+                    + ledger.accounts.size()
+                    + " Kişi Ve Bu Listeye Ait Tüm Ödeme Geçmişi Silinecek. Diğer Listeler Ve"
+                    + " Rehber Korunacak. Silme Geri Alınamaz; Gerekirse Önce Şifreli Yedek Alın.",
+                () ->
+                    mutate(
+                        copy -> Payments.removeLedger(copy, id),
+                        false,
+                        () -> {
+                          window.dismiss();
+                          debtLedger = "";
+                          debtQuery = "";
+                          debtPage = 0;
+                          render();
+                          toast("Borç Listesi Silindi.");
+                        })));
+  }
+
+  void debtAccountDialog(String ledgerId, String code) {
+    Payments.Account a = Payments.find(state, ledgerId).accounts.get(code);
+    if (a == null) {
+      toast("Cari Kaydı Bulunamadı.");
+      return;
+    }
+    LinearLayout box = column();
+    EditText newCode = input(box, "Cari Kodu", a.code, false);
+    newCode.setTag("debt-edit-code");
+    EditText first = input(box, "Adı", a.first, false);
+    first.setTag("debt-edit-first");
+    EditText last = input(box, "Soyadı", a.last, false);
+    EditText title = input(box, "Ticari Unvanı", a.title, false);
+    EditText original =
+        input(
+            box,
+            "İlk Borç Tutarı (TL)",
+            java.math.BigDecimal.valueOf(a.original, 2).toPlainString().replace('.', ','),
+            false);
+    original.setTag("debt-edit-original");
+    original.setInputType(
+        android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
+    box.addView(
+        text(
+            "Ödemeler korunur. İlk borcu düzeltmek liste toplamını değiştirir. Cari kod değişirse"
+                + " önceki aylardaki eski kodla bağlantı değişir; diğer listeler otomatik"
+                + " düzenlenmez.",
+            12,
+            muted));
+    AlertDialog window = dialog("Borç Kaydını Düzenle / Sil", box);
+    action(
+        box,
+        "Kayıt Değişikliklerini Kaydet",
+        () -> {
+          try {
+            long amount = Payments.money(original.getText().toString(), false);
+            String nextCode = newCode.getText().toString(),
+                ad = first.getText().toString(),
+                soyad = last.getText().toString(),
+                unvan = title.getText().toString();
+            confirm(
+                "Borç Kaydını Güncelle",
+                a.name()
+                    + " · "
+                    + a.code
+                    + "\nYeni İlk Borç: "
+                    + Payments.format(amount)
+                    + "\nListe Toplamı Yeniden Hesaplanacak. Ödeme Geçmişi Korunacak.",
+                () ->
+                    mutate(
+                        copy ->
+                            Payments.edit(copy, ledgerId, code, nextCode, ad, soyad, unvan, amount),
+                        false,
+                        () -> {
+                          window.dismiss();
+                          debtQuery = "";
+                          debtPage = 0;
+                          render();
+                          toast("Borç Kaydı Güncellendi.");
+                        }));
+          } catch (Exception e) {
+            error(e);
+          }
+        });
+    action(
+        box,
+        "Bu Kaydı Sil",
+        () ->
+            confirm(
+                "Borç Kaydını Sil",
+                a.name()
+                    + " · "
+                    + a.code
+                    + "\n"
+                    + "Bu Kişi Ve Bu Listedeki Ödeme Geçmişi Silinecek. Liste Toplamları Ve"
+                    + " Analizler Yeniden Hesaplanacak. Diğer Aylardaki Kayıtları Ve Rehber"
+                    + " Korunacak. Silme Geri Alınamaz.",
+                () ->
+                    mutate(
+                        copy -> Payments.removeAccount(copy, ledgerId, code),
+                        false,
+                        () -> {
+                          window.dismiss();
+                          debtPage = 0;
+                          render();
+                          toast("Borç Kaydı Silindi.");
+                        })));
   }
 
   void paymentDialog(String ledgerId, String code) {

@@ -1,14 +1,14 @@
-# Doğrulama — Sicil360 Pro 1.4 / 23 Ekim 2026
+# Doğrulama — Sicil360 Pro 1.5 / 23 Ekim 2026
 
 ## Sonuç
 
 - JDK 17.0.17, Gradle 8.9, AGP 8.7.3, Android SDK/build-tools 35.
-- JVM: **52 test, 0 başarısız, 0 atlanan** (`ModelTest`: 17, `ExcelTest`: 11, `CrmTest`: 5, `PaymentsTest`: 19).
+- JVM: **58 test, 0 başarısız, 0 atlanan** (`ModelTest`: 17, `ExcelTest`: 11, `CrmTest`: 5, `PaymentsTest`: 25).
 - `lintDebug` ve release için `lintVitalRelease` başarılı.
 - `assembleRelease` ve `assembleDebugAndroidTest` başarılı.
-- Android 11 / API 30 x86_64 emülatöründe **son teslim release APK'sı üzerinde 9 kontrol grubu geçti, 0 başarısız**. Testler taklit alıcıya yönelir; gerçek kişiye mesaj göndermez.
+- Android 11 / API 30 x86_64 emülatöründe **son teslim release APK'sı üzerinde 10 kontrol grubu geçti, 0 başarısız**. Testler taklit alıcıya yönelir; gerçek kişiye mesaj göndermez.
 - Release paketinde `DEBUGGABLE` bayrağı yok; INTERNET izni yok; `FLAG_SECURE` açık. İmza doğrulandı. Sertifika geliştirme sertifikasıdır; APK Play Store yayını değildir.
-- Son APK SHA-256: `10a7b7ac2732a5db2c22bb57529cc99e1501cb2cde2398bed8101f6d38aa046c`.
+- Son APK SHA-256: `7c71364bf057b3ca3afcb7fdd02b2126c501a232c87c4a0b2f30f8c48ce8c294`.
 - Sertifika SHA-256: `a1acf948b51380a975bf87c15fd7eddc3afa4ab021df4cd65495dadebf44b94c`.
 
 ## Test Kapsamı
@@ -59,3 +59,7 @@ JVM: V1 kişi/yedek içeriğini okuma; V2 takip/not/tarih ve kopyalama turu; İs
 JVM 14 yeni senaryo: Türkçe/nümerik para ve kuruş kesinliği; negatif/bozuk/aşırı hassas tutar reddi; kısmi/tam/fazla ödeme; başka kişinin borcunun fazla ödemeden etkilenmemesi; iptal ve yeniden açılma; kayıt sırası ve ilk toplamın korunması; ilk veri satırı ve sıfırlı cari; mükerrer kod reddi; toplam satırının kişi sayılmaması ve toplam uyuşmazlığı; formül/güvensiz sayı reddi; şifreli yedek ödeme turu; V2 yedek uyumluluğu; tekrar yükleme parmak izi. Android ek kontrol: gerçek XLSX dosyasını okuma, önizleme/onay, 250 TL kısmi + kalanını kapatma, 1.200 TL fazla ödeme, iptal, şifreli depodan yeniden okuma, aynı sırada soluk kayıt, ekran genişliği, yeniden yüklemede ödeme koruma ve rehber geri alma sırasında ödeme koruma. Tüm kişiler sentetiktir; gerçek finansal işlem yapılmaz.
 
 Aylık analiz için 5 ek JVM testi: üç ardışık ayda ödeme kaydı olmaması; kısmi ödeme ile serinin kırılması; eksik ayın ödeme yapmamış sayılmaması; ağırlıklı %80 hesabı ve fazla ödemenin üst sınırı; aynı isimli farklı cari/gelecek dönem ayrımı; ay/yılın yedekte korunması. Finansal test ilk geçişte başarılıydı; aynı çalışmada eski sıralı mesaj testi otomatik sicil aramasının kuyrukla çakıştığını yakaladı. Kuyruk açıkken otomatik kişi değişimi engellendi ve son APK üzerinde tüm kontrol grupları yeniden çalıştırıldı.
+
+## 1.5 Düzenleme Ve Silme Kontrolleri
+
+6 ek JVM testi: düzeltmede ödeme geçmişi/sıra/parmak izi/toplamların korunması; aynı dönemde mükerrer cari reddi ve kaydın değişmemesi; kişi silmenin diğer aya dokunmaması; liste dönem değişikliğinde çakışma kontrolü; liste silmenin diğer listeyi koruması; tüm kişileri silinmiş boş listenin veri turu. Android ek kontrol: cari/ad/borç formundan düzeltme ve şifreli kayıttan doğrulama, mevcut ödemenin korunması, silme onayını iptal etme ve tekrar onaylayarak silme, güncel toplam, liste adını değiştirme, tüm listeyi silme ve diğer dönemin kalması. Yalnız sentetik deneme verileri kullanılır.

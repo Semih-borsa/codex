@@ -276,4 +276,81 @@ public class PaymentsTest {
     Model.State s = months(4);
     assertEquals("2026-06", Codec.copy(s).debts.get(0).period);
   }
+
+  @Test
+  public void editKeepsPaymentHistoryOrderAndRecalculatesTotals() {
+    Model.State s = new Model.State();
+    Payments.Ledger l = ledger();
+    s.debts.add(l);
+    Payments.add(l.accounts.get("0001"), 25000, "Not");
+    Payments.refreshFingerprint(l);
+    String before = l.fingerprint;
+    Payments.edit(s, l.id, "0001", "0003", "Yeni", "İsim", "Yeni Birim", 150000);
+    assertEquals(Arrays.asList("0003", "0002"), new ArrayList<>(l.accounts.keySet()));
+    assertEquals(25000, l.accounts.get("0003").paid());
+    assertEquals(125000, l.accounts.get("0003").remaining());
+    assertEquals("Not", l.accounts.get("0003").payments.get(0).note);
+    assertEquals(250000, Payments.totals(l).original);
+    assertNotEquals(before, l.fingerprint);
+  }
+
+  @Test
+  public void duplicateCodeEditIsRejectedWithoutChangingAccount() {
+    Model.State s = new Model.State();
+    Payments.Ledger l = ledger();
+    s.debts.add(l);
+    try {
+      Payments.edit(s, l.id, "0001", "0002", "Yeni", "İsim", "", 100);
+      fail();
+    } catch (IllegalArgumentException expected) {
+    }
+    assertEquals("İpek", l.accounts.get("0001").first);
+    assertEquals(100000, l.accounts.get("0001").original);
+  }
+
+  @Test
+  public void removePersonOnlyAffectsSelectedMonthAndRefreshesTotals() {
+    Model.State s = months(0, 1);
+    Payments.Ledger selected = s.debts.get(0);
+    Payments.add(selected.accounts.get("0001"), 25000, "");
+    Payments.removeAccount(s, selected.id, "0001");
+    assertEquals(100000, Payments.totals(selected).original);
+    assertEquals(0, Payments.totals(selected).paid);
+    assertTrue(s.debts.get(1).accounts.containsKey("0001"));
+    assertEquals(1, Payments.trend(s, "0001", java.time.YearMonth.of(2026, 10)).appearances);
+  }
+
+  @Test
+  public void ledgerPeriodCannotCreateSamePeriodDuplicate() {
+    Model.State s = months(0, 1);
+    Payments.Ledger second = s.debts.get(1);
+    try {
+      Payments.editLedger(s, second.id, "Test", "2026-10");
+      fail();
+    } catch (IllegalArgumentException expected) {
+    }
+    assertEquals("2026-09", second.period);
+    Payments.editLedger(s, second.id, "Düzeltilmiş", "2026-08");
+    assertEquals("Düzeltilmiş", second.name);
+  }
+
+  @Test
+  public void deleteWholeLedgerLeavesOtherMonthIntact() throws Exception {
+    Model.State s = months(0, 1);
+    String other = s.debts.get(1).id;
+    Payments.removeLedger(s, s.debts.get(0).id);
+    assertEquals(1, s.debts.size());
+    assertEquals(other, Codec.copy(s).debts.get(0).id);
+  }
+
+  @Test
+  public void allAccountsCanBeDeletedAndEmptyLedgerStillLoads() throws Exception {
+    Model.State s = new Model.State();
+    Payments.Ledger l = ledger();
+    s.debts.add(l);
+    Payments.removeAccount(s, l.id, "0001");
+    Payments.removeAccount(s, l.id, "0002");
+    assertEquals(0, Payments.totals(l).original);
+    assertTrue(Codec.copy(s).debts.get(0).accounts.isEmpty());
+  }
 }
