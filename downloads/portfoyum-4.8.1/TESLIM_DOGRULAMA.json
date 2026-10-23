@@ -1,0 +1,17 @@
+{
+  "originalFiles": 36,
+  "originalSourceUntouched": true,
+  "changedOriginalFiles": [
+    "Portfoyum-Android/tests/ui.test.mjs",
+    "Portfoyum-Android/app/src/main/assets/modern.css",
+    "Portfoyum-Android/app/src/main/assets/app.mjs",
+    "Portfoyum-Android/app/src/main/assets/core.mjs",
+    "Portfoyum-Android/app/build.gradle"
+  ],
+  "addedFiles": [
+    "Portfoyum-Android/tests/safety-regressions.test.mjs",
+    "Portfoyum-Android/GUNCELLEME-4.8.1.md"
+  ],
+  "zipBytes": 144612,
+  "zipSha256": "af069595dbef5099f5d4deaea3681cb9d86e0a096971a5d09c4525bba3bb6542"
+}

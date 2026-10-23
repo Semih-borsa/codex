@@ -1,0 +1,39 @@
+/* Telefona özel dokunma hedefleri, tek sütunlu varlıklar ve okunabilir yazılar. */
+@media(max-width:720px){
+  body{font-size:14px;padding-bottom:77px;overscroll-behavior-y:none}
+  .sidebar{height:76px;padding:7px 4px}
+  .nav-item{height:61px;gap:5px}.nav-item span{font-size:9px;letter-spacing:-.3px}.nav-item .icon{width:21px;height:21px}
+  .workspace{padding:20px 15px}.page-head h1{font-size:25px}.page-head p{font-size:12px}
+  .eyebrow,.mini-label{font-size:10px}.metric>span{font-size:10px}.metric strong{font-size:21px}
+  .metric>div{font-size:10px;min-height:28px;align-items:flex-start}.metrics{gap:10px}.metric{min-height:111px;padding:15px 12px}
+  .head-actions{gap:6px}.head-actions .secondary{display:inline-flex}.head-actions .btn{font-size:0;width:44px;height:44px;min-height:44px}
+  .btn{min-height:44px;padding:11px 13px;font-size:12px}.btn.icon-btn{width:44px;height:44px;min-height:44px}
+  .scopebar{height:58px}.portfolio-switch{width:100%}.portfolio-switch select{width:100%;font-size:14px;height:42px;background-position:calc(100% - 10px) 18px,calc(100% - 5px) 18px}
+  .panel-head{padding:16px}.panel-head h2,.panel h2{font-size:15px}.panel-head p{font-size:11px}
+  .empty{padding:30px 20px}.empty h3{font-size:16px}.empty p{font-size:12px}.empty .btn{display:flex;width:100%;margin:8px 0}
+  .table-wrap{overflow:visible;padding:0 12px 12px}.table-wrap table{display:block;min-width:0;width:100%}
+  .table-wrap thead{display:none}.table-wrap tbody{display:grid;gap:12px}.table-wrap tr{display:block;border:1px solid var(--line);border-radius:13px;padding:10px 12px;margin-top:4px;background:#fff}
+  .table-wrap td,.table-wrap .numeric{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 0;border:0;border-top:1px solid #f1f3f7;font-size:12px;text-align:right;flex-wrap:wrap}
+  .table-wrap td:before{content:attr(data-label);font-size:11px;text-align:left;color:var(--muted);font-weight:500;max-width:45%}
+  .table-wrap td:first-child{border:0;justify-content:flex-start;text-align:left;padding:0 0 10px}.table-wrap td:first-child:before{display:none}
+  .table-wrap td.desktop-only{display:none}.table-wrap td:last-child{justify-content:flex-end;padding:5px 0 0}
+  .asset-link{width:100%;gap:11px}.asset-link b{font-size:15px}.asset-link small{font-size:11px;line-height:1.5}.asset-icon{width:40px;height:40px;font-size:13px;border-radius:12px}
+  .table-wrap td>b{font-size:15px}.cell-sub{font-size:10px}.cell-sub .positive,.cell-sub .negative{font-size:11px}
+  .badge{font-size:10px;padding:5px 8px}.table-wrap td>.cell-sub{margin-left:auto;max-width:55%}
+  .bank-name b{font-size:15px}.bank-monogram{width:38px;height:38px;font-size:11px}.segmented button{padding:10px 15px;font-size:12px;min-height:43px}
+  .alert,.subtle-warning{font-size:12px;align-items:flex-start;line-height:1.55}.alert .icon{margin-top:3px;flex-shrink:0}
+  .interest-strip{padding:17px}.interest-strip h2{font-size:15px}.interest-strip p{font-size:12px;line-height:1.5;margin-top:5px}
+  .portfolio-card{padding:17px 38px 17px 17px}.portfolio-card span{font-size:12px}.portfolio-card b{font-size:20px}.portfolio-card small{font-size:11px}
+  .donut{width:138px;height:138px}.donut b{font-size:23px}.donut small{font-size:10px}.legend>div{font-size:11px;padding:9px 0}
+  .info-card h3{font-size:15px}.info-card p,.settings-grid p{font-size:12px}.info-card>b{font-size:12px}
+  .deposit-intro b{font-size:13px}.deposit-intro small{font-size:11px}.deposit-head h2{font-size:16px}.deposit-head small{font-size:11px}.balance{font-size:30px}
+  .deposit-split span{font-size:10px}.deposit-split b{font-size:13px}.today-status{font-size:11px;padding:12px}.rules li{font-size:12px;line-height:1.55}
+  .fineprint{font-size:11px!important}.settings-grid .stack{display:grid}.portfolio-settings>div{font-size:13px}.report>div{font-size:12px;grid-template-columns:90px 1fr}
+  dialog{width:calc(100vw - 20px);max-height:calc(100dvh - 20px);border-radius:17px}.modal-body{padding:18px 18px}.modal-head{padding:17px 18px}
+  .field>span{font-size:11px}.field input,.field select{height:48px;font-size:16px}.form-footer{margin:20px -18px -18px;padding:13px 18px;bottom:-18px}.form-footer .btn{flex:1}
+  .notice,.type-fixed{font-size:12px;line-height:1.5}.check-field{font-size:12px;gap:10px;align-items:center}.check-field input{width:20px;height:20px;flex-shrink:0}
+  .form-error{font-size:12px}.account-context{display:block}.account-context span{display:block;font-size:12px;margin-top:5px}
+  .detail-summary span{font-size:11px}.detail-summary b{font-size:21px}.detail-tools{display:grid;grid-template-columns:1fr 1fr}.ledger-title{font-size:14px}.ledger>div{grid-template-columns:1fr auto;gap:5px}.ledger>div>div{grid-column:1/-1;text-align:right}.ledger span small{font-size:11px}.ledger>div>b{font-size:13px}
+  .import-summary{grid-template-columns:1fr}.import-summary b{font-size:12px}.csv-preview>div{font-size:12px}.search{height:44px}.search input{font-size:12px;width:120px}
+  #toast{bottom:85px;right:15px;max-width:calc(100vw - 30px);font-size:13px;padding:13px 16px}footer{font-size:10px}
+}
