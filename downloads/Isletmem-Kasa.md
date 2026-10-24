@@ -1,3 +1,13 @@
+# İşletmem Kasa 1.0.11
+
+[APK İndir](https://raw.githubusercontent.com/Semih-borsa/codex/main/downloads/Isletmem-Kasa-1.0.11.apk) · [Kaynak ZIP](Isletmem-Kasa-1.0.11-Kaynak.zip)
+
+Yurt içi debit kartlar +16 takvim günü olarak güncellendi. İlk açılışta kayıtlı ayrıntılı POS debit vadeleri otomatik düzeltilir; tek toplam kayıtlar da +16 gösterilir ve yeni yatışlar 16 gün önceki işleme eşleştirilir. Gerçek girilmiş banka yatış tarihleri/tutarları, toplamlar ve nakit kayıtları değiştirilmez. Eski yedekleri içe alırken aynı kural uygulanır. Kredi kartı/World/yurt dışı kartlarda +21 korunur.
+
+Orijinal 1.0.10 üzerine uygulamayı silmeden kurun. 51 birim testi geçti; Android derlemesi/imza kontrol edildi. Gerçek cihazda veritabanı yükseltme testi henüz çalıştırılmadı.
+
+---
+
 # İşletmem Kasa 1.0.10
 
 [APK İndir](https://raw.githubusercontent.com/Semih-borsa/codex/main/downloads/Isletmem-Kasa-1.0.10.apk) · [Kaynak ZIP](Isletmem-Kasa-1.0.10-Kaynak.zip)
