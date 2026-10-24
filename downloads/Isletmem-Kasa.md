@@ -1,3 +1,13 @@
+# İşletmem Kasa 1.0.14 · POS Karşılaştırması
+
+[APK İndir](https://raw.githubusercontent.com/Semih-borsa/codex/main/downloads/Isletmem-Kasa-1.0.14.apk) · [Kaynak ZIP](Isletmem-Kasa-1.0.14-Kaynak.zip)
+
+Bir kasadaki dağılım bekleyen POS'un diğer kasaların ve ilgisiz kart türlerinin yüzdesini de engellemesi düzeltildi. Belirsizlik yalnız ilgili kasa, kart türü ve vade gününe uygulanır. Genel tutarın dağılımı eksikse genel yüzde yine hesaplanmaz. Yüzde gösterilemiyorsa neden açıkça belirtilir. Geçen haftanın aynı vade günüyle (−7 gün) karşılaştırma devam eder; kayıt/tutar/tarih değiştirilmez.
+
+64 birim testi, tarayıcı regresyonu, Android derlemesi/imza kontrolü geçti. Orijinal 1.0.13 üzerine silmeden kurun.
+
+---
+
 # İşletmem Kasa 1.0.13 · Günlük Kartlar Ve Haftalık Yüzdeler
 
 [APK İndir](https://raw.githubusercontent.com/Semih-borsa/codex/main/downloads/Isletmem-Kasa-1.0.13.apk) · [Kaynak ZIP](Isletmem-Kasa-1.0.13-Kaynak.zip)
