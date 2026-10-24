@@ -1,3 +1,15 @@
+# İşletmem Kasa 1.0.13 · Günlük Kartlar Ve Haftalık Yüzdeler
+
+[APK İndir](https://raw.githubusercontent.com/Semih-borsa/codex/main/downloads/Isletmem-Kasa-1.0.13.apk) · [Kaynak ZIP](Isletmem-Kasa-1.0.13-Kaynak.zip)
+
+Sayım/POS üstündeki 📆 tarih, oklar veya sağa/sola kaydırma ile kayıtları gün bazında görüntüler. Kayıt giriş tarihi ayrı kalır. Nakit: üstte avans hariç tüm kasalar toplamı, altta kasanın kayıtlı tutarı ve eksik/fazlası. POS: üstte vade gününde yatacak genel toplam/kredi/debit, altta kasaların tüm POS raporlarından birleştirilmiş toplam/kredi/debit.
+
+Her tutar 7 gün önceki aynı günle kıyaslanır. Artış yeşil ↑, azalış kırmızı ↓, değişmeyen gri. Önceki kayıt/sıfır baz veya farklı kasa kapsamı nedeniyle sağlıklı karşılaştırılamazsa yüzde yerine Karşılaştırma Yok yazar. Dağılım bekleyen ilgili POS varsa yanıltıcı yüzde verilmez. Nakit kartında taslaklar gösterilmez. Yüzde değişim kasa eksik/fazlasından ayrı gösterilir.
+
+61 birim testi ve yeni tarih/kart arayüzü kontrolleri geçti. Gerçek Android dokunma testi yapılmadı. Orijinal 1.0.12 üzerine uygulamayı silmeden kurun; veritabanı ve hesaplama kuralları değişmedi.
+
+---
+
 # İşletmem Kasa 1.0.12 · Analiz Ve Yorumlar
 
 [APK İndir](https://raw.githubusercontent.com/Semih-borsa/codex/main/downloads/Isletmem-Kasa-1.0.12.apk) · [Kaynak ZIP](Isletmem-Kasa-1.0.12-Kaynak.zip)
