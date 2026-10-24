@@ -1,3 +1,18 @@
+# İşletmem Kasa 1.0.7
+
+[APK İndir](https://raw.githubusercontent.com/Semih-borsa/codex/main/downloads/Isletmem-Kasa-1.0.7.apk) · [Kaynak ZIP](Isletmem-Kasa-1.0.7-Kaynak.zip)
+
+- Basılı kasa defterinden tarih, kasa adı, beklenen tutar ve para adetleri için alan bazlı okuma eklendi. Okunamayan adet, satır toplamından tam bölünüyorsa tahmin olarak sunulur; tahminler ayrıca onay ister. Fotoğraf onayı formu doldurur, otomatik kapanış kaydetmez.
+- Diğer Bozuk Para boş başlar; gereken bozuk tutarı hesaplanır.
+- Kayıtlı ayrıntılı ve tek toplam POS işlem tarihleri gerekçeli düzeltilebilir. Vade yenilenir; önceden girilmiş gerçek debit banka tarihi/tutarı korunur. Tarih çakışmasında üzerine yazılmaz.
+- Fiş tarihi için Android takvim güncellemesi korundu.
+
+**Kurulum:** Bu dosya orijinal `tr.kasadenge.app` paketi ve orijinal sertifikasıyla imzalıdır; 1.0.4 ve eski orijinal sürümlerin üzerine kurulur. Repodaki 1.0.5/1.0.6 `tr.kasadenge.app.tarih` ayrı paketidir ve bu APK ile otomatik güncellenmez. O sürümü kullanıyorsanız önce Ayarlar → Yedeği Kaydet; orijinal uygulamada Ayarlar → Yedekten Ekle. Eski uygulamayı silmeyin. Güncel kayıtlar aktarılır; geçmiş düzeltmeler/taslaklar yedek dosyasında tutulur; kasa ayarlarını kontrol edin.
+
+**Doğrulama:** 50 birim testi ve sayım/POS tarayıcı regresyonları geçti. Android derlemesi ve imza doğrulandı. Gerçek el yazılı fotoğrafın Android OCR sonucu ve yeni native SQLite tarih düzeltme testleri emülatör sorunu nedeniyle doğrulanamadı; el yazısının eksiksiz okunacağı garanti edilmez. Özel fotoğraf/anahtar yayımlanmaz.
+
+---
+
 # İşletmem Kasa 1.0.6
 
 [APK doğrudan indir](https://github.com/Semih-borsa/codex/raw/refs/heads/main/downloads/Isletmem-Kasa-1.0.6.apk) · [Kaynak ZIP](Isletmem-Kasa-1.0.6-Kaynak.zip)

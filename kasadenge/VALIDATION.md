@@ -25,13 +25,14 @@ Tek Toplam POS eklentisi: 37 birim testi; ayarlardan kasa bazlı tek alan, onay 
 Android SQLite tek toplam testleri geçti: toplam/debit çift kayıt engeli, +15 gün eşleşmesi, kalan 10.000 TL kredi, gerekçeli düzeltme arşivi, şema3 yedek tekilleştirmesi ve ayrıntılı/tek toplam aynı gün çakışmasını engelleme. Yayın 1.0.4 aynı paket/imzayla versionCode5 kullanır.
 
 
-## 1.0.5 Fiş İşlem Tarihi · 24 Ekim 2026
+## 1.0.7 · 24 Ekim 2026
 
-- 37 Node birim testi geçti. Kuruş aritmetiği ve +15/+21 tarih hesapları korunur.
-- Fiş arayüz regresyonu: native takvim köprüsü tarayıcıda taklit edilerek iki gün önceki tarih seçildi; tarih onaydan kayda ve tüm satırların +15/+21 vadesine doğru geçti. Geçersiz eski takvim callback'i yok sayıldı. Önceden kayıt açılmışken yeni fotoğraf tarih kilidini/revizyonunu taşımıyor. Eksik tutar/genel toplam engelleri ve açık onay korundu. Bu tarayıcı testi gerçek Android takvim dokunma testi değildir.
-- Mevcut sayım/POS ve tek toplam/debit tarayıcı paketleri geçti.
-- `assembleDebug`, `lintDebug`, `assembleDateFix`, `lintDateFix` başarılı; 0 lint hata, mevcut 3 uyarı. Özel imzalı APK `apksigner verify` ve 16KB zipalign kontrolünden geçti. Paket `tr.kasadenge.app.tarih`, sürüm 1.0.5/code6; debuggable olmayan ayrı kurulum. Orijinal imza bu ortamda bulunmadığı için eski APK üstüne güncelleme olarak sunulmaz. Ana `release` paket kimliği değiştirilmedi.
-- Bu sürümün gerçek cihazda Android takvim etkileşimi ve eski kullanıcı yedeğiyle aktarımı henüz doğrulanmadı. Eski APK silinmez; yedek ve orijinal uygulama korunarak aktarım yapılır. Yeni APK'da başlangıç verileri boştur; özel fiş/yedek/anahtar ZIP'e eklenmez.
+50 JavaScript birim testi geçti: yeni defter şablonu, üst satır tarihi / çekim tarihi ayrımı, Kasa 1/2/3 eşleştirme, satır toplamından ve tek belirsiz satırda denge varsayımından adet çıkarma, belirsiz rakamların tahmin olarak işaretlenmesi, boş diğer bozuk alanının sıfır kabulü, kaynak okumaları çeliştiğinde uyarı ve tarih düzeltilmiş debit bağının korunması.
 
+Tarayıcıda yeni defter akışı: tahmin onayı olmadan aktarmama, kasa/tarih değiştirme ve son kapanış onayı olmadan kaydetmeme geçti. POS tarih düzeltmesi için eski/yeni tarih önizlemesi, tek aktif kayda taşıma, vade yenileme, gerçek debit yatış gününü koruma ve sonradan debit tutar düzeltmesi akışları geçti. Önceki sayım/POS/OCR ekran regresyonları da geçti. Tarayıcıdaki native köprü taklittir.
 
-1.0.6: Yalnız uygulama adı “İşletmem Kasa” olarak düzeltildi; ayarlardaki sürüm etiketi yenilendi. `assembleDateFix` başarılı. APK manifest adı, `tr.kasadenge.app.tarih` paketinin korunması, code7/name1.0.6, 1.0.5 ile aynı sertifika ve zipalign kontrolü doğrulandı. İş kurallarında değişiklik yok.
+Sınır: Android 11 emülatörü bu oturumda soğuk açılış ve çekirdek zaman aşımı sorunları verdi. Android 8 alternatifinde de ADB kurulum çağrıları zaman aşımına girdi. Bu sürümde gerçek yüklenen EL YAZISI fotoğrafının uçtan uca Android OCR sonucu ve yeni POS tarih düzeltmesinin native SQLite test sonucu doğrulanamadı. Test kodları eklendi; bunlar çalıştırılmış/passed olarak sunulmuyor. Önceki sürümlerin basılı fiş/native veritabanı sonuçları bu sayfada kendi sürümleri altında kalır.
+
+Yeni OCR alan büyütme ve mavi yazı ayrıştırma kodu derlendi; el yazısında doğruluk garantisi yoktur. Tahminler ayrı işaretlenir, kullanıcı kontrolü ve son kayıt onayı korunur. Özel fotoğraf yayımlanan APK/kaynak/ZIP içinde bulunmaz.
+
+Önceki uzak depo tarih seçici ve fiş tarihi değişiklikleri birleştirildi; güncel fiş tarayıcı testi tekrar çalıştırıldı (sonucu yayın kontrolünde kayıtlı). Orijinal imza bu ortamda mevcut; ayrı tarih varyantının anahtarı mevcut değil.

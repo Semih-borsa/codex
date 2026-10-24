@@ -8,3 +8,5 @@ tests/*.png
 .artifacts/
 
 app/src/androidTest/assets/receipt-private.jpg
+
+app/src/androidTest/assets/*-private.jpg
