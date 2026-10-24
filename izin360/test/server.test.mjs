@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createApp } from "../server/index.mjs";
@@ -172,4 +172,22 @@ test('corrupt empty authentication key prevents insecure server startup',()=>{
  const dir=mkdtempSync(join(tmpdir(),'izin360-invalid-key-'));
  try{writeFileSync(join(dir,'connection.key'),'');assert.throws(()=>createApp({directory:dir}),/anahtarı dosyası bozuk/);}
  finally{rmSync(dir,{recursive:true,force:true});}
+});
+
+
+test("startup serves JS/CSS with correct MIME and rejects decoded traversal", async (t) => {
+  const { root, dir } = await fixture(t);
+  mkdirSync(join(dir, "assets"));
+  writeFileSync(join(dir, "assets", "app.js"), "window.ready = true;");
+  writeFileSync(join(dir, "assets", "app.css"), "body{color:navy}");
+  for (const [url, mime, content] of [
+    ["/assets/app.js", "text/javascript", "window.ready = true;"],
+    ["/assets/app.css", "text/css", "body{color:navy}"],
+  ]) {
+    const response = await fetch(root + url);
+    assert.equal(response.status, 200);
+    assert.ok(response.headers.get("content-type").startsWith(mime));
+    assert.equal(await response.text(), content);
+  }
+  assert.equal((await fetch(root + "/..%2fconnection.key")).status, 403);
 });

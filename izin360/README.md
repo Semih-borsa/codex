@@ -1,3 +1,7 @@
+Windows 1.0.1: [Düzeltilmiş Windows ZIP](../downloads/Izin360-Windows-1.0.1-x64.zip). Windows yol ayırıcı hatası nedeniyle JavaScript/CSS engellenip beyaz ekran oluşması düzeltildi.
+
+Güncelleme: Önce eski klasördeki **Izin360-Durdur.exe** ile arka plandaki sunucuyu kapatın. Açık İzin360 pencerelerini kapatın. Yeni ZIP'in tamamını yeni bir klasöre çıkarıp **Izin360.exe** dosyasını çalıştırın. Eski sunucu açık kalırsa yeni program eski sunucuya bağlanır. `%APPDATA%\Izin360` kayıt klasörünü ve tarayıcı profilini silmeyin; yeni paket aynı veri dizinini kullanır. ZIP içindeki `app/dist/index.html` dosyası çift tıklanarak açılmaz.
+
 # İzin360 · Windows ve Android personel takibi
 
 Tek kişinin kendi personel kayıtlarını yönetmesi için geliştirildi. **Personel hesabı, talep, onay/ret veya akaryakıt modülü yoktur.** Yeni personelin izin hakkı **0 gün** başlar; işe giriş veya yıl değişiminde kendiliğinden hak eklenmez.
