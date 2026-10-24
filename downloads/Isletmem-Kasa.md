@@ -1,3 +1,11 @@
+# İşletmem Kasa 1.0.10
+
+[APK İndir](https://raw.githubusercontent.com/Semih-borsa/codex/main/downloads/Isletmem-Kasa-1.0.10.apk) · [Kaynak ZIP](Isletmem-Kasa-1.0.10-Kaynak.zip)
+
+Klavye açıldığında yazılan alan görünür aralığa kaydırılır. Alt menü ve sabit sayım özeti klavyeyle gizlenip kapanınca geri gelir. Beklenen tutar, para adetleri ve diğer girişler için geçerlidir; hesaplama/kayıt şeması değişmedi. Tarayıcıda dar viewport ve IME köprüsü taklidiyle kontrol edildi; gerçek Android klavye cihaz testi yapılmadı. Orijinal 1.0.9 üzerine silmeden kurulur.
+
+---
+
 # İşletmem Kasa 1.0.9
 
 [APK İndir](https://raw.githubusercontent.com/Semih-borsa/codex/main/downloads/Isletmem-Kasa-1.0.9.apk) · [Kaynak ZIP](Isletmem-Kasa-1.0.9-Kaynak.zip)

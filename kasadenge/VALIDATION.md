@@ -40,3 +40,5 @@ Yeni OCR alan büyütme ve mavi yazı ayrıştırma kodu derlendi; el yazısınd
 1.0.8: Kasa kaldırma tarayıcı kontrolü: vazgeçmede değişiklik yok; onayla active=false, seçili kasa etkin kasaya geçer; önceki POS/revizyon verileri korunur, son etkin kasa kaldırılamaz. Native veritabanı değişmedi.
 
 1.0.9: Tarayıcıda son etkin kasayı kaldırma, kasasız Sayım/POS ekranları, yeniden kasa ekleyip sayıma devam etme ve mevcut POS/revizyon verilerini koruma geçti. Android ayar doğrulaması sıfır kasa/sıfır etkin kasa kabul eder; yeni kurulum varsayılan kasa oluşturmaz. Native cihaz testleri bu oturumda çalıştırılmadı.
+
+1.0.10: Playwright daralan viewport ve taklit IME bildirimiyle beklenen tutar/son para adetlerinin görünürlüğü, Enter ile madeni 5 TL ve diğer bozuk alanına ilerleme, değerlerin ve sıfır olmayan kaydırmanın korunması, klavye kapanınca menünün geri gelmesi geçti. Gerçek Android klavyesiyle cihaz testi yapılmadı. Android IME köprüsü derleme kontrolünden geçer.
