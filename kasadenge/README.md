@@ -1,4 +1,4 @@
-# İşletmem Kasa 1.0.8
+# İşletmem Kasa 1.0.9
 
 Android 8+ için çevrimdışı kasa sayımı, mutabakat, POS raporu ve tahsilat takvimi. Paket: `tr.kasadenge.app`. Diğer uygulamalardan ayrı veritabanı kullanır.
 
@@ -103,3 +103,5 @@ Test: `TEST_BASE_URL=... node tests/pos-date-ui.cjs`; native test senaryosu (bu 
 Android tarih seçici ve fiş fotoğrafı işlem tarihi düzenleme güncellemeleri korunmuştur. 1.0.7 APK orijinal tr.kasadenge.app paketi ve orijinal imzayla yayımlanır; 1.0.4 ve eski orijinal sürümler üzerine kurulur. Repodaki 1.0.5/1.0.6 tr.kasadenge.app.tarih ayrı paketidir; o paketi otomatik güncellemez. Ayrı paketteki veriler için önce yedek alıp orijinal pakete içe aktarın; hiçbir uygulamayı silmeyin.
 
 1.0.8: Kasalar Ve Avanslar → Kasayı Sil, açık onaydan sonra kasayı arşivler. Eski kayıtlar ve POS vadeleri korunur; kasa Düzenle üzerinden geri etkinleştirilebilir. Son etkin kasa silinemez.
+
+1.0.9: Son etkin kasa da onayla arşivlenebilir. Etkin kasa yokken Sayım/POS ekranı Kasa Ekle gösterir; geçmiş ve analiz korunur. Yeni kurulumda varsayılan kasa oluşturulmaz; mevcut kurulumun kasaları otomatik silinmez.
