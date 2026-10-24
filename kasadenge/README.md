@@ -1,4 +1,4 @@
-# İşletmem Kasa 1.0.11
+# İşletmem Kasa 1.0.12
 
 Android 8+ için çevrimdışı kasa sayımı, mutabakat, POS raporu ve tahsilat takvimi. Paket: `tr.kasadenge.app`. Diğer uygulamalardan ayrı veritabanı kullanır.
 
@@ -109,3 +109,5 @@ Android tarih seçici ve fiş fotoğrafı işlem tarihi düzenleme güncellemele
 1.0.10: Klavye açıldığında düzenlenen alan görünür aralığa kaydırılır. Alt menü/sabit özet klavyeyle gizlenir; kapandığında geri gelir. Android IME görünürlüğü ve WebView/visual viewport değişimleri izlenir. Tutar/adet ve mevcut hesaplama korunur.
 
 1.0.11: Yurt içi debit vadesi +16 takvim günü. SQLite schema4 güncellemesi kayıtlı aktif ayrıntılı POS debitDomestic/debitOwn satırlarının delay/due alanlarını değiştirir; tutarlar, kimlikler, kayıt/revizyon metaverisi ve nakit kayıtları korunur. Geçmiş revizyon anlık görüntüleri yeniden yazılmaz. Tek toplam POS vadesi dinamik +16; yeni debit eşleştirmesi yatış −16. Önceden girilmiş gerçek yatış günü/tutarı ve bağlı işlem günü korunur, gerekirse eski kurala ait bağ işaretlenir. Schema1/2/3 yedekleri içe alındığında aynı kural uygulanır. Kredi, World, yurt dışı kredi/debit +21 devam eder.
+
+1.0.12: Analiz ekranında dört temel tutar ve hesaplanan kısa yorumlar öne çıkar; uzun tablolar kapalı Ayrıntılı Tablolar bölümünde korunur. Seçilen günün nakit/POS satışı geçen tam takvim haftasının kayıtlı günlük ortalamasıyla karşılaştırılır. Aynı kasa kapsamı aranır; kayıtsız günler sıfır değildir. Az veri, dağılım bekleyen POS, haftalık açık/fazla/dengeli gün ve önceki dönem eşleşen kasa/gün farkı belirtilir. POS çoklu terminalleri önce kasa/gün bazında toplanır. Nakit avans hariçtir, banka yatışı satıştan ayrıdır.

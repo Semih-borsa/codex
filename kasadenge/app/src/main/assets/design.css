@@ -25,3 +25,5 @@ th{font-size:9px;letter-spacing:1px;text-transform:uppercase;font-weight:800;bac
 
 /* The keyboard owns the bottom edge while editing. */
 body.keyboard-open .bottom-nav,body.keyboard-open .mini-cash{display:none!important}body.keyboard-open .shell{padding-bottom:80px}input,textarea{scroll-margin-block:24px}.sheet{scroll-padding-block:24px}
+
+.analysis-comments .insight{margin:14px 0;padding:18px}.analysis-comments h3{margin-bottom:8px}.analysis-warning{border-left:3px solid var(--accent)}.analysis-details>summary{font-weight:700;cursor:pointer;padding:8px 0}.analysis-details>section{margin-top:18px}

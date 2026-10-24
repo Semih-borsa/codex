@@ -1,3 +1,13 @@
+# İşletmem Kasa 1.0.12 · Analiz Ve Yorumlar
+
+[APK İndir](https://raw.githubusercontent.com/Semih-borsa/codex/main/downloads/Isletmem-Kasa-1.0.12.apk) · [Kaynak ZIP](Isletmem-Kasa-1.0.12-Kaynak.zip)
+
+Analiz ekranı sadeleştirildi: dört temel tutar, günlük nakit/POS için geçen hafta ortalamasına göre TL ve yüzde farkı, haftalık açık/fazla/dengeli gün sayıları ve önceki dönemle karşılaştırmalar. Uzun tablolar Ayrıntılı Tablolar altında açılır. Eksik günler sıfır sayılmaz; aynı kasa kapsamı aranır, az veri ve bilinmeyen POS dağılımı belirtilir. Hesaplanan verilerden yorum üretilir; nakit/POS kâr sayılmaz. Kaydedilmiş veriler kullanılır, taslaklar dahil edilmez.
+
+56 birim testi ve analiz arayüz kontrolü geçti. Kayıt ve hesaplama kuralları korunur; orijinal 1.0.11 üzerine silmeden kurun.
+
+---
+
 # İşletmem Kasa 1.0.11
 
 [APK İndir](https://raw.githubusercontent.com/Semih-borsa/codex/main/downloads/Isletmem-Kasa-1.0.11.apk) · [Kaynak ZIP](Isletmem-Kasa-1.0.11-Kaynak.zip)
