@@ -23,3 +23,6 @@ Günlük geçmiş güncellemesi: toplam 33 birim testi geçti. Dört yeni taray�
 Tek Toplam POS eklentisi: 37 birim testi; ayarlardan kasa bazlı tek alan, onay öncesi kaydetmeme, tarih/kasa eşleştirme, 15.000−5.000=10.000 TL, kredi için ikinci giriş gerektirmeme, dağılım bekleme ve toplamı çift saymayan analiz testleri geçti. Debit gerekçeli düzeltmesi tek kaydı koruyor ve beklenen krediyi yeniden hesaplıyor. Beş tarayıcı paketi (eski akış, gün bazlı geçmiş/silme, 1.0.2 regresyon, fiş OCR onayı, tek toplam POS) çalıştırıldı.
 
 Android SQLite tek toplam testleri geçti: toplam/debit çift kayıt engeli, +15 gün eşleşmesi, kalan 10.000 TL kredi, gerekçeli düzeltme arşivi, şema3 yedek tekilleştirmesi ve ayrıntılı/tek toplam aynı gün çakışmasını engelleme. Yayın 1.0.4 aynı paket/imzayla versionCode5 kullanır.
+
+
+1.0.5 Tarih düzeltmesi için [güncel test kapsamı ve ayrı kurulum bilgisi](../kasadenge/VALIDATION.md). İki gün önceki fiş tarihinin kayıt ve +15/+21 vadelerine aktarımı tarayıcı köprü testiyle doğrulandı. İmzalı ayrı kurulum paketi önceki uygulamanın üstüne güncelleme değildir.

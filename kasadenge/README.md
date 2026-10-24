@@ -1,4 +1,8 @@
-# İşletmem Kasa 1.0.4
+# İşletmem Kasa 1.0.6
+
+**1.0.6 sürümü:** [APK](../downloads/Isletmem-Kasa-1.0.6.apk). 1.0.5 sürümündeki ad eki kaldırıldı; aynı paket/imza ve code7 ile veriler korunarak güncellenir. Bu indirme `tr.kasadenge.app.tarih` paketi ve “İşletmem Kasa” adıyla orijinal 1.0.4 uygulamasından **ayrı kurulur**. Önceki yayın imza anahtarı bu çalışma ortamında olmadığı için mevcut `tr.kasadenge.app` uygulamasının üstüne güncelleme değildir. Eski uygulamayı silmeyin. Önce eski uygulamada Ayarlar → Yedeği Kaydet; sonra yeni uygulamada Ayarlar → Yedekten Ekle. Kayıtlar otomatik paylaşılmaz. İçe aktarma güncel sayım/POS/toplam/debit kayıtlarını ekler; eski düzeltmeler ve taslaklar yedek dosyasında kalır. Aktarılan kayıtları kontrol edin; eski yedeği saklayın. Aynı adlı mevcut kasa ayarları yedekten değiştirilmediği için yeni uygulamada kasa adı/avans/POS giriş türünü ayrıca kontrol edin.
+
+Fiş kontrol ekranındaki **Fiş İşlem Tarihi** alanına dokunup gerçek günü seçin; “Forma Dön Ve Kontrol Et” ile aktarın. Ana POS formunda da tarih değiştirilebilir. Kaydetmeden önce işlem ve tahsilat tarihleri onayda görünür. İki gün önceki fiş +15/+21 takvim günleriyle o günden hesaplanır. Kayıt düzeltmesinden yeni fotoğrafa geçmek yeni kayıt başlatır; eski kaydın kilidi veya revizyonu yeni fişe taşınmaz.
 
 Android 8+ için çevrimdışı kasa sayımı, mutabakat, POS raporu ve tahsilat takvimi. Paket: `tr.kasadenge.app`. Diğer uygulamalardan ayrı veritabanı kullanır.
 
@@ -81,3 +85,6 @@ Tek Toplam modunda işlem tarihi (varsayılan dün) ve bir toplam tutar girilir.
 Toplam veya debit yanlış girilirse güncel kaydı gerekçeyle düzeltmek gerekir; eski hali arşivlenir. Debit toplam POS'u aşamaz. Aynı kasa/güne ayrıntılı ve tek toplam kayıtları birlikte girilip çift sayılmaz. Satış analizleri toplam 15.000 TL'yi bir kez sayar; dağılım bilinmeyen satış ayrı belirtilir, tahsilat takvimi yalnız bilinen dağılımı kullanır. Veritabanı 2'den 3'e yeni tablolar ekleyerek yükselir; sayımlar/ayrıntılı POS silinmez. Eski yedekler kabul edilir; yeni yedekler toplam ve debit kayıtlarını da içerir. İçe aktarma mevcut kayıtları değiştirmez.
 
 Ek testler: `node --test tests/settlements.test.mjs`; `TEST_BASE_URL=... node tests/settlement-ui.cjs`.
+
+
+1.0.5 Tarih APK derlemesi: `KASADENGE_DATEFIX_SIGNING_PROPERTIES=/özel/dosya.properties ./gradlew :app:assembleDateFix :app:lintDateFix`. Properties alanları `storeFile/storePassword/keyAlias/keyPassword`; özel anahtarı kaynak ZIP/repo içine koymayın. Bu varyantın sonraki güncellemeleri aynı Tarih anahtarını gerektirir. `release` varyantı orijinal paket kimliğini korur ve yalnız önceki orijinal anahtar mevcutsa eski uygulama üstüne kurulabilir. `dateFix` yeni bir imza anahtarıyla ve ayrı paketle yayımlandı; bu durum eski imzayla güncelleme olarak sunulmaz.
