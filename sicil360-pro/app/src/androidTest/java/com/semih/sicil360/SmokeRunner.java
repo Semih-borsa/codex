@@ -128,6 +128,20 @@ public final class SmokeRunner extends Instrumentation {
         });
   }
 
+  int relative(MainActivity a, View view) {
+    int[] v = new int[2], scroll = new int[2];
+    view.getLocationInWindow(v);
+    a.scroll.getLocationInWindow(scroll);
+    return v[1] - scroll[1];
+  }
+
+  int topInBody(MainActivity a, View view) {
+    int[] v = new int[2], body = new int[2];
+    view.getLocationInWindow(v);
+    a.body.getLocationInWindow(body);
+    return v[1] - body[1];
+  }
+
   void setup(MainActivity a, State s) throws Exception {
     Vault v = new Vault(isolated);
     State current = v.load();
@@ -961,6 +975,215 @@ public final class SmokeRunner extends Instrumentation {
                         && Payments.find(a.state, ledger.id).accounts.get("0001").original
                             == 63000);
             truth(Payments.find(a.vault.load(), ledger.id).accounts.get("0001").original == 63000);
+          } finally {
+            close(a);
+          }
+        });
+    check(
+        "ScrollPosition payment save full payment edits tabs async directory templates history and"
+            + " bundle",
+        () -> {
+          MainActivity a = open();
+          try {
+            State state = new State();
+            Payments.Ledger ledger = new Payments.Ledger();
+            ledger.name = "Kaydırma Denemesi";
+            for (int i = 1; i <= 60; i++) {
+              String code = String.format(java.util.Locale.ROOT, "%04d", i);
+              Payments.Account account = new Payments.Account();
+              account.code = code;
+              account.first = "İpek";
+              account.last = "Personel " + i;
+              account.title = "Özel Ticaret " + i;
+              account.original = 100000;
+              ledger.accounts.put(code, account);
+              Person person = sample(code);
+              state.people.put(code, person);
+              Template template = new Template();
+              template.name = "Şablon " + i;
+              template.text = "Sentetik metin " + i;
+              state.templates.add(template);
+              Event event = new Event();
+              event.sicil = code;
+              event.template = "Şablon " + i;
+              state.history.add(event);
+            }
+            state.debts.add(ledger);
+            setup(a, state);
+            runOnMainSync(
+                () -> {
+                  a.screen = 3;
+                  a.crmMode = 3;
+                  a.debtLedger = ledger.id;
+                  a.debtPage = 1;
+                  a.debtQuery = "İpek";
+                  a.render();
+                });
+            waitForIdleSync();
+            Thread.sleep(400);
+            runOnMainSync(
+                () -> {
+                  a.scrollMemory.userInput();
+                  a.scroll.scrollTo(
+                      0, a.root.findViewWithTag("debt-account-0045").getTop() + a.dp(60));
+                });
+            waitForIdleSync();
+            Thread.sleep(200);
+            final int[] before = {0};
+            runOnMainSync(
+                () -> before[0] = relative(a, a.root.findViewWithTag("debt-account-0045")));
+            truth(a.scroll.getScrollY() > 0);
+            runOnMainSync(() -> a.paymentDialog(ledger.id, "0045"));
+            runOnMainSync(
+                () -> {
+                  ((EditText)
+                          a.lastDialog.getWindow().getDecorView().findViewWithTag("payment-amount"))
+                      .setText("10,00");
+                  find(a.lastDialog.getWindow().getDecorView(), "Girilen Ödemeyi Kaydet")
+                      .performClick();
+                });
+            runOnMainSync(() -> a.lastDialog.getButton(-1).performClick());
+            await(
+                () ->
+                    !a.busy
+                        && Payments.find(a.state, ledger.id).accounts.get("0045").paid() == 1000);
+            waitForIdleSync();
+            Thread.sleep(300);
+            truth(a.debtPage == 1 && a.debtQuery.equals("İpek"));
+            final int[] after = {0};
+            runOnMainSync(
+                () -> after[0] = relative(a, a.root.findViewWithTag("debt-account-0045")));
+            truth(Math.abs(before[0] - after[0]) <= a.dp(3));
+            runOnMainSync(() -> a.paymentDialog(ledger.id, "0045"));
+            runOnMainSync(
+                () ->
+                    find(a.lastDialog.getWindow().getDecorView(), "Tamamı Ödendi").performClick());
+            runOnMainSync(() -> a.lastDialog.getButton(-1).performClick());
+            await(
+                () ->
+                    !a.busy
+                        && Payments.find(a.state, ledger.id).accounts.get("0045").remaining() == 0);
+            waitForIdleSync();
+            Thread.sleep(300);
+            runOnMainSync(
+                () -> after[0] = relative(a, a.root.findViewWithTag("debt-account-0045")));
+            truth(Math.abs(before[0] - after[0]) <= a.dp(3));
+            runOnMainSync(
+                () ->
+                    a.mutate(
+                        copy -> Payments.removeAccount(copy, ledger.id, "0001"), false, a::render));
+            await(() -> !a.busy);
+            waitForIdleSync();
+            Thread.sleep(300);
+            runOnMainSync(
+                () -> after[0] = relative(a, a.root.findViewWithTag("debt-account-0045")));
+            truth(Math.abs(before[0] - after[0]) <= a.dp(3));
+            runOnMainSync(
+                () -> {
+                  a.screen = 2;
+                  a.render();
+                });
+            waitForIdleSync();
+            Thread.sleep(200);
+            String templateId = a.state.templates.get(15).id;
+            runOnMainSync(
+                () -> {
+                  a.scrollMemory.userInput();
+                  a.scroll.scrollTo(
+                      0, a.root.findViewWithTag("template-" + templateId).getTop() + a.dp(20));
+                  before[0] = relative(a, a.root.findViewWithTag("template-" + templateId));
+                  a.render();
+                });
+            waitForIdleSync();
+            Thread.sleep(300);
+            runOnMainSync(
+                () -> after[0] = relative(a, a.root.findViewWithTag("template-" + templateId)));
+            truth(Math.abs(before[0] - after[0]) <= a.dp(3));
+            runOnMainSync(
+                () -> {
+                  a.screen = 1;
+                  a.render();
+                });
+            await(() -> a.root.findViewWithTag("directory-person-0040") != null);
+            waitForIdleSync();
+            Thread.sleep(300);
+            runOnMainSync(
+                () -> {
+                  a.scrollMemory.userInput();
+                  View v = a.root.findViewWithTag("directory-person-0040");
+                  a.scroll.scrollTo(0, topInBody(a, v) + a.dp(25));
+                  before[0] = relative(a, v);
+                  a.render();
+                });
+            await(() -> a.root.findViewWithTag("directory-person-0040") != null);
+            waitForIdleSync();
+            Thread.sleep(400);
+            runOnMainSync(
+                () -> after[0] = relative(a, a.root.findViewWithTag("directory-person-0040")));
+            truth(Math.abs(before[0] - after[0]) <= a.dp(3));
+            runOnMainSync(
+                () -> {
+                  a.screen = 3;
+                  a.crmMode = 0;
+                  a.render();
+                });
+            waitForIdleSync();
+            Thread.sleep(250);
+            String eventId = a.state.history.get(20).id;
+            runOnMainSync(
+                () -> {
+                  a.scrollMemory.userInput();
+                  a.scroll.scrollTo(
+                      0, a.root.findViewWithTag("history-" + eventId).getTop() + a.dp(20));
+                  before[0] = relative(a, a.root.findViewWithTag("history-" + eventId));
+                  a.render();
+                });
+            waitForIdleSync();
+            Thread.sleep(300);
+            runOnMainSync(
+                () -> after[0] = relative(a, a.root.findViewWithTag("history-" + eventId)));
+            truth(Math.abs(before[0] - after[0]) <= a.dp(3));
+            Bundle memory = new Bundle();
+            runOnMainSync(() -> a.scrollMemory.save(memory));
+            ScrollMemory restored = new ScrollMemory();
+            restored.load(memory);
+            truth(restored.positions.containsKey(a.scrollContext()));
+            truth(restored.positions.get(a.scrollContext()).y == a.scroll.getScrollY());
+            runOnMainSync(
+                () -> {
+                  a.screen = 3;
+                  a.crmMode = 3;
+                  a.debtQuery = "özel ticaret 45";
+                  a.debtPage = 0;
+                  a.render();
+                });
+            waitForIdleSync();
+            Thread.sleep(250);
+            truth(
+                a.root.findViewWithTag("debt-account-0045") != null
+                    && a.root.findViewWithTag("debt-account-0044") == null);
+            truth(find(a.root, "Ad Soyad, Ticari Unvan Veya Cari Kodu") != null);
+            runOnMainSync(
+                () -> {
+                  a.screen = 4;
+                  a.render();
+                });
+            waitForIdleSync();
+            Thread.sleep(200);
+            runOnMainSync(
+                () -> {
+                  a.scrollMemory.userInput();
+                  a.scroll.scrollTo(0, a.dp(250));
+                  before[0] = a.scroll.getScrollY();
+                  a.render();
+                });
+            waitForIdleSync();
+            Thread.sleep(300);
+            truth(Math.abs(before[0] - a.scroll.getScrollY()) <= a.dp(3));
+            Bundle activityState = new Bundle();
+            runOnMainSync(() -> a.onSaveInstanceState(activityState));
+            truth(
+                activityState.containsKey("scroll-memory") && activityState.getInt("screen") == 4);
           } finally {
             close(a);
           }

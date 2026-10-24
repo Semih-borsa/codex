@@ -1,8 +1,8 @@
-# Sicil360 Pro 1.7 — Android
+# Sicil360 Pro 1.8 — Android
 
 Excel rehberinden sicille kişi bulma ve **kendi düz metin şablonunuzu** onayla WhatsApp sohbetine hazırlama. Mesaja sicil, ad, soyad veya başka veri kendiliğinden eklenmez. `{AD}` gibi ifadeler de aynen yazı olarak kalır.
 
-[APK indir](../downloads/Sicil360Pro-1.7.apk) · [Android Studio kaynak paketi](../downloads/Sicil360Pro-Android-Studio.zip) · [Excel şablonu](examples/Kisi-Sablonu.xlsx) · [Mesaj örnekleri](examples/Mesaj-Ornekleri.txt)
+[APK indir](../downloads/Sicil360Pro-1.8.apk) · [Android Studio kaynak paketi](../downloads/Sicil360Pro-Android-Studio.zip) · [Excel şablonu](examples/Kisi-Sablonu.xlsx) · [Mesaj örnekleri](examples/Mesaj-Ornekleri.txt)
 
 Android 8.0 ve üzeri, paket `com.semih.sicil360`, sürüm kodu 1. Telefonun kendi ekran kilidiyle isteğe bağlı uygulama kilidi; açık/koyu/sistem teması. APK kişisel yükleme için geliştirme sertifikasıyla imzalanmış release derlemedir; debugger erişimi kapalıdır. Mevcut diğer uygulamalarınızdan ayrı bir uygulamadır.
 
@@ -112,3 +112,13 @@ Silinen kişi/listenin ödemeleri de kaldırılır; silme işlemi uygulama içi 
 Excel sayısal hücrelerde 628,30 gösterirken dosyada 628.29999999999995 saklayabilir. Borç yüklemesi bu nedenle artık durmaz: formül olmayan sayısal bakiyeler iki ondalık basamağa HALF_UP yöntemiyle yuvarlanır. Önizlemede satır numarası, okunan değer ve kaydedilecek tutar uyarı olarak gösterilir. Kontrol edip normal Onayla düğmesiyle kaydedin. Sonradan kişi kartındaki Düzenle / Sil ile ilk borcu düzeltebilirsiniz.
 
 Excel genel toplamı hesaplanan satır toplamından farklıysa uyarıda iki toplam da görünür; onaylanan kayıtta satırların toplamı kullanılır. Eksik/okunamayan, negatif veya tutar sınırını aşan bakiyeler sıfır yapılmaz. Formüllü bakiye ve güvensiz cari kod kontrolleri korunur. Kullanıcının elle girdiği ödeme tutarları için iki basamak kuralı değişmez. Normal ödeme girişi ilk borç toplamını değiştirmez. Özgün Excel dosyası değiştirilmez.
+
+## 1.8 Bulunulan Konumu Koruma Ve Ödeme Araması
+
+Ödeme kaydı, borç düzeltmesi ve aynı ekranı yenileme artık sayfanın başına dönmez. Görünür kart sabit kimliği ve ekran içindeki yeriyle korunur. Üstteki başka bir kayıt silinince içerik yüksekliği değişse de aynı kart görünür kalır. Silinen veya artık filtreye uymayan kaydın yerine mevcut içerikte en yakın geçerli konum kullanılır. Bir sayfa tamamen boşalırsa geçerli önceki sonuç sayfasına dönülür.
+
+Bu davranış ortak yenileme katmanındadır: ödeme listesi, rehberin asenkron sonuçları, şablonlar, takip, iletişim geçmişi ve ayarlar aynı mekanizmayı kullanır. Aynı işlemde filtre ve sayfa numarası gereksiz yere sıfırlanmaz. Şablon düzenleme, kaydı listenin sonuna taşımaz. Farklı liste, filtre/sayfa veya kişiye bilinçli geçiş başka bağlamdır; diğer ekranın kaydırma konumu oraya taşınmaz. Her bağlam kendi son konumunu hatırlar. Ekran yeniden oluştuğunda/tema değişiminde konum, filtre ve sayfalama Activity durumuyla saklanır; bu arayüz belleği finansal yedeğin parçası değildir.
+
+Ödeme aramasında **Ad Soyad, Ticari Unvan Veya Cari Kodu** alanını kullanın. Türkçe karakterler ve büyük/küçük harf farklılıkları karşılaştırmada normalize edilir. Bu arama yalnız filtreler; benzer isimli kişiye otomatik ödeme yazmaz. Yeni arama sonuçlarına bilinçli geçiş baştan açılır; o sonuçlarda ödeme kaydetmek konumu korur.
+
+Bu davranış sonraki arayüz geliştirmeleri için depo kökündeki AGENTS.md dosyasına kalıcı proje kuralı olarak da yazıldı.

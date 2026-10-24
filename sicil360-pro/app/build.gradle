@@ -3,7 +3,7 @@ android {
  namespace 'com.semih.sicil360'
  compileSdk 35
  buildToolsVersion '35.0.0'
- defaultConfig { applicationId 'com.semih.sicil360'; minSdk 26; targetSdk 35; versionCode 8; versionName '1.7'; testInstrumentationRunner 'com.semih.sicil360.SmokeRunner' }
+ defaultConfig { applicationId 'com.semih.sicil360'; minSdk 26; targetSdk 35; versionCode 9; versionName '1.8'; testInstrumentationRunner 'com.semih.sicil360.SmokeRunner' }
  compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
  buildTypes { release { minifyEnabled false; signingConfig signingConfigs.debug } }
 }

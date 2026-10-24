@@ -1,3 +1,13 @@
+# Doğrulama — Sicil360 Pro 1.8 / 24 Ekim 2026
+
+- JVM: **61 test, 0 başarısız**; `lintDebug`, `assembleRelease`, `assembleDebugAndroidTest` başarılı.
+- API 30 hedefli `ScrollPosition` kontrolü: 60 kişilik, iki sayfalı listede ikinci sayfada kısmi/tam ödeme kaydı ve sayfa/filtre korunması; üstteki kaydın silinmesinde sabit kartın ofsetinin 3 dp toleransta korunması; şablon, geçmiş ve ayarlar yenilemesi; asenkron rehber sonuçları; sekme geçişleri ve durum Bundle kaydı; ticari unvanla Türkçe arama. 1 geçti, 0 başarısız, diğer 12 atlandı. Son APK üzerinde ayrıca tam Android koşusu çalıştırıldı.
+- Tam Android koşusu: **13 kontrol grubu geçti, 0 başarısız**. Önceki veri güvenliği, XLSX, mesaj onayı/yönlendirme, CRM, ödeme/düzeltme/silme, şablon indirme, yuvarlama ve açık/koyu ekran kontrolleri dahil.
+- APK SHA-256: `d3dfd726e92753a7806f2f2cabb8d71b925225f6743ca0ae2e3a19f9750d00ac`. Paket ve sertifika korunur; veri/yedek biçimi değişmedi.
+- Ekran 360×640 dp emülatörde denetlendi. Gerçek WhatsApp/Business, fiziksel telefon, TalkBack ve gerçek cihazda sistemin Activity'yi öldürüp geri getirmesi uçtan uca denenmedi. Konumun Bundle'a yazılıp yeniden okunması ve ilgili Activity kaydı test edildi; her cihaz/klavye sürümü için garanti iddia edilmez.
+
+---
+
 # Doğrulama — Sicil360 Pro 1.7 / 24 Ekim 2026
 
 - JVM: **61 test, 0 başarısız**. Yeni kontroller: uzun ondalıklı/unsafe sayısal bakiye yuvarlama uyarısı, HALF_UP ve manuel para kuralının korunması; boş/NaN/negatif/çok büyük sayının sıfır borca dönüşmemesi. Genel toplam farkı artık uyarıyla onaylanabilir olduğundan ilgili test yeni davranışı doğrular.

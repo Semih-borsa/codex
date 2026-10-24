@@ -30,6 +30,8 @@ public final class MainActivity extends Activity {
   Vault vault;
   LinearLayout root, body, nav;
   ScrollView scroll;
+  final ScrollMemory scrollMemory = new ScrollMemory();
+  String directoryQuery = "";
   TextView status;
   EditText search, preview;
   RadioGroup templateChoices;
@@ -110,7 +112,12 @@ public final class MainActivity extends Activity {
     getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
     getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
     vault = new Vault(this);
+    scrollMemory.load(saved);
     if (saved != null) {
+      directoryQuery = saved.getString("directoryQuery", "");
+      debtPage = saved.getInt("debtPage");
+      historyPage = saved.getInt("historyPage");
+      followPage = saved.getInt("followPage");
       screen = saved.getInt("screen");
       debtLedger = saved.getString("debtLedger", "");
       debtQuery = saved.getString("debtQuery", "");
@@ -149,6 +156,11 @@ public final class MainActivity extends Activity {
   public void onSaveInstanceState(Bundle out) {
     super.onSaveInstanceState(out);
     capture();
+    scrollMemory.save(out);
+    out.putString("directoryQuery", directoryQuery);
+    out.putInt("debtPage", debtPage);
+    out.putInt("historyPage", historyPage);
+    out.putInt("followPage", followPage);
     out.putInt("screen", screen);
     out.putString("debtLedger", debtLedger);
     out.putString("debtQuery", debtQuery);
@@ -490,7 +502,22 @@ public final class MainActivity extends Activity {
         });
   }
 
+  String scrollContext() {
+    if (state == null) return "loading";
+    if (locked) return "locked";
+    if (failed) return "failed";
+    if (screen == 0) return "home:" + selected;
+    if (screen == 3) {
+      if (crmMode == 3) return "payments:" + debtLedger + ":" + debtPage + ":" + debtQuery;
+      if (crmMode == 1) return "follow:" + followFilter + ":" + followPage + ":" + followQuery;
+      if (crmMode == 0) return "history:" + historyPerson + ":" + historyPage;
+      return "reports";
+    }
+    return "tab:" + screen;
+  }
+
   void render() {
+    scrollMemory.remember();
     colors();
     root = column();
     root.setPadding(dp(16), dp(12), dp(16), dp(8));
@@ -521,7 +548,29 @@ public final class MainActivity extends Activity {
     search = null;
     preview = null;
     results = null;
-    scroll = new ScrollView(this);
+    scroll =
+        new ScrollView(this) {
+          @Override
+          public boolean dispatchTouchEvent(MotionEvent event) {
+            if (event.getActionMasked() == MotionEvent.ACTION_DOWN) scrollMemory.userInput();
+            return super.dispatchTouchEvent(event);
+          }
+
+          @Override
+          public boolean performAccessibilityAction(int action, Bundle arguments) {
+            if (action == 4096 || action == 8192 || action == 16908344 || action == 16908346)
+              scrollMemory.userInput();
+            return super.performAccessibilityAction(action, arguments);
+          }
+
+          @Override
+          public boolean dispatchKeyEvent(KeyEvent event) {
+            if (event.getAction() == KeyEvent.ACTION_DOWN) scrollMemory.userInput();
+            return super.dispatchKeyEvent(event);
+          }
+        };
+    scroll.setFocusableInTouchMode(true);
+    scroll.setDescendantFocusability(ViewGroup.FOCUS_BEFORE_DESCENDANTS);
     scroll.setFillViewport(false);
     body = column();
     scroll.addView(body);
@@ -592,6 +641,8 @@ public final class MainActivity extends Activity {
     }
     root.addView(nav);
     setContentView(root);
+    scroll.requestFocus();
+    scrollMemory.attach(scroll, scrollContext());
   }
 
   void home() {
@@ -827,7 +878,7 @@ public final class MainActivity extends Activity {
             render();
           });
     }
-    EditText filter = input(body, "Rehberde Ara", "", false);
+    EditText filter = input(body, "Rehberde Ara", directoryQuery, false);
     LinearLayout list = column();
     body.addView(list);
     Runnable populate =
@@ -844,6 +895,7 @@ public final class MainActivity extends Activity {
                       list.removeAllViews();
                       for (Person p : found) {
                         LinearLayout c = card(list);
+                        c.setTag("directory-person-" + p.sicil);
                         LinearLayout top = row();
                         CheckBox check = new CheckBox(this);
                         check.setButtonTintList(android.content.res.ColorStateList.valueOf(blue));
@@ -875,6 +927,9 @@ public final class MainActivity extends Activity {
     filter.addTextChangedListener(
         watcher(
             () -> {
+              directoryQuery = filter.getText().toString();
+              scrollMemory.userInput();
+              scroll.scrollTo(0, 0);
               main.removeCallbacks(populate);
               main.postDelayed(populate, 180);
             }));
@@ -980,6 +1035,7 @@ public final class MainActivity extends Activity {
       for (Template t : state.templates)
         if (t.category.equals(category)) {
           LinearLayout c = card(body);
+          c.setTag("template-" + t.id);
           c.addView(bold(t.name, 18));
           TextView content = text(t.text, 14, ink);
           content.setMaxLines(4);
@@ -1044,8 +1100,14 @@ public final class MainActivity extends Activity {
             d.dismiss();
             mutate(
                 s -> {
-                  s.templates.removeIf(x -> x.id.equals(t.id));
-                  s.templates.add(t);
+                  int index = -1;
+                  for (int i = 0; i < s.templates.size(); i++)
+                    if (s.templates.get(i).id.equals(t.id)) {
+                      index = i;
+                      break;
+                    }
+                  if (index < 0) s.templates.add(t);
+                  else s.templates.set(index, t);
                 },
                 true,
                 this::render);
@@ -1129,6 +1191,7 @@ public final class MainActivity extends Activity {
     for (int i = historyPage * 100; i < Math.min((historyPage + 1) * 100, visible.size()); i++) {
       Event e = visible.get(i);
       LinearLayout c = card(body);
+      c.setTag("history-" + e.id);
       Person person = state.people.get(e.sicil);
       c.addView(
           bold(
@@ -1232,7 +1295,7 @@ public final class MainActivity extends Activity {
     summary.addView(
         text(ledger.accounts.size() + " Kişi · " + totals.closed + " Tamamı Ödendi", 12, muted));
     LinearLayout filters = card(body);
-    EditText query = input(filters, "Cari Kodu Veya Ad Soyad Ara", debtQuery, false);
+    EditText query = input(filters, "Ad Soyad, Ticari Unvan Veya Cari Kodu", debtQuery, false);
     action(
         filters,
         "Ara",
@@ -1241,11 +1304,13 @@ public final class MainActivity extends Activity {
           debtPage = 0;
           render();
         });
+    query.setHint("Ad Soyad Veya Ticari Unvan");
     List<Payments.Account> accounts = new ArrayList<>();
     String q = Model.fold(debtQuery);
     for (Payments.Account a : ledger.accounts.values())
       if (q.isEmpty() || Model.fold(a.code + " " + a.name() + " " + a.title).contains(q))
         accounts.add(a);
+    debtPage = Math.min(debtPage, Math.max(0, (accounts.size() - 1) / 30));
     for (int i = debtPage * 30; i < Math.min((debtPage + 1) * 30, accounts.size()); i++) {
       Payments.Account a = accounts.get(i);
       LinearLayout item = card(body);
@@ -1329,7 +1394,6 @@ public final class MainActivity extends Activity {
                       false,
                       () -> {
                         window.dismiss();
-                        debtPage = 0;
                         render();
                         toast("Liste Güncellendi.");
                       }));
@@ -1416,8 +1480,6 @@ public final class MainActivity extends Activity {
                         false,
                         () -> {
                           window.dismiss();
-                          debtQuery = "";
-                          debtPage = 0;
                           render();
                           toast("Borç Kaydı Güncellendi.");
                         }));
@@ -1444,7 +1506,6 @@ public final class MainActivity extends Activity {
                         false,
                         () -> {
                           window.dismiss();
-                          debtPage = 0;
                           render();
                           toast("Borç Kaydı Silindi.");
                         })));
@@ -1773,6 +1834,7 @@ public final class MainActivity extends Activity {
     for (int i = followPage * 50; i < Math.min((followPage + 1) * 50, people.size()); i++) {
       Person p = people.get(i);
       LinearLayout item = card(body);
+      item.setTag("follow-person-" + p.sicil);
       item.addView(bold(p.name() + " · " + p.sicil, 16));
       item.addView(text(p.followUp.label, 14, blue));
       if (!p.not.isEmpty()) {
