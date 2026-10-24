@@ -1,0 +1,41 @@
+✔ 100 bin katkı, 120 bin gerçek değer, 125 bin TÜFE karşılığı: 5 bin geride (8.383086ms)
+✔ Aynı yatırım dolar karşılığını geçtiğinde fark pozitif (0.250429ms)
+✔ İkinci katkı kendi tarihiyle birime çevrilir (0.23099ms)
+✔ Çekim kendi tarihindeki alternatif birimleri azaltır (0.247774ms)
+✔ Çekim için borç/negatif yatırım varsayılmaz (0.216287ms)
+✔ Hafta sonu için önceki yayımlanmış tarih gösterilir (0.114173ms)
+✔ Gelecek kur geçmiş güne uygulanmaz (0.097848ms)
+✔ Uzun günlük veri boşluğu sessizce doldurulmaz (0.095615ms)
+✔ Eksik alış tarihi reddedilir (0.426846ms)
+✔ Tarihsiz başlangıç bugünkü katkı sayılmaz (0.222847ms)
+✔ Eksik alış kuru sıfıra dönüşmez (0.150167ms)
+✔ Açıklanmamış TÜFE ayı önceki endeksle kesin hesaplanmaz (0.180072ms)
+✔ Ay içi TÜFE yalnız aynı ay endeksiyle eşleşir (0.147943ms)
+✔ Negatif, sıfır veya metin endeks kabul edilmez (0.188675ms)
+✔ Aynı günlük tarihte çift veri reddedilir (0.115635ms)
+✔ Aynı TÜFE ayında iki farklı nokta otomatik birleştirilmez (0.81987ms)
+✔ Tekrarlı nakit kimliği iki kez sayılmaz (0.179592ms)
+✔ Bitişten sonraki katkı sayılmaz (0.129656ms)
+✔ Hatalı ay sonu kabul edilmez (0.09938ms)
+✔ Tam çekimle sıfır kalan alternatif için sahte yüzde üretilmez (0.156507ms)
+✔ Hesap girdileri ve gerçek motorun değeri değişmez (0.124358ms)
+✔ Ons/kur dönüşümü 31,1034768 gram kullanır (0.172591ms)
+✔ Farklı günlerden altın ve dolar birleştirilmez (0.505665ms)
+✔ Aşırı küçük referansla sonsuz birim üretilmez (0.139901ms)
+✔ Aşırı büyük sonuç sahte kesin değer olarak sunulmaz (0.120402ms)
+✔ Sentetik FRED biçimi doğru seri kimliğiyle okunur (9.491742ms)
+✔ Eksik veri noktası sıfıra dönüşmez (0.220153ms)
+✔ Yanlış seri enflasyon endeksi diye kabul edilmez (1.045511ms)
+✔ HTML hata sayfası CSV gibi kabul edilmez (0.167443ms)
+✔ Sıfır negatif ve bozuk değer reddedilir (1.145742ms)
+✔ Tekrarlı gün sessizce birleştirilmez (0.152501ms)
+✔ Boş veya tamamen eksik seri sonuç üretmez (0.321186ms)
+✔ Kapsam analizi eski bitişi ve bilinmeyen alış tarihini gösterir (0.23139ms)
+ℹ tests 33
+ℹ suites 0
+ℹ pass 33
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 80.151618

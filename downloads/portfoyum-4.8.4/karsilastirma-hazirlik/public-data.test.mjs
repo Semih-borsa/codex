@@ -1,0 +1,11 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {parseFredCsv,assessCoverage} from './public-data.mjs';
+const series='SYNTHETIC_INDEX';
+test('Sentetik FRED biçimi doğru seri kimliğiyle okunur',()=>{assert.deepEqual(parseFredCsv('observation_date,SYNTHETIC_INDEX\n2026-01-01,100.25\n2026-02-01,110',series),[{date:'2026-01-01',value:100.25},{date:'2026-02-01',value:110}]);});
+test('Eksik veri noktası sıfıra dönüşmez',()=>{const r=parseFredCsv('DATE,SYNTHETIC_INDEX\n2026-01-01,100\n2026-02-01,.\n2026-03-01,',series);assert.equal(r.length,1);});
+test('Yanlış seri enflasyon endeksi diye kabul edilmez',()=>{assert.throws(()=>parseFredCsv('DATE,OTHER\n2026-01-01,100',series));});
+test('HTML hata sayfası CSV gibi kabul edilmez',()=>{assert.throws(()=>parseFredCsv('<html>Error</html>',series));});
+test('Sıfır negatif ve bozuk değer reddedilir',()=>{for(const value of ['0','-1','1foo','NaN'])assert.throws(()=>parseFredCsv('DATE,SYNTHETIC_INDEX\n2026-01-01,'+value,series));});
+test('Tekrarlı gün sessizce birleştirilmez',()=>{assert.throws(()=>parseFredCsv('DATE,SYNTHETIC_INDEX\n2026-01-01,100\n2026-01-01,101',series));});
+test('Boş veya tamamen eksik seri sonuç üretmez',()=>{assert.throws(()=>parseFredCsv('DATE,SYNTHETIC_INDEX\n2026-01-01,.',series));});
+test('Kapsam analizi eski bitişi ve bilinmeyen alış tarihini gösterir',()=>{const r=assessCoverage([{date:'2026-01-01',value:100}],['2026-03-01',null]);assert.deepEqual(r.outsideRange,['2026-03-01']);assert.equal(r.hasUnknownDates,true);});
