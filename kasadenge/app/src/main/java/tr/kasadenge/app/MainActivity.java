@@ -18,6 +18,8 @@ public final class MainActivity extends Activity {
  interface Work{Object run()throws Exception;}
  String reply(Work work){try{return new JSONObject().put("ok",true).put("data",work.run()).toString();}catch(Exception e){try{return new JSONObject().put("ok",false).put("error",e.getMessage()==null?"İşlem tamamlanamadı.":e.getMessage()).toString();}catch(Exception ignored){return "{\"ok\":false,\"error\":\"İşlem tamamlanamadı\"}";}}}
  public final class Bridge{
+ @JavascriptInterface public void pickDate(String value,String max,String token){runOnUiThread(()->{try{java.time.LocalDate initial;try{initial=java.time.LocalDate.parse(value);}catch(Exception e){initial=java.time.LocalDate.now();}DatePickerDialog picker=new DatePickerDialog(MainActivity.this,(view,y,m,d)->{try{JSONObject result=new JSONObject().put("token",token).put("date",java.time.LocalDate.of(y,m+1,d).toString());web.evaluateJavascript("window.dateResult("+result.toString()+")",null);}catch(Exception ignored){}},initial.getYear(),initial.getMonthValue()-1,initial.getDayOfMonth());if(!max.isEmpty()){java.time.LocalDate limit=java.time.LocalDate.parse(max);picker.getDatePicker().setMaxDate(limit.atTime(23,59,59).atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli());}picker.show();}catch(Exception e){Toast.makeText(MainActivity.this,"Tarih seçimi açılamadı.",Toast.LENGTH_LONG).show();}});}
+
  @JavascriptInterface public String state(){return reply(()->db.state().put("systemDark",(getResources().getConfiguration().uiMode&48)==32));}
  @JavascriptInterface public String settings(String raw){return reply(()->{db.saveConfig(raw);runOnUiThread(()->colors());return true;});}
  @JavascriptInterface public String draft(String raw){return reply(()->{db.draft(raw);return true;});}

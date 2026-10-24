@@ -1,3 +1,5 @@
+[İşletmem Kasa 1.0.5 · Fiş tarihini değiştirme APK ve aktarım adımları](downloads/Isletmem-Kasa.md)
+
 # Cep Bütçem
 
 **Sicil360 Pro 1.0 — Android:** sütun eşleştirmeli Excel rehberi, tam sicil arama, düz metin şablonlar, kullanıcı onayıyla WhatsApp/Business sohbet hazırlama, işlem geçmişi, şifreli yedek ve cihaz kilidi. Mesaja isim/sicil kendiliğinden eklenmez; kullanıcı WhatsApp'ta Gönder'e basar. [APK indir](downloads/Sicil360Pro-1.0.apk) · [Kaynak proje](downloads/Sicil360Pro-Android-Studio.zip) · [Excel şablonu](downloads/Sicil360Pro-Kisi-Sablonu.xlsx) · [Kullanım ve doğrulama sınırları](sicil360-pro/README.md).
