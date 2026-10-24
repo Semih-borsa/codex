@@ -1,0 +1,290 @@
+[
+  {
+    "theme": "light",
+    "width": 360,
+    "view": "overview",
+    "overflow": false,
+    "whiteSurfaces": "not-applicable",
+    "errors": []
+  },
+  {
+    "theme": "light",
+    "width": 360,
+    "view": "holdings",
+    "overflow": false,
+    "whiteSurfaces": "not-applicable",
+    "errors": []
+  },
+  {
+    "theme": "light",
+    "width": 360,
+    "view": "deposits",
+    "overflow": false,
+    "whiteSurfaces": "not-applicable",
+    "errors": []
+  },
+  {
+    "theme": "light",
+    "width": 360,
+    "view": "banks",
+    "overflow": false,
+    "whiteSurfaces": "not-applicable",
+    "errors": []
+  },
+  {
+    "theme": "light",
+    "width": 360,
+    "view": "history",
+    "overflow": false,
+    "whiteSurfaces": "not-applicable",
+    "errors": []
+  },
+  {
+    "theme": "light",
+    "width": 360,
+    "view": "settings",
+    "overflow": false,
+    "whiteSurfaces": "not-applicable",
+    "errors": []
+  },
+  {
+    "theme": "dark",
+    "width": 360,
+    "view": "overview",
+    "overflow": false,
+    "whiteSurfaces": 0,
+    "errors": []
+  },
+  {
+    "theme": "dark",
+    "width": 360,
+    "view": "holdings",
+    "overflow": false,
+    "whiteSurfaces": 0,
+    "errors": []
+  },
+  {
+    "theme": "dark",
+    "width": 360,
+    "view": "deposits",
+    "overflow": false,
+    "whiteSurfaces": 0,
+    "errors": []
+  },
+  {
+    "theme": "dark",
+    "width": 360,
+    "view": "banks",
+    "overflow": false,
+    "whiteSurfaces": 0,
+    "errors": []
+  },
+  {
+    "theme": "dark",
+    "width": 360,
+    "view": "history",
+    "overflow": false,
+    "whiteSurfaces": 0,
+    "errors": []
+  },
+  {
+    "theme": "dark",
+    "width": 360,
+    "view": "settings",
+    "overflow": false,
+    "whiteSurfaces": 0,
+    "errors": []
+  },
+  {
+    "theme": "light",
+    "width": 390,
+    "view": "overview",
+    "overflow": false,
+    "whiteSurfaces": "not-applicable",
+    "errors": []
+  },
+  {
+    "theme": "light",
+    "width": 390,
+    "view": "holdings",
+    "overflow": false,
+    "whiteSurfaces": "not-applicable",
+    "errors": []
+  },
+  {
+    "theme": "light",
+    "width": 390,
+    "view": "deposits",
+    "overflow": false,
+    "whiteSurfaces": "not-applicable",
+    "errors": []
+  },
+  {
+    "theme": "light",
+    "width": 390,
+    "view": "banks",
+    "overflow": false,
+    "whiteSurfaces": "not-applicable",
+    "errors": []
+  },
+  {
+    "theme": "light",
+    "width": 390,
+    "view": "history",
+    "overflow": false,
+    "whiteSurfaces": "not-applicable",
+    "errors": []
+  },
+  {
+    "theme": "light",
+    "width": 390,
+    "view": "settings",
+    "overflow": false,
+    "whiteSurfaces": "not-applicable",
+    "errors": []
+  },
+  {
+    "theme": "dark",
+    "width": 390,
+    "view": "overview",
+    "overflow": false,
+    "whiteSurfaces": 0,
+    "errors": []
+  },
+  {
+    "theme": "dark",
+    "width": 390,
+    "view": "holdings",
+    "overflow": false,
+    "whiteSurfaces": 0,
+    "errors": []
+  },
+  {
+    "theme": "dark",
+    "width": 390,
+    "view": "deposits",
+    "overflow": false,
+    "whiteSurfaces": 0,
+    "errors": []
+  },
+  {
+    "theme": "dark",
+    "width": 390,
+    "view": "banks",
+    "overflow": false,
+    "whiteSurfaces": 0,
+    "errors": []
+  },
+  {
+    "theme": "dark",
+    "width": 390,
+    "view": "history",
+    "overflow": false,
+    "whiteSurfaces": 0,
+    "errors": []
+  },
+  {
+    "theme": "dark",
+    "width": 390,
+    "view": "settings",
+    "overflow": false,
+    "whiteSurfaces": 0,
+    "errors": []
+  },
+  {
+    "theme": "light",
+    "width": 1024,
+    "view": "overview",
+    "overflow": false,
+    "whiteSurfaces": "not-applicable",
+    "errors": []
+  },
+  {
+    "theme": "light",
+    "width": 1024,
+    "view": "holdings",
+    "overflow": false,
+    "whiteSurfaces": "not-applicable",
+    "errors": []
+  },
+  {
+    "theme": "light",
+    "width": 1024,
+    "view": "deposits",
+    "overflow": false,
+    "whiteSurfaces": "not-applicable",
+    "errors": []
+  },
+  {
+    "theme": "light",
+    "width": 1024,
+    "view": "banks",
+    "overflow": false,
+    "whiteSurfaces": "not-applicable",
+    "errors": []
+  },
+  {
+    "theme": "light",
+    "width": 1024,
+    "view": "history",
+    "overflow": false,
+    "whiteSurfaces": "not-applicable",
+    "errors": []
+  },
+  {
+    "theme": "light",
+    "width": 1024,
+    "view": "settings",
+    "overflow": false,
+    "whiteSurfaces": "not-applicable",
+    "errors": []
+  },
+  {
+    "theme": "dark",
+    "width": 1024,
+    "view": "overview",
+    "overflow": false,
+    "whiteSurfaces": 0,
+    "errors": []
+  },
+  {
+    "theme": "dark",
+    "width": 1024,
+    "view": "holdings",
+    "overflow": false,
+    "whiteSurfaces": 0,
+    "errors": []
+  },
+  {
+    "theme": "dark",
+    "width": 1024,
+    "view": "deposits",
+    "overflow": false,
+    "whiteSurfaces": 0,
+    "errors": []
+  },
+  {
+    "theme": "dark",
+    "width": 1024,
+    "view": "banks",
+    "overflow": false,
+    "whiteSurfaces": 0,
+    "errors": []
+  },
+  {
+    "theme": "dark",
+    "width": 1024,
+    "view": "history",
+    "overflow": false,
+    "whiteSurfaces": 0,
+    "errors": []
+  },
+  {
+    "theme": "dark",
+    "width": 1024,
+    "view": "settings",
+    "overflow": false,
+    "whiteSurfaces": 0,
+    "errors": []
+  }
+]
