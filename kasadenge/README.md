@@ -1,4 +1,4 @@
-# İşletmem Kasa 1.0.14
+# İşletmem Kasa 1.0.15
 
 Android 8+ için çevrimdışı kasa sayımı, mutabakat, POS raporu ve tahsilat takvimi. Paket: `tr.kasadenge.app`. Diğer uygulamalardan ayrı veritabanı kullanır.
 
@@ -115,3 +115,5 @@ Android tarih seçici ve fiş fotoğrafı işlem tarihi düzenleme güncellemele
 1.0.13: Sayım ve POS üstünde bağımsız 📆 görüntüleme tarihi, önceki/sonraki okları ve yatay kaydırma. Sayım kayıt tarihi/adet/tutar taslağı değişmez. Nakit kartı yalnız kayıtlı avans hariç sayımları toplar; günlük fark ve her kasanın net tutarı/farkı ayrı gösterilir. POS kartı vade gününe göre tüm kasaları toplar, kasanın tüm terminallerindeki kredi/debit ayrı birleştirilir. Yüzdeler 7 gün önceki aynı günle karşılaştırılır; artış yeşil, azalış kırmızı, sıfır gri. Eksik veya negatif/sıfır bazda yanıltıcı yüzde yok; farklı kasa kapsamı veya dağılım bekleyen ilgili POS durumunda genel yüzde engellenir. Nakit geleceğe gitmez; POS geleceğe gidebilir.
 
 1.0.14: POS karşılaştırmasında dağılımı bilinmeyen tek toplam kayıt yalnız ilgili kasa/kategori/vade gününü engeller. Diğer kasaların geçerli yüzdesi hesaplanır; debit +16 günü belirsizliği bağımsız kredi karşılaştırmasını engellemez. Genel toplam eksik dağılımda yine karşılaştırılmaz. Yüzde yoksa neden gösterilir: Geçen Hafta Kaydı Yok, Dağılım Bekleniyor, Kasa Kapsamı Farklı veya Önceki Tutar Sıfır Veya Negatif. Karşılaştırma aynı vade gününden 7 gün önceyledir; geçmiş veri yokken uydurulmaz.
+
+1.0.15: Kullanıcı tercihiyle kasa kapsamı veya bekleyen POS dağılımı yüzdeyi engellemez. Nakit ve POS, seçilen günün mevcut toplamlarını 7 gün önceki mevcut toplamlarla kıyaslar. Farklı kasa kapsamı/bekleyen dağılım küçük açıklama olarak kalır. Yeni kayıt veya debit dağılımı girilince veriden yeniden hesaplanır. Önceki pozitif tutar yoksa veya seçilen gün için hiçbir POS tutarı yoksa yüzde uydurulmaz.

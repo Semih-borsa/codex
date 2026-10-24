@@ -1,3 +1,13 @@
+# İşletmem Kasa 1.0.15 · Mevcut Verilerle Karşılaştırma
+
+[APK İndir](https://raw.githubusercontent.com/Semih-borsa/codex/main/downloads/Isletmem-Kasa-1.0.15.apk) · [Kaynak ZIP](Isletmem-Kasa-1.0.15-Kaynak.zip)
+
+Kasa kapsamı farklı veya POS dağılımı bekleniyor olsa da mevcut kayıtlı tutarlar 7 gün önceki mevcut tutarlarla karşılaştırılır. Bu durum küçük bir açıklamayla belirtilir; yüzde engellenmez. Debit dağılımı veya yeni kayıt girildiğinde toplamlar/yüzdeler yeniden hesaplanır. Önceki tutar yok/sıfır veya mevcut POS tutarı henüz yoksa hesaplanamayan yüzde yine belirtilir; veri uydurulmaz.
+
+65 birim testi ve arayüz regresyonu geçti. Orijinal 1.0.14 üzerine silmeden kurun; mevcut kayıtlar değiştirilmez.
+
+---
+
 # İşletmem Kasa 1.0.14 · POS Karşılaştırması
 
 [APK İndir](https://raw.githubusercontent.com/Semih-borsa/codex/main/downloads/Isletmem-Kasa-1.0.14.apk) · [Kaynak ZIP](Isletmem-Kasa-1.0.14-Kaynak.zip)
