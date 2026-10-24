@@ -1594,6 +1594,19 @@ public final class MainActivity extends Activity {
           box.addView(
               text(ledger.accounts.size() + " Kişi · Cari Koduna Göre Ayrı Kayıt", 14, ink));
           amountLine(box, "İlk Listenin Genel Toplamı", Payments.totals(ledger).original);
+          if (!ledger.importWarnings.isEmpty()) {
+            box.addView(bold("Tutar Kontrolü · " + ledger.importWarnings.size() + " Uyarı", 16));
+            for (int i = 0; i < Math.min(20, ledger.importWarnings.size()); i++)
+              box.addView(text(ledger.importWarnings.get(i), 13, muted));
+            if (ledger.importWarnings.size() > 20)
+              box.addView(text("İlk 20 Uyarı Gösteriliyor.", 12, muted));
+            box.addView(
+                text(
+                    "Kontrol Ederek Onaylayın. Kaydettikten Sonra Düzenle / Sil İle Borç Tutarını"
+                        + " Düzeltebilirsiniz.",
+                    13,
+                    ink));
+          }
           box.addView(
               text(
                   "Bu toplam ödeme girildiğinde değişmez. Mevcut rehber ve önceki borç listeleri"

@@ -154,18 +154,15 @@ public class PaymentsTest {
   }
 
   @Test
-  public void summaryRowsNotPeopleAndMismatchRejected() throws Exception {
+  public void summaryRowsNotPeopleAndMismatchWarned() throws Exception {
     Excel.Table t = table();
     cell(t, 4, 0, "GENEL TOPLAM", false);
     cell(t, 4, 5, "1.234,56", false);
     assertEquals(1, Payments.read(t).accounts.size());
     cell(t, 4, 5, "1,00", false);
-    try {
-      Payments.read(t);
-      fail();
-    } catch (IllegalArgumentException e) {
-      assertTrue(e.getMessage().contains("Toplam"));
-    }
+    Payments.Ledger imported = Payments.read(t);
+    assertEquals(123456, Payments.totals(imported).original);
+    assertTrue(imported.importWarnings.get(0).contains("Toplam"));
   }
 
   @Test
@@ -352,5 +349,45 @@ public class PaymentsTest {
     Payments.removeAccount(s, l.id, "0002");
     assertEquals(0, Payments.totals(l).original);
     assertTrue(Codec.copy(s).debts.get(0).accounts.isEmpty());
+  }
+
+  @Test
+  public void excelLongDecimalsAreRoundedWithWarningsNotRejected() throws Exception {
+    Excel.Table t = table();
+    cell(t, 2, 5, "628.29999999999995", true);
+    t.rows.get(2).get(5).unsafe = true;
+    Payments.Ledger l = Payments.read(t);
+    assertEquals(62830, l.accounts.get("0001").original);
+    assertEquals(1, l.importWarnings.size());
+    assertTrue(l.importWarnings.get(0).contains("Satır 2"));
+    cell(t, 2, 5, "19179.400000000001", true);
+    t.rows.get(2).get(5).unsafe = true;
+    assertEquals(1917940, Payments.read(t).accounts.get("0001").original);
+  }
+
+  @Test
+  public void numericRoundingUsesHalfUpButDoesNotLoosenManualPaymentEntry() throws Exception {
+    Excel.Table t = table();
+    cell(t, 2, 5, "1.235", true);
+    assertEquals(124, Payments.read(t).accounts.get("0001").original);
+    try {
+      Payments.money("1,235", false);
+      fail();
+    } catch (IllegalArgumentException expected) {
+    }
+  }
+
+  @Test
+  public void invalidAmountsStillCannotBecomeZeroDebt() throws Exception {
+    for (String raw : new String[] {"", "NaN", "-0.0001", "1e100000000", "1000000000000"}) {
+      Excel.Table t = table();
+      cell(t, 2, 5, raw, true);
+      t.rows.get(2).get(5).unsafe = true;
+      try {
+        Payments.read(t);
+        fail(raw);
+      } catch (IllegalArgumentException expected) {
+      }
+    }
   }
 }

@@ -1,8 +1,8 @@
-# Sicil360 Pro 1.6 — Android
+# Sicil360 Pro 1.7 — Android
 
 Excel rehberinden sicille kişi arama, kendi düz metin şablonunuzu seçme ve son onaydan sonra WhatsApp sohbetine hazırlama. Mesaja ad, soyad veya sicil otomatik eklenmez. Gönder düğmesine WhatsApp'ta kullanıcı basar.
 
-- [Android APK indir](Sicil360Pro-1.6.apk)
+- [Android APK indir](Sicil360Pro-1.7.apk)
 - [Güncel APK](Sicil360Pro.apk)
 - [Android Studio kaynak paketi](Sicil360Pro-Android-Studio.zip)
 - [Boş Excel şablonu](Sicil360Pro-Kisi-Sablonu.xlsx)
@@ -74,3 +74,9 @@ Silinen kişi/listenin ödemeleri de kaldırılır; silme işlemi uygulama içi 
 ## 1.6 Uygulama İçinden Borç Excel Şablonu
 
 **Takip → Ödemeler → Borç Excel Şablonu İndir** düğmesine dokunun ve telefonda kaydedilecek konumu seçin. Boş şablon uygulamada gömülüdür; internet gerekmez. A Sıra No, B Cari Kodu, C Ticari Unvanı, D Adı, E Soyadı, F Bakiye başlıkları hazırdır. Cari kod sütunu metindir; baştaki sıfırlar korunabilir. Kişisel veya örnek kişi kaydı bulunmaz. Excel uygulamanızda doldurup **Borç Excel Listesi Yükle** ile içe aktarın. Şablon kaydetmek mevcut kişileri, listeleri veya ödemeleri değiştirmez.
+
+## 1.7 Uzun Ondalıklı Excel Bakiyelerini Onayla Kaydetme
+
+Excel sayısal hücrelerde 628,30 gösterirken dosyada 628.29999999999995 saklayabilir. Borç yüklemesi bu nedenle artık durmaz: formül olmayan sayısal bakiyeler iki ondalık basamağa HALF_UP yöntemiyle yuvarlanır. Önizlemede satır numarası, okunan değer ve kaydedilecek tutar uyarı olarak gösterilir. Kontrol edip normal Onayla düğmesiyle kaydedin. Sonradan kişi kartındaki Düzenle / Sil ile ilk borcu düzeltebilirsiniz.
+
+Excel genel toplamı hesaplanan satır toplamından farklıysa uyarıda iki toplam da görünür; onaylanan kayıtta satırların toplamı kullanılır. Eksik/okunamayan, negatif veya tutar sınırını aşan bakiyeler sıfır yapılmaz. Formüllü bakiye ve güvensiz cari kod kontrolleri korunur. Kullanıcının elle girdiği ödeme tutarları için iki basamak kuralı değişmez. Normal ödeme girişi ilk borç toplamını değiştirmez. Özgün Excel dosyası değiştirilmez.

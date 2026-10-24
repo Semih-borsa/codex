@@ -40,6 +40,7 @@ public final class Payments {
   public static final class Ledger {
     public String id = UUID.randomUUID().toString(), name = "", fingerprint = "";
     public String period = java.time.YearMonth.now().toString();
+    public final List<String> importWarnings = new ArrayList<>();
     public long created = System.currentTimeMillis();
     public final LinkedHashMap<String, Account> accounts = new LinkedHashMap<>();
   }
@@ -167,6 +168,37 @@ public final class Payments {
         && Model.fold(table.value(row, 5)).contains("BAKIYE");
   }
 
+  static long balance(Excel.Cell cell, int row, Ledger ledger) {
+    if (cell == null || cell.value.trim().isEmpty())
+      throw new IllegalArgumentException("Bakiye Eksik.");
+    if (cell.formula)
+      throw new IllegalArgumentException("Bakiye Formül İçeriyor; Değer Olarak Kaydedin.");
+    if (!cell.numeric) return money(cell.value, false);
+    try {
+      if (cell.value.length() > 128) throw new ArithmeticException();
+      BigDecimal raw = new BigDecimal(cell.value);
+      if (raw.precision() > 64
+          || Math.abs((long) raw.scale()) > 64
+          || raw.signum() < 0
+          || raw.compareTo(BigDecimal.valueOf(MAX, 2)) > 0) throw new ArithmeticException();
+      BigDecimal rounded = raw.setScale(2, RoundingMode.HALF_UP);
+      long cents = rounded.movePointRight(2).longValueExact();
+      if (cell.unsafe || raw.compareTo(rounded) != 0)
+        ledger.importWarnings.add(
+            "Satır "
+                + row
+                + ": "
+                + cell.value
+                + " → "
+                + format(cents)
+                + " (İki Ondalık Basamağa Yuvarlandı)");
+      return cents;
+    } catch (Exception invalid) {
+      throw new IllegalArgumentException(
+          "Bakiye Okunamıyor, Negatif Veya Desteklenen Sınırın Üzerinde.");
+    }
+  }
+
   public static Ledger read(Excel.Table table) throws Exception {
     if (table.rows.isEmpty()) throw new IllegalArgumentException("Excel Sayfası Boş.");
     int header = table.rows.firstKey();
@@ -190,7 +222,7 @@ public final class Payments {
       Excel.Cell balance = row.getValue().get(5);
       if (total && table.value(r, 3).trim().isEmpty() && table.value(r, 4).trim().isEmpty()) {
         if (balance != null && !balance.formula && !balance.value.isEmpty()) {
-          long amount = money(balance.value, balance.numeric);
+          long amount = balance(balance, r, ledger);
           if (suppliedTotal != null && suppliedTotal != amount)
             throw new IllegalArgumentException("Birden Fazla Farklı Genel Toplam Var.");
           suppliedTotal = amount;
@@ -210,10 +242,7 @@ public final class Payments {
         if (code != null && (code.formula || code.unsafe))
           throw new IllegalArgumentException(
               "Cari Kodu Formül Veya Hassasiyet Kaybı İçeriyor; Metin Olarak Kaydedin.");
-        if (balance == null || balance.formula || balance.unsafe)
-          throw new IllegalArgumentException(
-              "Bakiye Eksik, Formül Veya Güvensiz Sayı; Değer Olarak Kaydedin.");
-        a.original = money(balance.value, balance.numeric);
+        a.original = balance(balance, r, ledger);
         if (ledger.accounts.putIfAbsent(a.code, a) != null)
           throw new IllegalArgumentException(
               "Mükerrer Cari Kodu. Ayrı Satırlar Sessizce Birleştirilmez.");
@@ -227,8 +256,12 @@ public final class Payments {
     if (ledger.accounts.isEmpty()) throw new IllegalArgumentException("Borç Kaydı Bulunamadı.");
     Totals t = totals(ledger);
     if (suppliedTotal != null && suppliedTotal != t.original)
-      throw new IllegalArgumentException(
-          "Excel Genel Toplamı İle Satırların Toplamı Farklı. Dosyayı Kontrol Edin.");
+      ledger.importWarnings.add(
+          "Excel Genel Toplamı: "
+              + format(suppliedTotal)
+              + " · Hesaplanan: "
+              + format(t.original)
+              + ". Kayıtta Satırların Hesaplanan Toplamı Kullanılacak.");
     refreshFingerprint(ledger);
     return ledger;
   }

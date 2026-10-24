@@ -910,6 +910,61 @@ public final class SmokeRunner extends Instrumentation {
             close(a);
           }
         });
+    check(
+        "DebtRounding numeric Excel precision warning preview save and manual correction",
+        () -> {
+          MainActivity a = open();
+          try {
+            setup(a, new State());
+            File workbook = new File(output, "rounding-source.xlsx");
+            try (InputStream in = getContext().getAssets().open("debt-sample.xlsx");
+                OutputStream out = new FileOutputStream(workbook)) {
+              byte[] b = new byte[8192];
+              int n;
+              while ((n = in.read(b)) != -1) out.write(b, 0, n);
+            }
+            Excel.Table table = Excel.load(workbook, Excel.sheets(workbook).get(0));
+            table.rows.get(2).get(5).value = "628.29999999999995";
+            table.rows.get(2).get(5).unsafe = true;
+            table.rows.get(3).get(5).value = "19179.400000000001";
+            table.rows.get(3).get(5).unsafe = true;
+            runOnMainSync(() -> a.previewDebtImport(table));
+            await(() -> !a.busy && a.lastDialog != null);
+            truth(
+                find(a.lastDialog.getWindow().getDecorView(), "Tutar Kontrolü · 3 Uyarı") != null);
+            truth(a.state.debts.isEmpty());
+            runOnMainSync(
+                () ->
+                    find(a.lastDialog.getWindow().getDecorView(), "Onayla Ve Borç Listesini Ekle")
+                        .performClick());
+            await(() -> !a.busy && a.state.debts.size() == 1);
+            Payments.Ledger ledger = a.vault.load().debts.get(0);
+            truth(
+                ledger.accounts.get("0001").original == 62830
+                    && ledger.accounts.get("0002").original == 1917940);
+            runOnMainSync(() -> a.debtAccountDialog(ledger.id, "0001"));
+            runOnMainSync(
+                () -> {
+                  ((EditText)
+                          a.lastDialog
+                              .getWindow()
+                              .getDecorView()
+                              .findViewWithTag("debt-edit-original"))
+                      .setText("630,00");
+                  find(a.lastDialog.getWindow().getDecorView(), "Kayıt Değişikliklerini Kaydet")
+                      .performClick();
+                });
+            runOnMainSync(() -> a.lastDialog.getButton(-1).performClick());
+            await(
+                () ->
+                    !a.busy
+                        && Payments.find(a.state, ledger.id).accounts.get("0001").original
+                            == 63000);
+            truth(Payments.find(a.vault.load(), ledger.id).accounts.get("0001").original == 63000);
+          } finally {
+            close(a);
+          }
+        });
     Bundle result = new Bundle();
     result.putString(
         "stream",

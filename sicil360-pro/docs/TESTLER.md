@@ -1,3 +1,12 @@
+# Doğrulama — Sicil360 Pro 1.7 / 24 Ekim 2026
+
+- JVM: **61 test, 0 başarısız**. Yeni kontroller: uzun ondalıklı/unsafe sayısal bakiye yuvarlama uyarısı, HALF_UP ve manuel para kuralının korunması; boş/NaN/negatif/çok büyük sayının sıfır borca dönüşmemesi. Genel toplam farkı artık uyarıyla onaylanabilir olduğundan ilgili test yeni davranışı doğrular.
+- `testDebugUnitTest`, `lintDebug`, `assembleRelease`, `assembleDebugAndroidTest` başarılı.
+- API 30 hedefli `DebtRounding`: önizlemede üç tutar uyarısı; onay öncesi veri eklenmemesi; onay sonrası 628,30 / 19.179,40 TL'nin şifreli kayıttan okunması; sonradan 630,00 TL'ye manuel düzeltme ve tekrar okuma. 1 kontrol geçti, 0 başarısız, diğer 11 grup atlandı. Tüm Android grupları bu düzeltme için tekrar çalıştırılmadı. Testte sentetik XLSX hücrelerine sorunlu ham sayısal değerler verilir; kullanıcının gerçek Excel dosyası paylaşılmadığından dosyanın kendisi doğrulanmadı.
+- APK SHA-256: `8713bf995535f3a8d72b2fc7f5fed85ba6c95bc7c627ae4400a4a0afef3c6735`. Paket/veri biçimi ve sertifika korunur. Fiziksel telefon testi yapılmadı.
+
+---
+
 # Doğrulama — Sicil360 Pro 1.6 / 24 Ekim 2026
 
 - JVM: 58 test, 0 başarısız. `lintDebug`, `assembleRelease`, `assembleDebugAndroidTest` başarılı.
