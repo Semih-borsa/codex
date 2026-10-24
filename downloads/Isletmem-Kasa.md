@@ -1,3 +1,13 @@
+# İşletmem Kasa 1.0.8
+
+[APK İndir](https://raw.githubusercontent.com/Semih-borsa/codex/main/downloads/Isletmem-Kasa-1.0.8.apk) · [Kaynak ZIP](Isletmem-Kasa-1.0.8-Kaynak.zip)
+
+Ayarlar → Kasalar Ve Avanslar → Kasayı Sil. Kasa açık onaydan sonra arşivlenir; eski kayıtlar, analizler ve beklenen POS ödemeleri korunur. Seçili kasa kaldırılırsa etkin kasaya geçilir. Düzenle üzerinden yeniden etkinleştirilebilir. Son etkin kasa için önce başka bir kasa eklenmelidir.
+
+Orijinal paket/imza korunur; 1.0.7 ve 1.0.4 orijinal paketinin üzerine kurulur. Ayrı tr.kasadenge.app.tarih paketli 1.0.5/1.0.6 için önceki yedek aktarım açıklaması geçerlidir; eski uygulamayı silmeyin.
+
+---
+
 # İşletmem Kasa 1.0.7
 
 [APK İndir](https://raw.githubusercontent.com/Semih-borsa/codex/main/downloads/Isletmem-Kasa-1.0.7.apk) · [Kaynak ZIP](Isletmem-Kasa-1.0.7-Kaynak.zip)

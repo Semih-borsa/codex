@@ -36,3 +36,5 @@ Sınır: Android 11 emülatörü bu oturumda soğuk açılış ve çekirdek zama
 Yeni OCR alan büyütme ve mavi yazı ayrıştırma kodu derlendi; el yazısında doğruluk garantisi yoktur. Tahminler ayrı işaretlenir, kullanıcı kontrolü ve son kayıt onayı korunur. Özel fotoğraf yayımlanan APK/kaynak/ZIP içinde bulunmaz.
 
 Önceki uzak depo tarih seçici ve fiş tarihi değişiklikleri birleştirildi; güncel fiş tarayıcı testi tekrar çalıştırıldı (sonucu yayın kontrolünde kayıtlı). Orijinal imza bu ortamda mevcut; ayrı tarih varyantının anahtarı mevcut değil.
+
+1.0.8: Kasa kaldırma tarayıcı kontrolü: vazgeçmede değişiklik yok; onayla active=false, seçili kasa etkin kasaya geçer; önceki POS/revizyon verileri korunur, son etkin kasa kaldırılamaz. Native veritabanı değişmedi.
