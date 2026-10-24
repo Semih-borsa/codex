@@ -1,2 +1,3 @@
 cd4c6735009d45bf7ad085cddd9649e80913ab61cfadb4121ed42ff497db9ecf  Isletmem-Kasa-1.0.5-Tarih.apk
 408a69dd942a1cd4bc584bf25c6108947b665af465700ae6be63d8c8e111fc61  Isletmem-Kasa-1.0.5-Kaynak.zip
+cd4c6735009d45bf7ad085cddd9649e80913ab61cfadb4121ed42ff497db9ecf  Isletmem-Kasa.apk

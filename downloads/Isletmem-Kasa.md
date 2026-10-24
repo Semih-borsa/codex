@@ -1,5 +1,7 @@
 # İşletmem Kasa 1.0.5 · Fiş Tarihi
 
+[APK doğrudan indir](https://github.com/Semih-borsa/codex/raw/refs/heads/main/downloads/Isletmem-Kasa.apk)
+
 [Yeni Android APK İndir](https://github.com/Semih-borsa/codex/blob/main/downloads/Isletmem-Kasa-1.0.5-Tarih.apk) · [Kaynak ZIP](Isletmem-Kasa-1.0.5-Kaynak.zip)
 
 Fiş fotoğrafı kontrol ekranından işlem tarihini seçebilirsiniz. Seçtiğiniz tarih kayda ve 15/21 günlük tahsilat hesabına aktarılır. Android takvimi açılır; geçmiş tarihli fişler kaydetmeden önce kontrol edilir.
