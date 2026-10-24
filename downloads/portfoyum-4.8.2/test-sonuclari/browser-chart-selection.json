@@ -1,0 +1,86 @@
+[
+  {
+    "theme": "light",
+    "scope": "portfolio",
+    "mode": "day",
+    "selected": true,
+    "keyboardFocus": true
+  },
+  {
+    "theme": "light",
+    "scope": "portfolio",
+    "mode": "week",
+    "selected": true,
+    "keyboardFocus": true
+  },
+  {
+    "theme": "light",
+    "scope": "portfolio",
+    "mode": "month",
+    "selected": true,
+    "keyboardFocus": true
+  },
+  {
+    "theme": "light",
+    "scope": "asset",
+    "mode": "day",
+    "selected": true,
+    "keyboardFocus": true
+  },
+  {
+    "theme": "light",
+    "scope": "asset",
+    "mode": "week",
+    "selected": true,
+    "keyboardFocus": true
+  },
+  {
+    "theme": "light",
+    "scope": "asset",
+    "mode": "month",
+    "selected": true,
+    "keyboardFocus": true
+  },
+  {
+    "theme": "dark",
+    "scope": "portfolio",
+    "mode": "day",
+    "selected": true,
+    "keyboardFocus": true
+  },
+  {
+    "theme": "dark",
+    "scope": "portfolio",
+    "mode": "week",
+    "selected": true,
+    "keyboardFocus": true
+  },
+  {
+    "theme": "dark",
+    "scope": "portfolio",
+    "mode": "month",
+    "selected": true,
+    "keyboardFocus": true
+  },
+  {
+    "theme": "dark",
+    "scope": "asset",
+    "mode": "day",
+    "selected": true,
+    "keyboardFocus": true
+  },
+  {
+    "theme": "dark",
+    "scope": "asset",
+    "mode": "week",
+    "selected": true,
+    "keyboardFocus": true
+  },
+  {
+    "theme": "dark",
+    "scope": "asset",
+    "mode": "month",
+    "selected": true,
+    "keyboardFocus": true
+  }
+]
