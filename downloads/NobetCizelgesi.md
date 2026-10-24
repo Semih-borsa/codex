@@ -1,4 +1,4 @@
-# Nöbet Çizelgesi 2.4.1
+# Nöbet Çizelgesi 2.5
 
 **2.4.1:** bugünün zemin rengi daha açık krem sarısına güncellendi; koyu temanın amber tonu da yumuşatıldı.
 
@@ -12,7 +12,7 @@
 
 **Yeni arayüz:** Bütçe Takip’ten ilham alan kurumsal mavi özet kartı, çizgi simgeler, yüzen alt menü, personel kartları ve açık/koyu tema. [Ekran görüntüleri](../nobet-cizelgesi/docs/TASARIM-2.0.md)
 
-- [APK 2.4.1 indir](NobetCizelgesi-2.4.1.apk)
+- [APK 2.5 indir](NobetCizelgesi-2.5.apk)
 - [Güncel APK](NobetCizelgesi.apk)
 - [Android Studio kaynak ZIP](NobetCizelgesi-Android-Studio.zip)
 - [Kullanım](../nobet-cizelgesi/README.md) · [Testler](../nobet-cizelgesi/docs/TESTLER.md)
@@ -40,3 +40,9 @@ Android 8.0 ve üzeri. Mevcut uygulamayı **kaldırmadan** APK üzerinden günce
 Ayarlar'dan eklenen şubeyi silebilir/geri alabilir, ilk iki yer dahil çalışma günlerini değiştirebilirsiniz. Geçmiş kayıtlar ve sayımlar korunur. Gün ayarları yeni dağıtımlarda kullanılır. Görünüm seçimi liste oluştururken sorulur: gizlenen şubeler yalnız çizelge/PDF'den çıkar; kayıt ve istatistikleri kalır. Mavi daha açık kurumsal tona güncellendi.
 
 Hesap/yönetici/eşitleme kodu vardır; canlı kullanmak için size ait Supabase projesini kurup bağlamanız ve kendi projenizde doğrulamanız gerekir. Uygulamayı kaldırmak/verilerini silmek kayıtları siler; PDF veri yedeği değildir.
+
+## 2.5 — Hafta Sonu Nöbet Çizelgesi
+
+Çizelge sayfasında haftalık tablonun altındaki **Hafta Sonu Nöbet Çizelgesi ▾** düğmesine dokunun. Kayıtlı haftaların cumartesi/pazar tarihleri ve ana işyeri nöbetçi isimleri kronolojik açılır listede görünür: **31 Ağustos–1 Eylül 2024 · Semih**, **7–8 Eylül 2024 · Serdar**. Satıra dokununca ilgili haftaya geçilir. Kaydedilmemiş taslak varsa geçişten önce onay alınır.
+
+Cumartesi ve pazar farklı kişilerse günleriyle ayrı gösterilir; boş atama — görünür. Ay/yıl geçişleri desteklenir. Liste yalnız kaydedilmiş haftaları okur; henüz kaydedilmemiş gelecekteki haftalar için isim tahmin etmez. Haftalık kayıt değiştirildiğinde liste yeniden açılışta güncellenir. Nöbet dağıtım motoru ve kayıt biçimi korunur.

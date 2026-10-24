@@ -148,6 +148,55 @@ public class SmokeRunner extends Instrumentation {
     DistributionUiChecks.run(this, context, isolated);
     TodayChecks.run(this, target, isolated);
     check(
+        "Weekend saved chronological dropdown opens chosen week without writing roster",
+        () -> {
+          Activity activity =
+              launchActivity(
+                  new Intent(target, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+          State sample = new State();
+          sample.people.add(new Person("weekend-test", "Semih"));
+          Week first = new Week(LocalDate.of(2024, 8, 26));
+          first.duties.add(new Duty(first.monday.plusDays(5), WORK, "weekend-test"));
+          first.duties.add(new Duty(first.monday.plusDays(6), WORK, "weekend-test"));
+          sample.weeks.add(first);
+          java.lang.reflect.Field field = MainActivity.class.getDeclaredField("state");
+          field.setAccessible(true);
+          java.lang.reflect.Field selected = MainActivity.class.getDeclaredField("selected");
+          selected.setAccessible(true);
+          java.lang.reflect.Method render = MainActivity.class.getDeclaredMethod("render");
+          render.setAccessible(true);
+          java.lang.reflect.Method open = MainActivity.class.getDeclaredMethod("weekendList");
+          open.setAccessible(true);
+          final android.app.AlertDialog[] dialog = new android.app.AlertDialog[1];
+          try {
+            runOnMainSync(
+                () -> {
+                  try {
+                    field.set(activity, sample);
+                    render.invoke(activity);
+                    dialog[0] = (android.app.AlertDialog) open.invoke(activity);
+                  } catch (Exception e) {
+                    throw new AssertionError(e);
+                  }
+                });
+            waitForFrames(activity);
+            truth(dialog[0].isShowing());
+            truth(dialog[0].getListView().getAdapter().getCount() == 1);
+            truth(
+                dialog[0]
+                    .getListView()
+                    .getAdapter()
+                    .getItem(0)
+                    .toString()
+                    .equals("31 Ağustos–1 Eylül 2024 · Semih"));
+            runOnMainSync(() -> dialog[0].getListView().performItemClick(null, 0, 0));
+            truth(selected.get(activity).equals(first.monday));
+            truth(sample.weeks.size() == 1 && sample.weeks.get(0) == first);
+          } finally {
+            runOnMainSync(activity::finish);
+          }
+        });
+    check(
         "Holiday overrides persist and legacy data enables only automatic calendar",
         () -> {
           State sample = new State();
@@ -1604,7 +1653,14 @@ public class SmokeRunner extends Instrumentation {
                   try {
                     android.view.View root = activity.getWindow().getDecorView();
                     truth(root.findViewWithTag("schedule-table-header") != null);
-                    truth(findText(root, "Hafta Sonu\nNöbetçisi") != null);
+                    android.view.ViewGroup weekendRow =
+                        (android.view.ViewGroup)
+                            root.findViewWithTag("roster-day-" + mon.plusDays(5));
+                    truth(
+                        ((android.widget.TextView) weekendRow.getChildAt(0))
+                            .getText()
+                            .toString()
+                            .contains("Hafta Sonu\nNöbetçisi"));
                     truth(findText(root, "Cumartesi") == null && findText(root, "Pazar") == null);
                     truth(root.findViewWithTag("roster-day-" + mon.plusDays(6)) == null);
                     android.widget.ScrollView scroll =

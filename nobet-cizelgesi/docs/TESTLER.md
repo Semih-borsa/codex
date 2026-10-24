@@ -1,3 +1,14 @@
+# Doğrulama — Nöbet Çizelgesi 2.5 / 24 Ekim 2026
+
+- JVM: **112 test, 0 başarısız**. WeekendList için 4 yeni test: kronolojik sıra, ay sınırı, yıl sınırı, tek/ayrı nöbetçi, boş gün ve şubenin ana işyeri nöbetiyle karıştırılmaması.
+- `testDebugUnitTest`, `lintDebug`, `assembleDebug`, `assembleDebugAndroidTest` başarılı.
+- API 30 emülatöründe hedefli `Weekend saved` ve `Table compact` koşuları. Her koşuda 1 geçti, 0 başarısız, 46 atlandı. Yeni listede tarih/isim metni ve satırdan haftaya geçiş; mevcut tablonun dar ekran yerleşimi kontrol edildi. Tam Android test grubunun tamamı bu değişiklik için yeniden çalıştırılmadı.
+- Eski tablo kontrolü hafta sonu başlığını tam metinle aradığı için bugüne eklenen Bugün etiketiyle ilk denemede durdu. Kontrol ilgili satırı kimliğinden bulup etiketi de destekleyecek şekilde düzeltildi ve yeniden çalıştırıldı.
+- Paket com.semih.nobet, sürüm kodu 19; önceki dağıtımlarla aynı geliştirme sertifikası. Fiziksel telefon testi yapılmadı.
+- APK SHA-256: `ab1c7e202192360ab48c3339fe6b04cf61bf9cae109232003cc279e95c65c424`.
+
+---
+
 # Doğrulama — Nöbet Çizelgesi 2.4.1 / 21 Ekim 2026
 
 Yalnız bugünün satırının zemin tonları değişti: açık temada #FFF2CC, koyu temada #66552F. `lintDebug`, uygulama ve test APK derlemeleri başarılı. Aynı imzayla yerinde güncelleme doğrulandı; sürüm kodu 18.

@@ -790,6 +790,39 @@ public final class MainActivity extends Activity implements CloudController.Host
     return selected.getDayOfMonth() + " – " + endText;
   }
 
+  private AlertDialog weekendList() {
+    List<WeekendList.Entry> entries = WeekendList.entries(state);
+    if (entries.isEmpty()) {
+      return new AlertDialog.Builder(this)
+          .setTitle("Hafta Sonu Nöbet Çizelgesi")
+          .setMessage(
+              "Henüz kayıtlı hafta yok. Önce haftalık çizelgeyi kaydedin; hafta sonu nöbetçileri"
+                  + " burada tarih sırasıyla görünecek.")
+          .setPositiveButton("Tamam", null)
+          .show();
+    }
+    return new AlertDialog.Builder(this)
+        .setTitle("Hafta Sonu Nöbet Çizelgesi")
+        .setItems(
+            entries.stream().map(e -> e.label).toArray(String[]::new),
+            (dialog, index) -> {
+              Runnable open =
+                  () -> {
+                    selected = entries.get(index).monday;
+                    draft = null;
+                    render();
+                  };
+              if (draft != null)
+                confirm(
+                    "Kayıtlı Haftaya Geç",
+                    "Kaydedilmemiş taslak kapanacak. Seçilen kayıtlı hafta açılsın mı?",
+                    open);
+              else open.run();
+            })
+        .setNegativeButton("Kapat", null)
+        .show();
+  }
+
   private void program() {
     LinearLayout nav = new LinearLayout(this);
     nav.addView(
@@ -845,6 +878,7 @@ public final class MainActivity extends Activity implements CloudController.Host
     }
     body.addView(nav);
     scheduleTable(draft != null ? draft : saved());
+    action("Hafta Sonu Nöbet Çizelgesi ▾", this::weekendList);
     action("Çizelgede Gösterilecek Şubeler", () -> chooseVisiblePlaces(null));
     int shortcutStart = body.getChildCount() - 1;
 

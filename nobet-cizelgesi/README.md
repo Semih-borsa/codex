@@ -1,12 +1,12 @@
-# Nöbet Çizelgesi 2.4.1 — Android
+# Nöbet Çizelgesi 2.5 — Android
 
 **Yeni arayüz:** Bütçe Takip’ten ilham alan kurumsal mavi özet kartı, çizgi simgeler, yüzen alt menü, personel kartları ve açık/koyu tema. [Ekran görüntüleri](docs/TASARIM-2.0.md)
 
 Yerel listeyle veya yetkili ortak ekiple personel, görev yeri, mazeret ve haftalık nöbet planlama uygulaması.
 
-[APK 2.4.1 indir](../downloads/NobetCizelgesi-2.4.1.apk) · [Android Studio ZIP](../downloads/NobetCizelgesi-Android-Studio.zip) · [Test sonuçları](docs/TESTLER.md)
+[APK 2.5 indir](../downloads/NobetCizelgesi-2.5.apk) · [Android Studio ZIP](../downloads/NobetCizelgesi-Android-Studio.zip) · [Test sonuçları](docs/TESTLER.md)
 
-Android 8.0 ve üzeri. Önceki sürümlerden biri kuruluysa **uygulamayı kaldırmadan** 2.4.1 APK'sını açarak güncelleyin. Aynı paket adı ve imza kullanılır; eski kayıtlar okunur. Kaldırmak veya uygulama verilerini silmek kayıtları siler.
+Android 8.0 ve üzeri. Önceki sürümlerden biri kuruluysa **uygulamayı kaldırmadan** 2.5 APK'sını açarak güncelleyin. Aynı paket adı ve imza kullanılır; eski kayıtlar okunur. Kaldırmak veya uygulama verilerini silmek kayıtları siler.
 
 ## 2.4.1 — Daha Açık Sarı
 
@@ -156,3 +156,9 @@ adb shell am instrument -w com.semih.nobet.test/com.semih.nobet.SmokeRunner
 ```
 
 Depolama/PDF testleri ayrı dizin kullanır; uygulamanın mevcut personel kayıtlarına yazmaz.
+
+## 2.5 — Hafta Sonu Nöbet Çizelgesi
+
+Çizelge sayfasında haftalık tablonun altındaki **Hafta Sonu Nöbet Çizelgesi ▾** düğmesine dokunun. Kayıtlı haftaların cumartesi/pazar tarihleri ve ana işyeri nöbetçi isimleri kronolojik açılır listede görünür: **31 Ağustos–1 Eylül 2024 · Semih**, **7–8 Eylül 2024 · Serdar**. Satıra dokununca ilgili haftaya geçilir. Kaydedilmemiş taslak varsa geçişten önce onay alınır.
+
+Cumartesi ve pazar farklı kişilerse günleriyle ayrı gösterilir; boş atama — görünür. Ay/yıl geçişleri desteklenir. Liste yalnız kaydedilmiş haftaları okur; henüz kaydedilmemiş gelecekteki haftalar için isim tahmin etmez. Haftalık kayıt değiştirildiğinde liste yeniden açılışta güncellenir. Nöbet dağıtım motoru ve kayıt biçimi korunur.
