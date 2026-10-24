@@ -15,7 +15,8 @@ import java.util.*;
 
 /** Uses only synthetic contacts, isolated private storage and intercepted intents; never sends. */
 public final class SmokeRunner extends Instrumentation {
-  int passed, failed;
+  int passed, failed, skipped;
+  String match = "";
   File output;
   Context isolated;
 
@@ -30,6 +31,7 @@ public final class SmokeRunner extends Instrumentation {
   @Override
   public void onCreate(Bundle args) {
     super.onCreate(args);
+    match = args == null ? "" : args.getString("match", "");
     start();
   }
 
@@ -38,6 +40,10 @@ public final class SmokeRunner extends Instrumentation {
   }
 
   void check(String name, Check run) {
+    if (!name.contains(match)) {
+      skipped++;
+      return;
+    }
     Bundle b = new Bundle();
     b.putString("test", name);
     try {
@@ -871,9 +877,49 @@ public final class SmokeRunner extends Instrumentation {
             prefs.edit().putInt("theme", previous).putBoolean("lock", lock).commit();
           }
         });
+    check(
+        "DebtTemplate bundled blank XLSX saving headers code formatting and visible button",
+        () -> {
+          MainActivity a = open();
+          try {
+            setup(a, new State());
+            runOnMainSync(a::openPayments);
+            truth(find(a.root, "Borç Excel Şablonu İndir") != null);
+            File destination = new File(output, "exported-debt-template.xlsx");
+            runOnMainSync(
+                () ->
+                    a.onActivityResult(
+                        MainActivity.DEBT_SAMPLE,
+                        Activity.RESULT_OK,
+                        new Intent().setData(android.net.Uri.fromFile(destination))));
+            await(() -> !a.busy && destination.exists() && destination.length() > 0);
+            truth(
+                java.util.Arrays.equals(
+                    java.nio.file.Files.readAllBytes(destination.toPath()),
+                    Excel.read(target.getAssets().open("Borc-Sablonu.xlsx"), Excel.MAX_FILE)));
+            Excel.Table table = Excel.load(destination, Excel.sheets(destination).get(0));
+            truth(Payments.looksLike(table));
+            truth(
+                table
+                    .headers(table.rows.firstKey())
+                    .equals(
+                        java.util.Arrays.asList(
+                            "Sıra No", "Cari Kodu", "Ticari Unvanı", "Adı", "Soyadı", "Bakiye")));
+            truth(a.state.debts.isEmpty() && a.state.people.isEmpty());
+          } finally {
+            close(a);
+          }
+        });
     Bundle result = new Bundle();
     result.putString(
-        "stream", "Sicil360 Android checks: " + passed + " passed, " + failed + " failed\n");
+        "stream",
+        "Sicil360 Android checks: "
+            + passed
+            + " passed, "
+            + failed
+            + " failed, "
+            + skipped
+            + " skipped\n");
     result.putInt("passed", passed);
     result.putInt("failed", failed);
     finish(failed == 0 ? Activity.RESULT_OK : Activity.RESULT_CANCELED, result);

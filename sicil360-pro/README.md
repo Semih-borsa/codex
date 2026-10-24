@@ -1,8 +1,8 @@
-# Sicil360 Pro 1.5 — Android
+# Sicil360 Pro 1.6 — Android
 
 Excel rehberinden sicille kişi bulma ve **kendi düz metin şablonunuzu** onayla WhatsApp sohbetine hazırlama. Mesaja sicil, ad, soyad veya başka veri kendiliğinden eklenmez. `{AD}` gibi ifadeler de aynen yazı olarak kalır.
 
-[APK indir](../downloads/Sicil360Pro-1.5.apk) · [Android Studio kaynak paketi](../downloads/Sicil360Pro-Android-Studio.zip) · [Excel şablonu](examples/Kisi-Sablonu.xlsx) · [Mesaj örnekleri](examples/Mesaj-Ornekleri.txt)
+[APK indir](../downloads/Sicil360Pro-1.6.apk) · [Android Studio kaynak paketi](../downloads/Sicil360Pro-Android-Studio.zip) · [Excel şablonu](examples/Kisi-Sablonu.xlsx) · [Mesaj örnekleri](examples/Mesaj-Ornekleri.txt)
 
 Android 8.0 ve üzeri, paket `com.semih.sicil360`, sürüm kodu 1. Telefonun kendi ekran kilidiyle isteğe bağlı uygulama kilidi; açık/koyu/sistem teması. APK kişisel yükleme için geliştirme sertifikasıyla imzalanmış release derlemedir; debugger erişimi kapalıdır. Mevcut diğer uygulamalarınızdan ayrı bir uygulamadır.
 
@@ -102,3 +102,7 @@ Bu hesaplar yalnız yüklenen aylara ve uygulamaya girilen ödemelere dayanır. 
 - Silme/düzeltme sonrası toplamlar ve geçmiş analizleri mevcut kayıtlardan yeniden hesaplanır. Cari kod değiştirildiğinde geçmiş aylardaki eski kod otomatik değiştirilmez. Aynı dönemde mükerrer cari oluşturulamaz; dönem değişikliği de çakışma açısından denetlenir.
 
 Silinen kişi/listenin ödemeleri de kaldırılır; silme işlemi uygulama içi geri alma ile geri getirilemez. Gerçek kayıtları değiştirmeden önce Ayarlar'dan şifreli yedek alın. Yanlış ödeme girişi için kişi silmek yerine ödeme geçmişindeki iptal işlevini kullanın. Özgün Excel dosyası değiştirilmez.
+
+## 1.6 Uygulama İçinden Borç Excel Şablonu
+
+**Takip → Ödemeler → Borç Excel Şablonu İndir** düğmesine dokunun ve telefonda kaydedilecek konumu seçin. Boş şablon uygulamada gömülüdür; internet gerekmez. A Sıra No, B Cari Kodu, C Ticari Unvanı, D Adı, E Soyadı, F Bakiye başlıkları hazırdır. Cari kod sütunu metindir; baştaki sıfırlar korunabilir. Kişisel veya örnek kişi kaydı bulunmaz. Excel uygulamanızda doldurup **Borç Excel Listesi Yükle** ile içe aktarın. Şablon kaydetmek mevcut kişileri, listeleri veya ödemeleri değiştirmez.

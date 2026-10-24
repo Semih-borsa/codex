@@ -1,8 +1,8 @@
-# Sicil360 Pro 1.5 — Android
+# Sicil360 Pro 1.6 — Android
 
 Excel rehberinden sicille kişi arama, kendi düz metin şablonunuzu seçme ve son onaydan sonra WhatsApp sohbetine hazırlama. Mesaja ad, soyad veya sicil otomatik eklenmez. Gönder düğmesine WhatsApp'ta kullanıcı basar.
 
-- [Android APK indir](Sicil360Pro-1.5.apk)
+- [Android APK indir](Sicil360Pro-1.6.apk)
 - [Güncel APK](Sicil360Pro.apk)
 - [Android Studio kaynak paketi](Sicil360Pro-Android-Studio.zip)
 - [Boş Excel şablonu](Sicil360Pro-Kisi-Sablonu.xlsx)
@@ -70,3 +70,7 @@ Bu hesaplar yalnız yüklenen aylara ve uygulamaya girilen ödemelere dayanır. 
 - Silme/düzeltme sonrası toplamlar ve geçmiş analizleri mevcut kayıtlardan yeniden hesaplanır. Cari kod değiştirildiğinde geçmiş aylardaki eski kod otomatik değiştirilmez. Aynı dönemde mükerrer cari oluşturulamaz; dönem değişikliği de çakışma açısından denetlenir.
 
 Silinen kişi/listenin ödemeleri de kaldırılır; silme işlemi uygulama içi geri alma ile geri getirilemez. Gerçek kayıtları değiştirmeden önce Ayarlar'dan şifreli yedek alın. Yanlış ödeme girişi için kişi silmek yerine ödeme geçmişindeki iptal işlevini kullanın. Özgün Excel dosyası değiştirilmez.
+
+## 1.6 Uygulama İçinden Borç Excel Şablonu
+
+**Takip → Ödemeler → Borç Excel Şablonu İndir** düğmesine dokunun ve telefonda kaydedilecek konumu seçin. Boş şablon uygulamada gömülüdür; internet gerekmez. A Sıra No, B Cari Kodu, C Ticari Unvanı, D Adı, E Soyadı, F Bakiye başlıkları hazırdır. Cari kod sütunu metindir; baştaki sıfırlar korunabilir. Kişisel veya örnek kişi kaydı bulunmaz. Excel uygulamanızda doldurup **Borç Excel Listesi Yükle** ile içe aktarın. Şablon kaydetmek mevcut kişileri, listeleri veya ödemeleri değiştirmez.

@@ -33,7 +33,7 @@ public final class MainActivity extends Activity {
   TextView status;
   EditText search, preview;
   RadioGroup templateChoices;
-  static final int DEBT_IMPORT = 32;
+  static final int DEBT_IMPORT = 32, DEBT_SAMPLE = 33;
   String debtLedger = "", debtQuery = "";
   int debtPage;
   boolean debtImport;
@@ -1184,6 +1184,14 @@ public final class MainActivity extends Activity {
   }
 
   void paymentsPage() {
+    action(
+        body,
+        "Borç Excel Şablonu İndir",
+        () ->
+            chooseCreate(
+                DEBT_SAMPLE,
+                "Sicil360-Borc-Sablonu.xlsx",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
     action(body, "Borç Excel Listesi Yükle", () -> chooseOpen(DEBT_IMPORT));
     Payments.Ledger ledger = activeDebt();
     if (ledger == null) {
@@ -2216,6 +2224,22 @@ public final class MainActivity extends Activity {
     if (request == IMPORT || request == DEBT_IMPORT) {
       debtImport = request == DEBT_IMPORT;
       loadImport(uri);
+    } else if (request == DEBT_SAMPLE) {
+      task(
+          () -> {
+            try (InputStream in = getAssets().open("Borc-Sablonu.xlsx");
+                OutputStream out = getContentResolver().openOutputStream(uri, "wt")) {
+              if (out == null) throw new IOException("Dosya Kaydedilemedi.");
+              byte[] buffer = new byte[8192];
+              int count;
+              while ((count = in.read(buffer)) != -1) out.write(buffer, 0, count);
+            }
+            return true;
+          },
+          ok ->
+              toast(
+                  "Borç Şablonu Kaydedildi. Doldurduktan Sonra Borç Excel Listesi Yükle İle"
+                      + " Açın."));
     } else if (request == RESTORE) passwordDialog(true, uri);
     else if (request == BACKUP) {
       char[] password = backupPassword;

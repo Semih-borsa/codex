@@ -1,3 +1,11 @@
+# Doğrulama — Sicil360 Pro 1.6 / 24 Ekim 2026
+
+- JVM: 58 test, 0 başarısız. `lintDebug`, `assembleRelease`, `assembleDebugAndroidTest` başarılı.
+- API 30 emülatöründe hedefli `DebtTemplate`: uygulamadaki şablon düğmesi, belgenin Android ContentResolver ile seçilmiş dosyaya yazılması, kaynakla birebir XLSX eşitliği, altı doğru başlık ve kayıtlara dokunulmaması kontrol edilir. Sistem dosya seçicisi arayüzü otomatik sürülmez; sonuç URI'si testte verilir. 1 kontrol geçti, 0 başarısız, diğer 10 grup atlandı; tam Android grubu bu küçük ekleme için yeniden çalıştırılmadı.
+- APK SHA-256: `7eae7990d65319a1e7e1c8a0ea0341e223f85b5882df85bc593b923beeff11f6`. Aynı paket ve sertifika ile güncelleme; veri biçimi değişmedi. Fiziksel telefon testi yapılmadı.
+
+---
+
 # Doğrulama — Sicil360 Pro 1.5 / 23 Ekim 2026
 
 ## Sonuç
