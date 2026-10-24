@@ -1,4 +1,4 @@
-[İşletmem Kasa 1.0.5 · Fiş tarihini değiştirme APK ve aktarım adımları](downloads/Isletmem-Kasa.md)
+[İşletmem Kasa 1.0.6 · APK ve aktarım adımları](downloads/Isletmem-Kasa.md)
 
 # Cep Bütçem
 

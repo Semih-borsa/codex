@@ -32,3 +32,6 @@ Android SQLite tek toplam testleri geçti: toplam/debit çift kayıt engeli, +15
 - Mevcut sayım/POS ve tek toplam/debit tarayıcı paketleri geçti.
 - `assembleDebug`, `lintDebug`, `assembleDateFix`, `lintDateFix` başarılı; 0 lint hata, mevcut 3 uyarı. Özel imzalı APK `apksigner verify` ve 16KB zipalign kontrolünden geçti. Paket `tr.kasadenge.app.tarih`, sürüm 1.0.5/code6; debuggable olmayan ayrı kurulum. Orijinal imza bu ortamda bulunmadığı için eski APK üstüne güncelleme olarak sunulmaz. Ana `release` paket kimliği değiştirilmedi.
 - Bu sürümün gerçek cihazda Android takvim etkileşimi ve eski kullanıcı yedeğiyle aktarımı henüz doğrulanmadı. Eski APK silinmez; yedek ve orijinal uygulama korunarak aktarım yapılır. Yeni APK'da başlangıç verileri boştur; özel fiş/yedek/anahtar ZIP'e eklenmez.
+
+
+1.0.6: Yalnız uygulama adı “İşletmem Kasa” olarak düzeltildi; ayarlardaki sürüm etiketi yenilendi. `assembleDateFix` başarılı. APK manifest adı, `tr.kasadenge.app.tarih` paketinin korunması, code7/name1.0.6, 1.0.5 ile aynı sertifika ve zipalign kontrolü doğrulandı. İş kurallarında değişiklik yok.

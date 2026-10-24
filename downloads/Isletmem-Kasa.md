@@ -1,3 +1,11 @@
+# İşletmem Kasa 1.0.6
+
+[APK doğrudan indir](https://github.com/Semih-borsa/codex/raw/refs/heads/main/downloads/Isletmem-Kasa-1.0.6.apk) · [Kaynak ZIP](Isletmem-Kasa-1.0.6-Kaynak.zip)
+
+Telefondaki uygulama adı yalnız **İşletmem Kasa**. 1.0.5 “İşletmem Kasa · Tarih” sürümünün üzerine aynı paket ve imzayla kurulur; uygulamayı silmeden güncelleyin. Kayıtlar korunur. Fiş tarihi düzeltmesi devam eder. 1.0.4 ve daha eski orijinal paket için ayrı kurulum/yedek aktarımı gerekliliği sürer; orijinal uygulamayı silmeyin.
+
+---
+
 # İşletmem Kasa 1.0.5 · Fiş Tarihi
 
 [APK doğrudan indir](https://github.com/Semih-borsa/codex/raw/refs/heads/main/downloads/Isletmem-Kasa.apk)
