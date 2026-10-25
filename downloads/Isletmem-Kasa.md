@@ -1,3 +1,16 @@
+# İşletmem Kasa 1.0.16 · Geçmiş, Tahsilat Aralığı Ve Grafikler
+
+[APK İndir](https://raw.githubusercontent.com/Semih-borsa/codex/main/downloads/Isletmem-Kasa-1.0.16.apk) · [Kaynak ZIP](Isletmem-Kasa-1.0.16-Kaynak.zip)
+
+- POS bekleyen dağılım toplamları bölümü kaldırıldı. Tarih Aralığında Yatacak POS tüm kasalar için vade gününe göre toplam gösterir; ayrı kasa filtresi ve iki sınır dahil tarih aralığı vardır. Dağılımı bilinmeyen tutar için vade/kart tutarı uydurulmaz; kaydedilmiş bilinen vadeler toplanır.
+- Geçmiş Nakit/POS → yıl → ay açılır düzende. Nakitte aylık net kasa eksiği/fazlası ve kasa bazında net fark; POS’ta işlem tarihine göre raporlar ve ay toplamı. Yıllar otomatik oluşur.
+- Analizde en üstte Nakit ve POS Haftanın Günleri grafikleri; altında ayrı Nakit ve POS yorumları, ardından özet/ayrıntılar. Grafikler aynı yöntemle son 12 haftanın kayıtlı günlük toplam ortalamasıdır.
+- Hesaplanamayan yüzde gri − olarak gösterilir; neden ipucunda korunur.
+
+68 birim testi ve arayüz kontrolleri geçti. Orijinal 1.0.15 üzerine silmeden kurun; kayıtlar ve 16/21 gün kuralları korunur.
+
+---
+
 # İşletmem Kasa 1.0.15 · Mevcut Verilerle Karşılaştırma
 
 [APK İndir](https://raw.githubusercontent.com/Semih-borsa/codex/main/downloads/Isletmem-Kasa-1.0.15.apk) · [Kaynak ZIP](Isletmem-Kasa-1.0.15-Kaynak.zip)
