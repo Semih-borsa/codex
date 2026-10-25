@@ -1,0 +1,1 @@
+Electron 45 Linux: app load, sandbox/webSecurity/isolation, restricted window, real IPC save/cancel, verified file, actual FileReader restore, invalid backup rejection and canceled restore passed.

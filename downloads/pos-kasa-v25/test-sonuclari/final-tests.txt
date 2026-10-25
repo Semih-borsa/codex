@@ -1,0 +1,59 @@
+
+> pos-kasa-yonetim@1.0.3 pretest
+> node build-renderer.cjs
+
+Renderer built: runtime Babel/eval is not required.
+
+> pos-kasa-yonetim@1.0.3 test
+> node --test ../tests/safety.test.cjs && node ../tests/calculation.cjs
+
+✔ Eski tam yedek ve 0 gün vade korunur (2.057511ms)
+✔ Kısmi ayar paketi işlemleri silmez (1.188036ms)
+✔ Açık boş işlem listesi kabul edilir, yok alan üretilmez (0.99865ms)
+✔ Reddedilir: string tx (0.30408ms)
+✔ Reddedilir: null row (0.213713ms)
+✔ Reddedilir: duplicate id (0.307605ms)
+✔ Reddedilir: negative (0.236207ms)
+✔ Reddedilir: zero manual (0.253073ms)
+✔ Reddedilir: bad date (0.351451ms)
+✔ Reddedilir: early due (0.29725ms)
+✔ Reddedilir: missing bank (0.240594ms)
+✔ Reddedilir: missing kasa (0.322959ms)
+✔ Reddedilir: bad vade (0.280954ms)
+✔ Reddedilir: string vade (0.194184ms)
+✔ Reddedilir: bad logs (0.344441ms)
+✔ Reddedilir: bad plan (0.224209ms)
+✔ Reddedilir: future schema (0.170638ms)
+✔ POS toplam bağlantısı bozuksa reddedilir (0.499535ms)
+✔ Doğru bağlı POS/debit kabul edilir (0.218801ms)
+✔ Manuel tutar reddi "-1" (0.287895ms)
+✔ Manuel tutar reddi "1x" (0.174214ms)
+✔ Manuel tutar reddi "NaN" (0.07903ms)
+✔ Manuel tutar reddi "Infinity" (0.060681ms)
+✔ Manuel tutar reddi "" (0.05953ms)
+✔ Manuel tutar reddi "1,234" (0.061013ms)
+✔ Manuel tutar reddi "1.2.3" (0.054232ms)
+✔ Türkçe ve ondalık tutarlar doğru (0.140563ms)
+✔ Yedek ve mevcut nesneler değiştirilmez (0.172821ms)
+✔ Güvenlik kopyası yazılamazsa işlem başlamaz (0.387165ms)
+✔ Ara yazma hatasında bütün eski değerler geri döner (0.247264ms)
+✔ Açılışta yarım geri yükleme kurtarılır (0.185741ms)
+✔ Yedekleme sırasında değişiklik varsa iptal (0.152371ms)
+✔ Başarılı kısmi yükleme eksik kayıtları korur ve kopya saklar (0.150268ms)
+✔ Gerçek dosya yazılır ve byte olarak doğrulanır (16.305947ms)
+✔ Dosya yazma hatasında sahte başarı yok (1.282314ms)
+ℹ tests 35
+ℹ suites 0
+ℹ pass 35
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 92.903569
+17 calculation checks passed
+JSX compilation passed
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice

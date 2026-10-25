@@ -1,0 +1,43 @@
+✔ Eski tam yedek ve 0 gün vade korunur (2.394055ms)
+✔ Kısmi ayar paketi işlemleri silmez (1.151068ms)
+✔ Açık boş işlem listesi kabul edilir, yok alan üretilmez (0.88092ms)
+✔ Reddedilir: string tx (0.319442ms)
+✔ Reddedilir: null row (0.167223ms)
+✔ Reddedilir: duplicate id (0.230798ms)
+✔ Reddedilir: negative (0.165971ms)
+✔ Reddedilir: zero manual (0.174894ms)
+✔ Reddedilir: bad date (0.212471ms)
+✔ Reddedilir: early due (3.571382ms)
+✔ Reddedilir: missing bank (0.182515ms)
+✔ Reddedilir: missing kasa (0.149095ms)
+✔ Reddedilir: bad vade (0.167192ms)
+✔ Reddedilir: string vade (0.181534ms)
+✔ Reddedilir: bad logs (0.220113ms)
+✔ Reddedilir: bad plan (0.212871ms)
+✔ Reddedilir: future schema (0.118459ms)
+✔ POS toplam bağlantısı bozuksa reddedilir (0.498523ms)
+✔ Doğru bağlı POS/debit kabul edilir (0.321125ms)
+✔ Manuel tutar reddi "-1" (0.321315ms)
+✔ Manuel tutar reddi "1x" (0.106151ms)
+✔ Manuel tutar reddi "NaN" (0.053621ms)
+✔ Manuel tutar reddi "Infinity" (0.051819ms)
+✔ Manuel tutar reddi "" (0.034482ms)
+✔ Manuel tutar reddi "1,234" (0.031948ms)
+✔ Manuel tutar reddi "1.2.3" (0.029185ms)
+✔ Türkçe ve ondalık tutarlar doğru (0.075424ms)
+✔ Yedek ve mevcut nesneler değiştirilmez (0.133241ms)
+✔ Güvenlik kopyası yazılamazsa işlem başlamaz (0.377309ms)
+✔ Ara yazma hatasında bütün eski değerler geri döner (0.254043ms)
+✔ Açılışta yarım geri yükleme kurtarılır (0.155956ms)
+✔ Yedekleme sırasında değişiklik varsa iptal (0.156296ms)
+✔ Başarılı kısmi yükleme eksik kayıtları korur ve kopya saklar (0.153622ms)
+✔ Gerçek dosya yazılır ve byte olarak doğrulanır (21.943388ms)
+✔ Dosya yazma hatasında sahte başarı yok (0.958687ms)
+ℹ tests 35
+ℹ suites 0
+ℹ pass 35
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 96.778499
