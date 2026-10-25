@@ -1,3 +1,13 @@
+# İşletmem Kasa 1.0.17 · Grafik Ve Geçmiş Görünümü
+
+[APK İndir](https://raw.githubusercontent.com/Semih-borsa/codex/main/downloads/Isletmem-Kasa-1.0.17.apk) · [Kaynak ZIP](Isletmem-Kasa-1.0.17-Kaynak.zip)
+
+Üst Nakit/POS haftanın günleri grafikleri eski çubuk çizelgesi düzeninde; altlarında Pazartesi–Pazar tam gün adları ve ortalama tutarlar satır satır. Alttaki tekrarlanan nakit grafiği kaldırıldı. Geçmişte Nakit/POS → yıl → ay → işlem hiyerarşisi ayrı ayrı kartlar yerine tek düz liste içinde açılır; net fark ve tüm kayıt işlevleri korunur.
+
+Arayüz, tarih aralığı/net geçmiş ve 320px kontrolleri geçti. Hesaplama/veritabanı değişmedi. Orijinal 1.0.16 üzerine silmeden kurun.
+
+---
+
 # İşletmem Kasa 1.0.16 · Geçmiş, Tahsilat Aralığı Ve Grafikler
 
 [APK İndir](https://raw.githubusercontent.com/Semih-borsa/codex/main/downloads/Isletmem-Kasa-1.0.16.apk) · [Kaynak ZIP](Isletmem-Kasa-1.0.16-Kaynak.zip)
