@@ -1,0 +1,2 @@
+a603f9286ca0ab7698dc25bd4e3ab2cd2441f8e8b1e5fc18c74b75065325e674  NobetCizelgesi-2.6-Android-Studio.zip
+a16af61e484465b4d48fe418ac4ee3c1f23cecbd29a7b0fff11dd3d563a7440f  NobetCizelgesi-2.6-TEST.apk

@@ -121,7 +121,44 @@ public final class Holidays {
     List<Place> result = new ArrayList<>();
     result.add(s.place(WORK));
     result.addAll(statisticPlaces(s));
+    for (Place p : s.places)
+      if (result.stream().noneMatch(old -> old.id.equals(p.id))
+          && s.holidayWork.stream().anyMatch(d -> d.place.equals(p.id))) result.add(p);
     return result;
+  }
+
+  public static String workKey(Duty d) {
+    return d.date + "|" + d.place + "|" + d.person;
+  }
+
+  public static List<Duty> workCandidates(State s, LocalDate date) {
+    Map<String, Duty> out = new LinkedHashMap<>();
+    for (Week week : s.weeks)
+      for (Duty d : week.duties) if (d.date.equals(date)) out.put(workKey(d), d);
+    for (Duty d : s.holidayWork) if (d.date.equals(date)) out.put(workKey(d), d);
+    List<Duty> result = new ArrayList<>(out.values());
+    java.text.Collator sort = java.text.Collator.getInstance(new Locale("tr", "TR"));
+    result.sort(
+        (a, b) -> {
+          int n = sort.compare(s.name(a.person), s.name(b.person));
+          return n != 0 ? n : sort.compare(s.place(a.place).name, s.place(b.place).name);
+        });
+    return result;
+  }
+
+  public static void setFullDayWork(State s, LocalDate date, List<Duty> selection) {
+    if (units(s, date) == 0)
+      throw new IllegalArgumentException("Bu tarih etkin bir resmî tatil değil.");
+    Set<String> allowed = new HashSet<>();
+    for (Duty d : workCandidates(s, date)) allowed.add(workKey(d));
+    Map<String, Duty> checked = new LinkedHashMap<>();
+    for (Duty d : selection) {
+      if (!d.date.equals(date) || !allowed.contains(workKey(d)))
+        throw new IllegalArgumentException("Çizelge değişti; tam gün çalışanları yeniden seçin.");
+      checked.put(workKey(d), new Duty(d.date, d.place, d.person));
+    }
+    s.holidayWork.removeIf(d -> d.date.equals(date));
+    s.holidayWork.addAll(checked.values());
   }
 
   public static List<StatRow> statistics(State s, LocalDate today, boolean future) {
@@ -130,13 +167,17 @@ public final class Holidays {
     Map<LocalDate, Integer> calendar = new HashMap<>();
     for (StatRow base : Roster.statistics(s, today, future)) {
       StatRow row = new StatRow(base.person, places.size());
-      for (Week week : s.weeks)
-        for (Duty duty : week.duties)
-          if (duty.person.equals(row.person.id) && duty.date.isAfter(today) == future) {
-            int units = calendar.computeIfAbsent(duty.date, d -> units(s, d));
-            for (int i = 0; i < places.size(); i++)
-              if (places.get(i).id.equals(duty.place)) row.counts[i] += units;
-          }
+      Set<String> counted = new HashSet<>();
+      for (Duty duty : s.holidayWork)
+        if (duty.person.equals(row.person.id) && duty.date.isAfter(today) == future) {
+          int units =
+              calendar.computeIfAbsent(duty.date, d -> units(s, d)) > 0
+                      && counted.add(workKey(duty))
+                  ? 2
+                  : 0;
+          for (int i = 0; i < places.size(); i++)
+            if (places.get(i).id.equals(duty.place)) row.counts[i] += units;
+        }
       rows.add(row);
     }
     return rows;

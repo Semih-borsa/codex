@@ -1,4 +1,8 @@
-# Resmî Tatiller — 2.1
+# Resmî Tatiller — 2.6
+
+**Güncel sayım:** Yalnız çizelgedeki resmî tatil tarihine dokunup Tam Gün Çalışanlar penceresinde işaretlenen kişi/yerler 1 tam gün sayılır. Eski otomatik yarım gün sayımı geçmiş 2.1 davranışıdır; takvimin yarım gün bilgisi korunur ama tam gün çalışma kendiliğinden varsayılmaz. İptal kayıt yazmaz; Kaydet seçimi aynen değiştirir. Onaylar planlanan nöbetlerden ayrı saklanır. PDF de aynı sayım kaynağını kullanır.
+
+## Önceki takvim açıklaması (2.1)
 
 **Ayarlar → Resmî Tatil Takvimi** ile yılı değiştirin. **Resmî Tatil Ekle** yeni tarih/ad/süre kaydeder. **Düzenle** otomatik veya manuel kaydın tarihini, adını ve tam/yarım gün süresini değiştirir. Kaydetmeden önce teyit istenir.
 

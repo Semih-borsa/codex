@@ -124,6 +124,8 @@ public class HolidaysTest {
     Holidays.put(s, new Holidays.Holiday("custom:3", "Pazar", d("2026-08-30"), 2, true));
     duty(s, "2026-10-28", WORK, "a");
     duty(s, "2026-08-30", WORK, "a");
+    Holidays.setFullDayWork(s, d("2026-10-28"), Holidays.workCandidates(s, d("2026-10-28")));
+    Holidays.setFullDayWork(s, d("2026-08-30"), Holidays.workCandidates(s, d("2026-08-30")));
     assertArrayEquals(
         new long[] {4, 0}, Holidays.statistics(s, d("2026-12-31"), false).get(1).counts);
     assertArrayEquals(
@@ -135,15 +137,17 @@ public class HolidaysTest {
     State s = sample();
     duty(s, "2026-10-19", WORK, "b");
     duty(s, "2026-10-28", BRANCH, "b");
+    Holidays.setFullDayWork(s, d("2026-10-28"), Holidays.workCandidates(s, d("2026-10-28")));
     long[] ordinary = Roster.statistics(s, d("2026-12-31"), false).get(0).counts.clone();
     assertArrayEquals(
-        new long[] {0, 1}, Holidays.statistics(s, d("2026-12-31"), false).get(0).counts);
+        new long[] {0, 2}, Holidays.statistics(s, d("2026-12-31"), false).get(0).counts);
     Holidays.put(s, new Holidays.Holiday("custom:x", "Kurum Tatili", d("2026-10-19"), 2, true));
+    Holidays.setFullDayWork(s, d("2026-10-19"), Holidays.workCandidates(s, d("2026-10-19")));
     assertArrayEquals(
-        new long[] {2, 1}, Holidays.statistics(s, d("2026-12-31"), false).get(0).counts);
+        new long[] {2, 2}, Holidays.statistics(s, d("2026-12-31"), false).get(0).counts);
     Holidays.put(s, new Holidays.Holiday("custom:x", "Taşınmış Tatil", d("2026-10-20"), 1, true));
     assertArrayEquals(
-        new long[] {0, 1}, Holidays.statistics(s, d("2026-12-31"), false).get(0).counts);
+        new long[] {0, 2}, Holidays.statistics(s, d("2026-12-31"), false).get(0).counts);
     assertArrayEquals(ordinary, Roster.statistics(s, d("2026-12-31"), false).get(0).counts);
     assertEquals(2, s.weeks.get(0).duties.size() + s.weeks.get(1).duties.size());
   }
@@ -159,8 +163,10 @@ public class HolidaysTest {
     duty(s, "2026-10-28", WORK, "a");
     duty(s, "2026-10-28", BRANCH, "a");
     duty(s, "2026-10-29", "extra", "a");
+    Holidays.setFullDayWork(s, d("2026-10-28"), Holidays.workCandidates(s, d("2026-10-28")));
+    Holidays.setFullDayWork(s, d("2026-10-29"), Holidays.workCandidates(s, d("2026-10-29")));
     assertArrayEquals(
-        new long[] {1, 1, 0}, Holidays.statistics(s, d("2026-10-28"), false).get(1).counts);
+        new long[] {2, 2, 0}, Holidays.statistics(s, d("2026-10-28"), false).get(1).counts);
     assertArrayEquals(
         new long[] {0, 0, 2}, Holidays.statistics(s, d("2026-10-28"), true).get(1).counts);
     assertEquals("Çarşı", Holidays.places(s).get(1).name);
@@ -168,14 +174,17 @@ public class HolidaysTest {
   }
 
   @Test
-  public void approvedWeekRevisionUpdatesHolidayCounts() {
+  public void approvedWorkIsIndependentOfWeekRevision() {
     State s = sample();
     Week w = new Week(monday(d("2026-10-29")));
     w.duties.add(new Duty(d("2026-10-29"), WORK, "a"));
     s.weeks.add(w);
+    Holidays.setFullDayWork(s, d("2026-10-29"), Holidays.workCandidates(s, d("2026-10-29")));
     assertEquals(2, Holidays.statistics(s, d("2026-12-31"), false).get(1).counts[0]);
     w.duties.clear();
     w.duties.add(new Duty(d("2026-10-29"), BRANCH, "b"));
+    assertEquals(2, Holidays.statistics(s, d("2026-12-31"), false).get(1).counts[0]);
+    Holidays.setFullDayWork(s, d("2026-10-29"), Collections.singletonList(w.duties.get(0)));
     assertArrayEquals(
         new long[] {0, 2}, Holidays.statistics(s, d("2026-12-31"), false).get(0).counts);
     assertArrayEquals(
@@ -198,5 +207,57 @@ public class HolidaysTest {
   @Test(expected = IllegalArgumentException.class)
   public void emptyNameRejected() {
     new Holidays.Holiday("id", " ", d("2026-01-01"), 2, true);
+  }
+
+  @Test
+  public void plannedHolidayIsNotConfirmedWork() {
+    State s = sample();
+    duty(s, "2026-10-29", WORK, "a");
+    assertEquals(0, Holidays.statistics(s, d("2026-12-31"), false).get(1).counts[0]);
+    assertEquals(1, Roster.statistics(s, d("2026-12-31"), false).get(1).counts[0]);
+  }
+
+  @Test
+  public void selectingReplacingClearingAndRepeatedSaveAreExact() {
+    State s = sample();
+    duty(s, "2026-10-29", WORK, "a");
+    duty(s, "2026-10-29", BRANCH, "b");
+    List<Duty> all = Holidays.workCandidates(s, d("2026-10-29"));
+    Holidays.setFullDayWork(s, d("2026-10-29"), all);
+    Holidays.setFullDayWork(s, d("2026-10-29"), all);
+    assertEquals(2, s.holidayWork.size());
+    Holidays.setFullDayWork(s, d("2026-10-29"), Collections.singletonList(all.get(0)));
+    assertEquals(1, s.holidayWork.size());
+    Holidays.setFullDayWork(s, d("2026-10-29"), Collections.emptyList());
+    assertTrue(s.holidayWork.isEmpty());
+    assertEquals(2, all.size());
+  }
+
+  @Test
+  public void selectionIsPerPlaceAndOtherDatesArePreserved() {
+    State s = sample();
+    duty(s, "2026-10-28", WORK, "a");
+    duty(s, "2026-10-29", WORK, "a");
+    duty(s, "2026-10-29", BRANCH, "a");
+    Holidays.setFullDayWork(s, d("2026-10-28"), Holidays.workCandidates(s, d("2026-10-28")));
+    Holidays.setFullDayWork(
+        s, d("2026-10-29"), Collections.singletonList(new Duty(d("2026-10-29"), BRANCH, "a")));
+    assertArrayEquals(
+        new long[] {2, 2}, Holidays.statistics(s, d("2026-12-31"), false).get(1).counts);
+    assertEquals(2, s.holidayWork.size());
+  }
+
+  @Test
+  public void invalidSelectionDoesNotDestroyPreviousConfirmation() {
+    State s = sample();
+    duty(s, "2026-10-29", WORK, "a");
+    Holidays.setFullDayWork(s, d("2026-10-29"), Holidays.workCandidates(s, d("2026-10-29")));
+    try {
+      Holidays.setFullDayWork(
+          s, d("2026-10-29"), Collections.singletonList(new Duty(d("2026-10-29"), BRANCH, "b")));
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertEquals(1, s.holidayWork.size());
+    }
   }
 }

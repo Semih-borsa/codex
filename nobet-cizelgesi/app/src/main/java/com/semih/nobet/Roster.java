@@ -107,6 +107,7 @@ public final class Roster {
 
   public static final class State {
     public List<Holidays.Holiday> holidays = new ArrayList<>();
+    public List<Duty> holidayWork = new ArrayList<>();
     public Set<String> hiddenPlaces = new HashSet<>();
     public List<String> weekendOrder = new ArrayList<>();
     public int rotationRevision = 0;

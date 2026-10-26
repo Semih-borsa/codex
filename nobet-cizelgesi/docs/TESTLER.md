@@ -1,3 +1,15 @@
+# Doğrulama — Nöbet Çizelgesi 2.6
+
+- JVM: **116 test, 0 başarısız**. Seçimsiz nöbetin sayılmaması, tam gün seçimi/değiştirme/boşaltma, yinelenen kaydın sayılmaması, görev yeri ayrımı, diğer tarihlerin korunması, geçersiz seçimde önceki onayın bozulmaması ve çizelge revizyonundan bağımsız gerçekleşen çalışma doğrulandı.
+- `testDebugUnitTest`, `lintDebug`, `assembleDebug`, `assembleDebugAndroidTest` başarılı; lint 0 sorun.
+- API 30 `-e match Holiday` hedefli koşu: **3 geçti, 0 başarısız, 44 atlandı**. Tatil depolama/eskiden veri okuma, PDF ve gerçek dialog açma/işaretleme/iptal/Kaydet/Store yeniden okuma/istatistik akışı kapsandı. Tam Android grubu çalıştırılmadı.
+- İlk UI denemesi emülatörde System UI ANR odağı nedeniyle durdu. Wait seçilerek sistem toparlandı. İkinci denemede yeni penceredeki onShow dinleyicisinin hemen yapılan otomatik tıklamaya yetişmediği görüldü; Kaydet dinleyicisi show sonrası doğrudan bağlandı, hedefli koşu yeniden geçti.
+- İmza engeli: 2.5 sertifika SHA-256 `a1acf948b51380a975bf87c15fd7eddc3afa4ab021df4cd65495dadebf44b94c`; bu ortamdaki TEST APK sertifikası `a3c71704fc4e5a498772ad1825325fc493203b962d3b7c3f9f9db5c0dbf273c8`. **2.5 üzerine güncelleme kurulumu doğrulanamadı ve bu imzayla mümkün değildir.** Kullanıcı verisi silinmedi; üretim APK bağlantıları değiştirilmedi.
+- Fiziksel telefon, API 26/35, gerçek ortak ekip, eski imzayla güncelleme ve veri aktarımı yapılmadı. Ortak ekipte yeni alanı korumak için yazan tüm istemciler 2.6 olmalıdır.
+- JSON sürüm 2 korunur, opsiyonel `holidayWork` eksikse boş liste kabul edilir; yanlış tip/mükerrer veya bulunmayan kişi/yer referansı reddedilir. Atomik dosya kaydı ve mevcut yetki denetimi kullanılır.
+
+---
+
 # Doğrulama — Nöbet Çizelgesi 2.5 / 24 Ekim 2026
 
 - JVM: **112 test, 0 başarısız**. WeekendList için 4 yeni test: kronolojik sıra, ay sınırı, yıl sınırı, tek/ayrı nöbetçi, boş gün ve şubenin ana işyeri nöbetiyle karıştırılmaması.

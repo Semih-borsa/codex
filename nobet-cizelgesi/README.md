@@ -1,4 +1,4 @@
-# Nöbet Çizelgesi 2.5 — Android
+# Nöbet Çizelgesi 2.6 — Tam Gün Çalışma Kaynak Güncellemesi
 
 **Yeni arayüz:** Bütçe Takip’ten ilham alan kurumsal mavi özet kartı, çizgi simgeler, yüzen alt menü, personel kartları ve açık/koyu tema. [Ekran görüntüleri](docs/TASARIM-2.0.md)
 
@@ -6,7 +6,24 @@ Yerel listeyle veya yetkili ortak ekiple personel, görev yeri, mazeret ve hafta
 
 [APK 2.5 indir](../downloads/NobetCizelgesi-2.5.apk) · [Android Studio ZIP](../downloads/NobetCizelgesi-Android-Studio.zip) · [Test sonuçları](docs/TESTLER.md)
 
-Android 8.0 ve üzeri. Önceki sürümlerden biri kuruluysa **uygulamayı kaldırmadan** 2.5 APK'sını açarak güncelleyin. Aynı paket adı ve imza kullanılır; eski kayıtlar okunur. Kaldırmak veya uygulama verilerini silmek kayıtları siler.
+Android 8.0 ve üzeri. Önceki sürümlerden biri kuruluysa **uygulamayı kaldırmadan** 2.5 APK'sını açarak güncelleyin. Bu cümledeki 2.5 kendi önceki imzasıyla uyumludur; yeni 2.6 TEST paketi için aşağıdaki imza sınırı geçerlidir. Kaldırmak veya uygulama verilerini silmek kayıtları siler.
+
+## 2.6 — Resmî Tatilde Gerçek Tam Gün Çalışma
+
+Çizelgedeki **Resmî Tatil** yazılı gün/tarih hücresine dokunun → **Kimler Tam Gün Çalıştı?** → kişi ve görev yerlerini işaretleyin → **Kaydet**. Aynı hafta sonu satırında cumartesi ve pazar tatilse önce gün seçilir. Ayarlar → Resmî Tatil Takvimi → **Tam Gün Çalışanlar** da aynı pencereyi açar.
+
+- Çizelgede isim yazması artık tam gün çalışma sayılmaz. Eski kayıtlarda bu seçim bulunmadığından resmî tatil sayımı sıfırdan, yalnız sizin onaylarınızla hesaplanır. Mevcut çizelgeler, kişiler ve normal nöbet sayımları korunur.
+- Her işaretli kişi/görev yeri/tarih **1 tam gün** sayılır. Bir kişi iki yerde yazılıysa yerler ayrı seçilir. Tatil takviminin yarım/tam gün süresi korunur; bu yeni tablo **tam gün çalıştığınızı onayladığınız kayıtları** sayar, otomatik 0,5 nöbet hesabı veya bordro değildir.
+- **Vazgeç** hiçbir seçimi kaydetmez. Tekrar açıp işaretleri değiştirebilir veya tümünü kaldırıp Kaydet yapabilirsiniz. Tekrar kaydetmek mükerrer sayım oluşturmaz.
+- Sayımlar hem istatistiğe hem resmî tatil PDF'sine yansır. Bugün/öncesi ile gelecek tarih ayrımı korunur. Sonradan nöbet çizelgesini düzenlemek, ayrıca onayladığınız gerçek çalışmayı kendiliğinden değiştirmez; tam gün seçiminden düzeltin.
+- Adaylar o tarihte kaydedilmiş nöbetler ve daha önce onaylanmış çalışmalardır. Yeni/boş çizelgede önce atamaları kaydedin. Kaldırılan tatilin çalışma onayları saklanır, tarih tekrar etkin tatil değilse resmî tatil toplamına girmez.
+- Ortak ekipte mevcut düzenleme yetkisi uygulanır. Yeni veri alanı `holidayWork` eşitleme/yedek JSON'una dahildir. **Ekipte yazan bütün cihazlar güncellenmelidir:** eski uygulama yeni alanı tanımadan kaydederse kaybolabilir. Bu turda canlı ortak ekip testi yapılmadı.
+
+### İmza ve güvenli kurulum sınırı
+
+**2.5'in üzerine kurulabilen güncelleme APK'sı henüz üretilemedi.** Depodaki 2.5 APK'sının imzası ile bu ortamda bulunan geliştirme anahtarı farklı. Eski özel anahtar APK'dan çıkarılamaz. **Uygulamayı kaldırmayın veya verilerini silmeyin.**
+
+Bu teslimde [2.6 kaynak ZIP](../downloads/NobetCizelgesi-2.6-Android-Studio.zip) ve yalnız boş test cihazı için farklı imzalı [TEST APK](../downloads/NobetCizelgesi-2.6-TEST.apk) bulunur. TEST APK mevcut 2.5'in üzerine kurulmaz. Mevcut `NobetCizelgesi.apk`, 2.5 APK'sı ve genel Android Studio ZIP'i değiştirilmedi. Güncelleme için eski anahtar gerekir; alternatif veri aktarımı ancak yedek ve kullanıcı kontrolüyle ayrıca hazırlanmalıdır.
 
 ## 2.4.1 — Daha Açık Sarı
 

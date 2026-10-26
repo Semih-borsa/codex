@@ -59,6 +59,11 @@ final class Store {
               .put("units", h.units)
               .put("enabled", h.enabled));
     root.put("holidays", holidays);
+    JSONArray worked = new JSONArray();
+    for (Duty d : s.holidayWork)
+      worked.put(
+          new JSONObject().put("date", d.date).put("place", d.place).put("person", d.person));
+    root.put("holidayWork", worked);
     root.put("places", places);
     root.put("hiddenPlaces", new JSONArray(s.hiddenPlaces));
     root.put("weekendOrder", new JSONArray(s.weekendOrder));
@@ -204,6 +209,24 @@ final class Store {
       }
       s.weeks.add(w);
     }
+    JSONArray worked = root.optJSONArray("holidayWork");
+    if (root.has("holidayWork") && worked == null)
+      throw new JSONException("Tam gün çalışma kaydı geçersiz");
+    java.util.Set<String> seenWork = new java.util.HashSet<>();
+    if (worked != null)
+      for (int i = 0; i < worked.length(); i++) {
+        JSONObject item = worked.getJSONObject(i);
+        Duty d =
+            new Duty(
+                LocalDate.parse(item.getString("date")),
+                item.getString("place"),
+                item.getString("person"));
+        if (s.people.stream().noneMatch(p -> p.id.equals(d.person))
+            || s.places.stream().noneMatch(p -> p.id.equals(d.place))
+            || !seenWork.add(Holidays.workKey(d)))
+          throw new JSONException("Geçersiz veya mükerrer tam gün çalışma kaydı");
+        s.holidayWork.add(d);
+      }
     return s;
   }
 }

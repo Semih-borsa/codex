@@ -232,7 +232,7 @@ public class SmokeRunner extends Instrumentation {
           truth(rejected);
         });
     check(
-        "Holiday PDF renders separate place tables and decimal half days",
+        "Holiday PDF renders only explicitly confirmed full days by place",
         () -> {
           State sample = new State();
           sample.people.add(new Person("holiday", "Deneme"));
@@ -244,7 +244,8 @@ public class SmokeRunner extends Instrumentation {
           sample.weeks.add(w);
           sample.hiddenPlaces.add(BRANCH);
           Holidays.put(sample, new Holidays.Holiday("custom:pdf", "Kurum Tatili", mon, 1, true));
-          truth(Holidays.statistics(sample, mon, false).get(0).counts[0] == 1);
+          Holidays.setFullDayWork(sample, mon, Holidays.workCandidates(sample, mon));
+          truth(Holidays.statistics(sample, mon, false).get(0).counts[0] == 2);
           truth(PdfExport.holidayLabels(sample).equals(java.util.Arrays.asList("Merkez", "Çarşı")));
           File pdf = PdfExport.createHolidayStatistics(context, sample, mon);
           try (ParcelFileDescriptor fd =
@@ -371,8 +372,35 @@ public class SmokeRunner extends Instrumentation {
             waitForIdleSync();
             waitForFrames(activity);
             truth(new Store(context).load().holidays.get(0).units == 1);
-            truth(Holidays.statistics(sample, mon, false).get(0).counts[0] == 1);
+            truth(Holidays.statistics(sample, mon, false).get(0).counts[0] == 0);
             truth(Roster.statistics(sample, mon, false).get(0).counts[0] == 1);
+            android.app.AlertDialog[] attendance = {null};
+            runOnMainSync(
+                () -> {
+                  try {
+                    java.lang.reflect.Method method =
+                        MainActivity.class.getDeclaredMethod(
+                            "holidayAttendance", java.time.LocalDate.class);
+                    method.setAccessible(true);
+                    attendance[0] = (android.app.AlertDialog) method.invoke(activity, mon);
+                    attendance[0].getListView().performItemClick(null, 0, 0);
+                    attendance[0].getButton(android.app.AlertDialog.BUTTON_NEGATIVE).performClick();
+                    truth(sample.holidayWork.isEmpty());
+                    attendance[0] = (android.app.AlertDialog) method.invoke(activity, mon);
+                    attendance[0].getListView().performItemClick(null, 0, 0);
+                    attendance[0].getButton(android.app.AlertDialog.BUTTON_POSITIVE).performClick();
+                  } catch (Exception e) {
+                    throw new RuntimeException(e);
+                  }
+                });
+            truth(Holidays.statistics(sample, mon, false).get(0).counts[0] == 2);
+            truth(new Store(context).load().holidayWork.size() == 1);
+            State roundTrip = Store.decode(Store.encode(sample));
+            truth(roundTrip.holidayWork.size() == 1);
+            org.json.JSONObject legacyWork = new org.json.JSONObject(Store.encode(sample));
+            legacyWork.remove("holidayWork");
+            truth(Store.decode(legacyWork.toString()).holidayWork.isEmpty());
+
             runOnMainSync(
                 () -> activity.getWindow().getDecorView().findViewWithTag("nav-3").performClick());
             waitForFrames(activity);

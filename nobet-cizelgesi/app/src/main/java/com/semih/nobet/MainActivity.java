@@ -653,7 +653,18 @@ public final class MainActivity extends Activity implements CloudController.Host
                                 java.time.format.TextStyle.FULL, new Locale("tr", "TR")))
                     + "\n"
                     + day.format(DateTimeFormatter.ofPattern("dd.MM"));
-        TextView dayCell = scheduleCell(line, label, true, false, null);
+        boolean holidayDay =
+            !Holidays.on(state, day).isEmpty()
+                || (index == 5 && !Holidays.on(state, day.plusDays(1)).isEmpty());
+        if (holidayDay) label += "\nResmî Tatil";
+        TextView dayCell =
+            scheduleCell(
+                line,
+                label,
+                true,
+                false,
+                holidayDay ? () -> holidayWorkRow(day, number == 5) : null);
+        if (holidayDay) dayCell.setTag("holiday-attendance-" + day);
         if (!Holidays.on(state, day).isEmpty()
             || (index == 5 && !Holidays.on(state, day.plusDays(1)).isEmpty()))
           dayCell.setTextColor(teal);
@@ -2131,6 +2142,83 @@ public final class MainActivity extends Activity implements CloudController.Host
     action("+ Sıraya Yeni Personel Ekle", () -> personDialog(null));
   }
 
+  private void holidayWorkRow(LocalDate day, boolean weekendRow) {
+    List<LocalDate> dates = new ArrayList<>();
+    if (!Holidays.on(state, day).isEmpty()) dates.add(day);
+    if (weekendRow && !Holidays.on(state, day.plusDays(1)).isEmpty()) dates.add(day.plusDays(1));
+    if (dates.size() == 1) holidayAttendance(dates.get(0));
+    else if (!dates.isEmpty())
+      new AlertDialog.Builder(this)
+          .setTitle("Resmî Tatil Gününü Seç")
+          .setItems(
+              dates.stream().map(d -> d.format(shortDate)).toArray(String[]::new),
+              (dialog, which) -> holidayAttendance(dates.get(which)))
+          .setNegativeButton("Vazgeç", null)
+          .show();
+  }
+
+  private AlertDialog holidayAttendance(LocalDate date) {
+    if (failed || !mayEdit()) return null;
+    List<Duty> candidates = Holidays.workCandidates(state, date);
+    String[] names = new String[candidates.size()];
+    boolean[] checked = new boolean[candidates.size()];
+    Set<String> previous = new HashSet<>();
+    for (Duty duty : state.holidayWork) previous.add(Holidays.workKey(duty));
+    for (int i = 0; i < candidates.size(); i++) {
+      Duty duty = candidates.get(i);
+      names[i] = state.name(duty.person) + " • " + state.place(duty.place).name;
+      checked[i] = previous.contains(Holidays.workKey(duty));
+    }
+    String title = date.format(shortDate) + " • Kimler Tam Gün Çalıştı?";
+    if (candidates.isEmpty())
+      return new AlertDialog.Builder(this)
+          .setTitle(title)
+          .setMessage("Bu güne ait kayıtlı nöbet yok. Önce çizelgeye personel ekleyip kaydedin.")
+          .setPositiveButton("Tamam", null)
+          .show();
+    AlertDialog dialog =
+        new AlertDialog.Builder(this)
+            .setTitle(title)
+            .setMultiChoiceItems(names, checked, (d, which, value) -> checked[which] = value)
+            .setNegativeButton("Vazgeç", null)
+            .setPositiveButton("Kaydet", null)
+            .create();
+    LinearLayout titleBox = column();
+    titleBox.setPadding(dp(20), dp(16), dp(20), dp(8));
+    titleBox.addView(bold(title, 17, ink));
+    titleBox.addView(
+        text(
+            "Yalnız tam gün çalışanları işaretleyin. Seçili kişi/yer 1 tam gün sayılır; çizelgede"
+                + " yazılı olmak yeterli değildir.",
+            13,
+            muted));
+    dialog.setCustomTitle(titleBox);
+    dialog.show();
+    dialog.getListView().setTag("holiday-attendance-list");
+    dialog
+        .getButton(AlertDialog.BUTTON_POSITIVE)
+        .setOnClickListener(
+            v -> {
+              if (failed || !mayEdit()) return;
+              State edited = state;
+              List<Duty> old = new ArrayList<>(state.holidayWork), selected = new ArrayList<>();
+              for (int n = 0; n < checked.length; n++)
+                if (checked[n]) selected.add(candidates.get(n));
+              try {
+                Holidays.setFullDayWork(state, date, selected);
+                if (save()) {
+                  dialog.dismiss();
+                  render();
+                  toast("Tam gün çalışma seçimi kaydedildi.");
+                } else if (state == edited) state.holidayWork = old;
+              } catch (IllegalArgumentException e) {
+                toast(e.getMessage());
+              }
+            });
+
+    return dialog;
+  }
+
   private AlertDialog holidayCalendar() {
     LinearLayout box = column();
     box.setPadding(dp(16), dp(8), dp(16), dp(8));
@@ -2155,6 +2243,11 @@ public final class MainActivity extends Activity implements CloudController.Host
                     13,
                     h.enabled ? teal : muted));
             card.addView(text(h.name + (h.enabled ? "" : " • Devre Dışı"), 14, ink));
+            if (h.enabled) {
+              Button attendance = button("Tam Gün Çalışanlar", () -> holidayAttendance(h.date));
+              attendance.setTag("holiday-attendance-" + h.date);
+              card.addView(attendance);
+            }
             LinearLayout controls = row();
             Button edit = button("Düzenle", () -> holidayDialog(h, year[0], refresh[0]));
             edit.setTag("holiday-edit-" + h.id);
@@ -2536,6 +2629,12 @@ public final class MainActivity extends Activity implements CloudController.Host
       statisticsTable(true);
     }
     heading("Resmî Tatiller • Bugün Ve Öncesi");
+    body.addView(
+        text(
+            "Yalnız işaretlediğiniz tam gün çalışmalar sayılır. Çizelgedeki resmî tatil gününe"
+                + " dokunarak seçin.",
+            12,
+            muted));
     action(
         "Resmî Tatilleri PDF Olarak Paylaş",
         () -> {
