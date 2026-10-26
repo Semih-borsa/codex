@@ -1,3 +1,13 @@
+# Doğrulama — Nöbet Çizelgesi 2.6 / 26 Ekim 2026
+
+- JVM: **116 test, 0 başarısız**. Yeni kurallar: atama tek başına resmî tatil sayılmaz; atanmamış ama seçilmiş kişi yalnız tatilde sayılır; seçim kaldırılır; gün/kişi/yer mükerreri sayılmaz; 0,5 ağırlık korunur; silinmiş görev yerindeki yalnız gerçek çalışma da raporda kalır. Önceki tatil testleri yeni açık çalışma seçimleriyle takvim ağırlıklarını doğrular.
+- `testDebugUnitTest`, `lintDebug`, `assembleDebug`, `assembleDebugAndroidTest` başarılı.
+- API 30 hedefli Holiday kontrolleri: seçim ekranında otomatik işaret olmaması, Vazgeç, seçip kaydetme, JSON/yerel dosyadan yeniden okuma, yeniden açıp işareti kaldırma, normal atama sayılarının aynı kalması, eski yedekte otomatik çalışma onayı yaratılmaması, tatil takvimi ve yarım gün PDF çizimi. Son koşuda Holiday: 4 geçti/0 başarısız/44 atlandı; Table ve Today koşularının her biri: 1 geçti/0 başarısız/47 atlandı. Toplam 6 farklı hedefli kontrol başarılı. Tam Android grubunun tümü bu değişiklikte yeniden çalıştırılmadı.
+- İlk emülatör açılışında Android System UI yanıt vermediği için ilk ekran kontrolü odak alamadı. Ortam toparlandı ve kontroller yeniden çalıştırıldı; uygulamanın çalışma seçimi son koşuda doğrulandı.
+- APK SHA-256: `12dceeb1254cf9ea3aba063fb3d87a87940d95f96ed225fb126c9da676b78f70`. Paket com.semih.nobet, sürüm kodu 20; aynı geliştirme sertifikası. Eski yerel/yedek kayıtlar açılır; yeni alan isteğe bağlıdır. Fiziksel telefon ve canlı bulut eşitlemesi denenmedi.
+
+---
+
 # Doğrulama — Nöbet Çizelgesi 2.5 / 24 Ekim 2026
 
 - JVM: **112 test, 0 başarısız**. WeekendList için 4 yeni test: kronolojik sıra, ay sınırı, yıl sınırı, tek/ayrı nöbetçi, boş gün ve şubenin ana işyeri nöbetiyle karıştırılmaması.

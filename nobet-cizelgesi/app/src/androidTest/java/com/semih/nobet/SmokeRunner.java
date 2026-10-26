@@ -148,6 +148,148 @@ public class SmokeRunner extends Instrumentation {
     DistributionUiChecks.run(this, context, isolated);
     TodayChecks.run(this, target, isolated);
     check(
+        "HolidayFull confirmation cancel save clear persistence legacy and separate normal stats",
+        () -> {
+          Activity activity =
+              launchActivity(
+                  new Intent(target, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+          State sample = new State();
+          sample.people.add(new Person("holiday-full-a", "Semih"));
+          sample.people.add(new Person("holiday-full-b", "Serdar"));
+          LocalDate day = LocalDate.of(2026, 10, 29);
+          Week w = new Week(monday(day));
+          w.duties.add(new Duty(day, WORK, "holiday-full-a"));
+          sample.weeks.add(w);
+          java.lang.reflect.Field stateField = MainActivity.class.getDeclaredField("state");
+          stateField.setAccessible(true);
+          java.lang.reflect.Field storeField = MainActivity.class.getDeclaredField("store");
+          storeField.setAccessible(true);
+          java.lang.reflect.Field selectedField = MainActivity.class.getDeclaredField("selected");
+          selectedField.setAccessible(true);
+          java.lang.reflect.Method render = MainActivity.class.getDeclaredMethod("render");
+          render.setAccessible(true);
+          java.lang.reflect.Method open =
+              MainActivity.class.getDeclaredMethod("holidayWorkDialog", LocalDate.class);
+          open.setAccessible(true);
+          android.app.AlertDialog[] dialog = {null};
+          try {
+            runOnMainSync(
+                () -> {
+                  try {
+                    stateField.set(activity, sample);
+                    storeField.set(activity, new Store(context));
+                    selectedField.set(activity, w.monday);
+                    render.invoke(activity);
+                  } catch (Exception e) {
+                    throw new AssertionError(e);
+                  }
+                });
+            waitForFrames(activity);
+            truth(
+                activity.getWindow().getDecorView().findViewWithTag("holiday-day-" + day) != null);
+            truth(
+                Holidays.statistics(sample, day, false).stream()
+                    .allMatch(r -> java.util.Arrays.stream(r.counts).allMatch(n -> n == 0)));
+            runOnMainSync(
+                () -> {
+                  try {
+                    dialog[0] = (android.app.AlertDialog) open.invoke(activity, day);
+                  } catch (Exception e) {
+                    throw new AssertionError(e);
+                  }
+                });
+            runOnMainSync(
+                () -> {
+                  android.widget.CheckBox checkbox =
+                      dialog[0]
+                          .getWindow()
+                          .getDecorView()
+                          .findViewWithTag("holiday-work-" + WORK + "-holiday-full-b");
+                  truth(!checkbox.isChecked());
+                  checkbox.setChecked(true);
+                  dialog[0].getButton(-2).performClick();
+                });
+            truth(sample.fullDayHolidayWork.isEmpty());
+            runOnMainSync(
+                () -> {
+                  try {
+                    dialog[0] = (android.app.AlertDialog) open.invoke(activity, day);
+                  } catch (Exception e) {
+                    throw new AssertionError(e);
+                  }
+                });
+            runOnMainSync(
+                () -> {
+                  ((android.widget.CheckBox)
+                          dialog[0]
+                              .getWindow()
+                              .getDecorView()
+                              .findViewWithTag("holiday-work-" + WORK + "-holiday-full-b"))
+                      .setChecked(true);
+                  dialog[0].getButton(-1).performClick();
+                });
+            truth(
+                sample.fullDayHolidayWork.size() == 1
+                    && sample.fullDayHolidayWork.get(0).person.equals("holiday-full-b"));
+            State loaded = new Store(context).load();
+            truth(loaded.fullDayHolidayWork.size() == 1);
+            truth(
+                Holidays.statistics(loaded, day, false).stream()
+                        .filter(r -> r.person.id.equals("holiday-full-b"))
+                        .findFirst()
+                        .get()
+                        .counts[0]
+                    == 2);
+            truth(
+                Roster.statistics(loaded, day, false).stream()
+                        .filter(r -> r.person.id.equals("holiday-full-a"))
+                        .findFirst()
+                        .get()
+                        .counts[0]
+                    == 1);
+            truth(
+                Roster.statistics(loaded, day, false).stream()
+                        .filter(r -> r.person.id.equals("holiday-full-b"))
+                        .findFirst()
+                        .get()
+                        .counts[0]
+                    == 0);
+            org.json.JSONObject legacy = new org.json.JSONObject(Store.encode(sample));
+            legacy.remove("fullDayHolidayWork");
+            truth(Store.decode(legacy.toString()).fullDayHolidayWork.isEmpty());
+            java.io.File pdf = PdfExport.createHolidayStatistics(context, loaded, day);
+            truth(pdf.length() > 0);
+            runOnMainSync(
+                () -> {
+                  try {
+                    dialog[0] = (android.app.AlertDialog) open.invoke(activity, day);
+                  } catch (Exception e) {
+                    throw new AssertionError(e);
+                  }
+                });
+            runOnMainSync(
+                () -> {
+                  android.widget.CheckBox checkbox =
+                      dialog[0]
+                          .getWindow()
+                          .getDecorView()
+                          .findViewWithTag("holiday-work-" + WORK + "-holiday-full-b");
+                  truth(checkbox.isChecked());
+                  checkbox.setChecked(false);
+                  dialog[0].getButton(-1).performClick();
+                });
+            truth(new Store(context).load().fullDayHolidayWork.isEmpty());
+            truth(sample.weeks.get(0).duties.size() == 1);
+          } finally {
+            runOnMainSync(
+                () -> {
+                  if (dialog[0] != null) dialog[0].dismiss();
+                  activity.finish();
+                });
+          }
+        });
+
+    check(
         "Weekend saved chronological dropdown opens chosen week without writing roster",
         () -> {
           Activity activity =
@@ -242,6 +384,8 @@ public class SmokeRunner extends Instrumentation {
           w.duties.add(new Duty(mon, WORK, "holiday"));
           w.duties.add(new Duty(mon, BRANCH, "holiday"));
           sample.weeks.add(w);
+          sample.fullDayHolidayWork.add(new Duty(mon, WORK, "holiday"));
+          sample.fullDayHolidayWork.add(new Duty(mon, BRANCH, "holiday"));
           sample.hiddenPlaces.add(BRANCH);
           Holidays.put(sample, new Holidays.Holiday("custom:pdf", "Kurum Tatili", mon, 1, true));
           truth(Holidays.statistics(sample, mon, false).get(0).counts[0] == 1);
@@ -371,7 +515,7 @@ public class SmokeRunner extends Instrumentation {
             waitForIdleSync();
             waitForFrames(activity);
             truth(new Store(context).load().holidays.get(0).units == 1);
-            truth(Holidays.statistics(sample, mon, false).get(0).counts[0] == 1);
+            truth(Holidays.statistics(sample, mon, false).get(0).counts[0] == 0);
             truth(Roster.statistics(sample, mon, false).get(0).counts[0] == 1);
             runOnMainSync(
                 () -> activity.getWindow().getDecorView().findViewWithTag("nav-3").performClick());

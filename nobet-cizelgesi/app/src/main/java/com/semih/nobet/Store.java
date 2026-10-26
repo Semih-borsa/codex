@@ -59,6 +59,11 @@ final class Store {
               .put("units", h.units)
               .put("enabled", h.enabled));
     root.put("holidays", holidays);
+    JSONArray fullDay = new JSONArray();
+    for (Duty d : s.fullDayHolidayWork)
+      fullDay.put(
+          new JSONObject().put("date", d.date).put("place", d.place).put("person", d.person));
+    root.put("fullDayHolidayWork", fullDay);
     root.put("places", places);
     root.put("hiddenPlaces", new JSONArray(s.hiddenPlaces));
     root.put("weekendOrder", new JSONArray(s.weekendOrder));
@@ -203,6 +208,25 @@ final class Store {
         w.debts.add(new Debt(d.getString("person"), LocalDate.parse(d.getString("end"))));
       }
       s.weeks.add(w);
+    }
+    JSONArray fullDay = root.optJSONArray("fullDayHolidayWork");
+    if (fullDay != null) {
+      if (fullDay.length() > 100000) throw new JSONException("Tam gün çalışma kayıt sınırı aşıldı");
+      java.util.HashSet<String> seen = new java.util.HashSet<>();
+      for (int i = 0; i < fullDay.length(); i++) {
+        JSONObject item = fullDay.getJSONObject(i);
+        Duty duty =
+            new Duty(
+                LocalDate.parse(item.getString("date")),
+                item.getString("place"),
+                item.getString("person"));
+        if (s.people.stream().noneMatch(p -> p.id.equals(duty.person))
+            || s.places.stream().noneMatch(p -> p.id.equals(duty.place)))
+          throw new JSONException("Tam gün çalışma kaydında kişi veya görev yeri bulunamadı");
+        if (!seen.add(duty.date + "|" + duty.place + "|" + duty.person))
+          throw new JSONException("Mükerrer tam gün çalışma kaydı");
+        s.fullDayHolidayWork.add(duty);
+      }
     }
     return s;
   }

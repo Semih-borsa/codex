@@ -120,7 +120,13 @@ public final class Holidays {
   public static List<Place> places(State s) {
     List<Place> result = new ArrayList<>();
     result.add(s.place(WORK));
-    result.addAll(statisticPlaces(s));
+    Set<String> existing = new HashSet<>();
+    for (Place place : statisticPlaces(s)) existing.add(place.id);
+    for (Place place : s.places)
+      if (!place.id.equals(WORK)
+          && (existing.contains(place.id)
+              || s.fullDayHolidayWork.stream().anyMatch(d -> d.place.equals(place.id))))
+        result.add(place);
     return result;
   }
 
@@ -130,13 +136,15 @@ public final class Holidays {
     Map<LocalDate, Integer> calendar = new HashMap<>();
     for (StatRow base : Roster.statistics(s, today, future)) {
       StatRow row = new StatRow(base.person, places.size());
-      for (Week week : s.weeks)
-        for (Duty duty : week.duties)
-          if (duty.person.equals(row.person.id) && duty.date.isAfter(today) == future) {
-            int units = calendar.computeIfAbsent(duty.date, d -> units(s, d));
-            for (int i = 0; i < places.size(); i++)
-              if (places.get(i).id.equals(duty.place)) row.counts[i] += units;
-          }
+      Set<String> counted = new HashSet<>();
+      for (Duty duty : s.fullDayHolidayWork)
+        if (duty.person.equals(row.person.id)
+            && duty.date.isAfter(today) == future
+            && counted.add(duty.date + "|" + duty.place + "|" + duty.person)) {
+          int units = calendar.computeIfAbsent(duty.date, d -> units(s, d));
+          for (int i = 0; i < places.size(); i++)
+            if (places.get(i).id.equals(duty.place)) row.counts[i] += units;
+        }
       rows.add(row);
     }
     return rows;

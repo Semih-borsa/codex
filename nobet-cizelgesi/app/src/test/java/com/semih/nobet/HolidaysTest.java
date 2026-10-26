@@ -27,6 +27,7 @@ public class HolidaysTest {
       s.weeks.add(week);
     }
     week.duties.add(new Duty(day, place, person));
+    s.fullDayHolidayWork.add(new Duty(day, place, person));
   }
 
   @Test
@@ -168,18 +169,19 @@ public class HolidaysTest {
   }
 
   @Test
-  public void approvedWeekRevisionUpdatesHolidayCounts() {
+  public void approvedWeekRevisionDoesNotInventOrReplaceFullDayWork() {
     State s = sample();
     Week w = new Week(monday(d("2026-10-29")));
     w.duties.add(new Duty(d("2026-10-29"), WORK, "a"));
     s.weeks.add(w);
+    s.fullDayHolidayWork.add(new Duty(d("2026-10-29"), WORK, "a"));
     assertEquals(2, Holidays.statistics(s, d("2026-12-31"), false).get(1).counts[0]);
     w.duties.clear();
     w.duties.add(new Duty(d("2026-10-29"), BRANCH, "b"));
     assertArrayEquals(
-        new long[] {0, 2}, Holidays.statistics(s, d("2026-12-31"), false).get(0).counts);
+        new long[] {0, 0}, Holidays.statistics(s, d("2026-12-31"), false).get(0).counts);
     assertArrayEquals(
-        new long[] {0, 0}, Holidays.statistics(s, d("2026-12-31"), false).get(1).counts);
+        new long[] {2, 0}, Holidays.statistics(s, d("2026-12-31"), false).get(1).counts);
   }
 
   @Test
@@ -198,5 +200,42 @@ public class HolidaysTest {
   @Test(expected = IllegalArgumentException.class)
   public void emptyNameRejected() {
     new Holidays.Holiday("id", " ", d("2026-01-01"), 2, true);
+  }
+
+  @Test
+  public void assignmentAloneNeverCountsAsFullDayWork() {
+    State s = sample();
+    Week w = new Week(monday(d("2026-10-29")));
+    w.duties.add(new Duty(d("2026-10-29"), WORK, "a"));
+    s.weeks.add(w);
+    assertEquals(0, Holidays.statistics(s, d("2026-12-31"), false).get(1).counts[0]);
+    assertEquals(1, Roster.statistics(s, d("2026-12-31"), false).get(1).counts[0]);
+  }
+
+  @Test
+  public void selectedOffRosterPersonCountsOnlyInHolidayStats() {
+    State s = sample();
+    s.fullDayHolidayWork.add(new Duty(d("2026-10-29"), WORK, "a"));
+    assertEquals(2, Holidays.statistics(s, d("2026-12-31"), false).get(1).counts[0]);
+    assertEquals(0, Roster.statistics(s, d("2026-12-31"), false).get(1).counts[0]);
+    s.fullDayHolidayWork.clear();
+    assertEquals(0, Holidays.statistics(s, d("2026-12-31"), false).get(1).counts[0]);
+  }
+
+  @Test
+  public void duplicateConfirmationDoesNotDoubleCountAndHalfDayWeightRemains() {
+    State s = sample();
+    for (int i = 0; i < 2; i++) s.fullDayHolidayWork.add(new Duty(d("2026-10-28"), WORK, "a"));
+    assertEquals(1, Holidays.statistics(s, d("2026-12-31"), false).get(1).counts[0]);
+  }
+
+  @Test
+  public void deletedPlaceWithOnlyActualWorkIsStillReported() {
+    State s = sample();
+    s.places.add(new Place("old", "Eski Şube", 31, 1));
+    s.place("old").deleted = true;
+    s.fullDayHolidayWork.add(new Duty(d("2026-10-29"), "old", "a"));
+    assertEquals("old", Holidays.places(s).get(2).id);
+    assertEquals(2, Holidays.statistics(s, d("2026-12-31"), false).get(1).counts[2]);
   }
 }

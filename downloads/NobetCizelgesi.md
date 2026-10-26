@@ -1,4 +1,4 @@
-# Nöbet Çizelgesi 2.5
+# Nöbet Çizelgesi 2.6
 
 **2.4.1:** bugünün zemin rengi daha açık krem sarısına güncellendi; koyu temanın amber tonu da yumuşatıldı.
 
@@ -12,7 +12,7 @@
 
 **Yeni arayüz:** Bütçe Takip’ten ilham alan kurumsal mavi özet kartı, çizgi simgeler, yüzen alt menü, personel kartları ve açık/koyu tema. [Ekran görüntüleri](../nobet-cizelgesi/docs/TASARIM-2.0.md)
 
-- [APK 2.5 indir](NobetCizelgesi-2.5.apk)
+- [APK 2.6 indir](NobetCizelgesi-2.6.apk)
 - [Güncel APK](NobetCizelgesi.apk)
 - [Android Studio kaynak ZIP](NobetCizelgesi-Android-Studio.zip)
 - [Kullanım](../nobet-cizelgesi/README.md) · [Testler](../nobet-cizelgesi/docs/TESTLER.md)
@@ -46,3 +46,13 @@ Hesap/yönetici/eşitleme kodu vardır; canlı kullanmak için size ait Supabase
 Çizelge sayfasında haftalık tablonun altındaki **Hafta Sonu Nöbet Çizelgesi ▾** düğmesine dokunun. Kayıtlı haftaların cumartesi/pazar tarihleri ve ana işyeri nöbetçi isimleri kronolojik açılır listede görünür: **31 Ağustos–1 Eylül 2024 · Semih**, **7–8 Eylül 2024 · Serdar**. Satıra dokununca ilgili haftaya geçilir. Kaydedilmemiş taslak varsa geçişten önce onay alınır.
 
 Cumartesi ve pazar farklı kişilerse günleriyle ayrı gösterilir; boş atama — görünür. Ay/yıl geçişleri desteklenir. Liste yalnız kaydedilmiş haftaları okur; henüz kaydedilmemiş gelecekteki haftalar için isim tahmin etmez. Haftalık kayıt değiştirildiğinde liste yeniden açılışta güncellenir. Nöbet dağıtım motoru ve kayıt biçimi korunur.
+
+## 2.6 — Resmî Tatilde Tam Gün Çalışanları İşaretleme
+
+Çizelgedeki resmî tatil gününün **Gün / Tarih** hücresine dokunun. Görev yerlerine göre **O Gün Tam Gün Kimler Çalıştı?** seçim ekranı açılır. Çalışanları işaretleyip Kaydet deyin. Çizelgeye yazılmış kişiler otomatik işaretlenmez. Seçilmeyen kişi, o gün çizelgede olsa bile resmî tatil istatistiğine eklenmez. Çizelgede olmayan bir çalışan da gerçek görev yerinde seçilebilir.
+
+İşaretler yeniden açıldığında korunur; kutuyu kaldırıp kaydedince tatil sayısı düşer. Vazgeç veri değiştirmez. Hafta sonu satırında iki tatil günü varsa cumartesi/pazar ayrı seçilir; tek gün tatilse doğrudan o gün açılır. Gün seçimi sonrasında sayfa konumu korunur. Pasif personel ve eski görev yeri geçmiş kayıtlar için kullanılabilir.
+
+**Normal hafta içi / hafta sonu / şube istatistikleri atamalara göre eskisi gibi kalır.** Resmî tatil tablosu ve resmî tatil PDF'si yalnız seçilmiş tam gün çalışmaları kullanır. Önceki yarım gün tatil ağırlığı korunur: yarım tatil 0,5; tam tatil 1. Aynı kişi/yer/gün tekrar sayılmaz; farklı görev yerleri kendi sütunlarında gösterilir.
+
+Önceki sürümlerdeki atamalar tam gün çalışıldığının kanıtı olmadığından yükseltmede kendiliğinden onaylanmaz. Bu nedenle geçmiş resmî tatil sayıları, ilgili günlerde çalışanları işaretleyene kadar sıfır görünebilir. Geçmiş günleri de açıp işaretleyebilirsiniz; kayıtlı çizelgeler silinmez. Seçimler yedek verisine dahil edilir. Seçimleri korumak için 2.6 veya üzeri sürüm kullanın; eski APK ile tekrar kaydetmek yeni alanları korumaz. Mevcut çevrimiçi sistem için canlı Supabase kurulumu bu teslimatta yapılmadı.
