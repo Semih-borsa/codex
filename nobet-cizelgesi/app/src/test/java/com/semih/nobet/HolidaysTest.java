@@ -27,7 +27,7 @@ public class HolidaysTest {
       s.weeks.add(week);
     }
     week.duties.add(new Duty(day, place, person));
-    s.fullDayHolidayWork.add(new Duty(day, place, person));
+    s.holidayWork.add(new Duty(day, place, person));
   }
 
   @Test
@@ -174,7 +174,7 @@ public class HolidaysTest {
     Week w = new Week(monday(d("2026-10-29")));
     w.duties.add(new Duty(d("2026-10-29"), WORK, "a"));
     s.weeks.add(w);
-    s.fullDayHolidayWork.add(new Duty(d("2026-10-29"), WORK, "a"));
+    s.holidayWork.add(new Duty(d("2026-10-29"), WORK, "a"));
     assertEquals(2, Holidays.statistics(s, d("2026-12-31"), false).get(1).counts[0]);
     w.duties.clear();
     w.duties.add(new Duty(d("2026-10-29"), BRANCH, "b"));
@@ -215,17 +215,17 @@ public class HolidaysTest {
   @Test
   public void selectedOffRosterPersonCountsOnlyInHolidayStats() {
     State s = sample();
-    s.fullDayHolidayWork.add(new Duty(d("2026-10-29"), WORK, "a"));
+    s.holidayWork.add(new Duty(d("2026-10-29"), WORK, "a"));
     assertEquals(2, Holidays.statistics(s, d("2026-12-31"), false).get(1).counts[0]);
     assertEquals(0, Roster.statistics(s, d("2026-12-31"), false).get(1).counts[0]);
-    s.fullDayHolidayWork.clear();
+    s.holidayWork.clear();
     assertEquals(0, Holidays.statistics(s, d("2026-12-31"), false).get(1).counts[0]);
   }
 
   @Test
   public void duplicateConfirmationDoesNotDoubleCountAndHalfDayWeightRemains() {
     State s = sample();
-    for (int i = 0; i < 2; i++) s.fullDayHolidayWork.add(new Duty(d("2026-10-28"), WORK, "a"));
+    for (int i = 0; i < 2; i++) s.holidayWork.add(new Duty(d("2026-10-28"), WORK, "a"));
     assertEquals(1, Holidays.statistics(s, d("2026-12-31"), false).get(1).counts[0]);
   }
 
@@ -234,7 +234,7 @@ public class HolidaysTest {
     State s = sample();
     s.places.add(new Place("old", "Eski Şube", 31, 1));
     s.place("old").deleted = true;
-    s.fullDayHolidayWork.add(new Duty(d("2026-10-29"), "old", "a"));
+    s.holidayWork.add(new Duty(d("2026-10-29"), "old", "a"));
     assertEquals("old", Holidays.places(s).get(2).id);
     assertEquals(2, Holidays.statistics(s, d("2026-12-31"), false).get(1).counts[2]);
   }

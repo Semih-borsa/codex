@@ -2199,8 +2199,7 @@ public final class MainActivity extends Activity implements CloudController.Host
     Map<CheckBox, Duty> choices = new LinkedHashMap<>();
     for (Place place : state.places) {
       boolean hasRecord =
-          state.fullDayHolidayWork.stream()
-              .anyMatch(d -> d.date.equals(day) && d.place.equals(place.id));
+          state.holidayWork.stream().anyMatch(d -> d.date.equals(day) && d.place.equals(place.id));
       boolean scheduled =
           state.weeks.stream()
               .anyMatch(
@@ -2211,7 +2210,7 @@ public final class MainActivity extends Activity implements CloudController.Host
       content.addView(bold(place.name + (place.deleted ? " (Silindi)" : ""), 15, ink));
       for (Person person : people) {
         boolean checked =
-            state.fullDayHolidayWork.stream()
+            state.holidayWork.stream()
                 .anyMatch(
                     d ->
                         d.date.equals(day)
@@ -2245,12 +2244,12 @@ public final class MainActivity extends Activity implements CloudController.Host
         .setOnClickListener(
             v -> {
               if (failed || !mayEdit()) return;
-              List<Duty> previous = new ArrayList<>(state.fullDayHolidayWork);
-              state.fullDayHolidayWork.removeIf(d -> d.date.equals(day));
+              List<Duty> previous = new ArrayList<>(state.holidayWork);
+              state.holidayWork.removeIf(d -> d.date.equals(day));
               for (Map.Entry<CheckBox, Duty> choice : choices.entrySet())
-                if (choice.getKey().isChecked()) state.fullDayHolidayWork.add(choice.getValue());
+                if (choice.getKey().isChecked()) state.holidayWork.add(choice.getValue());
               if (!save()) {
-                state.fullDayHolidayWork = previous;
+                state.holidayWork = previous;
                 return;
               }
               dialog.dismiss();
@@ -2284,6 +2283,11 @@ public final class MainActivity extends Activity implements CloudController.Host
                     13,
                     h.enabled ? teal : muted));
             card.addView(text(h.name + (h.enabled ? "" : " • Devre Dışı"), 14, ink));
+            if (h.enabled) {
+              Button worked = button("Tam Gün Çalışanlar", () -> holidayWorkDialog(h.date));
+              worked.setTag("holiday-attendance-" + h.date);
+              card.addView(worked);
+            }
             LinearLayout controls = row();
             Button edit = button("Düzenle", () -> holidayDialog(h, year[0], refresh[0]));
             edit.setTag("holiday-edit-" + h.id);

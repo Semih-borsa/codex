@@ -1,3 +1,13 @@
+# Windows 1.0.1 · 24 Ekim 2026
+
+- Beyaz ekran nedeni: statik dosya sınırı `root + "/"` ile denetleniyordu. Windows `resolve()` sonucunda ters eğik çizgi ürettiği için index dışındaki JS/CSS/ikonlar 403 dönüyordu. Önceki Linux testleri bu Windows yol ayrımını kapsamıyordu.
+- Sınır denetimi artık `path.relative`, `path.sep`, `path.isAbsolute` ile yapılır. Windows/POSIX yollarında paket içi JS/CSS/worker erişimi ve üst dizin/benzer adlı kardeş dizin kaçışlarını reddetme testleri eklendi. HTTP testinde JS/CSS MIME ve içerik, kodlanmış dizin kaçışının 403 olması doğrulandı.
+- 23 Node testi geçti. Paketlenen sunucu ve üretim arayüzü Linux Node24 + Chromium ile açıldı: Genel Bakış ve Yeni Personel formu göründü, JS/HTTP dosya hatası yoktu. Bu kontrol Windows EXE'nin gerçek Windows üzerinde çalıştırıldığı anlamına gelmez; yerel Windows/Edge testi bu ortamda yapılamadı.
+- Yeni ZIP bütünlüğü ve dosya kapsamı kontrol edildi; paket yeni `server/static-path.mjs` dosyasını içerir. Windows runtime SHA256 doğrulaması paketleme betiğince yapıldı. Veri dizini/şema/bağlantı anahtarı değişmedi. Android APK bu düzeltmede yeniden yayımlanmadı.
+- Güncellemede eski Izin360-Durdur.exe ile eski sunucu önce kapatılmalı. Veri dizini/profil silinmez.
+
+---
+
 # İzin360 1.0 — doğrulama ve sınırlar
 
 ## Geçen kontroller

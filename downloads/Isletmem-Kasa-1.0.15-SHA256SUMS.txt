@@ -1,0 +1,2 @@
+f7d3a17589c9516bb2bad76a7b60e6ff70075c0be524fa086f94d1c7ed337f60  Isletmem-Kasa-1.0.15.apk
+dff75acf80400775d8a7657545e919313790c925059ddf7c95d85bcd52cad19d  Isletmem-Kasa-1.0.15-Kaynak.zip

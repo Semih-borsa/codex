@@ -1,0 +1,25 @@
+INSTRUMENTATION_STATUS: status=PASS
+INSTRUMENTATION_STATUS: test=HolidayFull confirmation cancel save clear persistence legacy and separate normal stats
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: status=PASS
+INSTRUMENTATION_STATUS: test=Holiday overrides persist and legacy data enables only automatic calendar
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: status=PASS
+INSTRUMENTATION_STATUS: test=Holiday PDF renders separate place tables and decimal half days
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: status=PASS
+INSTRUMENTATION_STATUS: test=Holiday calendar editor validates cancels and persists confirmed half day with live statistics
+INSTRUMENTATION_STATUS_CODE: 0
+Android checks: 4 passed, 0 failed, 44 skipped
+
+
+INSTRUMENTATION_STATUS: status=PASS
+INSTRUMENTATION_STATUS: test=Table compact six rows fit phone preserve weekend duties and multiple branch widths
+INSTRUMENTATION_STATUS_CODE: 0
+Android checks: 1 passed, 0 failed, 47 skipped
+
+
+INSTRUMENTATION_STATUS: status=PASS
+INSTRUMENTATION_STATUS: test=Today amber weekday weekend other-week highlight and compact light dark rows
+INSTRUMENTATION_STATUS_CODE: 0
+Android checks: 1 passed, 0 failed, 47 skipped

@@ -4,7 +4,7 @@
 - `testDebugUnitTest`, `lintDebug`, `assembleDebug`, `assembleDebugAndroidTest` başarılı.
 - API 30 hedefli Holiday kontrolleri: seçim ekranında otomatik işaret olmaması, Vazgeç, seçip kaydetme, JSON/yerel dosyadan yeniden okuma, yeniden açıp işareti kaldırma, normal atama sayılarının aynı kalması, eski yedekte otomatik çalışma onayı yaratılmaması, tatil takvimi ve yarım gün PDF çizimi. Son koşuda Holiday: 4 geçti/0 başarısız/44 atlandı; Table ve Today koşularının her biri: 1 geçti/0 başarısız/47 atlandı. Toplam 6 farklı hedefli kontrol başarılı. Tam Android grubunun tümü bu değişiklikte yeniden çalıştırılmadı.
 - İlk emülatör açılışında Android System UI yanıt vermediği için ilk ekran kontrolü odak alamadı. Ortam toparlandı ve kontroller yeniden çalıştırıldı; uygulamanın çalışma seçimi son koşuda doğrulandı.
-- APK SHA-256: `12dceeb1254cf9ea3aba063fb3d87a87940d95f96ed225fb126c9da676b78f70`. Paket com.semih.nobet, sürüm kodu 20; aynı geliştirme sertifikası. Eski yerel/yedek kayıtlar açılır; yeni alan isteğe bağlıdır. Fiziksel telefon ve canlı bulut eşitlemesi denenmedi.
+- APK SHA-256: `70780d764b31f59743314ed6461dc2a17b5363fcd1a67da18543ea7bd6502424`. Paket com.semih.nobet, sürüm kodu 20; aynı geliştirme sertifikası. Eski yerel/yedek kayıtlar açılır; yeni alan isteğe bağlıdır. Fiziksel telefon ve canlı bulut eşitlemesi denenmedi.
 
 ---
 
@@ -174,3 +174,7 @@ Gizleme testleri: şube görünümden çıkıyor; görev kayıtları, personel s
 ## Sınırlar
 
 Fiziksel telefon veya tüm Android sürümleri test edilmedi. WhatsApp'ta gerçek alıcıya gönderim yapılmadı; PDF üretimi ve Android paylaşım URI erişimi test edildi. APK debug imzalıdır. Dinî takvim 2020–2032 ile sınırlıdır; diğer yıllar manuel kontrol edilir. Sabit tatiller 2020 ve sonrasında üretilir. Takvim kaynağı/kapsamı RESMI-TATILLER.md içindedir. Hesap/yönetici/eşitleme kodu uygulanmıştır; canlı Supabase projesi bağlanmadı ve gerçek iki cihazla denenmedi. Kurulum ve doğrulama adımları ORTAK-KULLANIM.md içindedir.
+
+## Paralel Dal Birleştirmesi
+
+Depodaki 6a6c0cc değişikliğiyle aynı özellik farklı bir dalda geliştirildiği görüldü. Kayıt anahtarı `holidayWork` olarak birleştirildi; `fullDayHolidayWork` biçimi de okunur. Önceki yarım tatil 0,5 tercihi korundu. Takvimdeki doğrudan Tam Gün Çalışanlar kısayolu birleştirildi. Arşivdeki 2.6-TEST APK farklı sertifikalı geliştirme çıktısıdır; güncel normal 2.6 APK aynı a1acf… sertifikayla eski kararlı sürümün üzerine kurulur. Diğer projelerdeki değişiklikler korunmuştur.

@@ -209,7 +209,7 @@ public class SmokeRunner extends Instrumentation {
                   checkbox.setChecked(true);
                   dialog[0].getButton(-2).performClick();
                 });
-            truth(sample.fullDayHolidayWork.isEmpty());
+            truth(sample.holidayWork.isEmpty());
             runOnMainSync(
                 () -> {
                   try {
@@ -229,10 +229,10 @@ public class SmokeRunner extends Instrumentation {
                   dialog[0].getButton(-1).performClick();
                 });
             truth(
-                sample.fullDayHolidayWork.size() == 1
-                    && sample.fullDayHolidayWork.get(0).person.equals("holiday-full-b"));
+                sample.holidayWork.size() == 1
+                    && sample.holidayWork.get(0).person.equals("holiday-full-b"));
             State loaded = new Store(context).load();
-            truth(loaded.fullDayHolidayWork.size() == 1);
+            truth(loaded.holidayWork.size() == 1);
             truth(
                 Holidays.statistics(loaded, day, false).stream()
                         .filter(r -> r.person.id.equals("holiday-full-b"))
@@ -255,8 +255,8 @@ public class SmokeRunner extends Instrumentation {
                         .counts[0]
                     == 0);
             org.json.JSONObject legacy = new org.json.JSONObject(Store.encode(sample));
-            legacy.remove("fullDayHolidayWork");
-            truth(Store.decode(legacy.toString()).fullDayHolidayWork.isEmpty());
+            legacy.remove("holidayWork");
+            truth(Store.decode(legacy.toString()).holidayWork.isEmpty());
             java.io.File pdf = PdfExport.createHolidayStatistics(context, loaded, day);
             truth(pdf.length() > 0);
             runOnMainSync(
@@ -278,7 +278,7 @@ public class SmokeRunner extends Instrumentation {
                   checkbox.setChecked(false);
                   dialog[0].getButton(-1).performClick();
                 });
-            truth(new Store(context).load().fullDayHolidayWork.isEmpty());
+            truth(new Store(context).load().holidayWork.isEmpty());
             truth(sample.weeks.get(0).duties.size() == 1);
           } finally {
             runOnMainSync(
@@ -384,8 +384,8 @@ public class SmokeRunner extends Instrumentation {
           w.duties.add(new Duty(mon, WORK, "holiday"));
           w.duties.add(new Duty(mon, BRANCH, "holiday"));
           sample.weeks.add(w);
-          sample.fullDayHolidayWork.add(new Duty(mon, WORK, "holiday"));
-          sample.fullDayHolidayWork.add(new Duty(mon, BRANCH, "holiday"));
+          sample.holidayWork.add(new Duty(mon, WORK, "holiday"));
+          sample.holidayWork.add(new Duty(mon, BRANCH, "holiday"));
           sample.hiddenPlaces.add(BRANCH);
           Holidays.put(sample, new Holidays.Holiday("custom:pdf", "Kurum Tatili", mon, 1, true));
           truth(Holidays.statistics(sample, mon, false).get(0).counts[0] == 1);

@@ -1,4 +1,5 @@
 import http from "node:http";
+import { staticTarget } from "./static-path.mjs";
 import { DatabaseSync } from "node:sqlite";
 import { randomBytes, timingSafeEqual } from "node:crypto";
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
@@ -253,8 +254,8 @@ export function createApp({
       if (req.method !== "GET" && req.method !== "HEAD")
         return reply(405, { error: "Yöntem desteklenmiyor." });
       let path = decodeURIComponent(url.pathname);
-      const target = resolve(dist, "." + path);
-      if (!target.startsWith(resolve(dist) + "/") && target !== resolve(dist))
+      const target = staticTarget(dist, path);
+      if (target === null)
         return reply(403, { error: "Erişim reddedildi." });
       let file = target;
       if (path === "/" || !extname(path)) file = resolve(dist, "index.html");

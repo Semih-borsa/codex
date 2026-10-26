@@ -1,0 +1,10 @@
+INSTRUMENTATION_STATUS: status=PASS
+INSTRUMENTATION_STATUS: test=Holiday overrides persist and legacy data enables only automatic calendar
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: status=PASS
+INSTRUMENTATION_STATUS: test=Holiday PDF renders only explicitly confirmed full days by place
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: status=PASS
+INSTRUMENTATION_STATUS: test=Holiday calendar editor validates cancels and persists confirmed half day with live statistics
+INSTRUMENTATION_STATUS_CODE: 0
+Android checks: 3 passed, 0 failed, 44 skipped

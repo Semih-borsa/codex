@@ -125,8 +125,7 @@ public final class Holidays {
     for (Place place : s.places)
       if (!place.id.equals(WORK)
           && (existing.contains(place.id)
-              || s.fullDayHolidayWork.stream().anyMatch(d -> d.place.equals(place.id))))
-        result.add(place);
+              || s.holidayWork.stream().anyMatch(d -> d.place.equals(place.id)))) result.add(place);
     return result;
   }
 
@@ -137,7 +136,7 @@ public final class Holidays {
     for (StatRow base : Roster.statistics(s, today, future)) {
       StatRow row = new StatRow(base.person, places.size());
       Set<String> counted = new HashSet<>();
-      for (Duty duty : s.fullDayHolidayWork)
+      for (Duty duty : s.holidayWork)
         if (duty.person.equals(row.person.id)
             && duty.date.isAfter(today) == future
             && counted.add(duty.date + "|" + duty.place + "|" + duty.person)) {

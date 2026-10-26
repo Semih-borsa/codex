@@ -1,5 +1,5 @@
 import {money,shift,key,fmt} from './core.mjs';
-export const TYPES=[['creditDomestic','Yurt içi kredi kartı',21],['creditOwn','VakıfBank kredi kartı',21],['world','World puan satış',21],['creditForeign','Yurt dışı kredi kartı',21],['debitForeign','Yurt dışı debit kart',21],['debitDomestic','Yurt içi debit kart',15],['debitOwn','VakıfBank debit kart',15]];
+export const TYPES=[['creditDomestic','Yurt içi kredi kartı',21],['creditOwn','VakıfBank kredi kartı',21],['world','World puan satış',21],['creditForeign','Yurt dışı kredi kartı',21],['debitForeign','Yurt dışı debit kart',21],['debitDomestic','Yurt içi debit kart',16],['debitOwn','VakıfBank debit kart',16]];
 export function schedule(records,start,end,cashId){return records.filter(r=>!cashId||r.cashId===cashId).flatMap(r=>r.lines.map(l=>({...l,cashId:r.cashId,cashName:r.cashName,terminal:r.terminal,date:r.date,id:r.id}))).filter(l=>l.due>=start&&l.due<=end).sort((a,b)=>a.due.localeCompare(b.due)||a.cashName.localeCompare(b.cashName));}
 export function parsePos(text){
  const amounts={},warnings=[],seenTypes=new Set(),unassigned=[];

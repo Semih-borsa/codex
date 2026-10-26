@@ -1,8 +1,4 @@
-# İşletmem Kasa 1.0.6
-
-**1.0.6 sürümü:** [APK](../downloads/Isletmem-Kasa-1.0.6.apk). 1.0.5 sürümündeki ad eki kaldırıldı; aynı paket/imza ve code7 ile veriler korunarak güncellenir. Bu indirme `tr.kasadenge.app.tarih` paketi ve “İşletmem Kasa” adıyla orijinal 1.0.4 uygulamasından **ayrı kurulur**. Önceki yayın imza anahtarı bu çalışma ortamında olmadığı için mevcut `tr.kasadenge.app` uygulamasının üstüne güncelleme değildir. Eski uygulamayı silmeyin. Önce eski uygulamada Ayarlar → Yedeği Kaydet; sonra yeni uygulamada Ayarlar → Yedekten Ekle. Kayıtlar otomatik paylaşılmaz. İçe aktarma güncel sayım/POS/toplam/debit kayıtlarını ekler; eski düzeltmeler ve taslaklar yedek dosyasında kalır. Aktarılan kayıtları kontrol edin; eski yedeği saklayın. Aynı adlı mevcut kasa ayarları yedekten değiştirilmediği için yeni uygulamada kasa adı/avans/POS giriş türünü ayrıca kontrol edin.
-
-Fiş kontrol ekranındaki **Fiş İşlem Tarihi** alanına dokunup gerçek günü seçin; “Forma Dön Ve Kontrol Et” ile aktarın. Ana POS formunda da tarih değiştirilebilir. Kaydetmeden önce işlem ve tahsilat tarihleri onayda görünür. İki gün önceki fiş +15/+21 takvim günleriyle o günden hesaplanır. Kayıt düzeltmesinden yeni fotoğrafa geçmek yeni kayıt başlatır; eski kaydın kilidi veya revizyonu yeni fişe taşınmaz.
+# İşletmem Kasa 1.0.17
 
 Android 8+ için çevrimdışı kasa sayımı, mutabakat, POS raporu ve tahsilat takvimi. Paket: `tr.kasadenge.app`. Diğer uygulamalardan ayrı veritabanı kullanır.
 
@@ -86,5 +82,42 @@ Toplam veya debit yanlış girilirse güncel kaydı gerekçeyle düzeltmek gerek
 
 Ek testler: `node --test tests/settlements.test.mjs`; `TEST_BASE_URL=... node tests/settlement-ui.cjs`.
 
+## 1.0.7 · Basılı Kasa Defteri Şablonu
 
-1.0.5 Tarih APK derlemesi: `KASADENGE_DATEFIX_SIGNING_PROPERTIES=/özel/dosya.properties ./gradlew :app:assembleDateFix :app:lintDateFix`. Properties alanları `storeFile/storePassword/keyAlias/keyPassword`; özel anahtarı kaynak ZIP/repo içine koymayın. Bu varyantın sonraki güncellemeleri aynı Tarih anahtarını gerektirir. `release` varyantı orijinal paket kimliğini korur ve yalnız önceki orijinal anahtar mevcutsa eski uygulama üstüne kurulabilir. `dateFix` yeni bir imza anahtarıyla ve ayrı paketle yayımlandı; bu durum eski imzayla güncelleme olarak sunulmaz.
+İki sütunlu “... tarihinde 1. kasadan nakit olarak ... TL ... Krş teslim alınmıştır” şablonu tanınır. 1. kasa → Kasa 1, 2. kasa → Kasa 2, 3. kasa → Kasa 3 (boşluk/nokta/büyük-küçük harf değişimleriyle) eşleştirilir. Birden fazla eşleşme veya eşleşmeyen kasa için kullanıcı seçim yapar. Üst satırdaki defter tarihi okunur; fotoğraf köşesindeki çekim tarihi yerine geçmez.
+
+Cihaz üzerinde, satırları konumlarına göre sıralayan ilk okumanın yanında mavi el yazısı alanları ayrıştırılıp büyütülerek ikinci OCR yapılır. Net adet ile satır toplamı uyuşuyorsa doğrulanır. Adet okunamamış, satır toplamı okunmuşsa para değerine bölünüp tam sayı sonuç tahmin olarak önerilir. Bir tek eksik satır kalmış ve diğer para tutarları kesin biliniyorsa genel toplamdan denge varsayımıyla tahmin yapılabilir; bu varsayım ayrıca belirtilir. Birden fazla belirsiz adet uydurulmaz. Tahminler onay kutusu gerektirir; fotoğraf onayı yalnız sayım formuna aktarır, kapanış için ayrıca son onay gerekir.
+
+Yeni sayımda Diğer Bozuk Para boş başlar; boş değer hesapta 0'dır. Gereken bozuk tutarı, beklenen + avans − banknot − adetli madeni hesabıyla alanın altında gösterilir. Örnek şablonun 18.241,86 TL bekleneni, 1.500 TL avans ve 19.635 TL banknotu için 106,86 TL bozuk gerekir. Belirsiz bozuk para kuruş ayracı otomatik tahmin edilmez. Defterde ayrı madeni 5 TL satırı yoksa mevcut adet kontrol edilmelidir; kâğıt 5 TL satırı madeni adedi sayılmaz.
+
+Ek testler: `node --test tests/cashbook.test.mjs`; `TEST_BASE_URL=... node tests/cashbook-ui.cjs`. Özel defter fotoğrafı yalnız geçici Android test girdisidir; kaynak/APK/ZIP'e dahil edilmez.
+
+## POS İşlem Tarihi Düzeltmesi · 1.0.7
+
+Ayrıntılı POS kaydında ve tek toplam POS kaydında işlem tarihi gerekçeli değiştirilebilir. Onay ekranında eski/yeni gün ile yeni vade günleri gösterilir; yeni günün aynı kasa/POS kimliği doluysa üzerine yazılmaz. Güncelleme, arşivleme ve eski aktif anahtarın kaldırılması tek SQLite işlemindedir.
+
+Tek toplam kaydına debit tahsilatı bağlıysa gerçek banka yatış tarihi ve tutarı korunur; ilişkilendirilen işlem günü ve beklenen kredi vadesi düzeltilir. Bu elle düzeltilmiş bağ ayrıca işaretlenir. “Yatan Debiti Düzelt” üzerinden tutar daha sonra gerekçeli değiştirilebilir; bu düzeltmede gerçek yatış günü sabittir. Yeni debit eşleştirmesinde otomatik +15 kuralı devam eder. Önceden dışa aktarılmış yedekler değişmez; eski tarihe ait yedekten ekleme eski günün kaydını yeniden getirebilir.
+
+Test: `TEST_BASE_URL=... node tests/pos-date-ui.cjs`; native test senaryosu (bu oturumda çalıştırılamadı) aynı gün çakışması, yeni vade, eski günün aktif kayıttan kaldırılması ve gerçek debit tarihinin korunmasını doğrular.
+
+Android tarih seçici ve fiş fotoğrafı işlem tarihi düzenleme güncellemeleri korunmuştur. 1.0.7 APK orijinal tr.kasadenge.app paketi ve orijinal imzayla yayımlanır; 1.0.4 ve eski orijinal sürümler üzerine kurulur. Repodaki 1.0.5/1.0.6 tr.kasadenge.app.tarih ayrı paketidir; o paketi otomatik güncellemez. Ayrı paketteki veriler için önce yedek alıp orijinal pakete içe aktarın; hiçbir uygulamayı silmeyin.
+
+1.0.8: Kasalar Ve Avanslar → Kasayı Sil, açık onaydan sonra kasayı arşivler. Eski kayıtlar ve POS vadeleri korunur; kasa Düzenle üzerinden geri etkinleştirilebilir. Son etkin kasa silinemez.
+
+1.0.9: Son etkin kasa da onayla arşivlenebilir. Etkin kasa yokken Sayım/POS ekranı Kasa Ekle gösterir; geçmiş ve analiz korunur. Yeni kurulumda varsayılan kasa oluşturulmaz; mevcut kurulumun kasaları otomatik silinmez.
+
+1.0.10: Klavye açıldığında düzenlenen alan görünür aralığa kaydırılır. Alt menü/sabit özet klavyeyle gizlenir; kapandığında geri gelir. Android IME görünürlüğü ve WebView/visual viewport değişimleri izlenir. Tutar/adet ve mevcut hesaplama korunur.
+
+1.0.11: Yurt içi debit vadesi +16 takvim günü. SQLite schema4 güncellemesi kayıtlı aktif ayrıntılı POS debitDomestic/debitOwn satırlarının delay/due alanlarını değiştirir; tutarlar, kimlikler, kayıt/revizyon metaverisi ve nakit kayıtları korunur. Geçmiş revizyon anlık görüntüleri yeniden yazılmaz. Tek toplam POS vadesi dinamik +16; yeni debit eşleştirmesi yatış −16. Önceden girilmiş gerçek yatış günü/tutarı ve bağlı işlem günü korunur, gerekirse eski kurala ait bağ işaretlenir. Schema1/2/3 yedekleri içe alındığında aynı kural uygulanır. Kredi, World, yurt dışı kredi/debit +21 devam eder.
+
+1.0.12: Analiz ekranında dört temel tutar ve hesaplanan kısa yorumlar öne çıkar; uzun tablolar kapalı Ayrıntılı Tablolar bölümünde korunur. Seçilen günün nakit/POS satışı geçen tam takvim haftasının kayıtlı günlük ortalamasıyla karşılaştırılır. Aynı kasa kapsamı aranır; kayıtsız günler sıfır değildir. Az veri, dağılım bekleyen POS, haftalık açık/fazla/dengeli gün ve önceki dönem eşleşen kasa/gün farkı belirtilir. POS çoklu terminalleri önce kasa/gün bazında toplanır. Nakit avans hariçtir, banka yatışı satıştan ayrıdır.
+
+1.0.13: Sayım ve POS üstünde bağımsız 📆 görüntüleme tarihi, önceki/sonraki okları ve yatay kaydırma. Sayım kayıt tarihi/adet/tutar taslağı değişmez. Nakit kartı yalnız kayıtlı avans hariç sayımları toplar; günlük fark ve her kasanın net tutarı/farkı ayrı gösterilir. POS kartı vade gününe göre tüm kasaları toplar, kasanın tüm terminallerindeki kredi/debit ayrı birleştirilir. Yüzdeler 7 gün önceki aynı günle karşılaştırılır; artış yeşil, azalış kırmızı, sıfır gri. Eksik veya negatif/sıfır bazda yanıltıcı yüzde yok; farklı kasa kapsamı veya dağılım bekleyen ilgili POS durumunda genel yüzde engellenir. Nakit geleceğe gitmez; POS geleceğe gidebilir.
+
+1.0.14: POS karşılaştırmasında dağılımı bilinmeyen tek toplam kayıt yalnız ilgili kasa/kategori/vade gününü engeller. Diğer kasaların geçerli yüzdesi hesaplanır; debit +16 günü belirsizliği bağımsız kredi karşılaştırmasını engellemez. Genel toplam eksik dağılımda yine karşılaştırılmaz. Yüzde yoksa neden gösterilir: Geçen Hafta Kaydı Yok, Dağılım Bekleniyor, Kasa Kapsamı Farklı veya Önceki Tutar Sıfır Veya Negatif. Karşılaştırma aynı vade gününden 7 gün önceyledir; geçmiş veri yokken uydurulmaz.
+
+1.0.15: Kullanıcı tercihiyle kasa kapsamı veya bekleyen POS dağılımı yüzdeyi engellemez. Nakit ve POS, seçilen günün mevcut toplamlarını 7 gün önceki mevcut toplamlarla kıyaslar. Farklı kasa kapsamı/bekleyen dağılım küçük açıklama olarak kalır. Yeni kayıt veya debit dağılımı girilince veriden yeniden hesaplanır. Önceki pozitif tutar yoksa veya seçilen gün için hiçbir POS tutarı yoksa yüzde uydurulmaz.
+
+1.0.16: POS bekleyen dağılım toplamları bölümü kaldırıldı. Tarih aralığı raporu varsayılan tüm kasalarla, vade tarihine göre (iki sınır dahil) toplam yatacak POS hesaplar; kasa filtresi giriş kasasından bağımsızdır. Tarih aralığı ters seçilirse diğer sınır seçilen güne taşınarak ekrandaki tarihle tutarın farklı kalması önlenir. Geçmiş: Nakit/POS → yıl → ay; nakitte aylık ve kasa bazında imzalı net fark, POS’ta işlem gününe göre raporlar/toplamlar. Yıllar/aylar kayıttan oluşur; kayıtlar silinmez. Analiz: Nakit/POS haftanın günleri grafikleri, ayrı yorumlar, özet ve ayrıntılar. Grafikler son12 haftanın kayıtlı günlük toplamlarını önce gün bazında birleştirip ortalar; eksik gün sıfır sayılmaz. Eksik yüzde gri − ile gösterilir.
+
+1.0.17: Üst Nakit/POS haftanın günleri grafikleri eski çubuk düzenine uyarlandı. Her grafiğin altında tam gün adı ve o güne ait kayıtlı ortalama tutar satır satır gösterilir. Ayrıntılarda tekrarlanan eski nakit grafiği kaldırıldı. Geçmiş açılır hiyerarşisi tek liste içinde düz ayraçlar/girintilerle görünür; yıl/ay/işlem açıldıkça yeni kart kutuları oluşmaz. Hesaplar/veritabanı değişmedi.
