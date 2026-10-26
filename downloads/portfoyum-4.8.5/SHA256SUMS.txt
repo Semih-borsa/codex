@@ -1,0 +1,6 @@
+285ace16ae1b8d5968e816650007dd24a391d428d6520dbd077921bb0f9e1ce3  GUNCELLEME-4.8.5.md
+8b00255bfaa9248260899cdfe42faa4078cd43b47c7bd39a5eef713015e05a6e  Portfoyum-Android-Studio-4.8.5.zip
+8a5b57550f38f7464b1ffcbd495d558fd9fbc9f4b03a4099689230bb3702acf5  README.md
+ed4b255b0f9562481df87608f4f375f2d6456f545d2df9ec47a72eb230836ab9  test-sonuclari/android-build.txt
+9cc40bd3fdc8e4bd635173583742abf3e5dd240467940687f284eda5110b3d9b  test-sonuclari/browser-tests.txt
+6e291290267ab65d6f7856f76a58ceab17bb4ff7d5c684170a8a754e21da6ae3  test-sonuclari/javascript-tests.txt
