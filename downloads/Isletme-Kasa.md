@@ -1,7 +1,7 @@
-# İşletme Kasa 1.0.18
+# İşletme Kasa 1.0.19 · Kasa Bazlı Nakit/POS Yorumları
 
-[APK İndir](https://raw.githubusercontent.com/Semih-borsa/codex/main/downloads/Isletme-Kasa-1.0.18.apk) · [Kaynak ZIP](Isletme-Kasa-1.0.18-Kaynak.zip)
+[APK İndir](https://raw.githubusercontent.com/Semih-borsa/codex/main/downloads/Isletme-Kasa-1.0.19.apk) · [Kaynak ZIP](Isletme-Kasa-1.0.19-Kaynak.zip)
 
-Uygulamanın adı İşletme Kasa oldu. Sayımda kasa seçiminin yanındaki kayıt tarihi varsayılan olarak dün gelir; üst kayıt görüntüleme tarihi ayrı kalır. Sayım başlığının sağındaki Taslak rozeti kaldırıldı; otomatik taslak saklama devam eder. Analiz tarihi, sayım tarihi ve elle girilen adetler birbirini değiştirmez.
+Analiz yorumlarında seçilen dönemin en yüksek nakit tutarına/POS satışına sahip kasası ve her kasanın önceki döneme TL/yüzde değişimi gösterilir. Haftalık dönemde haftanın aynı tamamlanan gün aralığı karşılaştırılır. Kısmi kayıtlar, eksik önceki dönem, sıfır baz ve eşit tutarlar belirtilir. Nakit avans hariç sayım, POS işlem günü satışıdır; kasa filtresi yorumlara da uygulanır.
 
-Mevcut orijinal uygulamayla aynı paket/imza/veritabanı. 1.0.17 üzerine silmeden kurun; kayıtlar korunur. Arayüz/tarih/yıl geçişi kontrolleri geçti.
+72 birim testi ve arayüz kontrolleri geçti. Aynı paket/imza; 1.0.18 üzerine silmeden kurun. Veritabanı ve eski kayıtlar değişmez.

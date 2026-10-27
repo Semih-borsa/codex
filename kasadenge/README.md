@@ -1,4 +1,4 @@
-# İşletme Kasa 1.0.18
+# İşletme Kasa 1.0.19
 
 Android 8+ için çevrimdışı kasa sayımı, mutabakat, POS raporu ve tahsilat takvimi. Paket: `tr.kasadenge.app`. Diğer uygulamalardan ayrı veritabanı kullanır.
 
@@ -123,3 +123,5 @@ Android tarih seçici ve fiş fotoğrafı işlem tarihi düzenleme güncellemele
 1.0.17: Üst Nakit/POS haftanın günleri grafikleri eski çubuk düzenine uyarlandı. Her grafiğin altında tam gün adı ve o güne ait kayıtlı ortalama tutar satır satır gösterilir. Ayrıntılarda tekrarlanan eski nakit grafiği kaldırıldı. Geçmiş açılır hiyerarşisi tek liste içinde düz ayraçlar/girintilerle görünür; yıl/ay/işlem açıldıkça yeni kart kutuları oluşmaz. Hesaplar/veritabanı değişmedi.
 
 1.0.18: Uygulama/başlatıcı adı İşletme Kasa; WebView başlığı ve iç metinler aynı adı kullanır. Sayım kayıt tarihi yeni açılışta dün; görüntüleme ve analiz tarihi bağımsız olarak bugün başlar. Elle seçilen sayım tarihi/taslak, sekme veya analiz tarihi değiştirilince korunur. Sayım başlığındaki Taslak rozeti kaldırıldı; otomatik taslak saklama devam eder. Paket kimliği, imza ve veritabanı aynı; veri aktarımı gerekmez.
+
+1.0.19: Analiz yorumlarında Nakit ve POS için kasa bazlı en yüksek dönem tutarı ve her kasanın önceki döneme TL/yüzde değişimi. Haftalık karşılaştırma haftanın aynı tamamlanan gün aralığıyla yapılır. Kasa adı güncel ayarlardan alınır; POS terminalleri/tek toplam satışları kasa bazında toplanır. Eksik önceki dönem, sıfır baz, farklı kayıtlı gün sayısı ve eşit liderler açıkça belirtilir; kayıtsız kasa −%100 varsayılmaz. Kasa filtresi yorumları da sınırlar. Nakit, avans hariç sayım; POS işlem günü satışıdır, bankaya yatıştan ayrıdır.
