@@ -1,7 +1,7 @@
-# İşletme Kasa 1.0.19 · Kasa Bazlı Nakit/POS Yorumları
+# İşletme Kasa 1.0.20 · Menü Simgeleri Ve POS Listeleri
 
-[APK İndir](https://raw.githubusercontent.com/Semih-borsa/codex/main/downloads/Isletme-Kasa-1.0.19.apk) · [Kaynak ZIP](Isletme-Kasa-1.0.19-Kaynak.zip)
+[APK İndir](https://raw.githubusercontent.com/Semih-borsa/codex/main/downloads/Isletme-Kasa-1.0.20.apk) · [Kaynak ZIP](Isletme-Kasa-1.0.20-Kaynak.zip)
 
-Analiz yorumlarında seçilen dönemin en yüksek nakit tutarına/POS satışına sahip kasası ve her kasanın önceki döneme TL/yüzde değişimi gösterilir. Haftalık dönemde haftanın aynı tamamlanan gün aralığı karşılaştırılır. Kısmi kayıtlar, eksik önceki dönem, sıfır baz ve eşit tutarlar belirtilir. Nakit avans hariç sayım, POS işlem günü satışıdır; kasa filtresi yorumlara da uygulanır.
+Alt menü: Sayım💵, POS💳, Analiz📊, Ayarlar⚙️. Ayrıntılı ve tek toplam POS geçmişleri açılır liste oldu; kayıt sayısı görünür, kayıtlar açıldığında erişilir. Liste açık durumu oturum içi yenilemelerde korunur. Açık tema renkleri, hesaplamalar ve veriler değişmedi. Pasta grafik henüz eklenmedi.
 
-72 birim testi ve arayüz kontrolleri geçti. Aynı paket/imza; 1.0.18 üzerine silmeden kurun. Veritabanı ve eski kayıtlar değişmez.
+Arayüz kontrolleri geçti. Aynı paket/imza; 1.0.19 üzerine silmeden kurun.

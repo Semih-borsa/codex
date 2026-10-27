@@ -9,7 +9,7 @@ android {
  namespace 'tr.kasadenge.app'
  compileSdk 35
  buildToolsVersion "35.0.0"
- defaultConfig { applicationId 'tr.kasadenge.app'; minSdk 26; targetSdk 35; versionCode 20; versionName '1.0.19'; manifestPlaceholders = [appLabel: 'İşletme Kasa']; testInstrumentationRunner 'tr.kasadenge.app.CashInstrumentation' }
+ defaultConfig { applicationId 'tr.kasadenge.app'; minSdk 26; targetSdk 35; versionCode 21; versionName '1.0.20'; manifestPlaceholders = [appLabel: 'İşletme Kasa']; testInstrumentationRunner 'tr.kasadenge.app.CashInstrumentation' }
  compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
  signingConfigs { if(dateFixFile) { dateFix { storeFile file(dateFixProps['storeFile']); storePassword dateFixProps['storePassword']; keyAlias dateFixProps['keyAlias']; keyPassword dateFixProps['keyPassword'] } }; if(signingFile) { release { storeFile file(signingProps['storeFile']); storePassword signingProps['storePassword']; keyAlias signingProps['keyAlias']; keyPassword signingProps['keyPassword'] } } }
  buildTypes {
