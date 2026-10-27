@@ -1,0 +1,2 @@
+1d50cf1b9d950398657a0e76c6cf9c3b6a79350a23e34a2c51d6506832dca0b3  Isletme-Kasa-1.0.18.apk
+212eb7bbe612375a8f6c543c0a94bdd28bf98c7ae178ca0b3fc7a691b94a35c0  Isletme-Kasa-1.0.18-Kaynak.zip
