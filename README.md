@@ -1,4 +1,4 @@
-[Gün Plan 1.1.0 · APK, aylık hafta sonu seçeneği ve aktarım adımları](gunplan/README.md)
+[Gün Plan 1.2.0 · APK, ay sonu ve hafta içi hatırlatma seçenekleri](gunplan/README.md)
 
 [İşletmem Kasa 1.0.6 · APK ve aktarım adımları](downloads/Isletmem-Kasa.md)
 

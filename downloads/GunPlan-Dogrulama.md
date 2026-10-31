@@ -1,5 +1,5 @@
-# Gün Plan 1.1.0
+# Gün Plan 1.2.0
 
-[Doğrulama ve sınırlar](../gunplan/VALIDATION.md) · [Kurulum ve yedek aktarımı](../gunplan/README.md)
+[Doğrulama ve sınırlar](../gunplan/VALIDATION.md) · [Kurulum ve kullanım](../gunplan/README.md)
 
-32 tarih/tekrar, 24 saklama/yedek/teslimat durumu ve 10 tarayıcı test grubu geçti. Aylık hafta sonu taşıması takvim ve Android tekrar hesabında aynı kuralla uygulanır. Resmî tatiller hesaplanmaz. Yeni APK eski uygulamadan ayrı kurulur.
+209 tarih/tekrar, 30 saklama/yedek/teslimat durumu ve 12 tarayıcı test grubu geçti. Ayın son günü 28/29/30/31 olarak bulunur; isteğe bağlı hafta sonu ay sonu önceki cumaya taşınır. Saat korunur, resmî tatiller hesaplanmaz. 1.1.0'ın üzerine aynı paket/imzayla kurulur. Orijinal 1.0.0 ayrı pakettir.

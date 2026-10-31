@@ -1,10 +1,14 @@
-[Gün Plan 1.1.0 APK indir](../downloads/GunPlan-1.1.0.apk)
+[Gün Plan 1.2.0 APK indir](../downloads/GunPlan-1.2.0.apk)
 
-**Kurulum:** Bu APK `tr.gunplan.app.v2` paketiyle ayrı kurulur. Eski GünPlan'ın yayın anahtarı bu ortamda bulunmadığı için orijinal `tr.gunplan.app` üstüne güncelleme olarak sunulmaz. Eski uygulamayı silmeyin. Eski uygulamada Ayarlar → Yedeği dışa aktar; yeni Gün Plan'da Ayarlar → Yedekten ekle. Görevleri ve bildirim izinlerini kontrol ettikten sonra çift bildirim olmaması için eski uygulamadaki görevleri duraklatın. Veriler uygulamalar arasında otomatik paylaşılmaz.
+**1.2.0 ay sonu:** Görev düzenleme → Tekrar → Her ay → Aylık gün seçimi → **Ayın son günü**. Ayın gerçek son günü 28/29/30/31 olarak bulunur. **“Ayın son günü hafta sonuysa önceki son hafta içi gününde hatırlat”** açıksa cumartesi/pazar sonu önceki cumaya alınır; saat korunur. Kapalıysa gerçek son gün kullanılır. Resmî tatiller hesaplanmaz. Belirli gün modundaki sonraki pazartesi seçeneği ayrı olarak korunur. Eski görevler kendiliğinden ay sonu moduna çevrilmez. Yeni ay sonu modu yedek ve takvimde saklanır.
+
+**1.1.0 kullanıyorsanız:** 1.2.0 aynı paket/imza ve daha yüksek sürüm koduyla üzerine kurulur; uygulamayı silmeyin, görevler korunur. Güncelleme öncesi yedek alabilirsiniz.
+
+**Orijinal 1.0.0'dan kurulum:** Bu APK `tr.gunplan.app.v2` paketiyle ayrı kurulur. Eski GünPlan'ın yayın anahtarı bu ortamda bulunmadığı için orijinal `tr.gunplan.app` üstüne güncelleme olarak sunulmaz. Eski uygulamayı silmeyin. Eski uygulamada Ayarlar → Yedeği dışa aktar; yeni Gün Plan'da Ayarlar → Yedekten ekle. Görevleri ve bildirim izinlerini kontrol ettikten sonra çift bildirim olmaması için eski uygulamadaki görevleri duraklatın. Veriler uygulamalar arasında otomatik paylaşılmaz.
 
 # Gün Plan
 
-İnternetsiz çalışan Android görev planlayıcısı. Paket: `tr.gunplan.app`, sürüm: 1.1.0. Android 8+ ve Android System WebView / Chrome 80+ gerektirir.
+İnternetsiz çalışan Android görev planlayıcısı. Paket: `tr.gunplan.app`, sürüm: 1.2.0. Android 8+ ve Android System WebView / Chrome 80+ gerektirir.
 
 - Tek seferlik, günlük, haftanın seçili günleri veya aylık görevler.
 - Aylık görevde isteğe bağlı **“Hafta sonuna denk gelirse sonraki ilk hafta içi gününe taşı”**. Cumartesi/pazar pazartesiye gider, saat korunur. Kısa ayda önce son gün bulunur, sonra hafta sonu kontrol edilir; sonraki aya/yıla geçebilir. Örneğin 31 Ocak cumartesi → 2 Şubat pazartesi; sonraki temel gün yine 31 olarak kalır. Resmî tatiller hesaba katılmaz. Eski görevlerde seçenek kapalıdır. Takvim, bildirim hesabı ve yedek aynı seçeneği kullanır.

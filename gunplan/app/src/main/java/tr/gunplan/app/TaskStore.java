@@ -8,11 +8,12 @@ final class TaskStore {
  }
  static synchronized void write(Context c,JSONObject s)throws Exception{if(!c.getSharedPreferences("gunplan_v1",0).edit().putString("state",s.toString()).commit())throw new Exception("Kayıt kaydedilemedi. Depolama alanını kontrol edin.");}
  static JSONObject find(JSONObject s,int id)throws Exception{JSONArray a=s.getJSONArray("tasks");for(int i=0;i<a.length();i++)if(a.getJSONObject(i).getInt("id")==id)return a.getJSONObject(i);return null;}
- static long next(JSONObject t,long after)throws Exception{return Recurrence.next(t.getString("date"),t.getString("time"),t.getString("repeat"),t.optInt("weekMask"),t.optInt("monthDay"),t.optBoolean("nextWeekday",false),after,ZoneId.systemDefault());}
+ static long next(JSONObject t,long after)throws Exception{return Recurrence.next(t.getString("date"),t.getString("time"),t.getString("repeat"),t.optInt("weekMask"),t.optInt("monthDay"),t.optBoolean("nextWeekday",false),t.optBoolean("monthEnd",false),t.optBoolean("previousWeekday",false),after,ZoneId.systemDefault());}
  static JSONObject clean(JSONObject input)throws Exception{
   JSONObject t=new JSONObject();String title=input.optString("title").trim(),note=input.optString("note").trim();if(title.isEmpty()||title.length()>120)throw new Exception("Görev adı 1–120 karakter olmalı.");if(note.length()>2000)throw new Exception("Not en fazla 2000 karakter olabilir.");
   LocalDate.parse(input.getString("date"));LocalTime.parse(input.getString("time"));String repeat=input.getString("repeat"),category=input.optString("category","Kişisel");if(!java.util.Arrays.asList("Kişisel","İş","Ödeme").contains(category))throw new Exception("Kategori geçersiz.");
-  t.put("title",title).put("note",note).put("date",input.getString("date")).put("time",input.getString("time")).put("repeat",repeat).put("weekMask",input.optInt("weekMask",1)).put("monthDay",input.optInt("monthDay",LocalDate.parse(input.getString("date")).getDayOfMonth())).put("nextWeekday","monthly".equals(repeat)&&input.optBoolean("nextWeekday",false)).put("category",category).put("priority",input.optBoolean("priority",false));
+  boolean monthEnd="monthly".equals(repeat)&&input.optBoolean("monthEnd",false);
+  t.put("title",title).put("note",note).put("date",input.getString("date")).put("time",input.getString("time")).put("repeat",repeat).put("weekMask",input.optInt("weekMask",1)).put("monthDay",monthEnd?31:input.optInt("monthDay",LocalDate.parse(input.getString("date")).getDayOfMonth())).put("nextWeekday","monthly".equals(repeat)&&!monthEnd&&input.optBoolean("nextWeekday",false)).put("monthEnd",monthEnd).put("previousWeekday",monthEnd&&input.optBoolean("previousWeekday",false)).put("category",category).put("priority",input.optBoolean("priority",false));
   next(t,0);return t;
  }
  static synchronized void save(Context c,String text)throws Exception{

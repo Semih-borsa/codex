@@ -4,6 +4,7 @@ public final class RecurrenceTest {
  static long ts(String s){return LocalDateTime.parse(s).atZone(zone).toInstant().toEpochMilli();}
  static void check(String date,String time,String repeat,int mask,int day,String after,String expected){long actual=Recurrence.next(date,time,repeat,mask,day,ts(after),zone);long want=expected.equals("none")?-1:ts(expected);if(actual!=want)throw new AssertionError(repeat+": expected "+expected+" got "+(actual<0?"none":Instant.ofEpochMilli(actual).atZone(zone)));cases++;}
  static void shifted(String start,int day,String after,String expected){long result=Recurrence.next(start,"09:00","monthly",0,day,true,ts(after),zone);if(result!=ts(expected))throw new AssertionError("shifted "+after+" expected "+expected+" got "+Instant.ofEpochMilli(result).atZone(zone));cases++;}
+ static void last(String start,boolean previous,String after,String expected){long result=Recurrence.next(start,"09:00","monthly",0,31,false,true,previous,ts(after),zone);if(result!=ts(expected))throw new AssertionError("last day "+after+" expected "+expected+" got "+Instant.ofEpochMilli(result).atZone(zone));cases++;}
  public static void main(String[]args){
   check("2026-10-20","09:00","none",0,20,"2026-10-19T10:00","2026-10-20T09:00");
   check("2026-10-20","09:00","none",0,20,"2026-10-20T09:00","none");
@@ -34,6 +35,20 @@ public final class RecurrenceTest {
   shifted("2028-01-01",31,"2028-02-01T00:00","2028-02-29T09:00");
   shifted("2026-01-01",31,"2026-12-31T09:00","2027-02-01T09:00");
   shifted("2026-02-02",31,"2026-02-01T00:00","2026-03-02T09:00");
+  last("2020-01-01",false,"2020-02-01T00:00","2020-02-29T09:00");
+  last("2020-01-01",true,"2020-02-01T00:00","2020-02-28T09:00");
+  last("2026-01-01",true,"2026-02-01T00:00","2026-02-27T09:00");
+  last("2026-01-01",true,"2026-05-01T00:00","2026-05-29T09:00");
+  last("2026-01-01",true,"2026-10-01T00:00","2026-10-30T09:00");
+  last("2026-01-01",true,"2026-12-01T00:00","2026-12-31T09:00");
+  last("2026-01-01",true,"2026-12-31T09:00","2027-01-29T09:00");
+  last("2026-01-01",true,"2026-01-30T09:00","2026-02-27T09:00");
+  last("2026-01-31",true,"2026-01-01T00:00","2026-02-27T09:00");
+  for(int year=2024;year<=2030;year++)for(int month=1;month<=12;month++)for(boolean prev:new boolean[]{false,true}){
+   LocalDate first=LocalDate.of(year,month,1),end=first.withDayOfMonth(first.lengthOfMonth());
+   if(prev){if(end.getDayOfWeek()==DayOfWeek.SATURDAY)end=end.minusDays(1);else if(end.getDayOfWeek()==DayOfWeek.SUNDAY)end=end.minusDays(2);}
+   last("2024-01-01",prev,first+"T00:00",end+"T09:00");
+  }
   zone=ZoneId.of("Europe/Berlin");check("2026-03-28","02:30","daily",0,28,"2026-03-28T03:00","2026-03-29T03:30");check("2026-03-28","02:30","daily",0,28,"2026-03-29T04:00","2026-03-30T02:30");
   zone=ZoneId.of("America/New_York");check("2026-10-31","01:30","daily",0,31,"2026-11-01T03:00","2026-11-02T01:30");
   System.out.println("PASS "+cases+" calendar recurrence cases incl month-end/leap/year/weekly/DST/missed occurrences");

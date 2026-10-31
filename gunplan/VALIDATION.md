@@ -1,3 +1,12 @@
+# Gün Plan 1.2.0 — ayın son günü ve önceki hafta içi
+
+- 209 Java tekrar kontrolü geçti. 2024–2030 arasındaki her ayda gerçek son gün ve hafta sonuysa önceki cuma; 28/29/30/31, artık yıl, cumartesi/pazar, yıl geçişi, başlangıç sınırı ve tam hatırlatma saatinden sonra tekrar ilerlemesi dahil. Eski belirli gün/sonraki pazartesi/günlük/haftalık ve DST testleri korundu.
+- 30 TaskStore/Backup/ReminderReceiver durum kontrolü geçti. Ay sonu ve önceki hafta içi alanları kayda/yedeğe gider; birbirine ters hafta sonu ayarları normalize edilir. Eski görevlerde yeni mod kapalıdır. Gerçek Java kodu, Android saklama/teslimat taklitleriyle test edildi; fiziksel alarm teslim testi değildir.
+- 12 Playwright arayüz grubu geçti. Ay sonu seçimi, gün alanının kapanması, önceki hafta içi seçimini kaydetme/yeniden açma/kapatma, mod değiştirme ve saat koruma; takvimde şubat/ay/yıl/hafta sonu doğrulandı. Eski arayüz akışları geçti; JS hatası yok. Native köprü taklididir.
+- `assembleStandalone` / `lintStandalone` başarılı. APK adı Gün Plan; paket `tr.gunplan.app.v2`, versionCode3/versionName1.2.0. 1.1.0 ile aynı sertifika kullanılır. İmza ve zipalign doğrulaması yapıldı. Fiziksel Android'de yeni sürümün bildirim teslimi bu çalışmada test edilmedi.
+
+---
+
 # Gün Plan 1.1.0 — aylık hafta sonu seçeneği
 
 - 32 saf Java tekrar kontrolü geçti: eski 23 kontrol + cumartesi/pazarın pazartesiye taşınması, ay/yıl geçişi, kısa ay, artık yıl, ayın başında önceki aydan taşınan günü kaçırmama, tam saatte sonraki tekrara geçme ve başlangıç sınırı.
