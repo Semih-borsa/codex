@@ -1,8 +1,13 @@
-# GünPlan
+[Gün Plan 1.1.0 APK indir](../downloads/GunPlan-1.1.0.apk)
 
-İnternetsiz çalışan Android görev planlayıcısı. Paket: `tr.gunplan.app`, sürüm: 1.0.0. Android 8+ ve Android System WebView / Chrome 80+ gerektirir.
+**Kurulum:** Bu APK `tr.gunplan.app.v2` paketiyle ayrı kurulur. Eski GünPlan'ın yayın anahtarı bu ortamda bulunmadığı için orijinal `tr.gunplan.app` üstüne güncelleme olarak sunulmaz. Eski uygulamayı silmeyin. Eski uygulamada Ayarlar → Yedeği dışa aktar; yeni Gün Plan'da Ayarlar → Yedekten ekle. Görevleri ve bildirim izinlerini kontrol ettikten sonra çift bildirim olmaması için eski uygulamadaki görevleri duraklatın. Veriler uygulamalar arasında otomatik paylaşılmaz.
+
+# Gün Plan
+
+İnternetsiz çalışan Android görev planlayıcısı. Paket: `tr.gunplan.app`, sürüm: 1.1.0. Android 8+ ve Android System WebView / Chrome 80+ gerektirir.
 
 - Tek seferlik, günlük, haftanın seçili günleri veya aylık görevler.
+- Aylık görevde isteğe bağlı **“Hafta sonuna denk gelirse sonraki ilk hafta içi gününe taşı”**. Cumartesi/pazar pazartesiye gider, saat korunur. Kısa ayda önce son gün bulunur, sonra hafta sonu kontrol edilir; sonraki aya/yıla geçebilir. Örneğin 31 Ocak cumartesi → 2 Şubat pazartesi; sonraki temel gün yine 31 olarak kalır. Resmî tatiller hesaba katılmaz. Eski görevlerde seçenek kapalıdır. Takvim, bildirim hesabı ve yedek aynı seçeneği kullanır.
 - Ayın 29–31'i kısa aylarda son güne alınır; sonraki aylarda asıl gün korunur.
 - Android AlarmManager ile uygulama arayüzü kapalıyken bildirim; bildirimden tamamlama / 10 dakika erteleme.
 - Açık, koyu ve sistem teması; gün görünümü, aylık takvim, arama, kategoriler, önem işareti.
@@ -11,7 +16,7 @@
 
 ## Telefona kurulum
 
-APK'yı indirip açın; gerekirse indirmeyi yaptığınız tarayıcı için APK yükleme izni verin. GünPlan'da bildirim iznini ve Android 12+ için “Zamanında hatırlatma” iznini açın. Ayarlar'daki deneme bildirimiyle kontrol edin. Bazı telefonlarda pil / otomatik başlatma kısıtlamalarını ayrıca düzenlemek gerekir.
+APK'yı indirip açın; gerekirse indirmeyi yaptığınız tarayıcı için APK yükleme izni verin. Gün Plan'da bildirim iznini ve Android 12+ için “Zamanında hatırlatma” iznini açın. Ayarlar'daki deneme bildirimiyle kontrol edin. Bazı telefonlarda pil / otomatik başlatma kısıtlamalarını ayrıca düzenlemek gerekir.
 
 Android ayarlarından “Zorla durdur” uygulanırsa uygulama tekrar açılana kadar alarmlar çalışmaz. Telefon kapalıyken bildirim verilemez. Yeniden başlatınca aktif görevler kurulup atlanan tekrarlar tek bildirimle yakalanır. Kesin alarm izni kapalıysa Android gecikmeli teslim edebilir. Bildirim ve kanal kapalıysa görev tüketilmez; uygulama açıldığında izin durumu tekrar kontrol edilir.
 
@@ -37,3 +42,6 @@ Release için dışarıda tutulan `GUNPLAN_SIGNING_PROPERTIES` dosyası `storeFi
 - `app/src/androidTest`: ayrı test APK'sı, gerçek cihaz/emülatörde izole test kurulumu içindir; uygulama deposuna test görevi ekler. Kullanıcının günlük kayıtlarının olduğu cihazda çalıştırılmamalıdır.
 
 Güvenlik: yalnız paket içindeki assets dosyaları WebView'da açılır; dış sayfalar engellenir. CSP, dosya/içerik erişimi kapatma, HTML kaçışlama, native doğrulama ve atomik kayıt uygulanır. Otomatik bulut yedeği kapalıdır; kullanıcı isterse dosya seçiciyle kendisi dışa aktarır.
+
+
+1.1.0 yayımlanan ayrı paket için `GUNPLAN_SIGNING_PROPERTIES=/özel/release.properties ./gradlew :app:assembleStandalone :app:lintStandalone` kullanılır. Orijinal paket için `release` varyantı ve orijinal imza gerekir. Yeni ayrı paketin sonraki güncellemelerinde aynı yeni imza anahtarı korunmalıdır.

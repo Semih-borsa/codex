@@ -1,3 +1,13 @@
+# Gün Plan 1.1.0 — aylık hafta sonu seçeneği
+
+- 32 saf Java tekrar kontrolü geçti: eski 23 kontrol + cumartesi/pazarın pazartesiye taşınması, ay/yıl geçişi, kısa ay, artık yıl, ayın başında önceki aydan taşınan günü kaçırmama, tam saatte sonraki tekrara geçme ve başlangıç sınırı.
+- Gerçek TaskStore / Backup / ReminderReceiver kodunda Android saklama/teslimat taklitleriyle 24 durum kontrolü geçti: yeni alanı saklama, eski kayıtta varsayılan kapalı, aylık dışı kurallarda yok sayma, yedekten koruma ve farklı politikaları tekilleştirmeme dahil. İşletim sistemi alarm teslim testi değildir.
+- 10 Playwright arayüz grubu geçti: Gün Plan adı, aylık seçenek kaydı, takvimde ay geçişi ve seçenek kapalıyken eski günler, haftalık gün seçimi, düzenleme/arama, onaylı tamamlama, tema/yedek, mobil boyutlar, gece yarısı başlangıcı; JS hatası yok. Native köprü taklittir.
+- `assembleStandalone` / `lintStandalone` başarılı. APK etiketi Gün Plan, paket v2/code2/name1.1.0, APK imza ve zipalign kontrolleri doğrulandı. Lint: 0 errors, 1 warnings.
+- Yeni yayın orijinalden ayrı `tr.gunplan.app.v2` paketidir. Orijinal imza anahtarı bu ortamda yoktur. Eski uygulama silinmez; görevler JSON yedeğiyle aktarılır. Bu sürümde fiziksel cihaz bildirimi test edilmedi; eski 1.0.0 emülatör sonuçları aşağıda tarihî kapsamıyla korunur.
+
+---
+
 # GünPlan 1.0.0 — doğrulama
 
 20 Ekim 2026. Bağımsız uygulama: tr.gunplan.app, sürüm kodu 1, Android 8+ / güncel WebView80+.

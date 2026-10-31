@@ -1,3 +1,5 @@
+[Gün Plan 1.1.0 · APK, aylık hafta sonu seçeneği ve aktarım adımları](gunplan/README.md)
+
 [İşletmem Kasa 1.0.6 · APK ve aktarım adımları](downloads/Isletmem-Kasa.md)
 
 **Nöbet Çizelgesi 2.6:** resmî tatilde tam gün çalışanları seçme ve yalnız seçilenlerin tatil istatistiği/PDF sayımı. [Güncel APK](downloads/NobetCizelgesi-2.6.apk) · [Kaynak ZIP](downloads/NobetCizelgesi-2.6-Android-Studio.zip). Önceki kararlı sürümün üzerine aynı imzayla kurulabilir.
